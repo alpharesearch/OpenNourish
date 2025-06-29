@@ -196,15 +196,3 @@
   scale-percent: 66%,
   show-footnote: true,
 ) 
-#nutrition-label-nam(
-  sample-data,
-  font: "Tex Gyre Heros",
-  scale-percent: 42%,
-  show-footnote: true,
-) 
-#nutrition-label-nam(
-  sample-data,
-  font: "Tex Gyre Heros",
-  scale-percent: 22%,
-  show-footnote: true,
-) 
