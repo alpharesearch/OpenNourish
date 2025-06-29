@@ -37,9 +37,12 @@ CREATE TABLE food_nutrients (
 CREATE TABLE portions (
     -- The foreign key referencing the food item.
     fdc_id INTEGER NOT NULL,
+    -- The foreign key referencing
+    measure_unit_id INTEGER NOT NULL,
     -- A description of the measurement (e.g., "slice", "cup", "1 medium").
     measure_description TEXT NOT NULL,
     -- The weight of the described portion in grams.
     gram_weight REAL NOT NULL,
     FOREIGN KEY (fdc_id) REFERENCES foods (fdc_id)
 );
+
