@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ food.description }} - OpenNourish</title>
+</head>
+<body>
+    <h1>{{ food.description }}</h1>
+
+    {% if food.upc %}
+        <p><strong>UPC:</strong> {{ food.upc }}</p>
+    {% endif %}
+
+    {% if food.ingredients %}
+        <h2>Ingredients</h2>
+        <p>{{ food.ingredients }}</p>
+    {% endif %}
+
+    <h2>Nutritional Information (per 100g)</h2>
+    <ul>
+        {% for food_nutrient in food.nutrients %}
+            <li>{{ food_nutrient.nutrient.name }}: {{ food_nutrient.amount }} {{ food_nutrient.nutrient.unit_name }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Portion Sizes</h2>
+    <ul>
+        {% for portion in food.portions %}
+            <li>{{ portion.measure_description }}: {{ portion.gram_weight }}g</li>
+        {% endfor %}
+    </ul>
+
+    <a href="/">Back to search</a>
+</body>
+</html>
