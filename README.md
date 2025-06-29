@@ -5,8 +5,8 @@ OpenNourish is a free and open source food tracker.
 
 1. **Download the USDA FoodData Central dataset:**
    - Go to the [USDA FoodData Central download page](https://fdc.nal.usda.gov/download-datasets.html).
-   - Download the latest "FoodData Central, October 2023: All data" dataset (or a newer version if available).
-   - Unzip the downloaded file.
+   - Download the latest "FoodData Central, April 2025: All data" dataset (or a newer version if available).
+   - Unzip the downloaded FoodData_Central_csv_2025-04-24.zip file.
 
 2. **Organize the data files:**
    - Create a folder named `usda_data` in the root of the OpenNourish project directory.
