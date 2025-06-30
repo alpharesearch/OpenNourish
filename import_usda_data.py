@@ -51,12 +51,30 @@ def import_usda_data(db_file=None):
                 print(f"-> Imported {len(data)} nutrients.")
 
             print("\nPopulating 'foods' table...")
+            food_descriptions = {}
             with open(os.path.join(usda_data_dir, 'food.csv'), 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
-                next(reader)
-                data = [(row[0], row[2]) for row in reader]
-                cursor.executemany("INSERT INTO foods (fdc_id, description) VALUES (?, ?)", data)
-                print(f"-> Imported {len(data)} foods.")
+                next(reader) # Skip header
+                for row in reader:
+                    food_descriptions[row[0]] = row[2] # fdc_id, description
+
+            branded_foods_data = {}
+            with open(os.path.join(usda_data_dir, 'branded_food.csv'), 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader) # Skip header
+                for row in reader:
+                    fdc_id = row[0]
+                    gtin_upc = row[2] if row[2].isdigit() else None # gtin_upc
+                    ingredients = row[3] if row[3] else None # ingredients
+                    branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+
+            foods_to_insert = []
+            for fdc_id, description in food_descriptions.items():
+                upc, ingredients = branded_foods_data.get(fdc_id, (None, None))
+                foods_to_insert.append((fdc_id, description, upc, ingredients))
+
+            cursor.executemany("INSERT INTO foods (fdc_id, description, upc, ingredients) VALUES (?, ?, ?, ?)", foods_to_insert)
+            print(f"-> Imported {len(foods_to_insert)} foods.")
 
             print("\nPopulating 'food_nutrients' table...")
             seen = set()

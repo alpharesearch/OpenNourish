@@ -5,7 +5,7 @@ CREATE TABLE foods (
     -- A description of the food item.
     description TEXT NOT NULL,
     -- The Global Trade Item Number (GTIN) or UPC barcode for the food.
-    upc TEXT UNIQUE,
+    upc TEXT,
     -- A list of ingredients for the food item.
     ingredients TEXT
 );
