@@ -8,17 +8,23 @@
 </head>
 <body>
     <h1>Welcome to OpenNourish</h1>
-    <h1>Search for a Food (Filtered)</h1>
-    <form method="POST" action="/">
-        <input type="text" name="search" placeholder="e.g., 'apple'">
-        <button type="submit">Search</button>
-    </form>
+    <div class="search-forms-container">
+        <div>
+            <h1>Search for a Food (Filtered)</h1>
+            <form method="POST" action="/">
+                <input type="text" name="search" placeholder="e.g., 'apple'">
+                <button type="submit">Search</button>
+            </form>
+        </div>
 
-    <h1>Search for a Food (Unfiltered)</h1>
-    <form method="POST" action="/search_unfiltered">
-        <input type="text" name="search_unfiltered" placeholder="e.g., 'apple'">
-        <button type="submit">Search</button>
-    </form>
+        <div>
+            <h1>Search for a Food (Unfiltered)</h1>
+            <form method="POST" action="/search_unfiltered">
+                <input type="text" name="search_unfiltered" placeholder="e.g., 'apple'">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+    </div>
 
     {% if results %}
         <h2>Results: {{ results_count }}</h2>

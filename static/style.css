@@ -16,3 +16,14 @@ a {
     color: red;
     margin-top: 20px;
 }
+
+.search-forms-container {
+    display: flex;
+    gap: 20px; /* Adds space between the two search forms */
+    flex-wrap: wrap; /* Allows forms to wrap on smaller screens */
+}
+
+.search-forms-container > div {
+    flex: 1; /* Allows each form container to grow and shrink */
+    min-width: 300px; /* Ensures forms don't get too small */
+}
