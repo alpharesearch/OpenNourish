@@ -1,6 +1,6 @@
 
 from flask import Flask, render_template, request, redirect, url_for
-from models import db, Food, Portion
+from models import db, Food, Portion, User, Recipe, RecipeIngredient, DailyLog
 import os
 from sqlalchemy import or_
 
@@ -8,13 +8,22 @@ from sqlalchemy import or_
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
-# Configure the SQLAlchemy database URI
+# Configure the SQLAlchemy database URI for the user database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'opennourish.db')
+# Configure the bind for the USDA database
+app.config['SQLALCHEMY_BINDS'] = {
+    'usda': 'sqlite:///' + os.path.join(basedir, 'usda_data.db')
+}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize SQLAlchemy with the app
-def init_db(app):
-    db.init_app(app)
+db.init_app(app)
+
+@app.cli.command("init-user-db")
+def init_user_db_command():
+    """Clears existing user data and creates new tables."""
+    db.create_all()
+    print("Initialized the user database.")
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -48,5 +57,4 @@ def upc_search(barcode):
         return "UPC not found", 404
 
 if __name__ == '__main__':
-    init_db(app)
     app.run(debug=True)
