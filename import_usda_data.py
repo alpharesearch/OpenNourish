@@ -64,8 +64,8 @@ def import_usda_data(db_file=None):
                 next(reader) # Skip header
                 for row in reader:
                     fdc_id = row[0]
-                    gtin_upc = row[2] if row[2].isdigit() else None # gtin_upc
-                    ingredients = row[3] if row[3] else None # ingredients
+                    gtin_upc = row[4] if row[4] else None # gtin_upc
+                    ingredients = row[5] if row[5] else None # ingredients
                     branded_foods_data[fdc_id] = (gtin_upc, ingredients)
 
             foods_to_insert = []
