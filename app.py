@@ -64,9 +64,10 @@ def upc_search(barcode):
     # Use the 'usda' bind to search by UPC
     food = db.session.execute(
         db.select(Food).filter_by(upc=barcode)
-    ).scalar_one_or_none()
+    ).first()
     if food:
-        return redirect(url_for('food_detail', fdc_id=food.fdc_id))
+        # Since food is a tuple-like object, access fdc_id by index or attribute
+        return redirect(url_for('food_detail', fdc_id=food[0].fdc_id))
     else:
         return "UPC not found", 404
 
