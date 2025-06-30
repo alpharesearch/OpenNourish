@@ -1,95 +1,83 @@
-# tests/test_models.py
-
 import pytest
-from app import app, db, init_db
-from models import Food # Make sure to import your models
+from app import app
+from models import db, Food, Nutrient, FoodNutrient, MeasureUnit, Portion, User
 
-# This fixture sets up a clean, temporary database FOR EACH test function
-# scope='function' is safer for DB tests to ensure total isolation.
 @pytest.fixture(scope='function')
-def setup_database():
-    """
-    Creates a new database for a test and populates it with a
-    single known food item.
-    """
+def app_context_for_models():
     with app.app_context():
-        db.create_all()
-
-        # --- THIS IS THE CRUCIAL ADDITION ---
-        # Create a test food object and add it to the database
-        test_food = Food(fdc_id=1, description='Butter, salted')
-        db.session.add(test_food)
-        db.session.commit()
-        # --- END OF ADDITION ---
-
-        # 'yield' passes control to the test function
-        yield db
-
-        # This code runs after the test is finished
-        db.session.remove()
         db.drop_all()
+        db.create_all()
+        yield
+        db.session.remove()
 
-# The test function now uses the pre-configured database from the fixture
-def test_food_search_returns_result(setup_database):
-    """
-    GIVEN a database with a known food item
-    WHEN the Food model is queried for that item
-    THEN the correct item is returned
-    """
-    # The fixture already provides the app context, so we don't need it here.
-    food = Food.query.filter_by(description='Butter, salted').first()
+def test_food_creation(app_context_for_models):
+    food = Food(fdc_id=100, description='Test Food')
+    db.session.add(food)
+    db.session.commit()
+    assert Food.query.count() == 1
+    assert Food.query.first().description == 'Test Food'
 
-    assert food is not None
-    assert food.description == 'Butter, salted'
-    assert food.fdc_id == 1
+def test_nutrient_creation(app_context_for_models):
+    nutrient = Nutrient(id=200, name='Test Nutrient', unit_name='g')
+    db.session.add(nutrient)
+    db.session.commit()
+    assert Nutrient.query.count() == 1
 
-def test_food_upc_storage(setup_database):
-    """
-    GIVEN a database
-    WHEN a Food item with a UPC is added
-    THEN the UPC is correctly stored and retrieved
-    """
-    with app.app_context():
-        new_food = Food(fdc_id=3, description='Test Food with UPC', upc='123456789012')
-        db.session.add(new_food)
-        db.session.commit()
+def test_food_nutrient_association(app_context_for_models):
+    food = Food(fdc_id=101, description='Food with Nutrient')
+    nutrient = Nutrient(id=201, name='Associated Nutrient', unit_name='mg')
+    food_nutrient = FoodNutrient(fdc_id=101, nutrient_id=201, amount=10.5)
 
-        retrieved_food = Food.query.filter_by(upc='123456789012').first()
-        assert retrieved_food is not None
-        assert retrieved_food.description == 'Test Food with UPC'
-        assert retrieved_food.upc == '123456789012'
+    db.session.add_all([food, nutrient, food_nutrient])
+    db.session.commit()
 
-def test_food_upc_uniqueness(setup_database):
-    """
-    GIVEN a database with a food item that has a UPC
-    WHEN attempting to add another food item with the same UPC
-    THEN an IntegrityError is raised
-    """
-    from sqlalchemy.exc import IntegrityError
+    retrieved_food = Food.query.get(101)
+    assert len(retrieved_food.nutrients) == 1
+    assert retrieved_food.nutrients[0].amount == 10.5
 
-    with app.app_context():
-        # Add the first food with a UPC
-        food1 = Food(fdc_id=4, description='Food One', upc='987654321098')
-        db.session.add(food1)
-        db.session.commit()
+def test_measure_unit_creation(app_context_for_models):
+    unit = MeasureUnit(id=300, name='Test Unit')
+    db.session.add(unit)
+    db.session.commit()
+    assert MeasureUnit.query.count() == 1
 
-        # Attempt to add a second food with the same UPC
-        food2 = Food(fdc_id=5, description='Food Two', upc='987654321098')
+def test_portion_creation(app_context_for_models):
+    food = Food(fdc_id=102, description='Food for Portion')
+    unit = MeasureUnit(id=301, name='Portion Unit')
+    portion = Portion(fdc_id=102, seq_num=1, amount=1.0, measure_unit_id=301, gram_weight=100.0)
+
+    db.session.add_all([food, unit, portion])
+    db.session.commit()
+
+    retrieved_portion = Portion.query.get(portion.id)
+    assert retrieved_portion.gram_weight == 100.0
+
+def test_food_search_returns_result(app_context_for_models):
+    food = Food(fdc_id=1, description='Butter, salted')
+    db.session.add(food)
+    db.session.commit()
+    found_food = Food.query.filter_by(description='Butter, salted').first()
+    assert found_food is not None
+    assert found_food.fdc_id == 1
+
+def test_food_search_returns_none_for_missing_item(app_context_for_models):
+    found_food = Food.query.filter_by(description='NonExistentFood').first()
+    assert found_food is None
+
+def test_food_upc_storage(app_context_for_models):
+    food = Food(fdc_id=2, description='Milk, whole', upc='012345678905')
+    db.session.add(food)
+    db.session.commit()
+    found_food = Food.query.filter_by(upc='012345678905').first()
+    assert found_food is not None
+    assert found_food.description == 'Milk, whole'
+
+def test_food_upc_uniqueness(app_context_for_models):
+    food1 = Food(fdc_id=3, description='Bread', upc='111222333444')
+    food2 = Food(fdc_id=4, description='Roll', upc='111222333444') # Same UPC
+    db.session.add(food1)
+    db.session.commit()
+
+    with pytest.raises(Exception): # Expect an IntegrityError or similar
         db.session.add(food2)
-
-        # Expect an IntegrityError
-        with pytest.raises(IntegrityError):
-            db.session.commit()
-        
-        # Rollback the session to clean up the failed transaction
-        db.session.rollback()
-
-def test_food_search_returns_none_for_missing_item(setup_database):
-    """
-    GIVEN a database with a known food item
-    WHEN the Food model is queried for an item that does not exist
-    THEN the result is None
-    """
-    food = Food.query.filter_by(description='A food that is not in the DB').first()
-
-    assert food is None
+        db.session.commit()

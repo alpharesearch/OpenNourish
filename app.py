@@ -9,7 +9,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 # Configure the SQLAlchemy database URI for the user database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'opennourish.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'user_data.db')
 # Configure the bind for the USDA database
 app.config['SQLALCHEMY_BINDS'] = {
     'usda': 'sqlite:///' + os.path.join(basedir, 'usda_data.db')
