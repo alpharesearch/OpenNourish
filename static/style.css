@@ -1,0 +1,18 @@
+
+body {
+    font-family: sans-serif;
+    margin: 2em;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+a {
+    color: #007bff;
+}
+
+.warning {
+    color: red;
+    margin-top: 20px;
+}

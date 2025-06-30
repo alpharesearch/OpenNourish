@@ -4,17 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenNourish Food Search</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <h1>Welcome to OpenNourish</h1>
-    <h1>Search for a Food</h1>
-    <form method="POST">
+    <h1>Search for a Food (Filtered)</h1>
+    <form method="POST" action="/">
         <input type="text" name="search" placeholder="e.g., 'apple'">
         <button type="submit">Search</button>
     </form>
 
+    <h1>Search for a Food (Unfiltered)</h1>
+    <form method="POST" action="/search_unfiltered">
+        <input type="text" name="search_unfiltered" placeholder="e.g., 'apple'">
+        <button type="submit">Search</button>
+    </form>
+
     {% if results %}
-        <h2>Results:</h2>
+        <h2>Results: {{ results_count }}</h2>
         <ul>
             {% for food in results %}
                 <li><a href="/food/{{ food.fdc_id }}">{{ food.description }}</a></li>
