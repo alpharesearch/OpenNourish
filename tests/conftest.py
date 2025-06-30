@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from app import app, db
 from models import Food # Or whatever your models are named
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def app_with_db():
     app.config['TESTING'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
@@ -23,7 +23,7 @@ def app_with_db():
         yield app
         db.drop_all()
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def client(app_with_db):
     with app_with_db.test_client() as client:
         yield client
