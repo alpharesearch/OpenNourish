@@ -31,26 +31,34 @@ def index():
     if request.method == 'POST':
         search_term = request.form.get('search')
         if search_term:
-            # Search for foods by description or ingredients
-            results = Food.query.filter(
-                Food.description.ilike(f'{search_term}%')
-            ).order_by(
-                db.case(
-                    (Food.description.ilike(search_term), 0), # Exact match
-                    (Food.description.ilike(f'{search_term}%'), 1), # Starts with search term
-                    else_=2 # Other matches (though with the filter, this will be less relevant)
-                )
-            ).limit(250).all()
+            # Use the 'usda' bind to search for foods
+            results = db.session.execute(
+                db.select(Food).filter(
+                    Food.description.ilike(f'{search_term}%')
+                ).order_by(
+                    db.case(
+                        (Food.description.ilike(search_term), 0),
+                        (Food.description.ilike(f'{search_term}%'), 1),
+                        else_=2
+                    )
+                ).limit(250)
+            ).scalars().all()
     return render_template('index.html', results=results)
 
 @app.route('/food/<int:fdc_id>')
 def food_detail(fdc_id):
-    food = Food.query.options(db.joinedload(Food.portions).joinedload(Portion.measure_unit)).get_or_404(fdc_id)
+    # Use the 'usda' bind to get food details
+    food = db.session.get(Food, fdc_id)
+    if not food:
+        return "Food not found", 404
     return render_template('food_detail.html', food=food)
 
 @app.route('/upc/<barcode>')
 def upc_search(barcode):
-    food = Food.query.filter_by(upc=barcode).first()
+    # Use the 'usda' bind to search by UPC
+    food = db.session.execute(
+        db.select(Food).filter_by(upc=barcode)
+    ).scalar_one_or_none()
     if food:
         return redirect(url_for('food_detail', fdc_id=food.fdc_id))
     else:
