@@ -40,7 +40,12 @@ To run the Flask development server:
 - **Comments:** Add clear, concise comments to explain complex logic, especially in database queries and business logic.
 
 ## 7. Testing
-- Testing will be done using the **pytest** framework.
-- Tests should be placed in a `tests/` directory.
-- To run tests, use the command: `pytest`
-- When generating tests, create separate files for models, routes, and utilities (e.g., `test_models.py`, `test_routes.py`).
+- **Framework:** Testing is done using the **pytest** framework.
+- **Test Directory:** All tests are located in the `tests/` directory.
+- **Running Tests:**
+  - To run all tests, including slow integration tests, use: `pytest`
+  - To run only the fast unit tests and exclude the full database import test, use: `pytest -m "not integration"`
+- **Database Safety:**
+  - Standard tests (`pytest -m "not integration"`) are designed to **never** touch the real `user_data.db` or `usda_data.db` files. They use a temporary, in-memory database to ensure data integrity.
+  - The `integration` test (`test_database_import.py`) performs a full, time-consuming import of the USDA data into a temporary database. It is crucial for verifying the data import process but should be run intentionally.
+- **Test Creation:** When generating new tests, create separate files for models, routes, and utilities (e.g., `test_models.py`, `test_routes.py`). Ensure that any test involving the database uses the `client` fixture to maintain isolation from the real databases.
