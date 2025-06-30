@@ -14,14 +14,14 @@ def test_food_creation(app_context_for_models):
     food = Food(fdc_id=100, description='Test Food')
     db.session.add(food)
     db.session.commit()
-    assert Food.query.count() == 1
-    assert Food.query.first().description == 'Test Food'
+    assert db.session.execute(db.select(Food)).scalar_one() is not None
+    assert db.session.execute(db.select(Food)).scalar_one().description == 'Test Food'
 
 def test_nutrient_creation(app_context_for_models):
     nutrient = Nutrient(id=200, name='Test Nutrient', unit_name='g')
     db.session.add(nutrient)
     db.session.commit()
-    assert Nutrient.query.count() == 1
+    assert db.session.execute(db.select(Nutrient)).scalar_one() is not None
 
 def test_food_nutrient_association(app_context_for_models):
     food = Food(fdc_id=101, description='Food with Nutrient')
@@ -31,7 +31,7 @@ def test_food_nutrient_association(app_context_for_models):
     db.session.add_all([food, nutrient, food_nutrient])
     db.session.commit()
 
-    retrieved_food = Food.query.get(101)
+    retrieved_food = db.session.get(Food, 101)
     assert len(retrieved_food.nutrients) == 1
     assert retrieved_food.nutrients[0].amount == 10.5
 
@@ -39,7 +39,7 @@ def test_measure_unit_creation(app_context_for_models):
     unit = MeasureUnit(id=300, name='Test Unit')
     db.session.add(unit)
     db.session.commit()
-    assert MeasureUnit.query.count() == 1
+    assert db.session.execute(db.select(MeasureUnit)).scalar_one() is not None
 
 def test_portion_creation(app_context_for_models):
     food = Food(fdc_id=102, description='Food for Portion')
@@ -49,26 +49,26 @@ def test_portion_creation(app_context_for_models):
     db.session.add_all([food, unit, portion])
     db.session.commit()
 
-    retrieved_portion = Portion.query.get(portion.id)
+    retrieved_portion = db.session.get(Portion, portion.id)
     assert retrieved_portion.gram_weight == 100.0
 
 def test_food_search_returns_result(app_context_for_models):
     food = Food(fdc_id=1, description='Butter, salted')
     db.session.add(food)
     db.session.commit()
-    found_food = Food.query.filter_by(description='Butter, salted').first()
+    found_food = db.session.execute(db.select(Food).filter_by(description='Butter, salted')).scalar_one()
     assert found_food is not None
     assert found_food.fdc_id == 1
 
 def test_food_search_returns_none_for_missing_item(app_context_for_models):
-    found_food = Food.query.filter_by(description='NonExistentFood').first()
+    found_food = db.session.execute(db.select(Food).filter_by(description='NonExistentFood')).scalar_one_or_none()
     assert found_food is None
 
 def test_food_upc_storage(app_context_for_models):
     food = Food(fdc_id=2, description='Milk, whole', upc='012345678905')
     db.session.add(food)
     db.session.commit()
-    found_food = Food.query.filter_by(upc='012345678905').first()
+    found_food = db.session.execute(db.select(Food).filter_by(upc='012345678905')).scalar_one()
     assert found_food is not None
     assert found_food.description == 'Milk, whole'
 
