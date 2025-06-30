@@ -7,7 +7,7 @@ import sys
 # Add project root to path to allow importing 'app'
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app import app, db
+from app import app, db, init_db
 from models import Food # Or whatever your models are named
 
 @pytest.fixture(scope='module')
@@ -21,6 +21,9 @@ def client():
     # Force the app to use a temporary, in-memory database for these tests
     app.config['TESTING'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+
+    # Initialize the database with the new configuration
+    init_db(app)
 
     # Establish an application context to work with the app
     with app.app_context():
