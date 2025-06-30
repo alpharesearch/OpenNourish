@@ -21,5 +21,11 @@
             {% endfor %}
         </ul>
     {% endif %}
+
+    {% if warning %}
+        <div class="warning" style="color: red; margin-top: 20px;">
+            <p><strong>Warning:</strong> {{ warning }}</p>
+        </div>
+    {% endif %}
 </body>
 </html>
