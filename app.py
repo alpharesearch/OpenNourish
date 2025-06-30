@@ -1,6 +1,6 @@
 
 from flask import Flask, render_template, request, redirect, url_for
-from models import db, Food, Portion, User, Recipe, RecipeIngredient, DailyLog
+from models import db, Food, Portion, FoodNutrient, User, Recipe, RecipeIngredient, DailyLog
 import os
 from sqlalchemy.exc import OperationalError
 
@@ -38,7 +38,9 @@ def create_app(test_config=None):
                     results = db.session.execute(
                         db.select(Food).filter(
                             Food.description.ilike(f'{search_term}%')
-                        ).order_by(
+                        ).outerjoin(Portion).outerjoin(FoodNutrient).group_by(Food.fdc_id).order_by(
+                            db.func.count(Portion.id).desc(),
+                            db.func.count(FoodNutrient.nutrient_id).desc(),
                             db.case(
                                 (Food.description.ilike(search_term), 0),
                                 (Food.description.ilike(f'{search_term}%'), 1),
