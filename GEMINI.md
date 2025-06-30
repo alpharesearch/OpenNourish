@@ -27,7 +27,7 @@ To run the Flask development server:
 
 ## 5. Database Management
 - **Primary Database File:** `opennourish.db` is the main application database. It should not be committed to version control.
-- **Initial Schema Definition:** The database schema is defined in `schema.sql`. This file is used by the import script to create the tables.
+- **Initial Schema Definition:** The database schema is defined in `schema_usda.sql`. This file is used by the import script to create the tables.
 - **Data Import:** The `import_usda_data.py` script is responsible for creating and populating the `opennourish.db` from scratch. It should be run once during setup.
 - **Application Models:** Flask-SQLAlchemy models that map to the database tables are defined in `models.py`.
 
