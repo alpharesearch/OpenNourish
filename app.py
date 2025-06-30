@@ -13,7 +13,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'op
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize SQLAlchemy with the app
-db.init_app(app)
+def init_db(app):
+    db.init_app(app)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -42,4 +43,5 @@ def upc_search(barcode):
         return "UPC not found", 404
 
 if __name__ == '__main__':
+    init_db(app)
     app.run(debug=True)
