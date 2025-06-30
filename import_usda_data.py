@@ -81,14 +81,32 @@ def import_usda_data(db_file=None):
                     food_descriptions[row[0]] = row[2] # fdc_id, description
 
             branded_foods_data = {}
+            upc_dates = {}
+            duplicate_upcs = 0
             with open(os.path.join(usda_data_dir, 'branded_food.csv'), 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
-                next(reader) # Skip header
+                next(reader)  # Skip header
                 for row in reader:
                     fdc_id = row[0]
-                    gtin_upc = row[4] if row[4] else None # gtin_upc
-                    ingredients = row[5] if row[5] else None # ingredients
-                    branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+                    gtin_upc = row[4] if row[4] else None
+                    ingredients = row[5] if row[5] else None
+                    available_date = row[14] if row[14] else '1900-01-01'
+
+                    if gtin_upc:
+                        if gtin_upc in upc_dates:
+                            if available_date > upc_dates[gtin_upc]:
+                                # This one is newer, so replace the old one
+                                upc_dates[gtin_upc] = available_date
+                                branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+                            duplicate_upcs += 1
+                        else:
+                            # First time seeing this UPC
+                            upc_dates[gtin_upc] = available_date
+                            branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+                    else:
+                        branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+            
+            print(f"-> Found {duplicate_upcs} duplicate UPCs, keeping the most recent.")
 
             foods_to_insert = []
             for fdc_id, description in food_descriptions.items():
