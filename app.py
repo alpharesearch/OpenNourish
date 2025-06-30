@@ -25,25 +25,31 @@ def init_user_db_command():
     db.create_all()
     print("Initialized the user database.")
 
+from sqlalchemy.exc import OperationalError
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     results = []
+    warning = None
     if request.method == 'POST':
         search_term = request.form.get('search')
         if search_term:
-            # Use the 'usda' bind to search for foods
-            results = db.session.execute(
-                db.select(Food).filter(
-                    Food.description.ilike(f'{search_term}%')
-                ).order_by(
-                    db.case(
-                        (Food.description.ilike(search_term), 0),
-                        (Food.description.ilike(f'{search_term}%'), 1),
-                        else_=2
-                    )
-                ).limit(250)
-            ).scalars().all()
-    return render_template('index.html', results=results)
+            try:
+                # Use the 'usda' bind to search for foods
+                results = db.session.execute(
+                    db.select(Food).filter(
+                        Food.description.ilike(f'{search_term}%')
+                    ).order_by(
+                        db.case(
+                            (Food.description.ilike(search_term), 0),
+                            (Food.description.ilike(f'{search_term}%'), 1),
+                            else_=2
+                        )
+                    ).limit(250)
+                ).scalars().all()
+            except OperationalError:
+                warning = "Database tables not found. Please run 'flask init-user-db' and 'python import_usda_data.py' to set up the databases."
+    return render_template('index.html', results=results, warning=warning)
 
 @app.route('/food/<int:fdc_id>')
 def food_detail(fdc_id):
