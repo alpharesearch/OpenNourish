@@ -12,9 +12,9 @@ def import_usda_data(db_file=None):
     This script is idempotent: it deletes the old database on every run.
     """
     if db_file is None:
-        db_file = 'opennourish.db'
+        db_file = 'usda_data.db'
     usda_data_dir = 'usda_data'
-    schema_file = 'schema.sql'
+    schema_file = 'schema_usda.sql'
 
     if os.path.exists(db_file):
         print(f"Removing existing database: {db_file}")
