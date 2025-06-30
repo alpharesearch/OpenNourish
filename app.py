@@ -1,6 +1,6 @@
 
 from flask import Flask, render_template, request, redirect, url_for
-from models import db, Food
+from models import db, Food, Portion
 import os
 from sqlalchemy import or_
 
@@ -23,15 +23,20 @@ def index():
         search_term = request.form.get('search')
         if search_term:
             # Search for foods by description or ingredients
-            results = Food.query.filter(or_(
-                Food.description.ilike(f'%{search_term}%'),
-                Food.ingredients.ilike(f'%{search_term}%')
-            )).limit(20).all()
+            results = Food.query.filter(
+                Food.description.ilike(f'{search_term}%')
+            ).order_by(
+                db.case(
+                    (Food.description.ilike(search_term), 0), # Exact match
+                    (Food.description.ilike(f'{search_term}%'), 1), # Starts with search term
+                    else_=2 # Other matches (though with the filter, this will be less relevant)
+                )
+            ).limit(250).all()
     return render_template('index.html', results=results)
 
 @app.route('/food/<int:fdc_id>')
 def food_detail(fdc_id):
-    food = Food.query.get_or_404(fdc_id)
+    food = Food.query.options(db.joinedload(Food.portions).joinedload(Portion.measure_unit)).get_or_404(fdc_id)
     return render_template('food_detail.html', food=food)
 
 @app.route('/upc/<barcode>')

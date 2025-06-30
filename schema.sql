@@ -33,16 +33,23 @@ CREATE TABLE food_nutrients (
     FOREIGN KEY (nutrient_id) REFERENCES nutrients (id)
 );
 
+-- This table stores information about measure units.
+CREATE TABLE measure_units (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
 -- This table provides user-friendly portion sizes for foods.
 CREATE TABLE portions (
-    -- The foreign key referencing the food item.
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     fdc_id INTEGER NOT NULL,
-    -- The foreign key referencing
+    seq_num INTEGER NOT NULL,
+    amount REAL,
     measure_unit_id INTEGER NOT NULL,
-    -- A description of the measurement (e.g., "slice", "cup", "1 medium").
-    measure_description TEXT NOT NULL,
-    -- The weight of the described portion in grams.
+    portion_description TEXT NOT NULL,
+    modifier TEXT,
     gram_weight REAL NOT NULL,
-    FOREIGN KEY (fdc_id) REFERENCES foods (fdc_id)
+    FOREIGN KEY (fdc_id) REFERENCES foods (fdc_id),
+    FOREIGN KEY (measure_unit_id) REFERENCES measure_units (id)
 );
 

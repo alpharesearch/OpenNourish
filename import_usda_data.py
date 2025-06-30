@@ -50,7 +50,29 @@ def import_usda_data(db_file=None):
                 cursor.executemany("INSERT INTO nutrients (id, name, unit_name) VALUES (?, ?, ?)", data)
                 print(f"-> Imported {len(data)} nutrients.")
 
+            print("\nPopulating 'measure_units' table...")
+            with open(os.path.join(usda_data_dir, 'measure_unit.csv'), 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader)
+                data = [(row[0], row[1]) for row in reader]
+                cursor.executemany("INSERT INTO measure_units (id, name) VALUES (?, ?)", data)
+                print(f"-> Imported {len(data)} measure units.")
+
             print("\nPopulating 'foods' table...")
+            foods_with_energy = set()
+            energy_nutrient_ids = {'1008', '2047'} # Energy (KCAL) and Energy (Atwater General Factors) (KCAL)
+
+            # First pass: Identify foods with non-zero energy values
+            with open(os.path.join(usda_data_dir, 'food_nutrient.csv'), 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader) # Skip header
+                for row in reader:
+                    fdc_id = row[1]
+                    nutrient_id = row[2]
+                    amount = float(row[3])
+                    if nutrient_id in energy_nutrient_ids and amount > 0:
+                        foods_with_energy.add(fdc_id)
+
             food_descriptions = {}
             with open(os.path.join(usda_data_dir, 'food.csv'), 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
@@ -70,8 +92,9 @@ def import_usda_data(db_file=None):
 
             foods_to_insert = []
             for fdc_id, description in food_descriptions.items():
-                upc, ingredients = branded_foods_data.get(fdc_id, (None, None))
-                foods_to_insert.append((fdc_id, description, upc, ingredients))
+                if fdc_id in foods_with_energy: # Only import foods with energy values
+                    upc, ingredients = branded_foods_data.get(fdc_id, (None, None))
+                    foods_to_insert.append((fdc_id, description, upc, ingredients))
 
             cursor.executemany("INSERT INTO foods (fdc_id, description, upc, ingredients) VALUES (?, ?, ?, ?)", foods_to_insert)
             print(f"-> Imported {len(foods_to_insert)} foods.")
@@ -84,12 +107,18 @@ def import_usda_data(db_file=None):
                 reader = csv.reader(f)
                 next(reader)
                 for row in reader:
-                    key = (row[1], row[2])
-                    if key not in seen:
-                        seen.add(key)
-                        to_insert.append((row[1], row[2], row[3]))
-                    else:
-                        skipped += 1
+                    fdc_id = row[1]
+                    nutrient_id = row[2]
+                    amount = float(row[3])
+
+                    # Only insert if food has energy and amount is greater than 0
+                    if fdc_id in foods_with_energy and amount > 0:
+                        key = (fdc_id, nutrient_id)
+                        if key not in seen:
+                            seen.add(key)
+                            to_insert.append((fdc_id, nutrient_id, amount))
+                        else:
+                            skipped += 1
             cursor.executemany("INSERT INTO food_nutrients (fdc_id, nutrient_id, amount) VALUES (?, ?, ?)", to_insert)
             print(f"-> Imported {len(to_insert)} unique food nutrients.")
             print(f"-> Skipped {skipped} duplicate entries.")
@@ -97,24 +126,23 @@ def import_usda_data(db_file=None):
             # --- FINAL FIX FOR 'portions' TABLE - PROVIDES ALL COLUMNS ---
             print("\nPopulating 'portions' table...")
 
-            measure_units = {row[0]: row[1] for row in csv.reader(open(os.path.join(usda_data_dir, 'measure_unit.csv'), 'r', encoding='utf-8'))}
-
             portions_data = []
             with open(os.path.join(usda_data_dir, 'food_portion.csv'), 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 next(reader)
                 for row in reader:
+                    # id is auto-incremented, so we don't need to provide it
                     fdc_id = row[1]
-                    measure_unit_id = row[2]
+                    seq_num = row[2]
+                    amount = row[3]
+                    measure_unit_id = row[4]
+                    portion_description = row[5]
+                    modifier = row[6]
                     gram_weight = row[7]
-                    measure_description = measure_units.get(measure_unit_id, "N/A")
-                    # Append all four values in the correct order for the INSERT statement
-                    portions_data.append((fdc_id, measure_unit_id, measure_description, gram_weight))
+                    portions_data.append((fdc_id, seq_num, amount, measure_unit_id, portion_description, modifier, gram_weight))
 
-            # The INSERT statement now provides values for all four required columns
-            cursor.executemany("INSERT INTO portions (fdc_id, measure_unit_id, measure_description, gram_weight) VALUES (?, ?, ?, ?)", portions_data)
+            cursor.executemany("INSERT INTO portions (fdc_id, seq_num, amount, measure_unit_id, portion_description, modifier, gram_weight) VALUES (?, ?, ?, ?, ?, ?, ?)", portions_data)
             print(f"-> Imported {len(portions_data)} food portions.")
-
 
         print("\n--- Import successful. Database is ready. ---")
         conn.close()

@@ -27,7 +27,12 @@
     <h2>Portion Sizes</h2>
     <ul>
         {% for portion in food.portions %}
-            <li>{{ portion.measure_description }}: {{ portion.gram_weight }}g</li>
+            <li>
+                {% if portion.amount %}{{ portion.amount }} {% endif %}
+                {% if portion.portion_description %}{{ portion.portion_description }}{% else %}{{ portion.measure_unit.name }}{% endif %}
+                {% if portion.modifier %} ({{ portion.modifier }}){% endif %}
+                : {{ portion.gram_weight }}g
+            </li>
         {% endfor %}
     </ul>
 
