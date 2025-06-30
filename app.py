@@ -37,7 +37,7 @@ def create_app(test_config=None):
                 try:
                     results = db.session.execute(
                         db.select(Food).filter(
-                            Food.description.ilike(f'{search_term}%')
+                            Food.description.ilike(f'%{search_term}%')
                         ).outerjoin(Portion).outerjoin(FoodNutrient).group_by(Food.fdc_id).order_by(
                             db.func.count(Portion.id).desc(),
                             db.func.count(FoodNutrient.nutrient_id).desc(),
@@ -50,7 +50,24 @@ def create_app(test_config=None):
                     ).scalars().all()
                 except OperationalError:
                     warning = "Database tables not found. Please run 'flask init-user-db' and 'python import_usda_data.py' to set up the databases."
-        return render_template('index.html', results=results, warning=warning)
+        return render_template('index.html', results=results, warning=warning, results_count=len(results))
+
+    @app.route('/search_unfiltered', methods=['GET', 'POST'])
+    def search_unfiltered():
+        results = []
+        warning = None
+        if request.method == 'POST':
+            search_term = request.form.get('search_unfiltered')
+            if search_term:
+                try:
+                    results = db.session.execute(
+                        db.select(Food).filter(
+                            Food.description.ilike(f'%{search_term}%')
+                        ).limit(250)
+                    ).scalars().all()
+                except OperationalError:
+                    warning = "Database tables not found. Please run 'flask init-user-db' and 'python import_usda_data.py' to set up the databases."
+        return render_template('index.html', results=results, warning=warning, results_count=len(results))
 
     @app.route('/food/<int:fdc_id>')
     def food_detail(fdc_id):
