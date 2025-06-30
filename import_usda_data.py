@@ -6,7 +6,7 @@ import os
 import sys
 import time
 
-def import_usda_data(db_file=None):
+def import_usda_data(db_file=None, keep_newest_upc_only=False):
     """
     Creates and populates the SQLite database from USDA CSV files.
     This script is idempotent: it deletes the old database on every run.
@@ -80,9 +80,7 @@ def import_usda_data(db_file=None):
                 for row in reader:
                     food_descriptions[row[0]] = row[2] # fdc_id, description
 
-            branded_foods_data = {}
-            upc_dates = {}
-            duplicate_upcs = 0
+            branded_foods_raw = []
             with open(os.path.join(usda_data_dir, 'branded_food.csv'), 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 next(reader)  # Skip header
@@ -91,22 +89,35 @@ def import_usda_data(db_file=None):
                     gtin_upc = row[4] if row[4] else None
                     ingredients = row[5] if row[5] else None
                     available_date = row[14] if row[14] else '1900-01-01'
+                    branded_foods_raw.append((fdc_id, gtin_upc, ingredients, available_date))
 
-                    if gtin_upc:
-                        if gtin_upc in upc_dates:
-                            if available_date > upc_dates[gtin_upc]:
-                                # This one is newer, so replace the old one
-                                upc_dates[gtin_upc] = available_date
-                                branded_foods_data[fdc_id] = (gtin_upc, ingredients)
-                            duplicate_upcs += 1
-                        else:
-                            # First time seeing this UPC
-                            upc_dates[gtin_upc] = available_date
-                            branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+            branded_foods_data = {}
+            upc_to_best_fdc_info = {} # Stores gtin_upc -> (fdc_id, ingredients, available_date)
+            duplicate_upcs = 0
+
+            for fdc_id, gtin_upc, ingredients, available_date in branded_foods_raw:
+                if gtin_upc:
+                    if gtin_upc in upc_to_best_fdc_info:
+                        duplicate_upcs += 1
+                        old_fdc_id, old_ingredients, old_available_date = upc_to_best_fdc_info[gtin_upc]
+                        if available_date > old_available_date:
+                            upc_to_best_fdc_info[gtin_upc] = (fdc_id, ingredients, available_date)
                     else:
+                        upc_to_best_fdc_info[gtin_upc] = (fdc_id, ingredients, available_date)
+                else:
+                    # Foods without UPCs are always included
+                    branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+            
+            if keep_newest_upc_only:
+                for gtin_upc, (fdc_id, ingredients, date) in upc_to_best_fdc_info.items():
+                    branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+            else:
+                # If not keeping newest, add all branded foods (including those with duplicate UPCs)
+                for fdc_id, gtin_upc, ingredients, available_date in branded_foods_raw:
+                    if gtin_upc: # Only add if it has a UPC, as non-UPC ones are already added
                         branded_foods_data[fdc_id] = (gtin_upc, ingredients)
             
-            print(f"-> Found {duplicate_upcs} duplicate UPCs, keeping the most recent.")
+            print(f"-> Found {duplicate_upcs} duplicate UPCs. {'Keeping the most recent for each.' if keep_newest_upc_only else 'Including all.'}")
 
             foods_to_insert = []
             for fdc_id, description in food_descriptions.items():
@@ -171,7 +182,21 @@ def import_usda_data(db_file=None):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        import_usda_data(sys.argv[1])
-    else:
-        import_usda_data()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Import USDA FoodData Central data into an SQLite database.")
+    parser.add_argument(
+        '--db_file', 
+        type=str, 
+        default='usda_data.db', 
+        help='Path to the SQLite database file.'
+    )
+    parser.add_argument(
+        '--keep_newest_upc_only', 
+        action='store_true', 
+        help='If set, only the newest food entry for a given UPC will be kept.'
+    )
+
+    args = parser.parse_args()
+
+    import_usda_data(db_file=args.db_file, keep_newest_upc_only=args.keep_newest_upc_only)

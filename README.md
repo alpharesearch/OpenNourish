@@ -31,8 +31,9 @@ OpenNourish is a free and open source food tracker.
 4. **Create and populate the database:**
    - Run the import script to build the `opennourish.db` file from the USDA data. This may take a few minutes.
      ```bash
-     python import_usda_data.py
+     python import_usda_data.py [--keep_newest_upc_only]
      ```
+   - The `--keep_newest_upc_only` flag (optional) will ensure that if multiple food entries share the same UPC, only the one with the most recent `available_date` is imported. By default, all entries with duplicate UPCs will be imported.
 
 5. **Run the Flask application:**
    - Start the web server:

@@ -4,7 +4,6 @@ from models import db, Food, Portion, FoodNutrient, User, Recipe, RecipeIngredie
 import os
 from sqlalchemy.exc import OperationalError
 
-
 def create_app(test_config=None):
     app = Flask(__name__)
     basedir = os.path.abspath(os.path.dirname(__file__))
