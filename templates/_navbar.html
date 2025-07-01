@@ -32,7 +32,7 @@
                         {{ current_user.username }}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="#">Goals</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('goals.goals') }}">Goals</a></li>
                         <li><a class="dropdown-item" href="#">Check-In</a></li>
                         <li><a class="dropdown-item" href="#">Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
