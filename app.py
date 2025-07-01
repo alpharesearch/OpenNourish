@@ -6,6 +6,7 @@ import tempfile
 import shutil
 from sqlalchemy.exc import OperationalError
 from models import db, Food, Portion, FoodNutrient, User, Recipe, RecipeIngredient, DailyLog
+from flask_login import LoginManager, login_required, current_user
 
 def create_app(test_config=None):
     app = Flask(__name__)
@@ -14,6 +15,7 @@ def create_app(test_config=None):
     if test_config is None:
         # Load the instance config, if it exists, when not testing
         app.config.from_mapping(
+            SECRET_KEY='dev',  # Change this in production
             SQLALCHEMY_DATABASE_URI='sqlite:///' + os.path.join(basedir, 'user_data.db'),
             SQLALCHEMY_BINDS={'usda': 'sqlite:///' + os.path.join(basedir, 'usda_data.db')},
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
@@ -23,54 +25,42 @@ def create_app(test_config=None):
         app.config.from_mapping(test_config)
 
     db.init_app(app)
+    login_manager = LoginManager()
+    login_manager.login_view = 'auth.login'
+    login_manager.init_app(app)
+
+    from opennourish.auth import auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+
+    from opennourish.dashboard import dashboard_bp
+    app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
+
+    from opennourish.search import search_bp
+    app.register_blueprint(search_bp, url_prefix='/search')
+
+    from opennourish.database import database_bp
+    app.register_blueprint(database_bp, url_prefix='/database')
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
 
     @app.cli.command("init-user-db")
     def init_user_db_command():
         """Clears existing user data and creates new tables."""
         db.create_all()
+        db.session.commit()
         print("Initialized the user database.")
 
-    @app.route('/', methods=['GET', 'POST'])
+    @app.route('/')
     def index():
-        results = []
-        warning = None
-        if request.method == 'POST':
-            search_term = request.form.get('search')
-            if search_term:
-                try:
-                    results = db.session.execute(
-                        db.select(Food).filter(
-                            Food.description.ilike(f'%{search_term}%')
-                        ).outerjoin(Portion).outerjoin(FoodNutrient).group_by(Food.fdc_id).order_by(
-                            db.func.count(Portion.id).desc(),
-                            db.func.count(FoodNutrient.nutrient_id).desc(),
-                            db.case(
-                                (Food.description.ilike(search_term), 0),
-                                (Food.description.ilike(f'{search_term}%'), 1),
-                                else_=2
-                            )
-                        ).limit(250)
-                    ).scalars().all()
-                except OperationalError:
-                    warning = "Database tables not found. Please run 'flask init-user-db' and 'python import_usda_data.py' to set up the databases."
-        return render_template('index.html', results=results, warning=warning, results_count=len(results))
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard.index'))
+        return redirect(url_for('auth.login'))
 
-    @app.route('/search_unfiltered', methods=['GET', 'POST'])
-    def search_unfiltered():
-        results = []
-        warning = None
-        if request.method == 'POST':
-            search_term = request.form.get('search_unfiltered')
-            if search_term:
-                try:
-                    results = db.session.execute(
-                        db.select(Food).filter(
-                            Food.description.ilike(f'%{search_term}%')
-                        ).limit(250)
-                    ).scalars().all()
-                except OperationalError:
-                    warning = "Database tables not found. Please run 'flask init-user-db' and 'python import_usda_data.py' to set up the databases."
-        return render_template('index.html', results=results, warning=warning, results_count=len(results))
+    
+
+    
 
     @app.route('/food/<int:fdc_id>')
     def food_detail(fdc_id):
@@ -95,7 +85,7 @@ def create_app(test_config=None):
         if not food:
             return "Food not found", 404
 
-        
+
 
         # Map common nutrition label fields to USDA nutrient names and their units
         nutrient_info = {
@@ -136,9 +126,9 @@ def create_app(test_config=None):
         for label_field, info in nutrient_info.items():
             if "key" in info: # These are micronutrients
                 value = nutrients_for_label[label_field]
-                micronutrients_typst.append(                    f"(name: \"{label_field}\", key: \"{info['key']}\", value: {value}, unit: \"{info['unit']}\")"
+                micronutrients_typst.append(                    f"(name: \"{label_field}\", key: \"{info['key']}\", value: {value}, unit: \"{info['unit']}\", dv: 0)"
                 )
-        
+
         # Join micronutrients for Typst array syntax
         micronutrients_typst_str = ",\n    ".join(micronutrients_typst)
 

@@ -1,41 +1,77 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import date
 
 db = SQLAlchemy()
 
 # --- User-specific Models (Default Bind) ---
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
+    password_hash = db.Column(db.String(128))
+    goal = db.relationship('UserGoal', backref='user', uselist=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+class UserGoal(db.Model):
+    __tablename__ = 'user_goals'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    calories = db.Column(db.Float, default=2000)
+    protein = db.Column(db.Float, default=150)
+    carbs = db.Column(db.Float, default=250)
+    fat = db.Column(db.Float, default=60)
+
+class CheckIn(db.Model):
+    __tablename__ = 'check_ins'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    checkin_date = db.Column(db.Date, default=date.today)
+    weight_kg = db.Column(db.Float)
+
+class MyFood(db.Model):
+    __tablename__ = 'my_foods'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    description = db.Column(db.String)
+    calories_per_100g = db.Column(db.Float)
+    protein_per_100g = db.Column(db.Float)
+    carbs_per_100g = db.Column(db.Float)
+    fat_per_100g = db.Column(db.Float)
+
+class DailyLog(db.Model):
+    __tablename__ = 'daily_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    log_date = db.Column(db.Date, nullable=False)
+    meal_name = db.Column(db.String)
+    fdc_id = db.Column(db.Integer, nullable=True)
+    my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
+    amount_grams = db.Column(db.Float)
 
 class Recipe(db.Model):
     __tablename__ = 'recipes'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    user = db.relationship('User', backref=db.backref('recipes', lazy=True))
+    name = db.Column(db.String)
+    instructions = db.Column(db.Text)
     ingredients = db.relationship('RecipeIngredient', backref='recipe', cascade="all, delete-orphan")
 
 class RecipeIngredient(db.Model):
     __tablename__ = 'recipe_ingredients'
     id = db.Column(db.Integer, primary_key=True)
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=False)
-    fdc_id = db.Column(db.Integer, nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    serving_type = db.Column(db.String(50), nullable=False)
-
-class DailyLog(db.Model):
-    __tablename__ = 'daily_log'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    log_date = db.Column(db.Date, nullable=False)
-    fdc_id = db.Column(db.Integer, nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    serving_type = db.Column(db.String(50), nullable=False)
-    user = db.relationship('User', backref=db.backref('daily_logs', lazy=True))
+    fdc_id = db.Column(db.Integer, nullable=True)
+    my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
+    amount_grams = db.Column(db.Float)
 
 
 # --- USDA Data Models (USDA Bind) ---
