@@ -30,6 +30,7 @@ usda_data.db
 usda_data.db-journal
 user_data.db
 user_data.db-journal
+test.pdf
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
