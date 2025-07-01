@@ -41,6 +41,12 @@ def create_app(test_config=None):
     from opennourish.database import database_bp
     app.register_blueprint(database_bp, url_prefix='/database')
 
+    from opennourish.diary import diary_bp
+    app.register_blueprint(diary_bp, url_prefix='/')
+
+    from opennourish.goals import bp as goals_bp
+    app.register_blueprint(goals_bp, url_prefix='/goals')
+
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))

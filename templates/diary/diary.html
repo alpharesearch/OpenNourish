@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4">Food Diary</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{{ url_for('diary.diary', log_date_str=prev_date.isoformat()) }}" class="btn btn-secondary">&laquo; Previous Day</a>
+        <h2>{{ date.strftime('%A, %B %d, %Y') }}</h2>
+        <a href="{{ url_for('diary.diary', log_date_str=next_date.isoformat()) }}" class="btn btn-secondary">Next Day &raquo;</a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Daily Totals</h3>
+        </div>
+        <div class="card-body">
+            <p><strong>Calories:</strong> {{ totals.calories|round(0) }}</p>
+            <p><strong>Protein:</strong> {{ totals.protein|round(1) }}g</p>
+            <p><strong>Carbs:</strong> {{ totals.carbs|round(1) }}g</p>
+            <p><strong>Fat:</strong> {{ totals.fat|round(1) }}g</p>
+        </div>
+    </div>
+
+    {% for meal_name, items in meals.items() %}
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>{{ meal_name }}</h4>
+            <a href="{{ url_for('diary.search_for_diary', log_date_str=date.isoformat(), meal_name=meal_name) }}" class="btn btn-primary btn-sm">Add Food</a>
+        </div>
+        <ul class="list-group list-group-flush">
+            {% for item in items %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ item.description }} - {{ item.amount }}g
+                <form action="{{ url_for('diary.delete_log', log_id=item.log_id) }}" method="post" class="d-inline">
+                    <a href="{{ url_for('diary.edit_log', log_id=item.log_id) }}" class="btn btn-warning btn-sm">Edit</a>
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+            </li>
+            {% else %}
+            <li class="list-group-item">No items logged for this meal.</li>
+            {% endfor %}
+        </ul>
+        <div class="card-footer">
+            <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex">
+                <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
+                <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                <input type="text" name="new_meal_name" class="form-control me-2" placeholder="Enter meal name to save...">
+                <button type="submit" class="btn btn-success btn-sm">Save as Meal</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

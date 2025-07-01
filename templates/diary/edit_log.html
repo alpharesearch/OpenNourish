@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4">Edit Diary Entry</h1>
+    <form method="POST" action="{{ url_for('diary.edit_log', log_id=log_entry.id) }}">
+        <div class="mb-3">
+            <label for="amount" class="form-label">Amount (grams)</label>
+            <input type="number" step="0.1" class="form-control" id="amount" name="amount" value="{{ log_entry.amount_grams }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Update</button>
+        <a href="{{ url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()) }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

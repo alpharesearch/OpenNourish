@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4">My Meals</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="list-group">
+        {% for meal in meals %}
+            <div class="list-group-item">
+                <h5 class="mb-1">{{ meal.name }}</h5>
+                <ul class="list-unstyled">
+                    {% for item in meal.items %}
+                        <li>
+                            {% if item.fdc_id %}
+                                {{ item.food.description }}
+                            {% elif item.my_food_id %}
+                                {{ item.my_food.description }}
+                            {% endif %}
+                            - {{ item.amount_grams }}g
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% else %}
+            <p>You have not saved any meals yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

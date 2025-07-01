@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Set Goals{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Set Your Nutritional Goals</h1>
+    <form method="POST" action="{{ url_for('goals.goals') }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.calories.label(class="form-label") }}
+            {{ form.calories(class="form-control") }}
+            {% if form.calories.errors %}
+                <div class="text-danger">{% for error in form.calories.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.protein.label(class="form-label") }}
+            {{ form.protein(class="form-control") }}
+            {% if form.protein.errors %}
+                <div class="text-danger">{% for error in form.protein.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.carbs.label(class="form-label") }}
+            {{ form.carbs(class="form-control") }}
+            {% if form.carbs.errors %}
+                <div class="text-danger">{% for error in form.carbs.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.fat.label(class="form-label") }}
+            {{ form.fat(class="form-control") }}
+            {% if form.fat.errors %}
+                <div class="text-danger">{% for error in form.fat.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary">Save Goals</button>
+    </form>
+</div>
+{% endblock %}
