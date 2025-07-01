@@ -170,37 +170,31 @@ def create_app(test_config=None):
 
 """
 
-        tmpdir = tempfile.mkdtemp()
-        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            typ_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.typ")
+            pdf_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.pdf")
 
-        typ_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.typ")
-        pdf_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.pdf")
+            with open(typ_file_path, "w", encoding="utf-8") as f:
+                f.write(typst_content)
 
-        with open(typ_file_path, "w", encoding="utf-8") as f:
-            f.write(typst_content)
+            # Copy the nutrition-lable-nam.typ file to the temporary directory
+            shutil.copy("nutrition-lable-nam.typ", tmpdir)
 
-        # Copy the nutrition-lable-nam.typ file to the temporary directory
-        shutil.copy("nutrition-lable-nam.typ", tmpdir)
+            try:
+                # Run Typst command
+                result = subprocess.run(
+                    ["typst", "compile", os.path.basename(typ_file_path), os.path.basename(pdf_file_path)],
+                    capture_output=True, text=True, check=True, cwd=tmpdir
+                )
 
-        try:
-            # Run Typst command
-            # Run Typst command
-            command_args = ["typst", "compile", os.path.basename(typ_file_path), os.path.basename(pdf_file_path)]
-            print(f"Executing Typst command: {' '.join(command_args)} from directory: {tmpdir}")
-            result = subprocess.run(
-                command_args, capture_output=True, text=True, check=True, cwd=tmpdir
-            )
-            print("Typst stdout:", result.stdout)
-            print("Typst stderr:", result.stderr)
-
-            return send_file(pdf_file_path, as_attachment=True, download_name=f"nutrition_label_{fdc_id}.pdf", mimetype='application/pdf')
-        except subprocess.CalledProcessError as e:
-            print(f"Typst compilation failed: {e}")
-            print(f"Stdout: {e.stdout}")
-            print(f"Stderr: {e.stderr}")
-            return f"Error generating PDF: {e.stderr}", 500
-        except FileNotFoundError:
-            return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
+                return send_file(pdf_file_path, as_attachment=False, download_name=f"nutrition_label_{fdc_id}.pdf", mimetype='application/pdf')
+            except subprocess.CalledProcessError as e:
+                print(f"Typst compilation failed: {e}")
+                print(f"Stdout: {e.stdout}")
+                print(f"Stderr: {e.stderr}")
+                return f"Error generating PDF: {e.stderr}", 500
+            except FileNotFoundError:
+                return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
 
     return app
 
