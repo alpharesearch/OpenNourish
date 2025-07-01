@@ -6,6 +6,8 @@ from models import db, Food, MyFood, FoodNutrient, Nutrient
 
 from sqlalchemy import case
 
+from models import db, Food, MyFood, FoodNutrient, Nutrient, Portion
+
 @database_bp.route('/search', methods=['GET', 'POST'])
 @login_required
 def search():
@@ -15,17 +17,18 @@ def search():
 
     if search_term and search_term.strip():
         term = search_term.strip()
-        search_query = f"%{term}%"
         
-        # Prioritize results where the description starts with the search term
-        order_logic = case(
-            (Food.description.ilike(f"{term},%"), 0),
-            else_=1
-        )
-
         foods = db.session.query(Food).filter(
-            Food.description.ilike(search_query)
-        ).order_by(order_logic, Food.description).paginate(page=page, per_page=20)
+            Food.description.ilike(f'%{term}%')
+        ).outerjoin(Portion).outerjoin(FoodNutrient).group_by(Food.fdc_id).order_by(
+            db.func.count(Portion.id).desc(),
+            db.func.count(FoodNutrient.nutrient_id).desc(),
+            case(
+                (Food.description.ilike(term), 0),
+                (Food.description.ilike(f'{term}%'), 1),
+                else_=2
+            )
+        ).paginate(page=page, per_page=20)
 
     return render_template('database/search.html', foods=foods, search_term=search_term)
 
