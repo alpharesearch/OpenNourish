@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, send_file
 import os
 import subprocess
 import tempfile
+import shutil
 from sqlalchemy.exc import OperationalError
 from models import db, Food, Portion, FoodNutrient, User, Recipe, RecipeIngredient, DailyLog
 
@@ -142,9 +143,7 @@ def create_app(test_config=None):
         micronutrients_typst_str = ",\n    ".join(micronutrients_typst)
 
         typst_content = f"""
-#import "@preview/nutrition-label:0.1.0": *
-
-#set text(font: "IBM Plex Sans")
+#import "nutrition-lable-nam.typ": nutrition-label-nam
 
 #let data = (
   servings: "1", // Assuming 1 serving for 100g
@@ -165,42 +164,43 @@ def create_app(test_config=None):
   ),
 )
 
-#show: nutrition-label.with(data)
+#show: nutrition-label-nam(data)
 
 #align(center, text(20pt, "Nutrition Facts for {food.description}"))
 
 """
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            typ_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.typ")
-            pdf_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.pdf")
+        tmpdir = tempfile.mkdtemp()
+        
 
-            with open(typ_file_path, "w", encoding="utf-8") as f:
-                f.write(typst_content)
+        typ_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.typ")
+        pdf_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.pdf")
 
-            try:
-                print(f"Attempting to compile Typst file: {typ_file_path}")
-                print(f"Output PDF will be: {pdf_file_path}")
-                if not os.path.exists(typ_file_path):
-                    print(f"Error: Typst file does not exist at {typ_file_path}")
-                    return "Error: Typst input file not found.", 500
+        with open(typ_file_path, "w", encoding="utf-8") as f:
+            f.write(typst_content)
 
-                # Run Typst command
-                result = subprocess.run(
-                    ["typst", "compile", typ_file_path, pdf_file_path],
-                    capture_output=True, text=True, check=True
-                )
-                print("Typst stdout:", result.stdout)
-                print("Typst stderr:", result.stderr)
+        # Copy the nutrition-lable-nam.typ file to the temporary directory
+        shutil.copy("nutrition-lable-nam.typ", tmpdir)
 
-                return send_file(pdf_file_path, as_attachment=True, download_name=f"nutrition_label_{food.description}.pdf", mimetype='application/pdf')
-            except subprocess.CalledProcessError as e:
-                print(f"Typst compilation failed: {e}")
-                print(f"Stdout: {e.stdout}")
-                print(f"Stderr: {e.stderr}")
-                return f"Error generating PDF: {e.stderr}", 500
-            except FileNotFoundError:
-                return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
+        try:
+            # Run Typst command
+            # Run Typst command
+            command_args = ["typst", "compile", os.path.basename(typ_file_path), os.path.basename(pdf_file_path)]
+            print(f"Executing Typst command: {' '.join(command_args)} from directory: {tmpdir}")
+            result = subprocess.run(
+                command_args, capture_output=True, text=True, check=True, cwd=tmpdir
+            )
+            print("Typst stdout:", result.stdout)
+            print("Typst stderr:", result.stderr)
+
+            return send_file(pdf_file_path, as_attachment=True, download_name=f"nutrition_label_{fdc_id}.pdf", mimetype='application/pdf')
+        except subprocess.CalledProcessError as e:
+            print(f"Typst compilation failed: {e}")
+            print(f"Stdout: {e.stdout}")
+            print(f"Stderr: {e.stderr}")
+            return f"Error generating PDF: {e.stderr}", 500
+        except FileNotFoundError:
+            return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
 
     return app
 
