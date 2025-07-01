@@ -154,7 +154,7 @@ def create_app(test_config=None):
   saturated_fat: (value: {nutrients_for_label['Fatty acids, total saturated']:{nutrient_info['Fatty acids, total saturated']['format']}}, unit: "{nutrient_info['Fatty acids, total saturated']['unit']}"),
   trans_fat: (value: {nutrients_for_label['Fatty acids, total trans']:{nutrient_info['Fatty acids, total trans']['format']}}, unit: "{nutrient_info['Fatty acids, total trans']['unit']}"),
   cholesterol: (value: {nutrients_for_label['Cholesterol']:{nutrient_info['Cholesterol']['format']}}, unit: "{nutrient_info['Cholesterol']['unit']}"),
-  sodium: (value: {nutrients_for_label['Sodium']:{nutrient_info['Sodium']['format']}}, unit: "{nutrient_for_label['Sodium']['unit']}"),
+  sodium: (value: {nutrients_for_label['Sodium']:{nutrient_info['Sodium']['format']}}, unit: "{nutrient_info['Sodium']['unit']}"),
   carbohydrate: (value: {nutrients_for_label['Carbohydrate, by difference']:{nutrient_info['Carbohydrate, by difference']['format']}}, unit: "{nutrient_info['Carbohydrate, by difference']['unit']}"),
   fiber: (value: {nutrients_for_label['Fiber, total dietary']:{nutrient_info['Fiber, total dietary']['format']}}, unit: "{nutrient_info['Fiber, total dietary']['unit']}"),
   sugars: (value: {nutrients_for_label['Sugars, total including NLEA']:{nutrient_info['Sugars, total including NLEA']['format']}}, unit: "{nutrient_info['Sugars, total including NLEA']['unit']}"),
@@ -171,7 +171,7 @@ def create_app(test_config=None):
 
 """
 
-    with tempfile.TemporaryDirectory() as tmpdir:
+        with tempfile.TemporaryDirectory() as tmpdir:
             typ_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.typ")
             pdf_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.pdf")
 
@@ -179,6 +179,12 @@ def create_app(test_config=None):
                 f.write(typst_content)
 
             try:
+                print(f"Attempting to compile Typst file: {typ_file_path}")
+                print(f"Output PDF will be: {pdf_file_path}")
+                if not os.path.exists(typ_file_path):
+                    print(f"Error: Typst file does not exist at {typ_file_path}")
+                    return "Error: Typst input file not found.", 500
+
                 # Run Typst command
                 result = subprocess.run(
                     ["typst", "compile", typ_file_path, pdf_file_path],
