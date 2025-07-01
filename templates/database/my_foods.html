@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4">My Foods</h1>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Your Custom Foods</h2>
+            <ul class="list-group">
+                {% for food in my_foods %}
+                    <li class="list-group-item">
+                        <strong>{{ food.description }}</strong><br>
+                        <small>
+                            Calories: {{ food.calories_per_100g }} | 
+                            Protein: {{ food.protein_per_100g }}g | 
+                            Carbs: {{ food.carbs_per_100g }}g | 
+                            Fat: {{ food.fat_per_100g }}g
+                        </small>
+                    </li>
+                {% else %}
+                    <li class="list-group-item">You haven't added any custom foods yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-md-4">
+            <h2>Add a New Food</h2>
+            <form method="POST" action="{{ url_for('database.my_foods') }}">
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <input type="text" class="form-control" id="description" name="description" required>
+                </div>
+                <div class="mb-3">
+                    <label for="calories" class="form-label">Calories (per 100g)</label>
+                    <input type="number" step="0.1" class="form-control" id="calories" name="calories" required>
+                </div>
+                <div class="mb-3">
+                    <label for="protein" class="form-label">Protein (g per 100g)</label>
+                    <input type="number" step="0.1" class="form-control" id="protein" name="protein" required>
+                </div>
+                <div class="mb-3">
+                    <label for="carbs" class="form-label">Carbohydrates (g per 100g)</label>
+                    <input type="number" step="0.1" class="form-control" id="carbs" name="carbs" required>
+                </div>
+                <div class="mb-3">
+                    <label for="fat" class="form-label">Fat (g per 100g)</label>
+                    <input type="number" step="0.1" class="form-control" id="fat" name="fat" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Food</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

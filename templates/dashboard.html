@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ super() }}{% endblock %}
+
+{% block content %}
+    <h1>Welcome, {{ current_user.username }}!</h1>
+
+    <h2>Today's Log</h2>
+    <ul class="list-group">
+        {% for log in daily_logs %}
+            <li class="list-group-item">{{ food_names.get(log.id, 'Unknown Food') }}</li>
+        {% else %}
+            <li class="list-group-item">No entries for today.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}USDA Food Search - {{ super() }}{% endblock %}
+
+{% block content %}
+    <h1>USDA Food Search</h1>
+    <form method="post">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" placeholder="Search for a food..." name="search">
+            <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+    </form>
+
+    {% if warning %}
+        <div class="alert alert-danger">{{ warning }}</div>
+    {% endif %}
+
+    {% if results_count > 0 %}
+        <p>{{ results_count }} results found.</p>
+        <ul class="list-group">
+            {% for food in results %}
+                <li class="list-group-item">
+                    <a href="{{ url_for('food_detail', fdc_id=food.fdc_id) }}">{{ food.description }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}
