@@ -10,13 +10,19 @@
                     <a class="nav-link" href="{{ url_for('dashboard.index') }}">Dashboard</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Food Diary</a>
+                    <a class="nav-link" href="{{ url_for('diary.diary') }}">Food Diary</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">Recipes</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('database.search') }}">Search Foods</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('database.my_foods') }}">My Foods</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('diary.my_meals') }}">My Meals</a>
                 </li>
             </ul>
             <ul class="navbar-nav ms-auto">
@@ -28,7 +34,6 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                         <li><a class="dropdown-item" href="#">Goals</a></li>
                         <li><a class="dropdown-item" href="#">Check-In</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('database.my_foods') }}">My Foods</a></li>
                         <li><a class="dropdown-item" href="#">Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>

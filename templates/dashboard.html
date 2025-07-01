@@ -3,12 +3,43 @@
 {% block title %}Dashboard - {{ super() }}{% endblock %}
 
 {% block content %}
-    <h1>Welcome, {{ current_user.username }}!</h1>
+    <h1 class="mb-4">Welcome, {{ current_user.username }}!</h1>
 
-    <h2>Today's Log</h2>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Nutritional Summary (Today)</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% set nutrients = [('Calories', 'calories'), ('Protein', 'protein'), ('Carbohydrates', 'carbs'), ('Fat', 'fat')] %}
+                {% for label, key in nutrients %}
+                <div class="col-md-6 mb-3">
+                    <h5>{{ label }}</h5>
+                    <p class="mb-1">
+                        Goal: {{ "%.1f" % goals[key] }} {{ "kcal" if key == "calories" else "g" }}
+                    </p>
+                    <p class="mb-1">
+                        Consumed: {{ "%.1f" % totals[key] }} {{ "kcal" if key == "calories" else "g" }}
+                    </p>
+                    <p class="mb-2">
+                        Remaining: {{ "%.1f" % remaining[key] }} {{ "kcal" if key == "calories" else "g" }}
+                    </p>
+                    <div class="progress" style="height: 25px;">
+                        {% set percentage = (totals[key] / goals[key]) * 100 if goals[key] > 0 else 0 %}
+                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}" aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
+                            {{ "%.1f" % percentage }}%
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <h2 class="mt-4">Today's Log</h2>
     <ul class="list-group">
         {% for log in daily_logs %}
-            <li class="list-group-item">{{ food_names.get(log.id, 'Unknown Food') }}</li>
+            <li class="list-group-item">{{ food_names.get(log.id, 'Unknown Food') }} - {{ "%.1f" % log.amount_grams }}g</li>
         {% else %}
             <li class="list-group-item">No entries for today.</li>
         {% endfor %}

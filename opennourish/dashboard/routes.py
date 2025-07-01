@@ -1,21 +1,62 @@
 from flask import render_template
 from flask_login import login_required, current_user
 from . import dashboard_bp
-from models import DailyLog, Food
+from models import db, DailyLog, Food, MyFood, UserGoal, FoodNutrient
 from datetime import date
 
 @dashboard_bp.route('/')
 @login_required
 def index():
+    user_goal = UserGoal.query.filter_by(user_id=current_user.id).first()
+    if not user_goal:
+        # Create a temporary default goal if none exists
+        user_goal = UserGoal(calories=2000, protein=150, carbs=250, fat=60)
+
     daily_logs = DailyLog.query.filter_by(user_id=current_user.id, log_date=date.today()).all()
     
-    # This is inefficient, but will work for now.
-    # A better solution would be to join the tables in the query.
+    totals = {'calories': 0.0, 'protein': 0.0, 'carbs': 0.0, 'fat': 0.0}
+    
+    # Nutrient IDs for USDA data
+    NUTRIENT_IDS = {
+        'calories': 1008, # Energy (kcal)
+        'protein': 1003,  # Protein
+        'carbs': 1005,    # Carbohydrate, by difference
+        'fat': 1004       # Total lipid (fat)
+    }
+
+    for log in daily_logs:
+        scaling_factor = log.amount_grams / 100.0
+        if log.fdc_id:
+            # USDA food
+            for name, nid in NUTRIENT_IDS.items():
+                nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=log.fdc_id, nutrient_id=nid).first()
+                if nutrient:
+                    totals[name] += nutrient.amount * scaling_factor
+        elif log.my_food_id:
+            # Custom food
+            my_food = db.session.get(MyFood, log.my_food_id)
+            if my_food:
+                totals['calories'] += my_food.calories_per_100g * scaling_factor
+                totals['protein'] += my_food.protein_per_100g * scaling_factor
+                totals['carbs'] += my_food.carbs_per_100g * scaling_factor
+                totals['fat'] += my_food.fat_per_100g * scaling_factor
+
+    remaining = {
+        'calories': user_goal.calories - totals['calories'],
+        'protein': user_goal.protein - totals['protein'],
+        'carbs': user_goal.carbs - totals['carbs'],
+        'fat': user_goal.fat - totals['fat']
+    }
+
     food_names = {}
     for log in daily_logs:
         if log.fdc_id:
-            food = Food.query.get(log.fdc_id)
+            food = db.session.get(Food, log.fdc_id)
             if food:
                 food_names[log.id] = food.description
+        elif log.my_food_id:
+            my_food = db.session.get(MyFood, log.my_food_id)
+            if my_food:
+                food_names[log.id] = my_food.description
 
-    return render_template('dashboard.html', daily_logs=daily_logs, food_names=food_names)
+    return render_template('dashboard.html', daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining)
