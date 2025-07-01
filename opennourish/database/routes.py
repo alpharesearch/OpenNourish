@@ -11,7 +11,7 @@ from models import db, Food, MyFood, FoodNutrient, Nutrient, Portion
 @database_bp.route('/search', methods=['GET', 'POST'])
 @login_required
 def search():
-    search_term = request.form.get('search_term') or request.args.get('search_term')
+    search_term = request.args.get('q')
     page = request.args.get('page', 1, type=int)
     foods = None
 

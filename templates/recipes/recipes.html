@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>My Recipes</h1>
+        <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-primary">Create New Recipe</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="list-group">
+        {% for recipe in recipes %}
+            <div class="list-group-item list-group-item-action flex-column align-items-start">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ recipe.name }}</h5>
+                    <small>Created on {{ recipe.id }}</small> <!-- Placeholder for date -->
+                </div>
+                <p class="mb-1">{{ recipe.instructions|truncate(150) }}</p>
+                <div>
+                    <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-info">View</a>
+                    <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-secondary">Edit</a>
+                    <form action="{{ url_for('recipes.delete_recipe', recipe_id=recipe.id) }}" method="POST" style="display: inline-block;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this recipe?');">Delete</button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <p>You haven't created any recipes yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

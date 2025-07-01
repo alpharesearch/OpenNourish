@@ -47,6 +47,9 @@ def create_app(test_config=None):
     from opennourish.goals import bp as goals_bp
     app.register_blueprint(goals_bp, url_prefix='/goals')
 
+    from opennourish.recipes.routes import recipes_bp
+    app.register_blueprint(recipes_bp, url_prefix='/recipes')
+
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))

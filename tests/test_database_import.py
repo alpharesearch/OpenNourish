@@ -19,7 +19,7 @@ def real_database(tmp_path_factory):
     # Setup: Run the actual import script, passing the temporary db path
     print(f"Running import script: {IMPORT_SCRIPT_PATH} with db: {db_path}...")
     result = subprocess.run(
-        ["python", IMPORT_SCRIPT_PATH, str(db_path)],
+        ["python", IMPORT_SCRIPT_PATH, "--db_file", str(db_path)],
         capture_output=True, text=True, check=False
     )
 

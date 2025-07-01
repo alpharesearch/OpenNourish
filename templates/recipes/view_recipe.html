@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ recipe.name }}</h1>
+        <div>
+            <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-secondary">Edit</a>
+            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary">Back to Recipes</a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Instructions</h5>
+            <p class="card-text">{{ recipe.instructions|nl2br }}</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Ingredients</div>
+                <ul class="list-group list-group-flush">
+                    {% for ingredient in ingredients %}
+                        <li class="list-group-item">{{ ingredient.description }} - {{ ingredient.amount_grams }}g</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Total Nutrition (per serving)</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">Calories: {{ totals.calories|round(2) }} kcal</li>
+                    <li class="list-group-item">Protein: {{ totals.protein|round(2) }} g</li>
+                    <li class="list-group-item">Carbohydrates: {{ totals.carbs|round(2) }} g</li>
+                    <li class="list-group-item">Fat: {{ totals.fat|round(2) }} g</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Add to Diary</h5>
+            <form method="POST" action="{{ url_for('recipes.add_to_log', recipe_id=recipe.id) }}">
+                {{ form.hidden_tag() }}
+                <div class="row g-3 align-items-center">
+                    <div class="col-auto">
+                        {{ form.servings.label(class="col-form-label") }}
+                    </div>
+                    <div class="col-auto">
+                        {{ form.servings(class="form-control", value=1) }}
+                    </div>
+                    <div class="col-auto">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
