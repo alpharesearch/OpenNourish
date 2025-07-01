@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
-from models import db
+from models import db, User
 
 @pytest.fixture(scope='function')
 def app_with_db():
@@ -19,6 +19,8 @@ def app_with_db():
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
         'SQLALCHEMY_BINDS': {'usda': 'sqlite:///:memory:'},
         'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+        'SECRET_KEY': 'test_secret_key',
+        'WTF_CSRF_ENABLED': False, # Disable CSRF for testing forms
     }
 
     # --- SAFEGUARD ---
@@ -40,3 +42,19 @@ def app_with_db():
 def client(app_with_db):
     """A test client for the app."""
     return app_with_db.test_client()
+
+@pytest.fixture(scope='function')
+def auth_client(app_with_db):
+    """A test client that is authenticated."""
+    with app_with_db.test_client() as client:
+        with app_with_db.app_context():
+            user = User(username='testuser')
+            user.set_password('password')
+            db.session.add(user)
+            db.session.commit()
+            user_id = user.id
+
+        with client.session_transaction() as sess:
+            sess['_user_id'] = user_id
+            sess['_fresh'] = True
+        yield client

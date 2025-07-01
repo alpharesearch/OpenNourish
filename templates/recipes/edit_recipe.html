@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{% if recipe %}Edit Recipe{% else %}Create Recipe{% endif %}</h2>
+
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.instructions.label(class="form-label") }}
+            {{ form.instructions(class="form-control", rows=5) }}
+        </div>
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+
+    {% if recipe %}
+    <hr>
+
+    <h3>Ingredients</h3>
+    <div class="list-group mb-4">
+        {% for ingredient in recipe.ingredients %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>
+                    {% if ingredient.fdc_id %}
+                        {{ ingredient.food.description }}
+                    {% elif ingredient.my_food_id %}
+                        {{ ingredient.my_food.description }}
+                    {% endif %}
+                    - {{ ingredient.amount_grams }}g
+                </span>
+                <form action="{{ url_for('recipes.delete_ingredient', ingredient_id=ingredient.id) }}" method="POST">
+                    <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                </form>
+            </div>
+        {% else %}
+            <p>No ingredients yet.</p>
+        {% endfor %}
+    </div>
+
+    <h4>Add Ingredient</h4>
+    <form method="GET" action="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="Search for foods..." value="{{ query or '' }}">
+            <button type="submit" class="btn btn-outline-secondary">Search</button>
+        </div>
+    </form>
+
+    {% if search_results %}
+        <div class="list-group">
+            {% for food in search_results %}
+                <div class="list-group-item">
+                    <form method="POST" action="{{ url_for('recipes.add_ingredient', recipe_id=recipe.id) }}" class="d-flex justify-content-between align-items-center">
+                        {{ ingredient_form.hidden_tag() }}
+                        {{ ingredient_form.food_id(value=food.id) }}
+                        {{ ingredient_form.food_type(value=food.type) }}
+                        <span>{{ food.description }}</span>
+                        <div class="input-group" style="width: 200px;">
+                            {{ ingredient_form.amount(class="form-control", placeholder="Grams") }}
+                            {{ ingredient_form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
