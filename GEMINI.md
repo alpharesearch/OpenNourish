@@ -26,10 +26,14 @@ To run the Flask development server:
 `flask run`
 
 ## 5. Database Management
-- **Primary Database File:** `opennourish.db` is the main application database. It should not be committed to version control.
-- **Initial Schema Definition:** The database schema is defined in `schema_usda.sql`. This file is used by the import script to create the tables.
-- **Data Import:** The `import_usda_data.py` script is responsible for creating and populating the `opennourish.db` from scratch. It should be run once during setup.
+- **Primary Database Files:** `user_data.db` (for user-specific data) and `usda_data.db` (for USDA FoodData Central). These should not be committed to version control.
+- **Initial Schema Definition:** The database schema is defined in `schema_usda.sql` and `schema_user.sql`. These files are used by the import script to create the initial tables.
+- **Data Import:** The `import_usda_data.py` script is responsible for creating and populating `usda_data.db` from scratch. It should be run once during setup.
 - **Application Models:** Flask-SQLAlchemy models that map to the database tables are defined in `models.py`.
+- **Database Migrations (Alembic):**
+  - To generate a new migration script after changing models: `FLASK_APP=app.py alembic revision --autogenerate -m "Your message here"`
+  - To apply pending migrations to the database: `FLASK_APP=app.py alembic upgrade head`
+  - If you need to stamp the database with a specific revision without running migrations (e.g., after manual schema changes): `FLASK_APP=app.py alembic stamp <revision_id_or_head>`
 
 ## 6. Code Style and Conventions
 - Follow **PEP 8** for all Python code.
