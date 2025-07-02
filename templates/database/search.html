@@ -3,9 +3,9 @@
 {% block content %}
 <div class="container">
     <h1 class="mt-4">Search USDA Food Database</h1>
-    <form method="POST" action="{{ url_for('database.search') }}" class="mb-4">
+    <form method="GET" action="{{ url_for('database.search') }}" class="mb-4">
         <div class="input-group">
-            <input type="text" class="form-control" name="search_term" placeholder="Enter a food name..." value="{{ search_term or '' }}">
+            <input type="text" class="form-control" name="q" placeholder="Enter a food name..." value="{{ search_term or '' }}">
             <button class="btn btn-primary" type="submit">Search</button>
         </div>
     </form>
