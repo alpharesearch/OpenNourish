@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood
+from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, MyMealItem
 from .forms import RecipeForm, IngredientForm, AddToLogForm
 from sqlalchemy.orm import joinedload
 from datetime import date
@@ -53,8 +53,10 @@ def edit_recipe(recipe_id):
     if query:
         usda_foods = Food.query.filter(Food.description.ilike(f'%{query}%')).limit(20).all()
         my_foods = MyFood.query.filter(MyFood.description.ilike(f'%{query}%'), MyFood.user_id == current_user.id).limit(20).all()
+        my_meals = MyMeal.query.filter(MyMeal.name.ilike(f'%{query}%'), MyMeal.user_id == current_user.id).limit(20).all()
         search_results.extend([{'id': f.fdc_id, 'description': f.description, 'type': 'usda'} for f in usda_foods])
         search_results.extend([{'id': f.id, 'description': f.description, 'type': 'my_food'} for f in my_foods])
+        search_results.extend([{'id': m.id, 'name': m.name, 'type': 'my_meal'} for m in my_meals])
 
     return render_template("recipes/edit_recipe.html", form=form, recipe=recipe, ingredient_form=ingredient_form, search_results=search_results, query=query)
 
@@ -66,32 +68,50 @@ def add_ingredient(recipe_id):
         flash('You are not authorized to modify this recipe.', 'danger')
         return redirect(url_for('recipes.recipes'))
 
-    form = IngredientForm()
-    if form.validate_on_submit():
-        food_id = form.food_id.data
-        food_type = form.food_type.data
-        amount = form.amount.data
+    food_id = request.form.get('food_id', type=int)
+    food_type = request.form.get('food_type')
+    amount = request.form.get('amount', type=float)
+    meal_id = request.form.get('meal_id', type=int)
 
-        # Check if ingredient already exists
-        existing_ingredient = RecipeIngredient.query.filter_by(
-            recipe_id=recipe_id,
-            fdc_id=food_id if food_type == 'usda' else None,
-            my_food_id=food_id if food_type == 'my_food' else None
-        ).first()
-
-        if existing_ingredient:
-            existing_ingredient.amount_grams += amount
+    if food_type == 'my_meal':
+        meal = db.session.get(MyMeal, meal_id)
+        if meal and meal.user_id == current_user.id:
+            for item in meal.items:
+                new_ingredient = RecipeIngredient(
+                    recipe_id=recipe.id,
+                    fdc_id=item.fdc_id,
+                    my_food_id=item.my_food_id,
+                    amount_grams=item.amount_grams
+                )
+                db.session.add(new_ingredient)
+            db.session.commit()
+            flash(f'All foods from meal "{meal.name}" added to recipe.', 'success')
         else:
-            new_ingredient = RecipeIngredient(
-                recipe_id=recipe.id,
+            flash('Meal not found or you do not have permission to add it.', 'danger')
+    elif food_id and food_type:
+        if amount is None or amount <= 0:
+            flash('Please enter a valid amount for the ingredient.', 'danger')
+        else:
+            # Check if ingredient already exists
+            existing_ingredient = RecipeIngredient.query.filter_by(
+                recipe_id=recipe_id,
                 fdc_id=food_id if food_type == 'usda' else None,
-                my_food_id=food_id if food_type == 'my_food' else None,
-                amount_grams=amount
-            )
-            db.session.add(new_ingredient)
-        
-        db.session.commit()
-        flash('Ingredient added successfully.', 'success')
+                my_food_id=food_id if food_type == 'my_food' else None
+            ).first()
+
+            if existing_ingredient:
+                existing_ingredient.amount_grams += amount
+            else:
+                new_ingredient = RecipeIngredient(
+                    recipe_id=recipe.id,
+                    fdc_id=food_id if food_type == 'usda' else None,
+                    my_food_id=food_id if food_type == 'my_food' else None,
+                    amount_grams=amount
+                )
+                db.session.add(new_ingredient)
+            
+            db.session.commit()
+            flash('Ingredient added successfully.', 'success')
     else:
         flash('Invalid ingredient data.', 'danger')
 

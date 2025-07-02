@@ -67,6 +67,10 @@ def create_app(test_config=None):
             return redirect(url_for('dashboard.index'))
         return redirect(url_for('auth.login'))
 
+    @app.template_filter('nl2br')
+    def nl2br_filter(s):
+        return s.replace("\n", "<br>")
+
     
 
     

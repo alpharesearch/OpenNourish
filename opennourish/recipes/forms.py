@@ -8,9 +8,7 @@ class RecipeForm(FlaskForm):
     submit = SubmitField('Save Recipe')
 
 class IngredientForm(FlaskForm):
-    food_id = HiddenField('Food ID', validators=[DataRequired()])
-    food_type = HiddenField('Food Type', validators=[DataRequired()])
-    amount = IntegerField('Amount (g)', validators=[DataRequired(), NumberRange(min=1)])
+    food_type = HiddenField('Food Type')
     submit = SubmitField('Add Ingredient')
 
 class AddToLogForm(FlaskForm):

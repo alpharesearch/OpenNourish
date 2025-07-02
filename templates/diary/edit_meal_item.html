@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4">Edit Meal Item</h1>
+    <p>Editing: 
+        {% if item.fdc_id %}
+            {{ item.food.description }}
+        {% elif item.my_food_id %}
+            {{ item.my_food.description }}
+        {% endif %}
+    </p>
+    <form method="POST">
+        <div class="mb-3">
+            <label for="amount" class="form-label">Amount (grams)</label>
+            <input type="number" step="0.01" class="form-control" id="amount" name="amount" value="{{ item.amount_grams }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Amount</button>
+        <a href="{{ url_for('diary.edit_meal', meal_id=meal.id) }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
