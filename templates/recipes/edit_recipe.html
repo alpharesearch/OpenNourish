@@ -44,26 +44,63 @@
     <h4>Add Ingredient</h4>
     <form method="GET" action="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="mb-3">
         <div class="input-group">
-            <input type="text" name="q" class="form-control" placeholder="Search for foods..." value="{{ query or '' }}">
+            <input type="text" name="q" class="form-control" placeholder="Search for foods or meals..." value="{{ query or '' }}">
             <button type="submit" class="btn btn-outline-secondary">Search</button>
         </div>
     </form>
 
     {% if search_results %}
-        <div class="list-group">
-            {% for food in search_results %}
+        <h3>USDA Foods</h3>
+        <div class="list-group mb-4">
+            {% for food in search_results if food.type == 'usda' %}
                 <div class="list-group-item">
                     <form method="POST" action="{{ url_for('recipes.add_ingredient', recipe_id=recipe.id) }}" class="d-flex justify-content-between align-items-center">
-                        {{ ingredient_form.hidden_tag() }}
-                        {{ ingredient_form.food_id(value=food.id) }}
-                        {{ ingredient_form.food_type(value=food.type) }}
+                        <input type="hidden" name="food_id" value="{{ food.id }}">
+                        <input type="hidden" name="food_type" value="{{ food.type }}">
                         <span>{{ food.description }}</span>
                         <div class="input-group" style="width: 200px;">
-                            {{ ingredient_form.amount(class="form-control", placeholder="Grams") }}
-                            {{ ingredient_form.submit(class="btn btn-primary") }}
+                            <input type="number" step="0.01" name="amount" class="form-control" placeholder="Grams" required>
+                            <button type="submit" class="btn btn-primary">Add</button>
                         </div>
                     </form>
                 </div>
+            {% else %}
+                <div class="list-group-item">No USDA foods found.</div>
+            {% endfor %}
+        </div>
+
+        <h3>My Foods</h3>
+        <div class="list-group mb-4">
+            {% for food in search_results if food.type == 'my_food' %}
+                <div class="list-group-item">
+                    <form method="POST" action="{{ url_for('recipes.add_ingredient', recipe_id=recipe.id) }}" class="d-flex justify-content-between align-items-center">
+                        <input type="hidden" name="food_id" value="{{ food.id }}">
+                        <input type="hidden" name="food_type" value="{{ food.type }}">
+                        <span>{{ food.description }}</span>
+                        <div class="input-group" style="width: 200px;">
+                            <input type="number" step="0.01" name="amount" class="form-control" placeholder="Grams" required>
+                            <button type="submit" class="btn btn-primary">Add</button>
+                        </div>
+                    </form>
+                </div>
+            {% else %}
+                <div class="list-group-item">No custom foods found.</div>
+            {% endfor %}
+        </div>
+
+        <h3>My Meals</h3>
+        <div class="list-group mb-4">
+            {% for meal in search_results if meal.type == 'my_meal' %}
+                <div class="list-group-item">
+                    <form method="POST" action="{{ url_for('recipes.add_ingredient', recipe_id=recipe.id) }}" class="d-flex justify-content-between align-items-center">
+                        <input type="hidden" name="meal_id" value="{{ meal.id }}">
+                        <input type="hidden" name="food_type" value="{{ meal.type }}"> {# This will be 'my_meal' #}
+                        <span>{{ meal.name }}</span>
+                        <button type="submit" class="btn btn-primary">Add All Foods from Meal</button>
+                    </form>
+                </div>
+            {% else %}
+                <div class="list-group-item">No meals found.</div>
             {% endfor %}
         </div>
     {% endif %}
