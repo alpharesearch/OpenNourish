@@ -91,3 +91,40 @@ def copy_food(fdc_id):
         flash('Food not found.', 'danger')
 
     return redirect(url_for('database.my_foods'))
+
+@database_bp.route('/my_foods/edit/<int:food_id>', methods=['GET', 'POST'])
+@login_required
+def edit_my_food(food_id):
+    food = db.session.get(MyFood, food_id)
+    if not food or food.user_id != current_user.id:
+        flash('Food not found or you do not have permission to edit it.', 'danger')
+        return redirect(url_for('database.my_foods'))
+
+    if request.method == 'POST':
+        food.description = request.form.get('description')
+        food.calories_per_100g = request.form.get('calories', type=float)
+        food.protein_per_100g = request.form.get('protein', type=float)
+        food.carbs_per_100g = request.form.get('carbs', type=float)
+        food.fat_per_100g = request.form.get('fat', type=float)
+
+        if food.description and food.calories_per_100g and food.protein_per_100g and food.carbs_per_100g and food.fat_per_100g:
+            db.session.commit()
+            flash('Food updated successfully!', 'success')
+            return redirect(url_for('database.my_foods'))
+        else:
+            flash('Please fill out all fields.', 'danger')
+
+    return render_template('database/edit_my_food.html', food=food)
+
+@database_bp.route('/my_foods/delete/<int:food_id>', methods=['POST'])
+@login_required
+def delete_my_food(food_id):
+    food = db.session.get(MyFood, food_id)
+    if not food or food.user_id != current_user.id:
+        flash('Food not found or you do not have permission to delete it.', 'danger')
+        return redirect(url_for('database.my_foods'))
+
+    db.session.delete(food)
+    db.session.commit()
+    flash('Food deleted successfully!', 'success')
+    return redirect(url_for('database.my_foods'))
