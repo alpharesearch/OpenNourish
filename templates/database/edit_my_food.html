@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4">Edit Custom Food</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <input type="text" class="form-control" id="description" name="description" value="{{ food.description }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="calories" class="form-label">Calories (per 100g)</label>
+            <input type="number" step="0.1" class="form-control" id="calories" name="calories" value="{{ food.calories_per_100g }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="protein" class="form-label">Protein (g per 100g)</label>
+            <input type="number" step="0.1" class="form-control" id="protein" name="protein" value="{{ food.protein_per_100g }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="carbs" class="form-label">Carbohydrates (g per 100g)</label>
+            <input type="number" step="0.1" class="form-control" id="carbs" name="carbs" value="{{ food.carbs_per_100g }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="fat" class="form-label">Fat (g per 100g)</label>
+            <input type="number" step="0.1" class="form-control" id="fat" name="fat" value="{{ food.fat_per_100g }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Food</button>
+        <a href="{{ url_for('database.my_foods') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
