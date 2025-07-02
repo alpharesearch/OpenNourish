@@ -1,11 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import current_user, login_required
-from sqlalchemy import case
+from sqlalchemy import case, func
 from . import database_bp
-from models import db, Food, MyFood, FoodNutrient, Nutrient
-
-from sqlalchemy import case
-
 from models import db, Food, MyFood, FoodNutrient, Nutrient, Portion
 
 @database_bp.route('/search', methods=['GET', 'POST'])
