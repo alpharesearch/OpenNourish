@@ -149,7 +149,7 @@ def create_app(test_config=None):
         micronutrients_typst_str = ",\n    ".join(micronutrients_typst)
 
         typst_content = f"""
-#import "nutrition-lable-nam.typ": nutrition-label-nam
+#import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
 
 #let data = (
   servings: "1", // Assuming 1 serving for 100g
@@ -181,9 +181,6 @@ def create_app(test_config=None):
 
             with open(typ_file_path, "w", encoding="utf-8") as f:
                 f.write(typst_content)
-
-            # Copy the nutrition-lable-nam.typ file to the temporary directory
-            shutil.copy("nutrition-lable-nam.typ", tmpdir)
 
             try:
                 # Run Typst command
