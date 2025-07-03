@@ -15,7 +15,7 @@
         <ul class="list-group">
             {% for food in foods.items %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <a href="{{ url_for('food_detail', fdc_id=food.fdc_id) }}">{{ food.description }}</a>
+                    <a href="{{ url_for('main.food_detail', fdc_id=food.fdc_id) }}">{{ food.description }}</a>
                     <div>
                         {% if food.portions %}
                             <span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>
@@ -26,7 +26,7 @@
                         {% if food.nutrients|length > 20 %}
                             <span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>
                         {% endif %}
-                        <a href="{{ url_for('food_detail', fdc_id=food.fdc_id) }}" class="btn btn-info btn-sm">View Details</a>
+                        <a href="{{ url_for('main.food_detail', fdc_id=food.fdc_id) }}" class="btn btn-info btn-sm">View Details</a>
                         <a href="{{ url_for('database.copy_food', fdc_id=food.fdc_id) }}" class="btn btn-success btn-sm">Add to My Foods</a>
                     </div>
                 </li>
