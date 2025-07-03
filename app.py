@@ -50,6 +50,9 @@ def create_app(test_config=None):
     from opennourish.recipes.routes import recipes_bp
     app.register_blueprint(recipes_bp, url_prefix='/recipes')
 
+    from opennourish.settings import settings_bp
+    app.register_blueprint(settings_bp)
+
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(User, int(user_id))
