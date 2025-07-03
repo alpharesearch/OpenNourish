@@ -7,14 +7,6 @@
         <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-primary">Create New Recipe</a>
     </div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
     <div class="list-group">
         {% for recipe in recipes %}
             <div class="list-group-item list-group-item-action flex-column align-items-start">
