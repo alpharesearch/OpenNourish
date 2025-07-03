@@ -9,10 +9,24 @@
         <div class="mb-3">
             {{ form.name.label(class="form-label") }}
             {{ form.name(class="form-control") }}
+            {% if form.name.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.name.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         <div class="mb-3">
             {{ form.instructions.label(class="form-label") }}
             {{ form.instructions(class="form-control", rows=5) }}
+            {% if form.instructions.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.instructions.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         {{ form.submit(class="btn btn-primary") }}
     </form>
@@ -45,7 +59,7 @@
     <form method="GET" action="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="mb-3">
         <div class="input-group">
             <input type="text" name="q" class="form-control" placeholder="Search for foods or meals..." value="{{ query or '' }}">
-            <button type="submit" class="btn btn-outline-secondary">Search</button>
+            <button type="submit" class="btn btn-primary">Search</button>
         </div>
     </form>
 

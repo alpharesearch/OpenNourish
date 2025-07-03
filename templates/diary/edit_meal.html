@@ -13,9 +13,17 @@
     {% endwith %}
 
     <form method="POST" class="mb-4">
+        {{ form.hidden_tag() }}
         <div class="mb-3">
-            <label for="meal_name" class="form-label">Meal Name</label>
-            <input type="text" class="form-control" id="meal_name" name="meal_name" value="{{ meal.name }}" required>
+            {{ form.meal_name.label(class="form-label") }}
+            {{ form.meal_name(class="form-control") }}
+            {% if form.meal_name.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.meal_name.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         <button type="submit" class="btn btn-primary">Update Meal Name</button>
         <a href="{{ url_for('diary.my_meals') }}" class="btn btn-secondary">Back to My Meals</a>
@@ -34,7 +42,7 @@
                 - {{ item.amount_grams }}g
             </div>
             <div class="btn-group" role="group" aria-label="Meal Item Actions">
-                <a href="{{ url_for('diary.edit_meal_item', meal_id=meal.id, item_id=item.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                <a href="{{ url_for('diary.edit_meal_item', meal_id=meal.id, item_id=item.id) }}" class="btn btn-info btn-sm">Edit</a>
                 <form action="{{ url_for('diary.delete_meal_item', meal_id=meal.id, item_id=item.id) }}" method="post" class="d-inline">
                     <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                 </form>
@@ -49,7 +57,7 @@
     <form action="{{ url_for('diary.search_for_meal_item', meal_id=meal.id) }}" method="GET" class="mb-3">
         <div class="input-group">
             <input type="text" class="form-control" placeholder="Search for food or meal..." name="search_term">
-            <button class="btn btn-outline-secondary" type="submit">Search</button>
+            <button class="btn btn-primary" type="submit">Search</button>
         </div>
     </form>
     <a href="{{ url_for('diary.search_for_meal_item', meal_id=meal.id) }}" class="btn btn-success mb-3">Browse All Foods/Meals</a>
