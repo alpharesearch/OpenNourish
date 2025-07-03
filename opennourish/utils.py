@@ -1,4 +1,4 @@
-from models import db, Food, MyFood, Nutrient
+from models import db, Food, MyFood, Nutrient, FoodNutrient
 from config import Config
 
 def calculate_nutrition_for_items(items):
@@ -8,12 +8,6 @@ def calculate_nutrition_for_items(items):
     totals = {'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0}
     
     # Get nutrient IDs for common nutrients to avoid repeated lookups
-    # This is a performance optimization
-    # Using .first() which is available on the query object
-    # The query is constructed by db.session.query(Nutrient)
-    # then filtered by .filter(Nutrient.name == name)
-    # and finally executed with .first()
-    # This is a valid SQLAlchemy pattern
     protein_id = Config.CORE_NUTRIENT_IDS['protein']
     fat_id = Config.CORE_NUTRIENT_IDS['fat']
     carbs_id = Config.CORE_NUTRIENT_IDS['carbs']
@@ -25,15 +19,17 @@ def calculate_nutrition_for_items(items):
             food = db.session.get(Food, item.fdc_id)
             if food:
                 scaling_factor = item.amount_grams / 100.0
-                for nutrient in food.nutrients:
-                    if nutrient.nutrient_id == protein_id:
-                        totals['protein'] += nutrient.amount * scaling_factor
-                    elif nutrient.nutrient_id == fat_id:
-                        totals['fat'] += nutrient.amount * scaling_factor
-                    elif nutrient.nutrient_id == carbs_id:
-                        totals['carbs'] += nutrient.amount * scaling_factor
-                    elif nutrient.nutrient_id == calories_id:
-                        totals['calories'] += nutrient.amount * scaling_factor
+                
+                calories_nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=food.fdc_id, nutrient_id=calories_id).first()
+                protein_nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=food.fdc_id, nutrient_id=protein_id).first()
+                carbs_nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=food.fdc_id, nutrient_id=carbs_id).first()
+                fat_nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=food.fdc_id, nutrient_id=fat_id).first()
+
+                if calories_nutrient: totals['calories'] += calories_nutrient.amount * scaling_factor
+                if protein_nutrient: totals['protein'] += protein_nutrient.amount * scaling_factor
+                if carbs_nutrient: totals['carbs'] += carbs_nutrient.amount * scaling_factor
+                if fat_nutrient: totals['fat'] += fat_nutrient.amount * scaling_factor
+
         elif item.my_food_id:
             my_food = db.session.get(MyFood, item.my_food_id)
             if my_food:
