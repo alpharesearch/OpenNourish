@@ -16,7 +16,7 @@ def calculate_nutrition_for_items(items):
     protein_id = db.session.query(Nutrient.id).filter(Nutrient.name == 'Protein').scalar()
     fat_id = db.session.query(Nutrient.id).filter(Nutrient.name == 'Total lipid (fat)').scalar()
     carbs_id = db.session.query(Nutrient.id).filter(Nutrient.name == 'Carbohydrate, by difference').scalar()
-    calories_id = db.session.query(Nutrient.id).filter(Nutrient.name.like('Energy%')).first()
+    calories_id = db.session.query(Nutrient.id).filter(Nutrient.name.like('Energy%')).scalar()
 
 
     for item in items:

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal
 from .forms import RecipeForm, IngredientForm, AddToLogForm
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from datetime import date
 from opennourish.utils import calculate_nutrition_for_items
 
@@ -33,7 +33,7 @@ def new_recipe():
 @recipes_bp.route("/recipe/edit/<int:recipe_id>", methods=['GET', 'POST'])
 @login_required
 def edit_recipe(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
+    recipe = Recipe.query.options(joinedload(Recipe.ingredients).joinedload(RecipeIngredient.my_food), joinedload(Recipe.ingredients).joinedload(RecipeIngredient.food)).get_or_404(recipe_id)
     if recipe.user_id != current_user.id:
         flash('You are not authorized to edit this recipe.', 'danger')
         return redirect(url_for('recipes.recipes'))
@@ -143,22 +143,22 @@ def delete_ingredient(ingredient_id):
 @recipes_bp.route("/recipe/view/<int:recipe_id>")
 @login_required
 def view_recipe(recipe_id):
-    recipe = Recipe.query.options(joinedload(Recipe.ingredients)).get_or_404(recipe_id)
-    if recipe.user_id != current_user.id:
-        flash('You are not authorized to view this recipe.', 'danger')
-        return redirect(url_for('recipes.recipes'))
+    recipe = Recipe.query.options(selectinload(Recipe.ingredients)).filter_by(id=recipe_id, user_id=current_user.id).first_or_404()
+
+    # Manually load the food data for each ingredient
+    for ingredient in recipe.ingredients:
+        if ingredient.fdc_id:
+            ingredient.food = Food.query.get(ingredient.fdc_id)
 
     total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
     
     ingredient_details = []
     for ingredient in recipe.ingredients:
         description = ""
-        if ingredient.fdc_id:
-            food = db.session.get(Food, ingredient.fdc_id)
-            description = food.description
-        elif ingredient.my_food_id:
-            food = db.session.get(MyFood, ingredient.my_food_id)
-            description = food.description
+        if ingredient.food:
+            description = ingredient.food.description
+        elif ingredient.my_food:
+            description = ingredient.my_food.description
             
         ingredient_details.append({
             'description': description,
