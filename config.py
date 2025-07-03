@@ -13,4 +13,10 @@ class Config:
                 'sqlite:///' + os.path.join(basedir, 'usda_data.db')
     }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    CORE_NUTRIENT_IDS = {
+        'calories': 1008,
+        'protein': 1003,
+        'carbs': 1005,
+        'fat': 1004
+    }
 
