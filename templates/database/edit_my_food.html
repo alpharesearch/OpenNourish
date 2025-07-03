@@ -16,7 +16,7 @@
         {{ form.hidden_tag() }}
         <div class="mb-3">
             {{ form.description.label(class="form-label") }}
-            {{ form.description(class="form-control", value=food.description) }}
+            {{ form.description(class="form-control") }}
             {% if form.description.errors %}
                 <div class="invalid-feedback d-block">
                     {% for error in form.description.errors %}
@@ -27,7 +27,7 @@
         </div>
         <div class="mb-3">
             {{ form.calories.label(class="form-label") }}
-            {{ form.calories(class="form-control", value=food.calories_per_100g) }}
+            {{ form.calories(class="form-control") }}
             {% if form.calories.errors %}
                 <div class="invalid-feedback d-block">
                     {% for error in form.calories.errors %}
@@ -38,7 +38,7 @@
         </div>
         <div class="mb-3">
             {{ form.protein.label(class="form-label") }}
-            {{ form.protein(class="form-control", value=food.protein_per_100g) }}
+            {{ form.protein(class="form-control") }}
             {% if form.protein.errors %}
                 <div class="invalid-feedback d-block">
                     {% for error in form.protein.errors %}
@@ -49,7 +49,7 @@
         </div>
         <div class="mb-3">
             {{ form.carbs.label(class="form-label") }}
-            {{ form.carbs(class="form-control", value=food.carbs_per_100g) }}
+            {{ form.carbs(class="form-control") }}
             {% if form.carbs.errors %}
                 <div class="invalid-feedback d-block">
                     {% for error in form.carbs.errors %}
@@ -60,7 +60,7 @@
         </div>
         <div class="mb-3">
             {{ form.fat.label(class="form-label") }}
-            {{ form.fat(class="form-control", value=food.fat_per_100g) }}
+            {{ form.fat(class="form-control") }}
             {% if form.fat.errors %}
                 <div class="invalid-feedback d-block">
                     {% for error in form.fat.errors %}
