@@ -7,25 +7,14 @@ from sqlalchemy.exc import OperationalError
 from models import db, Food, Portion, FoodNutrient, User, Recipe, RecipeIngredient, DailyLog
 from flask_login import LoginManager, login_required, current_user
 from flask_migrate import Migrate
+from config import Config
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 
-def create_app(test_config=None):
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    app = Flask(__name__, template_folder=os.path.join(basedir, '..', 'templates'))
-
-    # Load the instance config, if it exists, when not testing
-    if test_config is None:
-        app.config.from_mapping(
-            SECRET_KEY='dev',  # Change this in production
-            SQLALCHEMY_DATABASE_URI='sqlite:///' + os.path.join(basedir, '..', 'user_data.db'),
-            SQLALCHEMY_BINDS={'usda': 'sqlite:///' + os.path.join(basedir, '..', 'usda_data.db')},
-            SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        )
-    else:
-        # Load the test config if passed in
-        app.config.from_mapping(test_config)
+def create_app(config_class=Config):
+    app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), '..', 'templates'))
+    app.config.from_object(config_class)
 
     from models import db
     db.init_app(app)
@@ -120,7 +109,7 @@ def create_app(test_config=None):
             "Iron": {"names": ["Iron"], "unit": "mg", "format": ".1f", "key": "iron"},
             "Potassium": {"names": ["Potassium"], "unit": "mg", "format": ".0f", "key": "potassium"},
             "Vitamin A, RAE": {"names": ["Vitamin A, RAE"], "unit": "mcg", "format": ".0f", "key": "vitamin_a"},
-            "Vitamin C, total ascorbic acid": {"names": ["Vitamin C, total ascorbic acid"], "unit": "mg", "format": ".0f", "key": "vitamin_c"},
+            "Vitamin C, total ascorbic acid": {"names": ["Vitamin C, total ascorbic acid"], "unit": "mg", "format": ".0f", "key": "vitamin_c"}
         }
 
         # Extract nutrient values

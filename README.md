@@ -23,11 +23,23 @@ OpenNourish is a free and open source food tracker.
      pip install -r requirements.txt
      ```
 
-4. **Install Typst:**
+4. **Create a `.env` file:**
+    - In the project root, create a file named `.env`.
+    - Add the following line to this file, replacing the placeholder with a strong, random key:
+      ```
+      SECRET_KEY='a_very_strong_and_random_secret_key'
+      ```
+    - You can generate a secure key using Python:
+      ```python
+      import secrets
+      secrets.token_hex(16)
+      ```
+
+5. **Install Typst:**
    - Typst is an external dependency required for generating nutrition labels. Follow the installation instructions on the official Typst website: [https://typst.app/docs/getting-started/](https://typst.app/docs/getting-started/)
    - **Note:** The snapd version of Typst may have limitations. Refer to the "Typst PDF Generation Issues" in the Troubleshooting section for more details.
 
-5. **Create and populate the database:**
+6. **Create and populate the database:**
    - Run the import script to build the `usda_data.db` file from the USDA data. This may take a few minutes.
      ```bash
      python import_usda_data.py [--keep_newest_upc_only]
@@ -35,7 +47,7 @@ OpenNourish is a free and open source food tracker.
    - The `--keep_newest_upc_only` flag (optional) will ensure that if multiple food entries share the same UPC, only the one with the most recent `available_date` is imported. By default, all entries with duplicate UPCs will be imported.
    - Run `flask init-user-db` to initialize the `user_data.db`.
 
-6. **Run the Flask application:**
+7. **Run the Flask application:**
    - Start the web server:
      ```bash
      flask run
