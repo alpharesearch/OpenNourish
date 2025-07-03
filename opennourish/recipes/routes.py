@@ -147,20 +147,28 @@ def delete_ingredient(ingredient_id):
 @recipes_bp.route("/recipe/view/<int:recipe_id>")
 @login_required
 def view_recipe(recipe_id):
-    recipe = Recipe.query.options(selectinload(Recipe.ingredients)).filter_by(id=recipe_id, user_id=current_user.id).first_or_404()
+    recipe = Recipe.query.options(joinedload(Recipe.ingredients).joinedload(RecipeIngredient.my_food)).get_or_404(recipe_id)
+    if recipe.user_id != current_user.id:
+        flash('You are not authorized to view this recipe.', 'danger')
+        return redirect(url_for('recipes.recipes'))
 
-    # Manually load the food data for each ingredient
-    for ingredient in recipe.ingredients:
-        if ingredient.fdc_id:
-            ingredient.usda_food = db.session.get(Food, ingredient.fdc_id)
+    form = RecipeForm(obj=recipe)
+    ingredient_form = IngredientForm()
+
+    if form.validate_on_submit():
+        recipe.name = form.name.data
+        recipe.instructions = form.instructions.data
+        db.session.commit()
+        flash('Recipe updated successfully.', 'success')
+        return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
     total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
     
     ingredient_details = []
     for ingredient in recipe.ingredients:
         description = ""
-        if ingredient.usda_food:
-            description = ingredient.usda_food.description
+        if ingredient.food:
+            description = ingredient.food.description
         elif ingredient.my_food:
             description = ingredient.my_food.description
             

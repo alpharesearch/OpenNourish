@@ -75,7 +75,7 @@ class RecipeIngredient(db.Model):
     my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
     amount_grams = db.Column(db.Float)
 
-    food = db.relationship('Food', primaryjoin='RecipeIngredient.fdc_id == foreign(Food.fdc_id)', overlaps="food", viewonly=True)
+    food = db.relationship('Food', primaryjoin='RecipeIngredient.fdc_id == foreign(Food.fdc_id)', overlaps="food", viewonly=True, uselist=False)
     my_food = db.relationship('MyFood', foreign_keys=[my_food_id])
 
     
