@@ -33,10 +33,12 @@ def new_recipe():
 @recipes_bp.route("/recipe/edit/<int:recipe_id>", methods=['GET', 'POST'])
 @login_required
 def edit_recipe(recipe_id):
-    recipe = Recipe.query.options(joinedload(Recipe.ingredients).joinedload(RecipeIngredient.my_food)).get_or_404(recipe_id)
+    recipe = Recipe.query.options(
+        selectinload(Recipe.ingredients).joinedload(RecipeIngredient.my_food)
+    ).get_or_404(recipe_id) 
     if recipe.user_id != current_user.id:
         flash('You are not authorized to edit this recipe.', 'danger')
-        return redirect(url_for('recipes.recipes'))
+        return redirect(url_for('recipes.recipes')) # Redirect to their own recipe list
 
     form = RecipeForm(obj=recipe)
     ingredient_form = IngredientForm()
@@ -48,11 +50,17 @@ def edit_recipe(recipe_id):
         flash('Recipe updated successfully.', 'success')
         return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
+    usda_food_ids = {ing.fdc_id for ing in recipe.ingredients if ing.fdc_id}
+    if usda_food_ids:
+        usda_foods = Food.query.filter(Food.fdc_id.in_(usda_food_ids)).all()
+        usda_foods_map = {food.fdc_id: food for food in usda_foods}
+    else:
+        usda_foods_map = {}
+
     for ingredient in recipe.ingredients:
         if ingredient.fdc_id:
-            ingredient.usda_food = db.session.get(Food, ingredient.fdc_id)
+            ingredient.usda_food = usda_foods_map.get(ingredient.fdc_id)
 
-    # Search for ingredients
     query = request.args.get('q')
     search_results = []
     if query:
@@ -70,8 +78,14 @@ def edit_recipe(recipe_id):
             item.type = 'my_meal'
             search_results.append(item)
 
-    return render_template("recipes/edit_recipe.html", form=form, recipe=recipe, ingredient_form=ingredient_form, search_results=search_results, query=query)
-
+    return render_template(
+        "recipes/edit_recipe.html",
+        form=form,
+        recipe=recipe,
+        ingredient_form=ingredient_form,
+        search_results=search_results,
+        query=query
+    )
 @recipes_bp.route("/recipe/<int:recipe_id>/add_ingredient", methods=['POST'])
 @login_required
 def add_ingredient(recipe_id):
@@ -147,39 +161,50 @@ def delete_ingredient(ingredient_id):
 @recipes_bp.route("/recipe/view/<int:recipe_id>")
 @login_required
 def view_recipe(recipe_id):
-    recipe = Recipe.query.options(joinedload(Recipe.ingredients).joinedload(RecipeIngredient.my_food)).get_or_404(recipe_id)
-    if recipe.user_id != current_user.id:
-        flash('You are not authorized to view this recipe.', 'danger')
-        return redirect(url_for('recipes.recipes'))
+    recipe = Recipe.query.options(
+        selectinload(Recipe.ingredients).joinedload(RecipeIngredient.my_food)
+    ).filter_by(id=recipe_id, user_id=current_user.id).first_or_404()
+    usda_food_ids = {ing.fdc_id for ing in recipe.ingredients if ing.fdc_id}
 
-    form = RecipeForm(obj=recipe)
-    ingredient_form = IngredientForm()
+    # If there are any USDA foods, run ONE query against the 'usda' bind to get them all.
+    if usda_food_ids:
+        # This query correctly targets the 'usda' database via the Food model's bind key.
+        usda_foods = Food.query.filter(Food.fdc_id.in_(usda_food_ids)).all()
+        # Create a dictionary for fast lookups: {fdc_id: FoodObject}
+        usda_foods_map = {food.fdc_id: food for food in usda_foods}
+    else:
+        usda_foods_map = {}
 
-    if form.validate_on_submit():
-        recipe.name = form.name.data
-        recipe.instructions = form.instructions.data
-        db.session.commit()
-        flash('Recipe updated successfully.', 'success')
-        return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+    # Step 3: Attach the pre-loaded data to each ingredient in Python.
+    # This avoids any further database queries inside the loop.
+    for ingredient in recipe.ingredients:
+        if ingredient.fdc_id:
+            ingredient.usda_food = usda_foods_map.get(ingredient.fdc_id)
 
+    # The rest of the logic can now proceed as before.
     total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
-    
+
     ingredient_details = []
     for ingredient in recipe.ingredients:
-        description = ""
-        if ingredient.food:
-            description = ingredient.food.description
+        description = "Unknown Food"
+        if hasattr(ingredient, 'usda_food') and ingredient.usda_food:
+            description = ingredient.usda_food.description
         elif ingredient.my_food:
             description = ingredient.my_food.description
-            
+
         ingredient_details.append({
             'description': description,
             'amount_grams': ingredient.amount_grams
         })
 
     form = AddToLogForm()
-    return render_template("recipes/view_recipe.html", recipe=recipe, ingredients=ingredient_details, totals=total_nutrition, form=form)
-
+    return render_template(
+        "recipes/view_recipe.html",
+        recipe=recipe,
+        ingredients=ingredient_details,
+        totals=total_nutrition,
+        form=form
+    )
 @recipes_bp.route("/recipe/add_to_log/<int:recipe_id>", methods=['POST'])
 @login_required
 def add_to_log(recipe_id):
