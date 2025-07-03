@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, MyMealItem
+from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal
 from .forms import RecipeForm, IngredientForm, AddToLogForm
 from sqlalchemy.orm import joinedload
 from datetime import date
+from opennourish.utils import calculate_nutrition_for_items
 
 recipes_bp = Blueprint('recipes', __name__, template_folder='templates')
 
@@ -140,47 +141,21 @@ def view_recipe(recipe_id):
         flash('You are not authorized to view this recipe.', 'danger')
         return redirect(url_for('recipes.recipes'))
 
-    total_nutrition = {
-        'calories': 0,
-        'protein': 0,
-        'carbs': 0,
-        'fat': 0
-    }
+    total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
     
     ingredient_details = []
-
     for ingredient in recipe.ingredients:
-        nutrition_info = {}
         description = ""
         if ingredient.fdc_id:
-            food = Food.query.get(ingredient.fdc_id)
+            food = db.session.get(Food, ingredient.fdc_id)
             description = food.description
-            # Simplified nutrition lookup
-            for nutrient in food.nutrients:
-                if nutrient.nutrient.name == "Energy":
-                    nutrition_info['calories'] = (nutrient.amount / 100) * ingredient.amount_grams
-                elif nutrient.nutrient.name == "Protein":
-                    nutrition_info['protein'] = (nutrient.amount / 100) * ingredient.amount_grams
-                elif nutrient.nutrient.name == "Carbohydrate, by difference":
-                    nutrition_info['carbs'] = (nutrient.amount / 100) * ingredient.amount_grams
-                elif nutrient.nutrient.name == "Total lipid (fat)":
-                    nutrition_info['fat'] = (nutrient.amount / 100) * ingredient.amount_grams
-        
         elif ingredient.my_food_id:
-            food = MyFood.query.get(ingredient.my_food_id)
+            food = db.session.get(MyFood, ingredient.my_food_id)
             description = food.description
-            nutrition_info['calories'] = (food.calories_per_100g / 100) * ingredient.amount_grams
-            nutrition_info['protein'] = (food.protein_per_100g / 100) * ingredient.amount_grams
-            nutrition_info['carbs'] = (food.carbs_per_100g / 100) * ingredient.amount_grams
-            nutrition_info['fat'] = (food.fat_per_100g / 100) * ingredient.amount_grams
-
-        for key in total_nutrition:
-            total_nutrition[key] += nutrition_info.get(key, 0)
             
         ingredient_details.append({
             'description': description,
-            'amount_grams': ingredient.amount_grams,
-            'nutrition': nutrition_info
+            'amount_grams': ingredient.amount_grams
         })
 
     form = AddToLogForm()
