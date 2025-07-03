@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import case, func
 from . import database_bp
 from models import db, Food, MyFood, FoodNutrient, Nutrient, Portion
+from .forms import MyFoodForm
 
 @database_bp.route('/search', methods=['GET', 'POST'])
 @login_required
@@ -31,32 +32,23 @@ def search():
 @database_bp.route('/my_foods', methods=['GET', 'POST'])
 @login_required
 def my_foods():
-    if request.method == 'POST':
-        description = request.form.get('description')
-        calories = request.form.get('calories', type=float)
-        protein = request.form.get('protein', type=float)
-        carbs = request.form.get('carbs', type=float)
-        fat = request.form.get('fat', type=float)
-
-        if description and calories and protein and carbs and fat:
-            new_food = MyFood(
-                user_id=current_user.id,
-                description=description,
-                calories_per_100g=calories,
-                protein_per_100g=protein,
-                carbs_per_100g=carbs,
-                fat_per_100g=fat
-            )
-            db.session.add(new_food)
-            db.session.commit()
-            flash('Custom food added successfully!', 'success')
-        else:
-            flash('Please fill out all fields.', 'danger')
-        
+    form = MyFoodForm()
+    if form.validate_on_submit():
+        new_food = MyFood(
+            user_id=current_user.id,
+            description=form.description.data,
+            calories_per_100g=form.calories.data,
+            protein_per_100g=form.protein.data,
+            carbs_per_100g=form.carbs.data,
+            fat_per_100g=form.fat.data
+        )
+        db.session.add(new_food)
+        db.session.commit()
+        flash('Custom food added successfully!', 'success')
         return redirect(url_for('database.my_foods'))
 
     my_foods = MyFood.query.filter_by(user_id=current_user.id).all()
-    return render_template('database/my_foods.html', my_foods=my_foods)
+    return render_template('database/my_foods.html', my_foods=my_foods, form=form)
 
 @database_bp.route('/copy_food/<int:fdc_id>')
 @login_required
@@ -96,21 +88,14 @@ def edit_my_food(food_id):
         flash('Food not found or you do not have permission to edit it.', 'danger')
         return redirect(url_for('database.my_foods'))
 
-    if request.method == 'POST':
-        food.description = request.form.get('description')
-        food.calories_per_100g = request.form.get('calories', type=float)
-        food.protein_per_100g = request.form.get('protein', type=float)
-        food.carbs_per_100g = request.form.get('carbs', type=float)
-        food.fat_per_100g = request.form.get('fat', type=float)
+    form = MyFoodForm(obj=food)
+    if form.validate_on_submit():
+        form.populate_obj(food)
+        db.session.commit()
+        flash('Food updated successfully!', 'success')
+        return redirect(url_for('database.my_foods'))
 
-        if food.description and food.calories_per_100g and food.protein_per_100g and food.carbs_per_100g and food.fat_per_100g:
-            db.session.commit()
-            flash('Food updated successfully!', 'success')
-            return redirect(url_for('database.my_foods'))
-        else:
-            flash('Please fill out all fields.', 'danger')
-
-    return render_template('database/edit_my_food.html', food=food)
+    return render_template('database/edit_my_food.html', food=food, form=form)
 
 @database_bp.route('/my_foods/delete/<int:food_id>', methods=['POST'])
 @login_required
