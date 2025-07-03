@@ -33,7 +33,8 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                         <li><a class="dropdown-item" href="{{ url_for('goals.goals') }}">Goals</a></li>
-                        <li><a class="dropdown-item" href="#">Check-In</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('tracking.new_check_in') }}">Check-In</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('tracking.progress') }}">Progress</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('settings.settings') }}">Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>

@@ -1,7 +1,7 @@
 from flask import render_template
 from flask_login import login_required, current_user
 from . import dashboard_bp
-from models import db, DailyLog, Food, MyFood, UserGoal, FoodNutrient
+from models import db, DailyLog, Food, MyFood, UserGoal, FoodNutrient, CheckIn
 from datetime import date
 
 @dashboard_bp.route('/')
@@ -59,4 +59,10 @@ def index():
             if my_food:
                 food_names[log.id] = my_food.description
 
-    return render_template('dashboard.html', daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining)
+    check_ins = CheckIn.query.filter_by(user_id=current_user.id).order_by(CheckIn.checkin_date.asc()).limit(30).all()
+    chart_labels = [check_in.checkin_date.strftime('%Y-%m-%d') for check_in in check_ins]
+    weight_data = [check_in.weight_kg for check_in in check_ins]
+    body_fat_data = [check_in.body_fat_percentage for check_in in check_ins]
+    waist_data = [check_in.waist_cm for check_in in check_ins]
+
+    return render_template('dashboard.html', daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data)

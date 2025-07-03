@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2>{{ title }}</h2>
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            {{ form.checkin_date.label(class="form-control-label") }}
+            {{ form.checkin_date(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.weight_kg.label(class="form-control-label") }}
+            {{ form.weight_kg(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.body_fat_percentage.label(class="form-control-label") }}
+            {{ form.body_fat_percentage(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.waist_cm.label(class="form-control-label") }}
+            {{ form.waist_cm(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

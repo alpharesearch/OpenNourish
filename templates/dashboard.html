@@ -36,6 +36,21 @@
         </div>
     </div>
 
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Weight Progress (Last 30 entries)</h2>
+        </div>
+        <div class="card-body">
+            {% if chart_labels and (weight_data or body_fat_data or waist_data) %}
+                <div style="height: 600px;">
+                    <canvas id="weightChart"></canvas>
+                </div>
+            {% else %}
+                <p>Log a check-in to see your progress chart!</p>
+            {% endif %}
+        </div>
+    </div>
+
     <h2 class="mt-4">Today's Log</h2>
     <ul class="list-group">
         {% for log in daily_logs %}
@@ -44,4 +59,101 @@
             <li class="list-group-item">No entries for today.</li>
         {% endfor %}
     </ul>
+
+{% if chart_labels and (weight_data or body_fat_data or waist_data) %}
+<script>
+    const ctx = document.getElementById('weightChart');
+    const labels = {{ chart_labels|tojson }};
+    const weightData = {{ weight_data|tojson }};
+    const bodyFatData = {{ body_fat_data|tojson }};
+    const waistData = {{ waist_data|tojson }};
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Weight (kg)',
+                    data: weightData,
+                    borderColor: 'rgb(75, 192, 192)',
+                    yAxisID: 'y',
+                    fill: false
+                },
+                {
+                    label: 'Body Fat (%)',
+                    data: bodyFatData,
+                    borderColor: 'rgb(255, 99, 132)',
+                    yAxisID: 'y1',
+                    fill: false
+                },
+                {
+                    label: 'Waist (cm)',
+                    data: waistData,
+                    borderColor: 'rgb(54, 162, 235)',
+                    yAxisID: 'y2',
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Progress (Last 30 entries)'
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    ticks: {
+                        beginAtZero: false,
+                        stepSize: 1
+                    },
+                    title: {
+                        display: true,
+                        text: 'Weight (kg)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    ticks: {
+                        beginAtZero: false,
+                        stepSize: 0.5
+                    },
+                    grid: {
+                        drawOnChartArea: false, // only want the grid lines for one axis to show up
+                    },
+                    title: {
+                        display: true,
+                        text: 'Body Fat (%)'
+                    }
+                },
+                y2: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    ticks: {
+                        beginAtZero: false,
+                        stepSize: 1
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    title: {
+                        display: true,
+                        text: 'Waist (cm)'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}
