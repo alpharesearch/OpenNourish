@@ -1,6 +1,6 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import engine_from_config, create_engine
 from sqlalchemy import pool
 
 from alembic import context
@@ -19,8 +19,8 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# if config.config_file_name is not None:
+#     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -28,19 +28,25 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 
 # We need to import the Flask app and db object to get the metadata
-try:
-    from opennourish import create_app
-    from models import db
-    app = create_app()
-    app.app_context().push()
-    # Define target_metadata for each bind
-    target_db_metadata = {
-        None: db.metadata,  # Default bind for user_data.db
-        'usda': db.metadata  # usda bind for usda_data.db
-    }
-except Exception as e:
-    print(f"Error importing app or db: {e}")
-    target_db_metadata = {}
+from opennourish import create_app
+from models import db
+
+# Create the Flask app instance
+app = create_app()
+
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+# We explicitly set the sqlalchemy.url here from the Flask app config
+# to ensure it's always correctly picked up by Alembic.
+config.set_main_option("sqlalchemy.url", app.config['SQLALCHEMY_DATABASE_URI'])
+
+# Define target_metadata for each bind
+# This should map bind keys to their respective MetaData objects
+# For Flask-SQLAlchemy, db.metadata holds the default bind's metadata
+# For other binds, you might need to access them via db.metadata.binds or define them explicitly
+target_db_metadata = {
+    None: db.metadata  # Default bind for user_data.db
+}
 
 
 # other values from the config, defined by the needs of env.py,
@@ -80,37 +86,18 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    # handle multiple databases
-    # from https://alembic.sqlalchemy.org/en/latest/cookbook.html#multiple-databases
-    for name, metadata in target_db_metadata.items():
-        print(f"Running migrations for bind: {name if name else 'default'}")
-        if name == 'usda':
-            continue
-        if name:
-            url = config.get_main_option(f"sqlalchemy.url.{name}")
-        else:
-            url = config.get_main_option("sqlalchemy.url")
+    # Only run migrations for the default bind (user_data.db)
+    url = app.config['SQLALCHEMY_DATABASE_URI']
+    connectable = create_engine(
+        url,
+        poolclass=pool.NullPool,
+    )
 
-        connectable = engine_from_config(
-            {'sqlalchemy.url': url},
-            prefix="sqlalchemy.",
-            poolclass=pool.NullPool,
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_db_metadata.get(None),
         )
 
-        with connectable.connect() as connection:
-            context.configure(
-                connection=connection,
-                target_metadata=metadata,
-                # Set the current_app.config['SQLALCHEMY_BINDS'] for the current bind
-                # This is a bit of a hack, but necessary for Flask-SQLAlchemy to work with Alembic
-                # in a multi-bind scenario during autogenerate
-                # context_opts={'bind_name': name}
-            )
-
-            with context.begin_transaction():
-                context.run_migrations()
-
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
+        with context.begin_transaction():
+            context.run_migrations()
