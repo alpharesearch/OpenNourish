@@ -4,7 +4,8 @@ from . import diary_bp
 from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem
 from datetime import date, timedelta
 from opennourish.utils import calculate_nutrition_for_items
-from .forms import MealForm, DailyLogForm
+from .forms import MealForm, DailyLogForm, MealItemForm
+from sqlalchemy.orm import joinedload
 
 @diary_bp.route('/diary/')
 @diary_bp.route('/diary/<string:log_date_str>')
@@ -268,7 +269,9 @@ def edit_log(log_id):
 @diary_bp.route('/my_meals/edit/<int:meal_id>', methods=['GET', 'POST'])
 @login_required
 def edit_meal(meal_id):
-    meal = db.session.get(MyMeal, meal_id)
+    meal = db.session.query(MyMeal).options(
+        joinedload(MyMeal.items).joinedload(MyMealItem.my_food)
+    ).filter_by(id=meal_id).first()
     if not meal or meal.user_id != current_user.id:
         flash('Meal not found or you do not have permission to edit it.', 'danger')
         return redirect(url_for('diary.my_meals'))
@@ -279,6 +282,10 @@ def edit_meal(meal_id):
         db.session.commit()
         flash('Meal name updated.', 'success')
         return redirect(url_for('diary.edit_meal', meal_id=meal.id))
+
+    for item in meal.items:
+        if item.fdc_id:
+            item.usda_food = db.session.get(Food, item.fdc_id)
 
     return render_template('diary/edit_meal.html', meal=meal, form=form)
 
@@ -292,17 +299,17 @@ def edit_meal_item(meal_id, item_id):
         flash('Item not found or you do not have permission to edit it.', 'danger')
         return redirect(url_for('diary.edit_meal', meal_id=meal_id))
 
-    if request.method == 'POST':
-        amount = request.form.get('amount', type=float)
-        if amount:
-            item.amount_grams = amount
-            db.session.commit()
-            flash('Meal item updated.', 'success')
-            return redirect(url_for('diary.edit_meal', meal_id=meal_id))
-        else:
-            flash('Invalid amount.', 'danger')
+    form = MealItemForm(obj=item)
 
-    return render_template('diary/edit_meal_item.html', meal=meal, item=item)
+    if form.validate_on_submit():
+        item.amount_grams = form.amount.data
+        db.session.commit()
+        flash('Meal item updated.', 'success')
+        return redirect(url_for('diary.edit_meal', meal_id=meal_id))
+    elif request.method == 'GET':
+        form.amount.data = item.amount_grams
+
+    return render_template('diary/edit_meal_item.html', meal=meal, item=item, form=form)
 
 @diary_bp.route('/my_meals/<int:meal_id>/delete_item/<int:item_id>', methods=['POST'])
 @login_required
@@ -355,5 +362,13 @@ def save_meal():
 @diary_bp.route('/my_meals')
 @login_required
 def my_meals():
-    meals = MyMeal.query.filter_by(user_id=current_user.id).all()
+    meals = MyMeal.query.filter_by(user_id=current_user.id).options(
+        joinedload(MyMeal.items).joinedload(MyMealItem.my_food)
+    ).all()
+
+    for meal in meals:
+        for item in meal.items:
+            if item.fdc_id:
+                item.usda_food = db.session.get(Food, item.fdc_id)
+    
     return render_template('diary/my_meals.html', meals=meals)
