@@ -3,53 +3,68 @@
 This file provides context and guidelines for the Gemini CLI agent when working on the OpenNourish project.
 
 ## 1. Project Overview
-OpenNourish is a lightweight, open-source web application for personal nutrition tracking. Its core purpose is to allow users to log their daily food intake and create custom cooking recipes using a comprehensive nutritional database. The application is built upon the USDA FoodData Central dataset.
+OpenNourish is a lightweight, open-source web application for personal nutrition tracking. Its core purpose is to allow users to log their daily food intake, create custom recipes, and track their progress against personal goals. The application uses a static USDA nutritional database and a dynamic user database.
 
 ## 2. Key Technologies
 - **Language:** Python
 - **Web Framework:** Flask
-- **Database:** SQLite (`opennourish.db`)
+- **Database:** SQLite (two separate files)
 - **Database ORM:** Flask-SQLAlchemy
-- **Templating:** Jinja2
-- **Data Source:** USDA FoodData Central (CSV files)
+- **Database Migrations:** Flask-Migrate (using Alembic)
+- **Forms:** Flask-WTF
+- **Authentication:** Flask-Login
+- **Frontend:** Jinja2, Bootstrap 5, Chart.js
 - **Environment Management:** Conda (preferred)
 
 ## 3. Development Setup
 To set up the development environment:
-1.  Create and activate the Conda environment: `conda create --name opennourish python=3.9 && conda activate opennourish`
+1.  Create and activate the Conda environment: `conda create --name opennourish python=3.11 && conda activate opennourish`
 2.  Install Python dependencies: `pip install -r requirements.txt`
 3.  Place the downloaded USDA CSV files into a directory named `usda_data/` in the project root.
-4.  Generate the SQLite database from the CSV files: `python import_usda_data.py`
+4.  Generate the static USDA database: `python import_usda_data.py`
+5.  Initialize and migrate the user database: `flask db init` (first time only), then `flask db upgrade`
 
 ## 4. Running the Application
 To run the Flask development server:
-`flask run`
+1. Set the FLASK_APP environment variable: `export FLASK_APP=run.py` (Linux/macOS) or `$env:FLASK_APP="run.py"` (PowerShell)
+2. Run the Flask application: `flask run`
 
 ## 5. Database Management
-- **Primary Database Files:** `user_data.db` (for user-specific data) and `usda_data.db` (for USDA FoodData Central). These should not be committed to version control.
-- **Initial Schema Definition:** The database schema is defined in `schema_usda.sql` and `schema_user.sql`. These files are used by the import script to create the initial tables.
-- **Data Import:** The `import_usda_data.py` script is responsible for creating and populating `usda_data.db` from scratch. It should be run once during setup.
-- **Application Models:** Flask-SQLAlchemy models that map to the database tables are defined in `models.py`.
-- **Database Migrations (Alembic):**
-  - To generate a new migration script after changing models: `FLASK_APP=app.py alembic revision --autogenerate -m "Your message here"`
-  - To apply pending migrations to the database: `FLASK_APP=app.py alembic upgrade head`
-  - If you need to stamp the database with a specific revision without running migrations (e.g., after manual schema changes): `FLASK_APP=app.py alembic stamp <revision_id_or_head>`
+- **Primary Database Files:** `user_data.db` (for all dynamic, user-specific data) and `usda_data.db` (for the static USDA FoodData Central). These files should never be committed to version control.
+- **Static DB Creation:** `usda_data.db` is created and managed exclusively by the `import_usda_data.py` script.
+- **User DB Schema Migrations:** All changes to the user database schema (i.e., modifying `models.py` for tables without a `__bind_key__`) MUST be managed using **Flask-Migrate (Alembic)**.
+  - To generate a new migration after changing a model: `flask db migrate -m "A short message describing the change"`
+  - To apply the migration to the database: `flask db upgrade`
 
-## 6. Code Style and Conventions
-- Follow **PEP 8** for all Python code.
-- **Project Structure:** Use Flask Blueprints to organize routes into logical modules (e.g., `auth`, `tracking`, `recipes`) as the application grows.
-- **Configuration:** Store application configuration (like `SECRET_KEY`) in a separate `config.py` file.
-- **Templates:** All Jinja2 templates should be stored in the `templates/` directory.
-- **Static Files:** CSS, JavaScript, and images should be stored in the `static/` directory.
-- **Comments:** Add clear, concise comments to explain complex logic, especially in database queries and business logic.
+## 6. Code Style and Project Structure
+- **Python:** Follow **PEP 8** for all Python code.
+- **Application Factory:** The project uses the application factory pattern (`create_app` function). Blueprints are registered within this factory.
+- **Blueprints:** All features are organized into Flask Blueprints within the `opennourish/` directory (e.g., `opennourish/auth`, `opennourish/tracking`).
+- **Configuration:** Store application configuration (like `SECRET_KEY`) in a `config.py` file.
+- **Templates & Static Files:** Templates are in `templates/`, and static files (CSS, JS) are in `static/`.
 
-## 7. Testing
+## 7. Design Directives & UI Conventions
+To maintain a consistent and professional look and feel, all generated HTML templates should adhere to these Bootstrap 5 conventions.
+- **Primary Actions (Submit, Save, Create):** Buttons for primary actions should always use the main theme color.
+  - **Class:** `btn btn-primary`
+- **Secondary Actions (Cancel, Go Back):** Buttons for secondary or less important actions.
+  - **Class:** `btn btn-secondary`
+- **Destructive Actions (Delete, Remove):** Buttons that trigger a deletion or other irreversible action must be clearly marked in red.
+  - **Class:** `btn btn-danger`
+- **Success Feedback:** Use green for success alerts and messages (e.g., after a form is saved).
+  - **Class:** `alert alert-success`
+- **Informational Links/Buttons:** Use for non-critical actions like "View Details" or "Edit".
+  - **Class:** `btn btn-info` or `btn btn-outline-primary`
+- **Forms:** All forms should be rendered cleanly. Each form field should have a proper `<label>` and be wrapped in a `div class="mb-3"` for correct spacing. Validation errors should be displayed prominently.
+- **Charts:** All charts should be generated using Chart.js. They should be responsive and include clear labels and titles.
+
+## 8. Testing
 - **Framework:** Testing is done using the **pytest** framework.
 - **Test Directory:** All tests are located in the `tests/` directory.
 - **Running Tests:**
-  - To run all tests, including slow integration tests, use: `pytest`
-  - To run only the fast unit tests and exclude the full database import test, use: `pytest -m "not integration"`
+  - To run all tests: `pytest`
+  - To run only the fast application tests: `pytest -m "not integration"`
 - **Database Safety:**
-  - Standard tests (`pytest -m "not integration"`) are designed to **never** touch the real `user_data.db` or `usda_data.db` files. They use a temporary, in-memory database to ensure data integrity.
-  - The `integration` test (`test_database_import.py`) performs a full, time-consuming import of the USDA data into a temporary database. It is crucial for verifying the data import process but should be run intentionally.
-- **Test Creation:** When generating new tests, create separate files for models, routes, and utilities (e.g., `test_models.py`, `test_routes.py`). Ensure that any test involving the database uses the `client` fixture to maintain isolation from the real databases.
+  - Standard application tests (`not integration`) **must** use an in-memory SQLite database to ensure they are fast and do not touch the real database files.
+  - The `integration` test verifies the full USDA data import process. It is slow and should be run intentionally.
+- **Test Creation:** When generating new application tests, ensure they use a fixture that configures the app for testing and provides a test client.

@@ -29,7 +29,7 @@ if config.config_file_name is not None:
 
 # We need to import the Flask app and db object to get the metadata
 try:
-    from app import create_app
+    from opennourish import create_app
     from models import db
     app = create_app()
     app.app_context().push()

@@ -5,7 +5,7 @@ import sys
 # Add project root to path to allow importing 'app'
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app import create_app
+from opennourish import create_app
 from models import db, User
 
 @pytest.fixture(scope='function')
