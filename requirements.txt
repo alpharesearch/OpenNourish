@@ -5,3 +5,4 @@ pytest-flask
 Flask-Login
 Flask-WTF
 alembic
+Flask-Migrate

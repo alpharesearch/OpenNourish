@@ -10,12 +10,7 @@ OpenNourish is a free and open source food tracker.
 
 2. **Organize the data files:**
    - Create a folder named `usda_data` in the root of the OpenNourish project directory.
-   - From the unzipped USDA dataset, copy the following CSV files into the `usda_data` folder:
-     - `food.csv`
-     - `nutrient.csv`
-     - `food_nutrient.csv`
-     - `food_portion.csv`
-     - `measure_unit.csv`
+   - From the unzipped USDA dataset, copy all CSV files into the `usda_data` folder.
 
 3. **Set up the environment and install dependencies:**
    - It is recommended to use a Conda environment:
@@ -33,13 +28,14 @@ OpenNourish is a free and open source food tracker.
    - **Note:** The snapd version of Typst may have limitations. Refer to the "Typst PDF Generation Issues" in the Troubleshooting section for more details.
 
 5. **Create and populate the database:**
-   - Run the import script to build the `opennourish.db` file from the USDA data. This may take a few minutes.
+   - Run the import script to build the `usda_data.db` file from the USDA data. This may take a few minutes.
      ```bash
      python import_usda_data.py [--keep_newest_upc_only]
      ```
    - The `--keep_newest_upc_only` flag (optional) will ensure that if multiple food entries share the same UPC, only the one with the most recent `available_date` is imported. By default, all entries with duplicate UPCs will be imported.
+   - Run `flask init-user-db` to initialize the `user_data.db`.
 
-5. **Run the Flask application:**
+6. **Run the Flask application:**
    - Start the web server:
      ```bash
      flask run
