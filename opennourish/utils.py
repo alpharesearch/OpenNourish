@@ -1,4 +1,5 @@
 from models import db, Food, MyFood, Nutrient
+from config import Config
 
 def calculate_nutrition_for_items(items):
     """
@@ -13,10 +14,10 @@ def calculate_nutrition_for_items(items):
     # then filtered by .filter(Nutrient.name == name)
     # and finally executed with .first()
     # This is a valid SQLAlchemy pattern
-    protein_id = db.session.query(Nutrient.id).filter(Nutrient.name == 'Protein').scalar()
-    fat_id = db.session.query(Nutrient.id).filter(Nutrient.name == 'Total lipid (fat)').scalar()
-    carbs_id = db.session.query(Nutrient.id).filter(Nutrient.name == 'Carbohydrate, by difference').scalar()
-    calories_id = db.session.query(Nutrient.id).filter(Nutrient.name == 'Energy (KCAL)').scalar()
+    protein_id = Config.CORE_NUTRIENT_IDS['protein']
+    fat_id = Config.CORE_NUTRIENT_IDS['fat']
+    carbs_id = Config.CORE_NUTRIENT_IDS['carbs']
+    calories_id = Config.CORE_NUTRIENT_IDS['calories']
 
 
     for item in items:
