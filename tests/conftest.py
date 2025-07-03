@@ -58,3 +58,19 @@ def auth_client(app_with_db):
             sess['_user_id'] = user_id
             sess['_fresh'] = True
         yield client
+
+@pytest.fixture(scope='function')
+def auth_client_with_user(app_with_db):
+    """A test client that is authenticated, and provides the user object."""
+    with app_with_db.test_client() as client:
+        with app_with_db.app_context():
+            user = User(username='testuser2')
+            user.set_password('password')
+            db.session.add(user)
+            db.session.commit()
+            user_id = user.id
+
+        with client.session_transaction() as sess:
+            sess['_user_id'] = user_id
+            sess['_fresh'] = True
+        yield client, user
