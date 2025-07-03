@@ -35,7 +35,7 @@
         <li class="list-group-item d-flex justify-content-between align-items-center">
             <div>
                 {% if item.fdc_id %}
-                    {{ item.food.description }}
+                    {{ item.usda_food.description }}
                 {% elif item.my_food_id %}
                     {{ item.my_food.description }}
                 {% endif %}

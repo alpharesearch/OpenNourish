@@ -21,7 +21,7 @@
                         {% for item in meal.items %}
                             <li>
                                 {% if item.fdc_id %}
-                                    {{ item.food.description }}
+                                    {{ item.usda_food.description }}
                                 {% elif item.my_food_id %}
                                     {{ item.my_food.description }}
                                 {% endif %}

@@ -9,3 +9,7 @@ class MealForm(FlaskForm):
 class DailyLogForm(FlaskForm):
     amount = FloatField('Amount (grams)', validators=[DataRequired(), NumberRange(min=0.1)])
     submit = SubmitField('Update Entry')
+
+class MealItemForm(FlaskForm):
+    amount = FloatField('Amount (grams)', validators=[DataRequired(), NumberRange(min=0.1)])
+    submit = SubmitField('Update Item')
