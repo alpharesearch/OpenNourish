@@ -18,7 +18,7 @@ OpenNourish is a lightweight, open-source web application for personal nutrition
 
 ## 3. Development Setup
 To set up the development environment:
-1.  Create and activate the Conda environment: `conda create --name opennourish python=3.11 && conda activate opennourish`
+1.  Create and activate the Conda environment: `conda create --name opennourish python=3.9 && conda activate opennourish`
 2.  Install Python dependencies: `pip install -r requirements.txt`
 3.  Place the downloaded USDA CSV files into a directory named `usda_data/` in the project root.
 4.  Generate the static USDA database: `python import_usda_data.py`
