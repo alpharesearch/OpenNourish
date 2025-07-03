@@ -4,7 +4,7 @@ from . import diary_bp
 from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem
 from datetime import date, timedelta
 from opennourish.utils import calculate_nutrition_for_items
-from .forms import MealForm
+from .forms import MealForm, DailyLogForm
 
 @diary_bp.route('/diary/')
 @diary_bp.route('/diary/<string:log_date_str>')
@@ -254,7 +254,16 @@ def edit_log(log_id):
         else:
             flash('Invalid amount.', 'danger')
 
-    return render_template('diary/edit_log.html', log_entry=log_entry)
+    form = DailyLogForm(obj=log_entry)
+    if form.validate_on_submit():
+        log_entry.amount_grams = form.amount.data
+        db.session.commit()
+        flash('Entry updated.', 'success')
+        return redirect(url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()))
+    elif request.method == 'GET':
+        form.amount.data = log_entry.amount_grams
+
+    return render_template('diary/edit_log.html', log_entry=log_entry, form=form)
 
 @diary_bp.route('/my_meals/edit/<int:meal_id>', methods=['GET', 'POST'])
 @login_required
