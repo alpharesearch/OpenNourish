@@ -41,7 +41,8 @@ def progress():
 def edit_check_in(check_in_id):
     check_in = CheckIn.query.get_or_404(check_in_id)
     if check_in.user_id != current_user.id:
-        abort(403)
+        flash('Entry not found or you do not have permission to edit it.', 'danger')
+        return redirect(url_for('tracking.progress'))
     form = CheckInForm(obj=check_in)
     if form.validate_on_submit():
         check_in.checkin_date = form.checkin_date.data
@@ -58,7 +59,8 @@ def edit_check_in(check_in_id):
 def delete_check_in(check_in_id):
     check_in = CheckIn.query.get_or_404(check_in_id)
     if check_in.user_id != current_user.id:
-        abort(403)
+        flash('Entry not found or you do not have permission to delete it.', 'danger')
+        return redirect(url_for('tracking.progress'))
     db.session.delete(check_in)
     db.session.commit()
     flash('Your check-in has been deleted.', 'success')

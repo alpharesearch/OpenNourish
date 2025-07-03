@@ -212,7 +212,7 @@ def add_to_log(recipe_id):
         db.session.add(new_log)
         db.session.commit()
         flash('Recipe added to your diary.', 'success')
-        return redirect(url_for('diary.index')) # Assuming diary blueprint is named 'diary'
+        return redirect(url_for('diary.diary'))
 
     flash('Invalid data for logging.', 'danger')
     return redirect(url_for('recipes.view_recipe', recipe_id=recipe.id))
