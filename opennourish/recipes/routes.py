@@ -33,7 +33,7 @@ def new_recipe():
 @recipes_bp.route("/recipe/edit/<int:recipe_id>", methods=['GET', 'POST'])
 @login_required
 def edit_recipe(recipe_id):
-    recipe = Recipe.query.options(joinedload(Recipe.ingredients).joinedload(RecipeIngredient.my_food), joinedload(Recipe.ingredients).joinedload(RecipeIngredient.food)).get_or_404(recipe_id)
+    recipe = Recipe.query.options(joinedload(Recipe.ingredients).joinedload(RecipeIngredient.my_food)).get_or_404(recipe_id)
     if recipe.user_id != current_user.id:
         flash('You are not authorized to edit this recipe.', 'danger')
         return redirect(url_for('recipes.recipes'))
@@ -47,6 +47,10 @@ def edit_recipe(recipe_id):
         db.session.commit()
         flash('Recipe updated successfully.', 'success')
         return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
+    for ingredient in recipe.ingredients:
+        if ingredient.fdc_id:
+            ingredient.usda_food = db.session.get(Food, ingredient.fdc_id)
 
     # Search for ingredients
     query = request.args.get('q')
@@ -148,15 +152,15 @@ def view_recipe(recipe_id):
     # Manually load the food data for each ingredient
     for ingredient in recipe.ingredients:
         if ingredient.fdc_id:
-            ingredient.food = Food.query.get(ingredient.fdc_id)
+            ingredient.usda_food = db.session.get(Food, ingredient.fdc_id)
 
     total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
     
     ingredient_details = []
     for ingredient in recipe.ingredients:
         description = ""
-        if ingredient.food:
-            description = ingredient.food.description
+        if ingredient.usda_food:
+            description = ingredient.usda_food.description
         elif ingredient.my_food:
             description = ingredient.my_food.description
             
