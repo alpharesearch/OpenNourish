@@ -75,13 +75,15 @@ class RecipeIngredient(db.Model):
     my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
     amount_grams = db.Column(db.Float)
 
-    my_food = db.relationship('MyFood')
+    food = db.relationship('Food', primaryjoin='RecipeIngredient.fdc_id == foreign(Food.fdc_id)')
+    my_food = db.relationship('MyFood', foreign_keys=[my_food_id])
 
-    @property
-    def food(self):
-        if self.fdc_id:
-            return db.session.get(Food, self.fdc_id)
-        return None
+    
+
+    
+
+    
+
 
 class MyMeal(db.Model):
     __tablename__ = 'my_meals'
@@ -98,14 +100,16 @@ class MyMealItem(db.Model):
     my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
     amount_grams = db.Column(db.Float)
+
+    food = db.relationship('Food', primaryjoin='MyMealItem.fdc_id == foreign(Food.fdc_id)')
+    my_food = db.relationship('MyFood', foreign_keys=[my_food_id])
+
     
-    my_food = db.relationship('MyFood')
+
     
-    @property
-    def food(self):
-        if self.fdc_id:
-            return db.session.get(Food, self.fdc_id)
-        return None
+
+    
+
 
 
 
