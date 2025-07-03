@@ -15,18 +15,20 @@ def index():
 
 @main_bp.route('/food/<int:fdc_id>')
 def food_detail(fdc_id):
+    q = request.args.get('q')
     food = db.session.get(Food, fdc_id)
     if not food:
         return "Food not found", 404
-    return render_template('food_detail.html', food=food)
+    return render_template('food_detail.html', food=food, search_term=q)
 
 @main_bp.route('/upc/<barcode>')
 def upc_search(barcode):
+    q = request.args.get('q')
     food = db.session.execute(
         db.select(Food).filter_by(upc=barcode)
     ).first()
     if food:
-        return redirect(url_for('food_detail', fdc_id=food[0].fdc_id))
+        return redirect(url_for('main.food_detail', fdc_id=food[0].fdc_id, q=q))
     else:
         return "UPC not found", 404
 

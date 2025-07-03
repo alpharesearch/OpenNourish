@@ -55,9 +55,16 @@ def edit_recipe(recipe_id):
         usda_foods = Food.query.filter(Food.description.ilike(f'%{query}%')).limit(20).all()
         my_foods = MyFood.query.filter(MyFood.description.ilike(f'%{query}%'), MyFood.user_id == current_user.id).limit(20).all()
         my_meals = MyMeal.query.filter(MyMeal.name.ilike(f'%{query}%'), MyMeal.user_id == current_user.id).limit(20).all()
-        search_results.extend([{'id': f.fdc_id, 'description': f.description, 'type': 'usda'} for f in usda_foods])
-        search_results.extend([{'id': f.id, 'description': f.description, 'type': 'my_food'} for f in my_foods])
-        search_results.extend([{'id': m.id, 'name': m.name, 'type': 'my_meal'} for m in my_meals])
+        
+        for item in usda_foods:
+            item.type = 'usda'
+            search_results.append(item)
+        for item in my_foods:
+            item.type = 'my_food'
+            search_results.append(item)
+        for item in my_meals:
+            item.type = 'my_meal'
+            search_results.append(item)
 
     return render_template("recipes/edit_recipe.html", form=form, recipe=recipe, ingredient_form=ingredient_form, search_results=search_results, query=query)
 

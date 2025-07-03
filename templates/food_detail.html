@@ -33,7 +33,7 @@
         {% endfor %}
     </ul>
 
-    <a href="{{ url_for('database.search') }}" class="btn btn-secondary">Back to search</a>
+    <a href="{{ url_for('database.search', q=search_term) }}" class="btn btn-secondary">Back to search</a>
     <a href="{{ url_for('database.copy_food', fdc_id=food.fdc_id) }}" class="btn btn-success">Add to My Foods</a>
     <a href="{{ url_for('main.generate_nutrition_label', fdc_id=food.fdc_id) }}" class="btn btn-info" target="_blank">Download Nutrition Label (PDF)</a>
 {% endblock %}

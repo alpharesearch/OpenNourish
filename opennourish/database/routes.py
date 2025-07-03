@@ -8,12 +8,12 @@ from .forms import MyFoodForm
 @database_bp.route('/search', methods=['GET', 'POST'])
 @login_required
 def search():
-    search_term = request.args.get('q')
+    q = request.args.get('q')
     page = request.args.get('page', 1, type=int)
     foods = None
 
-    if search_term and search_term.strip():
-        term = search_term.strip()
+    if q and q.strip():
+        term = q.strip()
         
         foods = db.session.query(Food).filter(
             Food.description.ilike(f'%{term}%')
@@ -27,7 +27,7 @@ def search():
             )
         ).paginate(page=page, per_page=20)
 
-    return render_template('database/search.html', foods=foods, search_term=search_term)
+    return render_template('database/search.html', foods=foods, search_term=q)
 
 @database_bp.route('/my_foods', methods=['GET', 'POST'])
 @login_required
