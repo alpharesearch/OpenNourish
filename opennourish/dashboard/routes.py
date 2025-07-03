@@ -1,8 +1,9 @@
 from flask import render_template
 from flask_login import login_required, current_user
 from . import dashboard_bp
-from models import db, DailyLog, Food, MyFood, UserGoal, FoodNutrient, CheckIn
+from models import db, DailyLog, Food, MyFood, UserGoal, CheckIn
 from datetime import date
+from opennourish.utils import calculate_nutrition_for_items
 
 @dashboard_bp.route('/')
 @login_required
@@ -14,32 +15,7 @@ def index():
 
     daily_logs = DailyLog.query.filter_by(user_id=current_user.id, log_date=date.today()).all()
     
-    totals = {'calories': 0.0, 'protein': 0.0, 'carbs': 0.0, 'fat': 0.0}
-    
-    # Nutrient IDs for USDA data
-    NUTRIENT_IDS = {
-        'calories': 1008, # Energy (kcal)
-        'protein': 1003,  # Protein
-        'carbs': 1005,    # Carbohydrate, by difference
-        'fat': 1004       # Total lipid (fat)
-    }
-
-    for log in daily_logs:
-        scaling_factor = log.amount_grams / 100.0
-        if log.fdc_id:
-            # USDA food
-            for name, nid in NUTRIENT_IDS.items():
-                nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=log.fdc_id, nutrient_id=nid).first()
-                if nutrient:
-                    totals[name] += nutrient.amount * scaling_factor
-        elif log.my_food_id:
-            # Custom food
-            my_food = db.session.get(MyFood, log.my_food_id)
-            if my_food:
-                totals['calories'] += my_food.calories_per_100g * scaling_factor
-                totals['protein'] += my_food.protein_per_100g * scaling_factor
-                totals['carbs'] += my_food.carbs_per_100g * scaling_factor
-                totals['fat'] += my_food.fat_per_100g * scaling_factor
+    totals = calculate_nutrition_for_items(daily_logs)
 
     remaining = {
         'calories': user_goal.calories - totals['calories'],

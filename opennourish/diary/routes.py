@@ -1,8 +1,10 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import current_user, login_required
 from . import diary_bp
-from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Nutrient, FoodNutrient
+from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem
 from datetime import date, timedelta
+from opennourish.utils import calculate_nutrition_for_items
+from .forms import MealForm
 
 @diary_bp.route('/diary/')
 @diary_bp.route('/diary/<string:log_date_str>')
@@ -19,33 +21,15 @@ def diary(log_date_str=None):
         'Breakfast': [], 'Snack (morning)': [], 'Lunch': [], 
         'Snack (afternoon)': [], 'Dinner': [], 'Snack (evening)': []
     }
-    totals = {'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0}
+    
+    totals = calculate_nutrition_for_items(daily_logs)
 
     for log in daily_logs:
         food_item = None
         if log.fdc_id:
             food_item = db.session.get(Food, log.fdc_id)
-            # Nutrient IDs for Calories, Protein, Fat, Carbohydrates
-            nutrient_ids = {'calories': 1008, 'protein': 1003, 'carbs': 1005, 'fat': 1004}
-            nutrients = {}
-
-            for name, nid in nutrient_ids.items():
-                nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=log.fdc_id, nutrient_id=nid).first()
-                nutrients[name] = nutrient.amount if nutrient else 0
-            
-            scaling_factor = log.amount_grams / 100.0
-            totals['calories'] += nutrients.get('calories', 0) * scaling_factor
-            totals['protein'] += nutrients.get('protein', 0) * scaling_factor
-            totals['carbs'] += nutrients.get('carbs', 0) * scaling_factor
-            totals['fat'] += nutrients.get('fat', 0) * scaling_factor
-
         elif log.my_food_id:
             food_item = db.session.get(MyFood, log.my_food_id)
-            scaling_factor = log.amount_grams / 100.0
-            totals['calories'] += food_item.calories_per_100g * scaling_factor
-            totals['protein'] += food_item.protein_per_100g * scaling_factor
-            totals['carbs'] += food_item.carbs_per_100g * scaling_factor
-            totals['fat'] += food_item.fat_per_100g * scaling_factor
 
         if food_item:
             meals[log.meal_name].append({
@@ -265,17 +249,14 @@ def edit_meal(meal_id):
         flash('Meal not found or you do not have permission to edit it.', 'danger')
         return redirect(url_for('diary.my_meals'))
 
-    if request.method == 'POST':
-        new_meal_name = request.form.get('meal_name')
-        if new_meal_name:
-            meal.name = new_meal_name
-            db.session.commit()
-            flash('Meal name updated.', 'success')
-            return redirect(url_for('diary.edit_meal', meal_id=meal.id))
-        else:
-            flash('Invalid meal name.', 'danger')
+    form = MealForm(obj=meal)
+    if form.validate_on_submit():
+        meal.name = form.name.data
+        db.session.commit()
+        flash('Meal name updated.', 'success')
+        return redirect(url_for('diary.edit_meal', meal_id=meal.id))
 
-    return render_template('diary/edit_meal.html', meal=meal)
+    return render_template('diary/edit_meal.html', meal=meal, form=form)
 
 @diary_bp.route('/my_meals/<int:meal_id>/edit_item/<int:item_id>', methods=['GET', 'POST'])
 @login_required

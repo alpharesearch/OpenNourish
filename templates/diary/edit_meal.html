@@ -15,11 +15,11 @@
     <form method="POST" class="mb-4">
         {{ form.hidden_tag() }}
         <div class="mb-3">
-            {{ form.meal_name.label(class="form-label") }}
-            {{ form.meal_name(class="form-control") }}
-            {% if form.meal_name.errors %}
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control") }}
+            {% if form.name.errors %}
                 <div class="invalid-feedback d-block">
-                    {% for error in form.meal_name.errors %}
+                    {% for error in form.name.errors %}
                         <span>{{ error }}</span>
                     {% endfor %}
                 </div>
