@@ -53,6 +53,13 @@ To maintain a consistent and professional look and feel, all generated HTML temp
   - **Class:** `btn btn-danger`
 - **Success Feedback:** Use green for success alerts and messages (e.g., after a form is saved).
   - **Class:** `alert alert-success`
+- **Flash Messages:** User feedback and notifications must be handled using Flask's flashing system.
+  - **Logic:** In the Python routes, always provide a category when calling the `flash()` function (e.g., `flash('Message here', 'success')`). The standard categories should be:
+    - `'success'` for positive actions (e.g., item saved).
+    - `'danger'` for errors or failed actions (e.g., form validation failed).
+    - `'warning'` for non-critical alerts.
+    - `'info'` for neutral information.
+  - **Template:** All flashed messages should be rendered in the `base.html` template, typically right after the navbar and before the main content block. This ensures they appear consistently on every page. The rendering logic must loop through the messages and use the message's category to apply the corresponding Bootstrap alert class.
 - **Informational Links/Buttons:** Use for non-critical actions like "View Details" or "Edit".
   - **Class:** `btn btn-info` or `btn btn-outline-primary`
 - **Forms:** All forms should be rendered cleanly. Each form field should have a proper `<label>` and be wrapped in a `div class="mb-3"` for correct spacing. Validation errors should be displayed prominently.
