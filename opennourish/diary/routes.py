@@ -177,7 +177,22 @@ def add_meal_item(meal_id):
     my_food_id = request.form.get('my_food_id', type=int)
     source_meal_id = request.form.get('source_meal_id', type=int)
 
-    if amount:
+    if source_meal_id:
+        source_meal = db.session.get(MyMeal, source_meal_id)
+        if source_meal and source_meal.user_id == current_user.id:
+            for item in source_meal.items:
+                new_item = MyMealItem(
+                    meal=meal,
+                    fdc_id=item.fdc_id,
+                    my_food_id=item.my_food_id,
+                    amount_grams=item.amount_grams
+                )
+                db.session.add(new_item)
+            db.session.commit()
+            flash(f'Items from meal "{source_meal.name}" added.', 'success')
+        else:
+            flash('Source meal not found or you do not have permission to add it.', 'danger')
+    elif amount:
         if fdc_id or my_food_id:
             new_item = MyMealItem(
                 meal=meal,
@@ -188,21 +203,6 @@ def add_meal_item(meal_id):
             db.session.add(new_item)
             db.session.commit()
             flash('Item added to meal.', 'success')
-        elif source_meal_id:
-            source_meal = db.session.get(MyMeal, source_meal_id)
-            if source_meal and source_meal.user_id == current_user.id:
-                for item in source_meal.items:
-                    new_item = MyMealItem(
-                        meal=meal,
-                        fdc_id=item.fdc_id,
-                        my_food_id=item.my_food_id,
-                        amount_grams=item.amount_grams
-                    )
-                    db.session.add(new_item)
-                db.session.commit()
-                flash(f'Items from meal "{source_meal.name}" added.', 'success')
-            else:
-                flash('Source meal not found or you do not have permission to add it.', 'danger')
         else:
             flash('Invalid food item.', 'danger')
     else:

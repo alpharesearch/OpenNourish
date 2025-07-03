@@ -73,7 +73,7 @@
 
     <h3>My Meals</h3>
     <div class="list-group mb-4">
-        {% for meal in search_results if meal.type == 'my_meal' %}
+        {% for searched_meal in search_results if searched_meal.type == 'my_meal' %}
             <div class="list-group-item">
                 {% if request.endpoint == 'recipes.edit_recipe' %}
                     <form method="POST" action="{{ url_for('recipes.add_ingredient', recipe_id=recipe.id) }}" class="d-flex justify-content-between align-items-center">
@@ -83,17 +83,10 @@
                         <button type="submit" class="btn btn-primary">Add All Foods from Meal</button>
                     </form>
                 {% elif request.endpoint == 'diary.search_for_diary' or request.endpoint == 'diary.search_for_meal_item' %}
-                    <form action="{% if log_date %}{{ url_for('diary.add_meal_to_diary') }}{% elif meal %}{{ url_for('diary.add_meal_item', meal_id=meal.id) }}{% endif %}" method="post" class="d-flex justify-content-between align-items-center">
-                        {{ meal.name }}
+                    <form action="{{ url_for('diary.add_meal_item', meal_id=meal.id) }}" method="post" class="d-flex justify-content-between align-items-center">
+                        {{ searched_meal.name }}
                         <div class="d-flex">
-                            {% if log_date %}
-                            <input type="hidden" name="log_date" value="{{ log_date.isoformat() }}">
-                            <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                            <input type="hidden" name="meal_id" value="{{ meal.id }}">
-                            {% elif meal %}
-                            <input type="hidden" name="source_meal_id" value="{{ meal.id }}">
-                            <input type="hidden" name="amount" value="1"> {# Dummy amount, as we're adding items, not the meal itself #}
-                            {% endif %}
+                            <input type="hidden" name="source_meal_id" value="{{ searched_meal.id }}">
                             <button type="submit" class="btn btn-success btn-sm">Add</button>
                         </div>
                     </form>
