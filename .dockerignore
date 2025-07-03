@@ -1,0 +1,36 @@
+# Ignore Git
+.git
+.gitignore
+
+# Ignore Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+
+# Ignore database files
+*.db
+*.db-journal
+usda_data/ # The raw USDA data and generated DB should not be in the image
+
+# Ignore environment variables
+.env
+
+# Ignore IDE files
+.idea/
+*.iml
+
+# Ignore build artifacts
+dist/
+build/
+*.egg-info/
+
+# Ignore logs
+*.log
+
+# Ignore project-specific files not needed in the image
+GEMINI.md
+proj_snap.sh

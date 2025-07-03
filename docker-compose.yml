@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  opennourish-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./user_data.db:/app/user_data.db
+      - ./usda_data.db:/app/usda_data.db
+    env_file:
+      - ./.env
+    # Command to run the application (overrides Dockerfile CMD if specified)
+    # command: ["python", "-u", "serve.py"]
