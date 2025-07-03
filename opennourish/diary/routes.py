@@ -47,22 +47,29 @@ def diary(log_date_str=None):
 @login_required
 def search_for_diary(log_date_str, meal_name):
     log_date = date.fromisoformat(log_date_str)
-    usda_results = []
-    my_food_results = []
-    my_meal_results = []
+    search_results = []
+    search_term = request.form.get('search_term')
 
-    if request.method == 'POST':
-        search_term = request.form.get('search_term')
-        if search_term:
-            usda_results = db.session.query(Food).filter(Food.description.ilike(f'%{search_term}%')).limit(20).all()
-            my_food_results = MyFood.query.filter_by(user_id=current_user.id).filter(MyFood.description.ilike(f'%{search_term}%')).limit(20).all()
-            my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).filter(MyMeal.name.ilike(f'%{search_term}%')).limit(20).all()
+    if request.method == 'POST' and search_term:
+        usda_results = db.session.query(Food).filter(Food.description.ilike(f'%{search_term}%')).limit(20).all()
+        my_food_results = MyFood.query.filter_by(user_id=current_user.id).filter(MyFood.description.ilike(f'%{search_term}%')).limit(20).all()
+        my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).filter(MyMeal.name.ilike(f'%{search_term}%')).limit(20).all()
     else:
+        usda_results = []
         my_food_results = MyFood.query.filter_by(user_id=current_user.id).limit(20).all()
         my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).limit(20).all()
 
+    for item in usda_results:
+        item.type = 'usda'
+        search_results.append(item)
+    for item in my_food_results:
+        item.type = 'my_food'
+        search_results.append(item)
+    for item in my_meal_results:
+        item.type = 'my_meal'
+        search_results.append(item)
 
-    return render_template('diary/search.html', log_date=log_date, meal_name=meal_name, usda_results=usda_results, my_food_results=my_food_results, my_meal_results=my_meal_results)
+    return render_template('diary/search.html', log_date=log_date, meal_name=meal_name, search_results=search_results, search_term=search_term)
 
 @diary_bp.route('/my_meals/search/<int:meal_id>', methods=['GET', 'POST'])
 @login_required
@@ -72,22 +79,30 @@ def search_for_meal_item(meal_id):
         flash('Meal not found or you do not have permission to edit it.', 'danger')
         return redirect(url_for('diary.my_meals'))
 
-    usda_results = []
-    my_food_results = []
-    my_meal_results = []
+    search_results = []
+    search_term = request.form.get('search_term')
 
-    if request.method == 'POST':
-        search_term = request.form.get('search_term')
-        if search_term:
-            usda_results = db.session.query(Food).filter(Food.description.ilike(f'%{search_term}%')).limit(20).all()
-            my_food_results = MyFood.query.filter_by(user_id=current_user.id).filter(MyFood.description.ilike(f'%{search_term}%')).limit(20).all()
-            # Exclude the current meal from the search results to prevent circular dependencies
-            my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).filter(MyMeal.name.ilike(f'%{search_term}%')).filter(MyMeal.id != meal_id).limit(20).all()
+    if request.method == 'POST' and search_term:
+        usda_results = db.session.query(Food).filter(Food.description.ilike(f'%{search_term}%')).limit(20).all()
+        my_food_results = MyFood.query.filter_by(user_id=current_user.id).filter(MyFood.description.ilike(f'%{search_term}%')).limit(20).all()
+        # Exclude the current meal from the search results to prevent circular dependencies
+        my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).filter(MyMeal.name.ilike(f'%{search_term}%')).filter(MyMeal.id != meal_id).limit(20).all()
     else:
+        usda_results = []
         my_food_results = MyFood.query.filter_by(user_id=current_user.id).limit(20).all()
         my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).filter(MyMeal.id != meal_id).limit(20).all()
 
-    return render_template('diary/search.html', meal=meal, usda_results=usda_results, my_food_results=my_food_results, my_meal_results=my_meal_results)
+    for item in usda_results:
+        item.type = 'usda'
+        search_results.append(item)
+    for item in my_food_results:
+        item.type = 'my_food'
+        search_results.append(item)
+    for item in my_meal_results:
+        item.type = 'my_meal'
+        search_results.append(item)
+
+    return render_template('diary/search.html', meal=meal, search_results=search_results, search_term=search_term)
 
 @diary_bp.route('/diary/add_meal', methods=['POST'])
 @login_required
