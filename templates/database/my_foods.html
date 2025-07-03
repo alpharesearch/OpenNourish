@@ -47,44 +47,44 @@
                     {% endif %}
                 </div>
                 <div class="mb-3">
-                    {{ form.calories.label(class="form-label") }}
-                    {{ form.calories(class="form-control") }}
-                    {% if form.calories.errors %}
+                    {{ form.calories_per_100g.label(class="form-label") }}
+                    {{ form.calories_per_100g(class="form-control") }}
+                    {% if form.calories_per_100g.errors %}
                         <div class="invalid-feedback d-block">
-                            {% for error in form.calories.errors %}
+                            {% for error in form.calories_per_100g.errors %}
                                 <span>{{ error }}</span>
                             {% endfor %}
                         </div>
                     {% endif %}
                 </div>
                 <div class="mb-3">
-                    {{ form.protein.label(class="form-label") }}
-                    {{ form.protein(class="form-control") }}
-                    {% if form.protein.errors %}
+                    {{ form.protein_per_100g.label(class="form-label") }}
+                    {{ form.protein_per_100g(class="form-control") }}
+                    {% if form.protein_per_100g.errors %}
                         <div class="invalid-feedback d-block">
-                            {% for error in form.protein.errors %}
+                            {% for error in form.protein_per_100g.errors %}
                                 <span>{{ error }}</span>
                             {% endfor %}
                         </div>
                     {% endif %}
                 </div>
                 <div class="mb-3">
-                    {{ form.carbs.label(class="form-label") }}
-                    {{ form.carbs(class="form-control") }}
-                    {% if form.carbs.errors %}
+                    {{ form.carbs_per_100g.label(class="form-label") }}
+                    {{ form.carbs_per_100g(class="form-control") }}
+                    {% if form.carbs_per_100g.errors %}
                         <div class="invalid-feedback d-block">
-                            {% for error in form.carbs.errors %}
+                            {% for error in form.carbs_per_100g.errors %}
                                 <span>{{ error }}</span>
                             {% endfor %}
                         </div>
                     {% endif %}
                 </div>
                 <div class="mb-3">
-                    {{ form.fat.label(class="form-label") }}
-                    {{ form.fat(class="form-control") }}
-                    {% if form.fat.errors %}
+                    {{ form.fat_per_100g.label(class="form-label") }}
+                    {{ form.fat_per_100g(class="form-control") }}
+                    {% if form.fat_per_100g.errors %}
                         <div class="invalid-feedback d-block">
-                            {% for error in form.fat.errors %}
+                            {% for error in form.fat_per_100g.errors %}
                                 <span>{{ error }}</span>
                             {% endfor %}
                         </div>
