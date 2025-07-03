@@ -13,25 +13,61 @@
     {% endwith %}
 
     <form method="POST">
+        {{ form.hidden_tag() }}
         <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <input type="text" class="form-control" id="description" name="description" value="{{ food.description }}" required>
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", value=food.description) }}
+            {% if form.description.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.description.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         <div class="mb-3">
-            <label for="calories" class="form-label">Calories (per 100g)</label>
-            <input type="number" step="0.1" class="form-control" id="calories" name="calories" value="{{ food.calories_per_100g }}" required>
+            {{ form.calories.label(class="form-label") }}
+            {{ form.calories(class="form-control", value=food.calories_per_100g) }}
+            {% if form.calories.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.calories.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         <div class="mb-3">
-            <label for="protein" class="form-label">Protein (g per 100g)</label>
-            <input type="number" step="0.1" class="form-control" id="protein" name="protein" value="{{ food.protein_per_100g }}" required>
+            {{ form.protein.label(class="form-label") }}
+            {{ form.protein(class="form-control", value=food.protein_per_100g) }}
+            {% if form.protein.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.protein.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         <div class="mb-3">
-            <label for="carbs" class="form-label">Carbohydrates (g per 100g)</label>
-            <input type="number" step="0.1" class="form-control" id="carbs" name="carbs" value="{{ food.carbs_per_100g }}" required>
+            {{ form.carbs.label(class="form-label") }}
+            {{ form.carbs(class="form-control", value=food.carbs_per_100g) }}
+            {% if form.carbs.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.carbs.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         <div class="mb-3">
-            <label for="fat" class="form-label">Fat (g per 100g)</label>
-            <input type="number" step="0.1" class="form-control" id="fat" name="fat" value="{{ food.fat_per_100g }}" required>
+            {{ form.fat.label(class="form-label") }}
+            {{ form.fat(class="form-control", value=food.fat_per_100g) }}
+            {% if form.fat.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.fat.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         <button type="submit" class="btn btn-primary">Update Food</button>
         <a href="{{ url_for('database.my_foods') }}" class="btn btn-secondary">Cancel</a>

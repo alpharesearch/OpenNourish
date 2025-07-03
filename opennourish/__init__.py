@@ -6,6 +6,7 @@ import shutil
 from sqlalchemy.exc import OperationalError
 from models import db, Food, Portion, FoodNutrient, User, Recipe, RecipeIngredient, DailyLog
 from flask_login import LoginManager, login_required, current_user
+from flask_migrate import Migrate
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
@@ -18,8 +19,8 @@ def create_app(test_config=None):
     if test_config is None:
         app.config.from_mapping(
             SECRET_KEY='dev',  # Change this in production
-            SQLALCHEMY_DATABASE_URI='sqlite:///' + os.path.join(basedir, 'user_data.db'),
-            SQLALCHEMY_BINDS={'usda': 'sqlite:///' + os.path.join(basedir, 'usda_data.db')},
+            SQLALCHEMY_DATABASE_URI='sqlite:///' + os.path.join(basedir, '..', 'user_data.db'),
+            SQLALCHEMY_BINDS={'usda': 'sqlite:///' + os.path.join(basedir, '..', 'usda_data.db')},
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
         )
     else:
@@ -28,6 +29,7 @@ def create_app(test_config=None):
 
     from models import db
     db.init_app(app)
+    migrate = Migrate(app, db)
     login_manager.init_app(app)
 
     from opennourish.auth import auth_bp

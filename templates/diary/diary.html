@@ -32,7 +32,7 @@
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 {{ item.description }} - {{ item.amount }}g
                 <form action="{{ url_for('diary.delete_log', log_id=item.log_id) }}" method="post" class="d-inline">
-                    <a href="{{ url_for('diary.edit_log', log_id=item.log_id) }}" class="btn btn-warning btn-sm">Edit</a>
+                    <a href="{{ url_for('diary.edit_log', log_id=item.log_id) }}" class="btn btn-info btn-sm">Edit</a>
                     <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                 </form>
             </li>
