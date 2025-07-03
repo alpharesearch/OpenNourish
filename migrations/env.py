@@ -84,6 +84,8 @@ def run_migrations_online() -> None:
     # from https://alembic.sqlalchemy.org/en/latest/cookbook.html#multiple-databases
     for name, metadata in target_db_metadata.items():
         print(f"Running migrations for bind: {name if name else 'default'}")
+        if name == 'usda':
+            continue
         if name:
             url = config.get_main_option(f"sqlalchemy.url.{name}")
         else:

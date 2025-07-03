@@ -35,6 +35,8 @@ class CheckIn(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     checkin_date = db.Column(db.Date, default=date.today)
     weight_kg = db.Column(db.Float)
+    body_fat_percentage = db.Column(db.Float)
+    waist_cm = db.Column(db.Float)
 
 class MyFood(db.Model):
     __tablename__ = 'my_foods'

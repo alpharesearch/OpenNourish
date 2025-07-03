@@ -24,9 +24,9 @@ def create_app(test_config=None):
         # Load the test config if passed in
         app.config.from_mapping(test_config)
 
+    from models import db
     db.init_app(app)
-    login_manager = LoginManager()
-    login_manager.login_view = 'auth.login'
+    from opennourish import login_manager
     login_manager.init_app(app)
 
     from opennourish.auth import auth_bp
@@ -52,6 +52,9 @@ def create_app(test_config=None):
 
     from opennourish.settings import settings_bp
     app.register_blueprint(settings_bp)
+
+    from opennourish.tracking import tracking_bp
+    app.register_blueprint(tracking_bp, url_prefix='/tracking')
 
     @login_manager.user_loader
     def load_user(user_id):
