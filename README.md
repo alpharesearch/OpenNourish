@@ -67,7 +67,7 @@ OpenNourish can be easily containerized using Docker for consistent development 
     *   Generate `usda_data.db`: `python import_usda_data.py`
     *   Initialize and migrate `user_data.db`:
         ```bash
-        export FLASK_APP=run.py # or $env:FLASK_APP="run.py" for PowerShell
+        export FLASK_APP=app.py # or $env:FLASK_APP="app.py" for PowerShell
         flask db init # Only run this once for a new project
         flask db upgrade
         ```

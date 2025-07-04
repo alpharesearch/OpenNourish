@@ -34,7 +34,7 @@ Alternatively, use Docker for development:
 
 ## 4. Running the Application
 To run the Flask development server:
-1. Set the FLASK_APP environment variable: `export FLASK_APP=run.py` (Linux/macOS) or `$env:FLASK_APP="run.py"` (PowerShell)
+1. Set the FLASK_APP environment variable: `export FLASK_APP=app.py` (Linux/macOS) or `$env:FLASK_APP="app.py"` (PowerShell)
 2. Run the Flask application: `flask run`
 
 ## 5. Database Management
