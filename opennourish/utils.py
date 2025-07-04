@@ -9,40 +9,42 @@ def calculate_nutrition_for_items(items):
     """
     Calculates total nutrition for a list of items (DailyLog or RecipeIngredient).
     """
-    totals = {'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0}
-    
-    # Get nutrient IDs for common nutrients to avoid repeated lookups
-    protein_id = Config.CORE_NUTRIENT_IDS['protein']
-    fat_id = Config.CORE_NUTRIENT_IDS['fat']
-    carbs_id = Config.CORE_NUTRIENT_IDS['carbs']
-    calories_id = Config.CORE_NUTRIENT_IDS['calories']
+    totals = {
+        'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0,
+        'saturated_fat': 0, 'trans_fat': 0, 'cholesterol': 0, 'sodium': 0,
+        'fiber': 0, 'sugars': 0, 'vitamin_d': 0, 'calcium': 0, 'iron': 0, 'potassium': 0
+    }
 
+    # Get nutrient IDs for common nutrients to avoid repeated lookups
+    nutrient_ids = Config.CORE_NUTRIENT_IDS
 
     for item in items:
+        scaling_factor = item.amount_grams / 100.0
         if item.fdc_id:
             food = db.session.get(Food, item.fdc_id)
             if food:
-                scaling_factor = item.amount_grams / 100.0
-                
-                calories_nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=food.fdc_id, nutrient_id=calories_id).first()
-                protein_nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=food.fdc_id, nutrient_id=protein_id).first()
-                carbs_nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=food.fdc_id, nutrient_id=carbs_id).first()
-                fat_nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=food.fdc_id, nutrient_id=fat_id).first()
-
-                if calories_nutrient: totals['calories'] += calories_nutrient.amount * scaling_factor
-                if protein_nutrient: totals['protein'] += protein_nutrient.amount * scaling_factor
-                if carbs_nutrient: totals['carbs'] += carbs_nutrient.amount * scaling_factor
-                if fat_nutrient: totals['fat'] += fat_nutrient.amount * scaling_factor
+                for name, nid in nutrient_ids.items():
+                    nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=food.fdc_id, nutrient_id=nid).first()
+                    if nutrient:
+                        totals[name] += nutrient.amount * scaling_factor
 
         elif item.my_food_id:
             my_food = db.session.get(MyFood, item.my_food_id)
             if my_food:
-                scaling_factor = item.amount_grams / 100.0
-                totals['calories'] += my_food.calories_per_100g * scaling_factor
-                totals['protein'] += my_food.protein_per_100g * scaling_factor
-                totals['carbs'] += my_food.carbs_per_100g * scaling_factor
-                totals['fat'] += my_food.fat_per_100g * scaling_factor
-
+                totals['calories'] += (my_food.calories_per_100g or 0) * scaling_factor
+                totals['protein'] += (my_food.protein_per_100g or 0) * scaling_factor
+                totals['carbs'] += (my_food.carbs_per_100g or 0) * scaling_factor
+                totals['fat'] += (my_food.fat_per_100g or 0) * scaling_factor
+                totals['saturated_fat'] += (my_food.saturated_fat_per_100g or 0) * scaling_factor
+                totals['trans_fat'] += (my_food.trans_fat_per_100g or 0) * scaling_factor
+                totals['cholesterol'] += (my_food.cholesterol_mg_per_100g or 0) * scaling_factor
+                totals['sodium'] += (my_food.sodium_mg_per_100g or 0) * scaling_factor
+                totals['fiber'] += (my_food.fiber_per_100g or 0) * scaling_factor
+                totals['sugars'] += (my_food.sugars_per_100g or 0) * scaling_factor
+                totals['vitamin_d'] += (my_food.vitamin_d_mcg_per_100g or 0) * scaling_factor
+                totals['calcium'] += (my_food.calcium_mg_per_100g or 0) * scaling_factor
+                totals['iron'] += (my_food.iron_mg_per_100g or 0) * scaling_factor
+                totals['potassium'] += (my_food.potassium_mg_per_100g or 0) * scaling_factor
     return totals
 
 def generate_nutrition_label_pdf(fdc_id):

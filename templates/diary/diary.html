@@ -28,11 +28,36 @@
         </div>
         <ul class="list-group list-group-flush">
             {% for item in items %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                {{ item.description }} - {{ item.amount }}g
-                <form action="{{ url_for('diary.delete_log', log_id=item.log_id) }}" method="post" class="d-inline">
-                    <a href="{{ url_for('diary.edit_log', log_id=item.log_id) }}" class="btn btn-info btn-sm">Edit</a>
-                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            <li class="list-group-item">
+                <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}">
+                    <div class="row align-items-center">
+                        <div class="col-md-5">
+                            {{ item.description }}
+                            <br>
+                            <small class="text-muted">
+                                Calories: {{ item.nutrition.calories|round(0) }} kcal |
+                                P: {{ item.nutrition.protein|round(1) }}g |
+                                C: {{ item.nutrition.carbs|round(1) }}g |
+                                F: {{ item.nutrition.fat|round(1) }}g
+                            </small>
+                        </div>
+                        <div class="col-md-7">
+                            <div class="d-flex justify-content-end align-items-center">
+                                <input type="number" name="amount" value="{{ item.amount|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
+                                <select name="serving_type" class="form-select form-select-sm ms-2" style="width: 180px;">
+                                    {% for portion in item.portions %}
+                                        <option value="{{ portion.value_string }}" {% if item.serving_type == portion.value_string %}selected{% endif %}>
+                                            {{ portion.display_text }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="btn-group ms-2">
+                                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                                    <button type="submit" formaction="{{ url_for('diary.delete_log', log_id=item.log_id) }}" class="btn btn-danger btn-sm">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </li>
             {% else %}

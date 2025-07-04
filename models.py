@@ -47,6 +47,16 @@ class MyFood(db.Model):
     protein_per_100g = db.Column(db.Float)
     carbs_per_100g = db.Column(db.Float)
     fat_per_100g = db.Column(db.Float)
+    saturated_fat_per_100g = db.Column(db.Float, nullable=True)
+    trans_fat_per_100g = db.Column(db.Float, nullable=True)
+    cholesterol_mg_per_100g = db.Column(db.Float, nullable=True)
+    sodium_mg_per_100g = db.Column(db.Float, nullable=True)
+    fiber_per_100g = db.Column(db.Float, nullable=True)
+    sugars_per_100g = db.Column(db.Float, nullable=True)
+    vitamin_d_mcg_per_100g = db.Column(db.Float, nullable=True)
+    calcium_mg_per_100g = db.Column(db.Float, nullable=True)
+    iron_mg_per_100g = db.Column(db.Float, nullable=True)
+    potassium_mg_per_100g = db.Column(db.Float, nullable=True)
 
 class DailyLog(db.Model):
     __tablename__ = 'daily_logs'
@@ -58,6 +68,7 @@ class DailyLog(db.Model):
     my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
     amount_grams = db.Column(db.Float)
+    serving_type = db.Column(db.String(50), default='g')
 
 class Recipe(db.Model):
     __tablename__ = 'recipes'

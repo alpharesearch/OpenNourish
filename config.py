@@ -17,6 +17,16 @@ class Config:
         'calories': 1008,
         'protein': 1003,
         'carbs': 1005,
-        'fat': 1004
+        'fat': 1004,
+        'saturated_fat': 1258,
+        'trans_fat': 1257,
+        'cholesterol': 1253,
+        'sodium': 1093,
+        'fiber': 1079,
+        'sugars': 2000,
+        'vitamin_d': 1110,
+        'calcium': 1087,
+        'iron': 1089,
+        'potassium': 1092
     }
 
