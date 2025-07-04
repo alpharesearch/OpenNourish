@@ -2,10 +2,9 @@
 
 {% block content %}
 <div class="container">
-    <h1 class="mt-4">Food Diary</h1>
-    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
         <a href="{{ url_for('diary.diary', log_date_str=prev_date.isoformat()) }}" class="btn btn-secondary">&laquo; Previous Day</a>
-        <h2>{{ date.strftime('%A, %B %d, %Y') }}</h2>
+        <h1 class="mb-0">Food Diary - {{ date.strftime('%A, %B %d, %Y') }}</h1>
         <a href="{{ url_for('diary.diary', log_date_str=next_date.isoformat()) }}" class="btn btn-secondary">Next Day &raquo;</a>
     </div>
 
