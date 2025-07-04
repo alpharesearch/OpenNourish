@@ -1,1 +1,3 @@
-Single-database configuration for Flask.
+This directory manages migrations for the primary user database (`user_data.db`).
+
+The application uses a second, read-only database (`usda_data.db`) for USDA food data, which is not managed by these migrations.
