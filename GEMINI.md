@@ -44,6 +44,10 @@ To run the Flask development server:
   - To generate a new migration after changing a model: `flask db migrate -m "A short message describing the change"`
   - To apply the migration to the database: `flask db upgrade`
 
+### 8.1. Cross-Database Queries
+- **Challenge:** A common challenge in this project is querying relationships between the user database (`user_data.db`) and the static USDA database (`usda_data.db`). Standard SQLAlchemy eager loading strategies like `joinedload` or `selectinload` can fail, as they may attempt to join tables across different database files, resulting in `sqlite3.OperationalError: no such table`.
+- **Solution:** To handle these cross-database relationships, you must use a manual, two-step query process. First, query the primary database (usually the user database) to retrieve the main objects. Then, extract the foreign keys from the results and perform a second, separate query against the second database (usually the USDA database) to fetch the related objects. Finally, manually attach the related objects to the main objects in your Python code. This approach ensures that each query is sent to the correct database, avoiding the "no such table" error.
+
 ## 6. Code Style and Project Structure
 - **Python:** Follow **PEP 8** for all Python code.
 - **Application Factory:** The project uses the application factory pattern (`create_app` function). Blueprints are registered within this factory.

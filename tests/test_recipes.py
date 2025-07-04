@@ -111,7 +111,8 @@ def test_recipe_nutrition_calculation(auth_client_with_user):
     response = client.get(f'/recipes/recipe/view/{recipe_id}')
     assert response.status_code == 200
     # Expected calories: (100 kcal/100g * 100g) + (200 kcal/100g * 50g) = 100 + 100 = 200 kcal
-    assert b'Calories: 200' in response.data
+    assert b'<strong>Calories</strong>' in response.data
+    assert b'200 kcal' in response.data
 
 def test_delete_recipe(auth_client_with_user):
     """

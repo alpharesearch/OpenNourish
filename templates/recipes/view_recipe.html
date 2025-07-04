@@ -2,73 +2,95 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>{{ recipe.name }}</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-info">Edit</a>
-            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-secondary">Back to Recipes</a>
+            <h1 class="mb-0">{{ recipe.name }}</h1>
+            <small class="text-muted">Serves: {{ recipe.servings if recipe.servings is not none else 'N/A' }}</small>
         </div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title">Instructions</h5>
-            <p class="card-text">{{ recipe.instructions|nl2br }}</p>
+        <div>
+            <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-primary">Edit Recipe</a>
+            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-secondary">Back to List</a>
         </div>
     </div>
 
     <div class="row">
-        <div class="col-md-6">
+        <!-- Left Column: Instructions & Ingredients -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Instructions
+                </div>
+                <div class="card-body">
+                    <p class="card-text" style="white-space: pre-wrap;">{{ recipe.instructions }}</p>
+                </div>
+            </div>
+
             <div class="card">
-                <div class="card-header">Ingredients</div>
+                <div class="card-header">
+                    Ingredients
+                </div>
                 <ul class="list-group list-group-flush">
                     {% for ingredient in ingredients %}
-                        <li class="list-group-item">{{ ingredient.description }} - {{ ingredient.amount_grams }}g</li>
+                        <li class="list-group-item">{{ ingredient.description }} - {{ '%.2f'|format(ingredient.amount_grams) }}g</li>
+                    {% else %}
+                        <li class="list-group-item">No ingredients have been added to this recipe yet.</li>
                     {% endfor %}
                 </ul>
             </div>
         </div>
-        <div class="col-md-6">
+
+        <!-- Right Column: Nutrition & Logging -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Nutrition per Serving
+                </div>
+                <div class="card-body">
+                    {% if recipe.servings and recipe.servings > 0 %}
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <strong>Calories</strong>
+                                <span class="badge bg-primary rounded-pill">{{ '%.0f'|format(totals.calories / recipe.servings) }} kcal</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Protein
+                                <span>{{ '%.1f'|format(totals.protein / recipe.servings) }} g</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Carbs
+                                <span>{{ '%.1f'|format(totals.carbs / recipe.servings) }} g</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Fat
+                                <span>{{ '%.1f'|format(totals.fat / recipe.servings) }} g</span>
+                            </li>
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">Set servings to calculate nutrition.</p>
+                    {% endif %}
+                </div>
+            </div>
+
             <div class="card">
-                <div class="card-header">Total Nutrition (per serving)</div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item">Calories: {{ totals.calories|round(2) }} kcal</li>
-                    <li class="list-group-item">Protein: {{ totals.protein|round(2) }} g</li>
-                    <li class="list-group-item">Carbohydrates: {{ totals.carbs|round(2) }} g</li>
-                    <li class="list-group-item">Fat: {{ totals.fat|round(2) }} g</li>
-                </ul>
+                <div class="card-header">
+                    Add to Today's Diary
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('recipes.add_to_log', recipe_id=recipe.id) }}">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label for="portion_id" class="form-label">Serving</label>
+                            <select name="portion_id" id="portion_id" class="form-select">
+                                {% for portion in recipe.portions %}
+                                    <option value="{{ portion.id }}">{{ portion.description }} ({{ '%.2f'|format(portion.gram_weight) }}g)</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {{ form.submit(class="btn btn-success w-100") }}
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-
-    <hr>
-
-    <div class="card mt-4">
-        <div class="card-body">
-            <h5 class="card-title">Add to Diary</h5>
-            <form method="POST" action="{{ url_for('recipes.add_to_log', recipe_id=recipe.id) }}">
-                {{ form.hidden_tag() }}
-                <div class="row g-3 align-items-center">
-                    <div class="col-auto">
-                        {{ form.servings.label(class="col-form-label") }}
-                    </div>
-                    <div class="col-auto">
-                        {{ form.servings(class="form-control", value=1) }}
-                    </div>
-                    <div class="col-auto">
-                        {{ form.submit(class="btn btn-primary") }}
-                    </div>
-                    {% if form.servings.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.servings.errors %}
-                                <span>{{ error }}</span>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            </form>
-        </div>
-    </div>
-
 </div>
 {% endblock %}

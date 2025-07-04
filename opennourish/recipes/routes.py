@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal
-from .forms import RecipeForm, IngredientForm, AddToLogForm
+from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, Portion, MyPortion, RecipePortion
+from .forms import RecipeForm, IngredientForm, AddToLogForm, RecipePortionForm
 from sqlalchemy.orm import joinedload, selectinload
 from datetime import date
 from opennourish.utils import calculate_nutrition_for_items
@@ -22,44 +22,46 @@ def new_recipe():
         new_recipe = Recipe(
             user_id=current_user.id,
             name=form.name.data,
-            instructions=form.instructions.data
+            instructions=form.instructions.data,
+            servings=form.servings.data
         )
         db.session.add(new_recipe)
         db.session.commit()
         flash('Recipe created successfully. Now add ingredients.', 'success')
         return redirect(url_for('recipes.edit_recipe', recipe_id=new_recipe.id))
-    return render_template('recipes/edit_recipe.html', form=form, recipe=None)
+    return render_template('recipes/edit_recipe.html', form=form, recipe=None, portion_form=RecipePortionForm())
 
 @recipes_bp.route("/recipe/edit/<int:recipe_id>", methods=['GET', 'POST'])
 @login_required
 def edit_recipe(recipe_id):
     recipe = Recipe.query.options(
-        selectinload(Recipe.ingredients).joinedload(RecipeIngredient.my_food)
-    ).get_or_404(recipe_id) 
+        selectinload(Recipe.ingredients).selectinload(RecipeIngredient.my_food).selectinload(MyFood.portions),
+        selectinload(Recipe.portions)
+    ).get_or_404(recipe_id)
+
+    # Manually fetch USDA food data
+    usda_food_ids = [ing.fdc_id for ing in recipe.ingredients if ing.fdc_id]
+    if usda_food_ids:
+        usda_foods = Food.query.options(selectinload(Food.portions).selectinload(Portion.measure_unit)).filter(Food.fdc_id.in_(usda_food_ids)).all()
+        usda_foods_map = {food.fdc_id: food for food in usda_foods}
+        for ingredient in recipe.ingredients:
+            if ingredient.fdc_id in usda_foods_map:
+                ingredient.food = usda_foods_map[ingredient.fdc_id]
+
     if recipe.user_id != current_user.id:
         flash('You are not authorized to edit this recipe.', 'danger')
-        return redirect(url_for('recipes.recipes')) # Redirect to their own recipe list
+        return redirect(url_for('recipes.recipes'))
 
     form = RecipeForm(obj=recipe)
-    ingredient_form = IngredientForm()
+    portion_form = RecipePortionForm()
 
     if form.validate_on_submit():
         recipe.name = form.name.data
         recipe.instructions = form.instructions.data
+        recipe.servings = form.servings.data
         db.session.commit()
         flash('Recipe updated successfully.', 'success')
         return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
-
-    usda_food_ids = {ing.fdc_id for ing in recipe.ingredients if ing.fdc_id}
-    if usda_food_ids:
-        usda_foods = Food.query.filter(Food.fdc_id.in_(usda_food_ids)).all()
-        usda_foods_map = {food.fdc_id: food for food in usda_foods}
-    else:
-        usda_foods_map = {}
-
-    for ingredient in recipe.ingredients:
-        if ingredient.fdc_id:
-            ingredient.usda_food = usda_foods_map.get(ingredient.fdc_id)
 
     query = request.args.get('q')
     search_results = []
@@ -82,9 +84,11 @@ def edit_recipe(recipe_id):
         "recipes/edit_recipe.html",
         form=form,
         recipe=recipe,
-        ingredient_form=ingredient_form,
+        portion_form=portion_form,
         search_results=search_results,
-        query=query
+        query=query,
+        url_action='recipes.add_ingredient',
+        url_params={'recipe_id': recipe.id}
     )
 @recipes_bp.route("/recipe/<int:recipe_id>/add_ingredient", methods=['POST'])
 @login_required
@@ -157,6 +161,43 @@ def delete_ingredient(ingredient_id):
     flash('Ingredient removed.', 'success')
     return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
+@recipes_bp.route("/recipe/ingredient/<int:ingredient_id>/update", methods=['POST'])
+@login_required
+def update_ingredient(ingredient_id):
+    ingredient = RecipeIngredient.query.get_or_404(ingredient_id)
+    recipe = ingredient.recipe
+    if recipe.user_id != current_user.id:
+        flash('You are not authorized to modify this recipe.', 'danger')
+        return redirect(url_for('recipes.recipes'))
+
+    quantity = request.form.get('quantity', type=float)
+    portion_id = request.form.get('portion_id', type=int)
+
+    if quantity is None or quantity <= 0:
+        flash('Quantity must be a positive number.', 'danger')
+        return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
+    gram_weight = 0
+    if portion_id:
+        if ingredient.fdc_id:
+            portion = Portion.query.filter_by(id=portion_id, fdc_id=ingredient.fdc_id).first()
+        elif ingredient.my_food_id:
+            portion = MyPortion.query.filter_by(id=portion_id, my_food_id=ingredient.my_food_id).first()
+        
+        if portion:
+            gram_weight = portion.gram_weight
+        else:
+            flash('Selected portion not found.', 'danger')
+            return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+    else:
+        # If no portion selected, assume quantity is in grams
+        gram_weight = 1 # 1 unit = 1 gram
+
+    ingredient.amount_grams = quantity * gram_weight
+    db.session.commit()
+    flash('Ingredient updated successfully.', 'success')
+    return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
 
 @recipes_bp.route("/recipe/view/<int:recipe_id>")
 @login_required
@@ -213,34 +254,27 @@ def add_to_log(recipe_id):
         flash('You are not authorized to log this recipe.', 'danger')
         return redirect(url_for('recipes.recipes'))
 
-    form = AddToLogForm()
-    if form.validate_on_submit():
-        total_grams = sum(ing.amount_grams for ing in recipe.ingredients)
-        if total_grams == 0:
-            flash('Cannot log a recipe with no ingredients.', 'danger')
-            return redirect(url_for('recipes.view_recipe', recipe_id=recipe.id))
-            
-        servings_eaten = form.servings.data
-        
-        # For simplicity, we assume the recipe has 1 serving.
-        # The user can specify how many servings they ate.
-        # A more complex implementation could define servings in the recipe itself.
-        amount_to_log = total_grams * servings_eaten
+    portion_id = request.form.get('portion_id', type=int)
+    if not portion_id:
+        flash('Please select a serving size.', 'danger')
+        return redirect(url_for('recipes.view_recipe', recipe_id=recipe.id))
 
-        new_log = DailyLog(
-            user_id=current_user.id,
-            log_date=date.today(),
-            recipe_id=recipe.id,
-            amount_grams=amount_to_log,
-            meal_name='Snack' # Default meal name
-        )
-        db.session.add(new_log)
-        db.session.commit()
-        flash('Recipe added to your diary.', 'success')
-        return redirect(url_for('diary.diary'))
+    portion = RecipePortion.query.get_or_404(portion_id)
+    if portion.recipe_id != recipe.id:
+        flash('Invalid serving size selected.', 'danger')
+        return redirect(url_for('recipes.view_recipe', recipe_id=recipe.id))
 
-    flash('Invalid data for logging.', 'danger')
-    return redirect(url_for('recipes.view_recipe', recipe_id=recipe.id))
+    new_log = DailyLog(
+        user_id=current_user.id,
+        log_date=date.today(),
+        recipe_id=recipe.id,
+        amount_grams=portion.gram_weight,
+        meal_name='Snack'  # Default meal name
+    )
+    db.session.add(new_log)
+    db.session.commit()
+    flash('Recipe added to your diary.', 'success')
+    return redirect(url_for('diary.diary'))
 
 @recipes_bp.route("/recipe/delete/<int:recipe_id>", methods=['POST'])
 @login_required
@@ -254,3 +288,46 @@ def delete_recipe(recipe_id):
     db.session.commit()
     flash('Recipe deleted.', 'success')
     return redirect(url_for('recipes.recipes'))
+
+
+@recipes_bp.route("/recipe/portion/add/<int:recipe_id>", methods=['POST'])
+@login_required
+def add_recipe_portion(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.user_id != current_user.id:
+        flash('You are not authorized to modify this recipe.', 'danger')
+        return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
+    form = RecipePortionForm()
+    if form.validate_on_submit():
+        total_grams = sum(ing.amount_grams for ing in recipe.ingredients)
+        if recipe.servings > 0 and total_grams > 0:
+            gram_weight = total_grams / recipe.servings
+            new_portion = RecipePortion(
+                recipe_id=recipe.id,
+                description=form.description.data,
+                gram_weight=gram_weight
+            )
+            db.session.add(new_portion)
+            db.session.commit()
+            flash('Recipe portion added.', 'success')
+        else:
+            flash('Cannot create a portion for a recipe with 0 servings or no ingredients.', 'warning')
+    else:
+        flash('Invalid form submission.', 'danger')
+    return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
+
+@recipes_bp.route("/recipe/portion/delete/<int:portion_id>", methods=['POST'])
+@login_required
+def delete_recipe_portion(portion_id):
+    portion = RecipePortion.query.get_or_404(portion_id)
+    recipe = portion.recipe
+    if recipe.user_id != current_user.id:
+        flash('You are not authorized to modify this recipe.', 'danger')
+        return redirect(url_for('recipes.recipes'))
+    
+    db.session.delete(portion)
+    db.session.commit()
+    flash('Recipe portion deleted.', 'success')
+    return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
