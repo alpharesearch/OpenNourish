@@ -12,6 +12,7 @@ find . -type f \
     -not -path "./__pycache__/*" \
     -not -path "./migrations/*" \
     -not -path "./usda_data/*" \
+    -not -path "./.pytest_cache/*" \
     -not -name "*.db" \
     -not -name "*.db-journal" \
     -not -name "*.pyc" \
