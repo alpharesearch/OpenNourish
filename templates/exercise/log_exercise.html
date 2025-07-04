@@ -2,8 +2,12 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Log Exercise</h2>
-    <form method="POST" action="{{ url_for('exercise.log_exercise') }}">
+    <form method="POST" action="{% if log_id %}{{ url_for('exercise.edit_exercise', log_id=log_id) }}{% else %}{{ url_for('exercise.log_exercise') }}{% endif %}">
         {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.log_date.label(class="form-label") }}
+            {{ form.log_date(class="form-control", type="date") }}
+        </div>
         <div class="mb-3">
             {{ form.activity.label(class="form-label") }}
             <select class="form-select" id="activity" name="activity">
