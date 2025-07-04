@@ -7,6 +7,9 @@ from opennourish.utils import calculate_nutrition_for_items
 from .forms import MealForm, DailyLogForm, MealItemForm
 from sqlalchemy.orm import joinedload
 
+from types import SimpleNamespace
+# ... (other imports)
+
 @diary_bp.route('/diary/')
 @diary_bp.route('/diary/<string:log_date_str>')
 @login_required
@@ -27,16 +30,40 @@ def diary(log_date_str=None):
 
     for log in daily_logs:
         food_item = None
+        available_portions = []
+        
         if log.fdc_id:
             food_item = db.session.get(Food, log.fdc_id)
+            if food_item:
+                # Always add grams as an option
+                available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
+                for p in food_item.portions:
+                    display_text = f"{p.portion_description} ({p.gram_weight}g)"
+                    available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
         elif log.my_food_id:
             food_item = db.session.get(MyFood, log.my_food_id)
+            available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
 
         if food_item:
+            # Calculate display amount based on serving type
+            gram_weight = 1.0
+            if log.serving_type and log.serving_type != 'g':
+                try:
+                    # Example serving_type string: "cup (128g)"
+                    gram_weight = float(log.serving_type.split('(')[-1].replace('g)', ''))
+                except (IndexError, ValueError):
+                    gram_weight = 1.0 # Fallback
+
+            display_amount = log.amount_grams / gram_weight if gram_weight > 0 else log.amount_grams
+            
+            nutrition = calculate_nutrition_for_items([log])
             meals[log.meal_name].append({
                 'log_id': log.id,
                 'description': food_item.description,
-                'amount': log.amount_grams
+                'amount': display_amount,
+                'nutrition': nutrition,
+                'portions': available_portions,
+                'serving_type': log.serving_type
             })
 
     prev_date = log_date - timedelta(days=1)
@@ -237,34 +264,38 @@ def delete_meal(meal_id):
     flash('Meal not found or you do not have permission to delete it.', 'danger')
     return redirect(url_for('diary.my_meals'))
 
-@diary_bp.route('/diary/edit/<int:log_id>', methods=['GET', 'POST'])
+@diary_bp.route('/diary/update_entry/<int:log_id>', methods=['POST'])
 @login_required
-def edit_log(log_id):
+def update_entry(log_id):
     log_entry = db.session.get(DailyLog, log_id)
     if not log_entry or log_entry.user_id != current_user.id:
         flash('Entry not found or you do not have permission to edit it.', 'danger')
         return redirect(url_for('diary.diary'))
 
-    if request.method == 'POST':
-        amount = request.form.get('amount', type=float)
-        if amount:
-            log_entry.amount_grams = amount
-            db.session.commit()
-            flash('Entry updated.', 'success')
-            return redirect(url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()))
-        else:
-            flash('Invalid amount.', 'danger')
+    amount = request.form.get('amount', type=float)
+    serving_type = request.form.get('serving_type')
 
-    form = DailyLogForm(obj=log_entry)
-    if form.validate_on_submit():
-        log_entry.amount_grams = form.amount.data
+    if amount and serving_type:
+        # Find the gram weight from the serving type string
+        gram_weight = 1.0
+        if serving_type != 'g':
+            # Example serving_type string: "cup (128g)"
+            try:
+                # Extract the number from the parentheses
+                gram_weight = float(serving_type.split('(')[1].split('g')[0])
+            except (IndexError, ValueError):
+                flash('Invalid serving type format.', 'danger')
+                return redirect(url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()))
+
+        log_entry.amount_grams = amount * gram_weight
+        log_entry.serving_type = serving_type
         db.session.commit()
-        flash('Entry updated.', 'success')
-        return redirect(url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()))
-    elif request.method == 'GET':
-        form.amount.data = log_entry.amount_grams
+        flash('Entry updated successfully!', 'success')
+    else:
+        flash('Invalid data submitted.', 'danger')
 
-    return render_template('diary/edit_log.html', log_entry=log_entry, form=form)
+    return redirect(url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()))
+
 
 @diary_bp.route('/my_meals/edit/<int:meal_id>', methods=['GET', 'POST'])
 @login_required

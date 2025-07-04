@@ -34,14 +34,8 @@ def search():
 def my_foods():
     form = MyFoodForm()
     if form.validate_on_submit():
-        new_food = MyFood(
-            user_id=current_user.id,
-            description=form.description.data,
-            calories_per_100g=form.calories_per_100g.data,
-            protein_per_100g=form.protein_per_100g.data,
-            carbs_per_100g=form.carbs_per_100g.data,
-            fat_per_100g=form.fat_per_100g.data
-        )
+        new_food = MyFood(user_id=current_user.id)
+        form.populate_obj(new_food)
         db.session.add(new_food)
         db.session.commit()
         flash('Custom food added successfully!', 'success')
@@ -56,8 +50,12 @@ def copy_food(fdc_id):
     food_to_copy = db.session.get(Food, fdc_id)
 
     if food_to_copy:
-        # Nutrient IDs for Calories, Protein, Fat, Carbohydrates
-        nutrient_ids = {'calories': 1008, 'protein': 1003, 'carbs': 1005, 'fat': 1004}
+        nutrient_ids = {
+            'calories': 1008, 'protein': 1003, 'carbs': 1005, 'fat': 1004,
+            'saturated_fat': 1258, 'trans_fat': 1257, 'cholesterol': 1253,
+            'sodium': 1093, 'fiber': 1079, 'sugars': 2000, 'vitamin_d': 1110,
+            'calcium': 1087, 'iron': 1089, 'potassium': 1092
+        }
         nutrients = {}
 
         for name, nid in nutrient_ids.items():
@@ -70,7 +68,17 @@ def copy_food(fdc_id):
             calories_per_100g=nutrients.get('calories'),
             protein_per_100g=nutrients.get('protein'),
             carbs_per_100g=nutrients.get('carbs'),
-            fat_per_100g=nutrients.get('fat')
+            fat_per_100g=nutrients.get('fat'),
+            saturated_fat_per_100g=nutrients.get('saturated_fat'),
+            trans_fat_per_100g=nutrients.get('trans_fat'),
+            cholesterol_mg_per_100g=nutrients.get('cholesterol'),
+            sodium_mg_per_100g=nutrients.get('sodium'),
+            fiber_per_100g=nutrients.get('fiber'),
+            sugars_per_100g=nutrients.get('sugars'),
+            vitamin_d_mcg_per_100g=nutrients.get('vitamin_d'),
+            calcium_mg_per_100g=nutrients.get('calcium'),
+            iron_mg_per_100g=nutrients.get('iron'),
+            potassium_mg_per_100g=nutrients.get('potassium')
         )
         db.session.add(new_my_food)
         db.session.commit()
