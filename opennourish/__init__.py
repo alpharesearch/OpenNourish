@@ -9,7 +9,9 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 
 def create_app(config_class=Config):
-    app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), '..', 'templates'))
+    app = Flask(__name__,
+                template_folder=os.path.join(os.path.dirname(__file__), '..', 'templates'),
+                static_folder=os.path.join(os.path.dirname(__file__), '..', 'static'))
     if isinstance(config_class, dict):
         app.config.update(config_class)
     else:
