@@ -8,8 +8,8 @@
             <small class="text-muted">Serves: {{ recipe.servings if recipe.servings is not none else 'N/A' }}</small>
         </div>
         <div>
-            <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-primary">Edit Recipe</a>
-            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-secondary">Back to List</a>
+            <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary">Edit Recipe</a>
+            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary">Back to List</a>
         </div>
     </div>
 

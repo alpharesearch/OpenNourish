@@ -17,8 +17,8 @@
                 </div>
             {% endif %}
         </div>
-        <button type="submit" class="btn btn-primary">Update Meal Name</button>
-        <a href="{{ url_for('diary.my_meals') }}" class="btn btn-secondary">Back to My Meals</a>
+        <button type="submit" class="btn btn-outline-primary">Update Meal Name</button>
+        <a href="{{ url_for('diary.my_meals') }}" class="btn btn-outline-secondary">Back to My Meals</a>
     </form>
 
     <h2 class="mt-4">Meal Items</h2>
@@ -45,8 +45,8 @@
                             {% endfor %}
                         </select>
                         <div class="btn-group ms-2">
-                            <button type="submit" class="btn btn-primary btn-sm">Save</button>
-                            <a href="{{ url_for('diary.delete_meal_item', meal_id=meal.id, item_id=item.id) }}" class="btn btn-danger btn-sm">Delete</a>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Save</button>
+                            <a href="{{ url_for('diary.delete_meal_item', meal_id=meal.id, item_id=item.id) }}" class="btn btn-outline-danger btn-sm">Delete</a>
                         </div>
                     </div>
                 </div>
@@ -62,10 +62,10 @@
     <form action="{{ url_for('diary.search_for_meal_item', meal_id=meal.id) }}" method="GET" class="mb-3">
         <div class="input-group">
             <input type="text" class="form-control" placeholder="Search for food or meal..." name="search_term">
-            <button class="btn btn-primary" type="submit">Search</button>
+            <button class="btn btn-outline-primary" type="submit">Search</button>
         </div>
     </form>
-    <a href="{{ url_for('diary.search_for_meal_item', meal_id=meal.id) }}" class="btn btn-success mb-3">Browse All Foods/Meals</a>
+    <a href="{{ url_for('diary.search_for_meal_item', meal_id=meal.id) }}" class="btn btn-outline-success mb-3">Browse All Foods/Meals</a>
 
 </div>
 {% endblock %}
