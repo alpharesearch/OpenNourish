@@ -71,6 +71,8 @@ To maintain a consistent and professional look and feel, all generated HTML temp
 - **Informational Links/Buttons:** Use for non-critical actions like "View Details" or "Edit".
   - **Class:** `btn btn-info` or `btn btn-outline-primary`
 - **Forms:** All forms should be rendered cleanly. Each form field should have a proper `<label>` and be wrapped in a `div class="mb-3"` for correct spacing. Validation errors should be displayed prominently.
+- **Tables:** All tables should use Bootstrap's `table-striped` class for improved readability.
+  - **Class:** `table table-striped`
 - **Charts:** All charts should be generated using Chart.js. They should be responsive and include clear labels and titles.
 
 ## 8. Testing
