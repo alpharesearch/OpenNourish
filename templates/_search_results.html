@@ -83,10 +83,16 @@
                         <button type="submit" class="btn btn-primary">Add All Foods from Meal</button>
                     </form>
                 {% elif request.endpoint == 'diary.search_for_diary' or request.endpoint == 'diary.search_for_meal_item' %}
-                    <form action="{{ url_for('diary.add_meal_item', meal_id=meal.id) }}" method="post" class="d-flex justify-content-between align-items-center">
+                    <form action="{% if log_date %}{{ url_for('diary.add_meal_to_diary') }}{% elif meal %}{{ url_for('diary.add_meal_item', meal_id=meal.id) }}{% endif %}" method="post" class="d-flex justify-content-between align-items-center">
                         {{ searched_meal.name }}
                         <div class="d-flex">
+                            {% if log_date %}
+                            <input type="hidden" name="log_date" value="{{ log_date.isoformat() }}">
+                            <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                            <input type="hidden" name="meal_id" value="{{ searched_meal.id }}">
+                            {% elif meal %}
                             <input type="hidden" name="source_meal_id" value="{{ searched_meal.id }}">
+                            {% endif %}
                             <button type="submit" class="btn btn-success btn-sm">Add</button>
                         </div>
                     </form>
