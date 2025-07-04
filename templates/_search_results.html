@@ -77,9 +77,9 @@
             <div class="list-group-item">
                 {% if request.endpoint == 'recipes.edit_recipe' %}
                     <form method="POST" action="{{ url_for('recipes.add_ingredient', recipe_id=recipe.id) }}" class="d-flex justify-content-between align-items-center">
-                        <input type="hidden" name="meal_id" value="{{ meal.id }}">
-                        <input type="hidden" name="food_type" value="{{ meal.type }}"> {# This will be 'my_meal' #}
-                        <span>{{ meal.name }}</span>
+                        <input type="hidden" name="meal_id" value="{{ searched_meal.id }}">
+                        <input type="hidden" name="food_type" value="my_meal">
+                        <span>{{ searched_meal.name }}</span>
                         <button type="submit" class="btn btn-primary">Add All Foods from Meal</button>
                     </form>
                 {% elif request.endpoint == 'diary.search_for_diary' or request.endpoint == 'diary.search_for_meal_item' %}
