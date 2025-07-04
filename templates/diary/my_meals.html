@@ -16,6 +16,8 @@
                                     {{ item.usda_food.description }}
                                 {% elif item.my_food_id %}
                                     {{ item.my_food.description }}
+                                {% elif item.recipe_id %}
+                                    {{ item.recipe.name }}
                                 {% endif %}
                                 - {{ item.amount_grams }}g
                             </li>

@@ -24,8 +24,8 @@
                     </div>
                     
                     <div class="d-flex align-items-center">
+                        <input type="number" name="quantity" class="form-control form-control-sm" style="width: 80px;" placeholder="Qty" value="1" required>
                         {% if item.type != 'my_meal' %}
-                            <input type="number" name="quantity" class="form-control form-control-sm" style="width: 80px;" placeholder="Qty" required>
                             <select name="portion_id" class="form-select form-select-sm ms-2" style="width: 120px;">
                                 <option value="g">g</option>
                                 {% if item.type == 'usda' %}
@@ -39,7 +39,8 @@
                                 {% endif %}
                             </select>
                         {% else %}
-                            <input type="hidden" name="meal_id" value="{{ item.id }}">
+                            <input type="hidden" name="source_meal_id" value="{{ item.id }}">
+                            <span class="ms-2 me-2">servings</span>
                         {% endif %}
                         <button type="submit" class="btn btn-sm btn-primary ms-2">Add</button>
                     </div>

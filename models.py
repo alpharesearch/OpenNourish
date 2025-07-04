@@ -124,8 +124,9 @@ class MyMealItem(db.Model):
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
     amount_grams = db.Column(db.Float)
 
-    food = db.relationship('Food', primaryjoin='MyMealItem.fdc_id == foreign(Food.fdc_id)', overlaps="food", viewonly=True)
-    my_food = db.relationship('MyFood', foreign_keys=[my_food_id])
+    food = db.relationship('Food', primaryjoin='MyMealItem.fdc_id == foreign(Food.fdc_id)', overlaps="food", viewonly=True, uselist=False)
+    my_food = db.relationship('MyFood', foreign_keys=[my_food_id], uselist=False)
+    recipe = db.relationship('Recipe', foreign_keys=[recipe_id], uselist=False)
 
 class ExerciseActivity(db.Model):
     __tablename__ = 'exercise_activities'

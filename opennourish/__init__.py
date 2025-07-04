@@ -139,7 +139,7 @@ def create_app(config_class=Config):
                 for _ in range(num_my_foods):
                     my_food = MyFood(
                         user_id=user.id,
-                        description=fake.word().capitalize() + ' ' + fake.word(),
+                        description=fake.word().capitalize() + ' ' + fake.word()+ ' My Foods',
                         calories_per_100g=random.uniform(50, 500),
                         protein_per_100g=random.uniform(1, 50),
                         carbs_per_100g=random.uniform(1, 80),
@@ -214,7 +214,7 @@ def create_app(config_class=Config):
                         db.session.add(ingredient)
 
                     # Add some recipe portions
-                    if random.random() < 0.6:  # 60% chance to add custom recipe portions
+                    if random.random() < 0.8:  # 80% chance to add custom recipe portions
                         num_recipe_portions = random.randint(1, 3)
                         for _ in range(num_recipe_portions):
                             portion = RecipePortion(
@@ -230,7 +230,7 @@ def create_app(config_class=Config):
                 for _ in range(num_my_meals):
                     meal = MyMeal(
                         user_id=user.id,
-                        name=fake.word().capitalize() + ' Meal'
+                        name=fake.word().capitalize() + ' My Meal'
                     )
                     db.session.add(meal)
                     user_my_meals.append(meal)
@@ -287,7 +287,20 @@ def create_app(config_class=Config):
                     elif choice == 'recipe' and user_recipes:
                         recipe_id = random.choice(user_recipes).id
                     elif choice == 'my_meal' and user_my_meals:
-                        my_meal_log_id = random.choice(user_my_meals).id
+                        selected_meal = random.choice(user_my_meals)
+                        for item in selected_meal.items:
+                            log_entry = DailyLog(
+                                user_id=user.id,
+                                log_date=log_date,
+                                meal_name=meal_name,
+                                amount_grams=item.amount_grams,
+                                fdc_id=item.fdc_id,
+                                my_food_id=item.my_food_id,
+                                recipe_id=item.recipe_id
+                            )
+                            db.session.add(log_entry)
+                            daily_logs_created += 1
+                        continue # Skip the rest of the loop for this iteration
                     else:  # Fallback if no suitable item found
                         if usda_fdc_ids:
                             fdc_id = random.choice(usda_fdc_ids)
@@ -295,23 +308,22 @@ def create_app(config_class=Config):
                             my_food_id = random.choice(user_my_foods).id
                         elif user_recipes:
                             recipe_id = random.choice(user_recipes).id
-                        elif user_my_meals:
-                            my_meal_log_id = random.choice(user_my_meals).id
                         else:
                             continue  # Skip if no food items can be linked
 
-                    log_entry = DailyLog(
-                        user_id=user.id,
-                        log_date=log_date,
-                        meal_name=meal_name,
-                        amount_grams=amount_grams,
-                        fdc_id=fdc_id,
-                        my_food_id=my_food_id,
-                        recipe_id=recipe_id,
-                        my_meal_id=my_meal_log_id
-                    )
-                    db.session.add(log_entry)
-                daily_logs_created += num_daily_logs
+                    # Only create a single log_entry if not a my_meal type that was expanded
+                    if choice != 'my_meal' or not user_my_meals:
+                        log_entry = DailyLog(
+                            user_id=user.id,
+                            log_date=log_date,
+                            meal_name=meal_name,
+                            amount_grams=amount_grams,
+                            fdc_id=fdc_id,
+                            my_food_id=my_food_id,
+                            recipe_id=recipe_id
+                        )
+                        db.session.add(log_entry)
+                        daily_logs_created += 1
 
                 users_created += 1
 
