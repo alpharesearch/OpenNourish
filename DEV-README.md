@@ -65,3 +65,58 @@ Follow these steps to make non-destructive schema changes:
     ```
 
 By following this process, you can safely evolve your database schema as you develop the application, without worrying about losing your data.
+
+## Database Seeding for Development
+
+To quickly populate your `user_data.db` with realistic test data for development and testing purposes, you can use the `seed-dev-data` Flask CLI command.
+
+**Prerequisites:**
+
+*   Ensure you have the `Faker` library installed. If not, run: `pip install Faker` (or `pip install -r requirements.txt` after adding `Faker` to it).
+
+**Usage:**
+
+To seed the database with a default number of users (currently 10) and their associated data:
+
+```bash
+flask seed-dev-data
+```
+
+To specify a custom number of users to create:
+
+```bash
+flask seed-dev-data --count <number_of_users>
+```
+
+Replace `<number_of_users>` with the desired count (e.g., `flask seed-dev-data --count 5`).
+
+**What this command does:**
+
+*   **Clears Old Data:** Deletes all existing records from user-related tables (`DailyLog`, `MyFood`, `Recipe`, `UserGoal`, `CheckIn`, `User`, etc.) to ensure a clean slate.
+*   **Creates a Main Test User:** Adds a predictable user for easy login (username: `test`, password: `password`).
+*   **Generates Bulk Data:** For each specified user count, it generates:
+    *   A new fake `User`.
+    *   A `UserGoal` with randomized values.
+    *   20-30 `MyFood` items with fake descriptions and nutritional data.
+    *   50-60 `CheckIn` records spanning the last two months with varying weights.
+    *   2-5 `Recipe` objects.
+    *   100+ `DailyLog` entries spanning different dates and meals, randomly linked to USDA foods, `MyFood` items, or `Recipe` objects.
+
+This command is invaluable for quickly setting up a development environment with sufficient data to test pagination, data display, and other features.
+
+### Using the `seed_db.sh` Script
+
+For a fully automated, non-destructive seeding process, you can use the `seed_db.sh` shell script. This script will ensure your database schema is up-to-date and then populate it with development data, preserving your existing database file and migration history.
+
+**Usage:**
+
+1.  Make the script executable (if you haven't already):
+    ```bash
+    chmod +x seed_db.sh
+    ```
+2.  Run the script from the project root:
+    ```bash
+    ./seed_db.sh
+    ```
+
+This script executes `flask db upgrade` to apply any pending migrations and then `flask seed-dev-data` to populate the database. It's a convenient way to refresh your development data without manually running multiple commands.
