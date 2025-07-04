@@ -86,7 +86,9 @@ class Recipe(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String)
     instructions = db.Column(db.Text)
+    servings = db.Column(db.Float, default=1)
     ingredients = db.relationship('RecipeIngredient', backref='recipe', cascade="all, delete-orphan")
+    portions = db.relationship('RecipePortion', backref='recipe', cascade='all, delete-orphan')
 
 class RecipeIngredient(db.Model):
     __tablename__ = 'recipe_ingredients'
@@ -98,6 +100,13 @@ class RecipeIngredient(db.Model):
 
     food = db.relationship('Food', primaryjoin='RecipeIngredient.fdc_id == foreign(Food.fdc_id)', overlaps="food", viewonly=True, uselist=False)
     my_food = db.relationship('MyFood', foreign_keys=[my_food_id])
+
+class RecipePortion(db.Model):
+    __tablename__ = 'recipe_portions'
+    id = db.Column(db.Integer, primary_key=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=False)
+    description = db.Column(db.String, nullable=False)
+    gram_weight = db.Column(db.Float, nullable=False)
 
 class MyMeal(db.Model):
     __tablename__ = 'my_meals'

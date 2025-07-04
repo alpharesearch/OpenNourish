@@ -103,7 +103,10 @@ def search_for_diary(log_date_str, meal_name):
         item.type = 'my_meal'
         search_results.append(item)
 
-    return render_template('diary/search.html', log_date=log_date, meal_name=meal_name, search_results=search_results, search_term=search_term)
+    url_action = 'diary.add_entry'
+    url_params = {'log_date': log_date.isoformat(), 'meal_name': meal_name}
+
+    return render_template('diary/search.html', log_date=log_date, meal_name=meal_name, search_results=search_results, search_term=search_term, url_action=url_action, url_params=url_params)
 
 @diary_bp.route('/my_meals/search/<int:meal_id>', methods=['GET', 'POST'])
 @login_required

@@ -1,84 +1,42 @@
-{% if search_results %}
-    <h3>USDA Foods</h3>
-    <div class="list-group mb-4">
-        {% for food in search_results if food.type == 'usda' %}
+{% if search_results is defined and search_results %}
+<div class="mt-4">
+    <h5>Search Results</h5>
+    <div class="list-group">
+        {% for item in search_results %}
             <div class="list-group-item">
-                <form action="{% if log_date %}{{ url_for('diary.add_entry') }}{% elif meal %}{{ url_for('diary.add_meal_item', meal_id=meal.id) }}{% endif %}" method="post" class="d-flex justify-content-between align-items-center">
-                    {{ food.description }}
-                    <div class="d-flex">
-                        {% if log_date %}
-                        <input type="hidden" name="log_date" value="{{ log_date.isoformat() }}">
-                        <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                        {% elif meal %}
-                        <input type="hidden" name="meal_id" value="{{ meal.id }}">
+                <form action="{{ url_for(url_action, **url_params) }}" method="POST" class="d-flex justify-content-between align-items-center">
+                    <input type="hidden" name="food_id" value="{{ item.id if item.type != 'usda' else item.fdc_id }}">
+                    <input type="hidden" name="food_type" value="{{ item.type }}">
+                    
+                    <div>
+                        <strong>{{ item.description or item.name }}</strong>
+                        <small class="text-muted">
+                            {% if item.type == 'usda' %}
+                                (USDA Food)
+                            {% elif item.type == 'my_food' %}
+                                (My Food)
+                            {% elif item.type == 'my_meal' %}
+                                (My Meal)
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    <div class="d-flex align-items-center">
+                        {% if item.type != 'my_meal' %}
+                            <input type="number" name="amount" class="form-control form-control-sm" style="width: 100px;" placeholder="grams" required>
+                            <span class="ms-2 me-2">g</span>
+                        {% else %}
+                            <input type="hidden" name="meal_id" value="{{ item.id }}">
                         {% endif %}
-                        <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
-                        <input type="number" name="quantity" class="form-control me-2" placeholder="quantity" required step="0.01">
-                        <select name="portion_id" class="form-select me-2">
-                            <option value="g">grams</option>
-                            {% for portion in food.portions %}
-                                <option value="{{ portion.id }}">{{ portion.portion_description }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-success btn-sm">Add</button>
+                        <button type="submit" class="btn btn-sm btn-primary">Add</button>
                     </div>
                 </form>
             </div>
-        {% else %}
-            <div class="list-group-item">No USDA foods found.</div>
         {% endfor %}
     </div>
-
-    <h3>My Foods</h3>
-    <div class="list-group mb-4">
-        {% for food in search_results if food.type == 'my_food' %}
-            <div class="list-group-item">
-                <form action="{% if log_date %}{{ url_for('diary.add_entry') }}{% elif meal %}{{ url_for('diary.add_meal_item', meal_id=meal.id) }}{% endif %}" method="post" class="d-flex justify-content-between align-items-center">
-                    {{ food.description }}
-                    <div class="d-flex">
-                        {% if log_date %}
-                        <input type="hidden" name="log_date" value="{{ log_date.isoformat() }}">
-                        <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                        {% elif meal %}
-                        <input type="hidden" name="meal_id" value="{{ meal.id }}">
-                        {% endif %}
-                        <input type="hidden" name="my_food_id" value="{{ food.id }}">
-                        <input type="number" name="quantity" class="form-control me-2" placeholder="quantity" required step="0.01">
-                        <select name="portion_id" class="form-select me-2">
-                            <option value="g">grams</option>
-                            {% for portion in food.portions %}
-                                <option value="{{ portion.id }}">{{ portion.description }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-success btn-sm">Add</button>
-                    </div>
-                </form>
-            </div>
-        {% else %}
-            <div class="list-group-item">No custom foods found.</div>
-        {% endfor %}
-    </div>
-
-    <h3>My Meals</h3>
-    <div class="list-group mb-4">
-        {% for searched_meal in search_results if searched_meal.type == 'my_meal' %}
-            <div class="list-group-item">
-                <form action="{% if log_date %}{{ url_for('diary.add_meal_to_diary') }}{% elif meal %}{{ url_for('diary.add_meal_item', meal_id=meal.id) }}{% endif %}" method="post" class="d-flex justify-content-between align-items-center">
-                    {{ searched_meal.name }}
-                    <div class="d-flex">
-                        {% if log_date %}
-                        <input type="hidden" name="log_date" value="{{ log_date.isoformat() }}">
-                        <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                        <input type="hidden" name="meal_id" value="{{ searched_meal.id }}">
-                        {% elif meal %}
-                        <input type="hidden" name="source_meal_id" value="{{ searched_meal.id }}">
-                        {% endif %}
-                        <button type="submit" class="btn btn-success btn-sm">Add</button>
-                    </div>
-                </form>
-            </div>
-        {% else %}
-            <div class="list-group-item">No meals found.</div>
-        {% endfor %}
-    </div>
+</div>
+{% elif query %}
+<div class="mt-4">
+    <p>No results found for "{{ query }}".</p>
+</div>
 {% endif %}

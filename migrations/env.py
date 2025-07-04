@@ -42,19 +42,13 @@ target_db = current_app.extensions['migrate'].db
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
-from sqlalchemy import MetaData
 # ... etc.
 
 
 def get_metadata():
-    # if hasattr(target_db, 'metadatas'):
-    #     return target_db.metadatas[None]
-    # return target_db.metadata
-    meta = MetaData()
-    for table in target_db.metadata.tables.values():
-        if table.info.get('bind_key') is None:
-            table.tometadata(meta)
-    return meta
+    if hasattr(target_db, 'metadatas'):
+        return target_db.metadatas[None]
+    return target_db.metadata
 
 
 def run_migrations_offline():
