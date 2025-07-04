@@ -43,6 +43,7 @@ class MyFood(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     description = db.Column(db.String)
+    ingredients = db.Column(db.Text, nullable=True)
     calories_per_100g = db.Column(db.Float)
     protein_per_100g = db.Column(db.Float)
     carbs_per_100g = db.Column(db.Float)
@@ -57,6 +58,15 @@ class MyFood(db.Model):
     calcium_mg_per_100g = db.Column(db.Float, nullable=True)
     iron_mg_per_100g = db.Column(db.Float, nullable=True)
     potassium_mg_per_100g = db.Column(db.Float, nullable=True)
+    portions = db.relationship('MyPortion', backref='my_food', cascade='all, delete-orphan')
+
+class MyPortion(db.Model):
+    __tablename__ = 'my_portions'
+    id = db.Column(db.Integer, primary_key=True)
+    my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=False)
+    description = db.Column(db.String, nullable=False)
+    gram_weight = db.Column(db.Float, nullable=False)
+
 
 class DailyLog(db.Model):
     __tablename__ = 'daily_logs'

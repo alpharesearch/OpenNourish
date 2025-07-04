@@ -1,5 +1,5 @@
 import pytest
-from models import db, User, Food, FoodNutrient, Nutrient, MyFood, DailyLog
+from models import db, User, Food, FoodNutrient, Nutrient, MyFood, DailyLog, Portion, MyPortion, MeasureUnit
 from datetime import date
 from opennourish.utils import calculate_nutrition_for_items
 
@@ -19,7 +19,8 @@ def test_add_usda_food_to_diary(auth_client):
     diary_data = {
         'log_date': date.today().strftime('%Y-%m-%d'),
         'meal_name': 'Breakfast',
-        'amount': 200,
+        'quantity': 200,
+        'portion_id': 'g',
         'fdc_id': 10001
     }
     response = auth_client.post('/diary/add_entry', data=diary_data, follow_redirects=True)
@@ -54,7 +55,8 @@ def test_add_my_food_to_diary(auth_client):
     diary_data = {
         'log_date': date.today().strftime('%Y-%m-%d'),
         'meal_name': 'Lunch',
-        'amount': 150,
+        'quantity': 150,
+        'portion_id': 'g',
         'my_food_id': my_food_id
     }
     response = auth_client.post('/diary/add_entry', data=diary_data, follow_redirects=True)
@@ -92,3 +94,61 @@ def test_delete_diary_entry(auth_client):
     with auth_client.application.app_context():
         deleted_log = db.session.get(DailyLog, log_id)
         assert deleted_log is None
+
+def test_add_usda_food_with_portion(auth_client):
+    """
+    Tests adding a USDA food with a specific portion and verifies the gram amount.
+    """
+    with auth_client.application.app_context():
+        test_food = Food(fdc_id=10002, description='USDA Cheese')
+        db.session.add(test_food)
+        measure_unit = MeasureUnit(id=9999, name='unit')
+        db.session.add(measure_unit)
+        portion = Portion(id=1, fdc_id=10002, seq_num=1, measure_unit_id=9999, portion_description='slice', gram_weight=28.0)
+        db.session.add(portion)
+        db.session.commit()
+        portion_id = portion.id
+
+    diary_data = {
+        'log_date': date.today().strftime('%Y-%m-%d'),
+        'meal_name': 'Snack',
+        'quantity': 2,
+        'portion_id': portion_id,
+        'fdc_id': 10002
+    }
+    auth_client.post('/diary/add_entry', data=diary_data)
+
+    with auth_client.application.app_context():
+        log_entry = DailyLog.query.filter_by(fdc_id=10002).first()
+        assert log_entry is not None
+        assert log_entry.amount_grams == 56.0
+
+def test_add_my_food_with_portion(auth_client):
+    """
+    Tests adding a custom food with a specific portion and verifies the gram amount.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        my_food = MyFood(user_id=user.id, description='My Custom Nuts', calories_per_100g=600)
+        db.session.add(my_food)
+        db.session.commit()
+        my_food_id = my_food.id
+
+        my_portion = MyPortion(my_food_id=my_food_id, description='handful', gram_weight=40.0)
+        db.session.add(my_portion)
+        db.session.commit()
+        my_portion_id = my_portion.id
+
+    diary_data = {
+        'log_date': date.today().strftime('%Y-%m-%d'),
+        'meal_name': 'Snack',
+        'quantity': 3,
+        'portion_id': my_portion_id,
+        'my_food_id': my_food_id
+    }
+    auth_client.post('/diary/add_entry', data=diary_data)
+
+    with auth_client.application.app_context():
+        log_entry = DailyLog.query.filter_by(my_food_id=my_food_id).first()
+        assert log_entry is not None
+        assert log_entry.amount_grams == 120.0
