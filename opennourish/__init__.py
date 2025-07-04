@@ -46,6 +46,9 @@ def create_app(config_class=Config):
     from opennourish.tracking import tracking_bp
     app.register_blueprint(tracking_bp, url_prefix='/tracking')
 
+    from opennourish.exercise import exercise_bp
+    app.register_blueprint(exercise_bp, url_prefix='/exercise')
+
     from opennourish.main.routes import main_bp
     app.register_blueprint(main_bp)
 

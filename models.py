@@ -78,13 +78,6 @@ class RecipeIngredient(db.Model):
     food = db.relationship('Food', primaryjoin='RecipeIngredient.fdc_id == foreign(Food.fdc_id)', overlaps="food", viewonly=True, uselist=False)
     my_food = db.relationship('MyFood', foreign_keys=[my_food_id])
 
-    
-
-    
-
-    
-
-
 class MyMeal(db.Model):
     __tablename__ = 'my_meals'
     id = db.Column(db.Integer, primary_key=True)
@@ -104,13 +97,23 @@ class MyMealItem(db.Model):
     food = db.relationship('Food', primaryjoin='MyMealItem.fdc_id == foreign(Food.fdc_id)', overlaps="food", viewonly=True)
     my_food = db.relationship('MyFood', foreign_keys=[my_food_id])
 
-    
+class ExerciseActivity(db.Model):
+    __tablename__ = 'exercise_activities'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    met_value = db.Column(db.Float, nullable=False)
 
-    
+class ExerciseLog(db.Model):
+    __tablename__ = 'exercise_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    log_date = db.Column(db.Date, default=date.today)
+    activity_id = db.Column(db.Integer, db.ForeignKey('exercise_activities.id'), nullable=True)
+    manual_description = db.Column(db.String, nullable=True)
+    duration_minutes = db.Column(db.Integer, nullable=False)
+    calories_burned = db.Column(db.Integer, nullable=False)
 
-    
-
-
+    activity = db.relationship('ExerciseActivity')
 
 
 # --- USDA Data Models (USDA Bind) ---

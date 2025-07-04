@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Log Exercise</h2>
+    <form method="POST" action="{{ url_for('exercise.log_exercise') }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.activity.label(class="form-label") }}
+            <select class="form-select" id="activity" name="activity">
+                {% for value, label, selected in form.activity.iter_choices() %}
+                    <option value="{{ value }}" {% if selected %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div id="manual-entry" style="display: none;">
+            <div class="mb-3">
+                {{ form.manual_description.label(class="form-label") }}
+                {{ form.manual_description(class="form-control") }}
+            </div>
+            <div class="mb-3">
+                {{ form.calories_burned.label(class="form-label") }}
+                {{ form.calories_burned(class="form-control") }}
+            </div>
+        </div>
+        <div class="mb-3">
+            {{ form.duration_minutes.label(class="form-label") }}
+            {{ form.duration_minutes(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const activityField = document.getElementById('activity');
+        const manualEntryDiv = document.getElementById('manual-entry');
+        const manualDescriptionField = document.getElementById('manual_description');
+        const caloriesBurnedField = document.getElementById('calories_burned');
+
+        function toggleManualEntry() {
+            if (activityField.value === '__None') { // This is the value for the blank option
+                manualEntryDiv.style.display = 'block';
+                manualDescriptionField.required = true;
+                caloriesBurnedField.required = true;
+            } else {
+                manualEntryDiv.style.display = 'none';
+                manualDescriptionField.required = false;
+                caloriesBurnedField.required = false;
+            }
+        }
+
+        activityField.addEventListener('change', toggleManualEntry);
+        toggleManualEntry(); // Run on page load
+    });
+</script>
+{% endblock %}
