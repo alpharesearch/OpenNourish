@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import current_user, login_required
 from . import diary_bp
-from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem
+from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe
 from datetime import date, timedelta
 from opennourish.utils import calculate_nutrition_for_items
 from .forms import MealForm, DailyLogForm, MealItemForm
@@ -71,9 +71,10 @@ def diary(log_date_str=None):
             display_amount = log.amount_grams / gram_weight if gram_weight > 0 else log.amount_grams
             
             nutrition = calculate_nutrition_for_items([log])
+            description_to_display = food_item.description if hasattr(food_item, 'description') else food_item.name
             meals[log.meal_name].append({
                 'log_id': log.id,
-                'description': food_item.description,
+                'description': description_to_display,
                 'amount': display_amount,
                 'nutrition': nutrition,
                 'portions': available_portions,

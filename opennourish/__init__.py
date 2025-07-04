@@ -83,11 +83,11 @@ def create_app(config_class=Config):
             # Delete in reverse dependency order
             db.session.query(DailyLog).delete()
             db.session.query(CheckIn).delete()
+            db.session.query(MyMealItem).delete()
+            db.session.query(MyMeal).delete()
             db.session.query(RecipeIngredient).delete()
             db.session.query(RecipePortion).delete()
             db.session.query(Recipe).delete()
-            db.session.query(MyMealItem).delete()
-            db.session.query(MyMeal).delete()
             db.session.query(MyPortion).delete()
             db.session.query(MyFood).delete()
             db.session.query(UserGoal).delete()
@@ -108,6 +108,8 @@ def create_app(config_class=Config):
             my_foods_created = 0
             check_ins_created = 0
             recipes_created = 0
+            my_meals_created = 0
+            my_meal_items_created = 0
             daily_logs_created = 0
 
             # Fetch some FDC IDs from the USDA database for linking
@@ -222,6 +224,48 @@ def create_app(config_class=Config):
                             )
                             db.session.add(portion)
 
+                # MyMeals
+                num_my_meals = random.randint(5, 10)
+                user_my_meals = []
+                for _ in range(num_my_meals):
+                    meal = MyMeal(
+                        user_id=user.id,
+                        name=fake.word().capitalize() + ' Meal'
+                    )
+                    db.session.add(meal)
+                    user_my_meals.append(meal)
+                my_meals_created += num_my_meals
+                db.session.flush() # To get meal.id for items
+
+                # MyMealItems
+                for m in user_my_meals:
+                    num_meal_items = random.randint(2, 5)
+                    for _ in range(num_meal_items):
+                        choice = random.choice(['usda', 'my_food', 'recipe'])
+                        fdc_id = None
+                        my_food_id = None
+                        recipe_id = None
+
+                        if choice == 'usda' and usda_fdc_ids:
+                            fdc_id = random.choice(usda_fdc_ids)
+                        elif choice == 'my_food' and user_my_foods:
+                            my_food_id = random.choice(user_my_foods).id
+                        elif choice == 'recipe' and user_recipes:
+                            recipe_id = random.choice(user_recipes).id
+                        else:
+                            continue # Skip if no suitable item found
+
+                        if fdc_id or my_food_id or recipe_id:
+                            item = MyMealItem(
+                                my_meal_id=m.id,
+                                fdc_id=fdc_id,
+                                my_food_id=my_food_id,
+                                recipe_id=recipe_id,
+                                amount_grams=random.uniform(20, 400)
+                            )
+                            db.session.add(item)
+                            my_meal_items_created += 1
+
                 # DailyLog
                 num_daily_logs = random.randint(100, 150)
                 for j in range(num_daily_logs):
@@ -229,11 +273,12 @@ def create_app(config_class=Config):
                     meal_name = random.choice(['Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)'])
                     amount_grams = random.uniform(50, 500)
 
-                    # Randomly link to USDA, MyFood, or Recipe
-                    choice = random.choice(['usda', 'my_food', 'recipe'])
+                    # Randomly link to USDA, MyFood, Recipe, or MyMeal
+                    choice = random.choice(['usda', 'my_food', 'recipe', 'my_meal'])
                     fdc_id = None
                     my_food_id = None
                     recipe_id = None
+                    my_meal_log_id = None
 
                     if choice == 'usda' and usda_fdc_ids:
                         fdc_id = random.choice(usda_fdc_ids)
@@ -241,6 +286,8 @@ def create_app(config_class=Config):
                         my_food_id = random.choice(user_my_foods).id
                     elif choice == 'recipe' and user_recipes:
                         recipe_id = random.choice(user_recipes).id
+                    elif choice == 'my_meal' and user_my_meals:
+                        my_meal_log_id = random.choice(user_my_meals).id
                     else:  # Fallback if no suitable item found
                         if usda_fdc_ids:
                             fdc_id = random.choice(usda_fdc_ids)
@@ -248,6 +295,8 @@ def create_app(config_class=Config):
                             my_food_id = random.choice(user_my_foods).id
                         elif user_recipes:
                             recipe_id = random.choice(user_recipes).id
+                        elif user_my_meals:
+                            my_meal_log_id = random.choice(user_my_meals).id
                         else:
                             continue  # Skip if no food items can be linked
 
@@ -258,7 +307,8 @@ def create_app(config_class=Config):
                         amount_grams=amount_grams,
                         fdc_id=fdc_id,
                         my_food_id=my_food_id,
-                        recipe_id=recipe_id
+                        recipe_id=recipe_id,
+                        my_meal_id=my_meal_log_id
                     )
                     db.session.add(log_entry)
                 daily_logs_created += num_daily_logs
@@ -266,6 +316,6 @@ def create_app(config_class=Config):
                 users_created += 1
 
             db.session.commit()
-            print(f"Database seeded with {users_created} users, {my_foods_created} MyFoods, {check_ins_created} CheckIns, {recipes_created} Recipes, and {daily_logs_created} Daily Logs.")
+            print(f"Database seeded with {users_created} users, {my_foods_created} MyFoods, {check_ins_created} CheckIns, {recipes_created} Recipes, {my_meals_created} MyMeals, {my_meal_items_created} MyMealItems, and {daily_logs_created} Daily Logs.")
 
     return app
