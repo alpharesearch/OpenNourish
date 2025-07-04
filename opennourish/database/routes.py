@@ -2,8 +2,8 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import current_user, login_required
 from sqlalchemy import case, func
 from . import database_bp
-from models import db, Food, MyFood, FoodNutrient, Nutrient, Portion
-from .forms import MyFoodForm
+from models import db, Food, MyFood, FoodNutrient, Nutrient, Portion, MyPortion
+from .forms import MyFoodForm, MyPortionForm
 
 @database_bp.route('/search', methods=['GET', 'POST'])
 @login_required
@@ -65,6 +65,7 @@ def copy_food(fdc_id):
         new_my_food = MyFood(
             user_id=current_user.id,
             description=food_to_copy.description,
+            ingredients=food_to_copy.ingredients,
             calories_per_100g=nutrients.get('calories'),
             protein_per_100g=nutrients.get('protein'),
             carbs_per_100g=nutrients.get('carbs'),
@@ -82,6 +83,16 @@ def copy_food(fdc_id):
         )
         db.session.add(new_my_food)
         db.session.commit()
+
+        for portion in food_to_copy.portions:
+            new_portion = MyPortion(
+                my_food_id=new_my_food.id,
+                description=portion.portion_description,
+                gram_weight=portion.gram_weight
+            )
+            db.session.add(new_portion)
+        db.session.commit()
+
         flash(f'{food_to_copy.description} has been added to your foods.', 'success')
     else:
         flash('Food not found.', 'danger')
@@ -97,13 +108,53 @@ def edit_my_food(food_id):
         return redirect(url_for('database.my_foods'))
 
     form = MyFoodForm(obj=food)
+    portion_form = MyPortionForm()
+
     if form.validate_on_submit():
         form.populate_obj(food)
         db.session.commit()
         flash('Food updated successfully!', 'success')
+        return redirect(url_for('database.edit_my_food', food_id=food.id))
+
+    return render_template('database/edit_my_food.html', food=food, form=form, portion_form=portion_form)
+
+@database_bp.route('/my_foods/<int:food_id>/add_portion', methods=['POST'])
+@login_required
+def add_portion(food_id):
+    food = db.session.get(MyFood, food_id)
+    if not food or food.user_id != current_user.id:
+        flash('Food not found or you do not have permission to add portions to it.', 'danger')
         return redirect(url_for('database.my_foods'))
 
-    return render_template('database/edit_my_food.html', food=food, form=form)
+    form = MyPortionForm()
+    if form.validate_on_submit():
+        new_portion = MyPortion(
+            my_food_id=food.id,
+            description=form.description.data,
+            gram_weight=form.gram_weight.data
+        )
+        db.session.add(new_portion)
+        db.session.commit()
+        flash('Portion added successfully!', 'success')
+    else:
+        flash('Invalid portion data.', 'danger')
+
+    return redirect(url_for('database.edit_my_food', food_id=food.id))
+
+@database_bp.route('/my_portions/delete/<int:portion_id>', methods=['POST'])
+@login_required
+def delete_portion(portion_id):
+    portion = db.session.get(MyPortion, portion_id)
+    if not portion or portion.my_food.user_id != current_user.id:
+        flash('Portion not found or you do not have permission to delete it.', 'danger')
+        return redirect(url_for('database.my_foods'))
+
+    food_id = portion.my_food_id
+    db.session.delete(portion)
+    db.session.commit()
+    flash('Portion deleted successfully!', 'success')
+    return redirect(url_for('database.edit_my_food', food_id=food_id))
+
 
 @database_bp.route('/my_foods/delete/<int:food_id>', methods=['POST'])
 @login_required

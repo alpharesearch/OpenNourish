@@ -5,7 +5,8 @@ from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem
 from datetime import date, timedelta
 from opennourish.utils import calculate_nutrition_for_items
 from .forms import MealForm, DailyLogForm, MealItemForm
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
+from models import Portion, MyPortion
 
 from types import SimpleNamespace
 # ... (other imports)
@@ -42,7 +43,12 @@ def diary(log_date_str=None):
                     available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
         elif log.my_food_id:
             food_item = db.session.get(MyFood, log.my_food_id)
-            available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
+            if food_item:
+                # Always add grams as an option
+                available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
+                for p in food_item.portions:
+                    display_text = f"{p.description} ({p.gram_weight}g)"
+                    available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
 
         if food_item:
             # Calculate display amount based on serving type
@@ -79,12 +85,12 @@ def search_for_diary(log_date_str, meal_name):
     search_term = request.form.get('search_term')
 
     if request.method == 'POST' and search_term:
-        usda_results = db.session.query(Food).filter(Food.description.ilike(f'%{search_term}%')).limit(20).all()
-        my_food_results = MyFood.query.filter_by(user_id=current_user.id).filter(MyFood.description.ilike(f'%{search_term}%')).limit(20).all()
+        usda_results = db.session.query(Food).filter(Food.description.ilike(f'%{search_term}%')).options(selectinload(Food.portions).joinedload(Portion.measure_unit)).limit(20).all()
+        my_food_results = MyFood.query.filter_by(user_id=current_user.id).filter(MyFood.description.ilike(f'%{search_term}%')).options(selectinload(MyFood.portions)).limit(20).all()
         my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).filter(MyMeal.name.ilike(f'%{search_term}%')).limit(20).all()
     else:
         usda_results = []
-        my_food_results = MyFood.query.filter_by(user_id=current_user.id).limit(20).all()
+        my_food_results = MyFood.query.filter_by(user_id=current_user.id).options(selectinload(MyFood.portions)).limit(20).all()
         my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).limit(20).all()
 
     for item in usda_results:
@@ -169,23 +175,41 @@ def add_meal_to_diary():
 def add_entry():
     log_date_str = request.form.get('log_date')
     meal_name = request.form.get('meal_name')
-    amount = request.form.get('amount', type=float)
+    quantity = request.form.get('quantity', type=float)
+    portion_id = request.form.get('portion_id')
     fdc_id = request.form.get('fdc_id', type=int)
     my_food_id = request.form.get('my_food_id', type=int)
 
-    if log_date_str and meal_name and amount:
+    if log_date_str and meal_name and quantity and portion_id:
         log_date = date.fromisoformat(log_date_str)
-        new_log = DailyLog(
-            user_id=current_user.id,
-            log_date=log_date,
-            meal_name=meal_name,
-            amount_grams=amount,
-            fdc_id=fdc_id,
-            my_food_id=my_food_id
-        )
-        db.session.add(new_log)
-        db.session.commit()
-        flash('Food added to diary.', 'success')
+        amount_grams = 0
+
+        if portion_id == 'g':
+            amount_grams = quantity
+        else:
+            if fdc_id:
+                portion = db.session.get(Portion, int(portion_id))
+                if portion:
+                    amount_grams = portion.gram_weight * quantity
+            elif my_food_id:
+                portion = db.session.get(MyPortion, int(portion_id))
+                if portion:
+                    amount_grams = portion.gram_weight * quantity
+        
+        if amount_grams > 0:
+            new_log = DailyLog(
+                user_id=current_user.id,
+                log_date=log_date,
+                meal_name=meal_name,
+                amount_grams=amount_grams,
+                fdc_id=fdc_id,
+                my_food_id=my_food_id
+            )
+            db.session.add(new_log)
+            db.session.commit()
+            flash('Food added to diary.', 'success')
+        else:
+            flash('Invalid portion selected.', 'danger')
     else:
         flash('Invalid data.', 'danger')
 

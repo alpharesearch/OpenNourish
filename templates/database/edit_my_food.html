@@ -4,105 +4,114 @@
 <div class="container">
     <h1 class="mt-4">Edit Custom Food</h1>
 
-    <form method="POST">
-        {{ form.hidden_tag() }}
-        <div class="mb-3">
-            {{ form.description.label(class="form-label") }}
-            {{ form.description(class="form-control") }}
-            {% if form.description.errors %}
-                <div class="invalid-feedback d-block">
-                    {% for error in form.description.errors %}
-                        <span>{{ error }}</span>
-                    {% endfor %}
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Food Details</h2>
+            <form method="POST" action="{{ url_for('database.edit_my_food', food_id=food.id) }}">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-control") }}
                 </div>
-            {% endif %}
-        </div>
-        <div class="mb-3">
-            {{ form.calories_per_100g.label(class="form-label") }}
-            {{ form.calories_per_100g(class="form-control") }}
-            {% if form.calories_per_100g.errors %}
-                <div class="invalid-feedback d-block">
-                    {% for error in form.calories_per_100g.errors %}
-                        <span>{{ error }}</span>
-                    {% endfor %}
+                <div class="mb-3">
+                    {{ form.ingredients.label(class="form-label") }}
+                    {{ form.ingredients(class="form-control", rows=3) }}
                 </div>
-            {% endif %}
-        </div>
-        <div class="mb-3">
-            {{ form.protein_per_100g.label(class="form-label") }}
-            {{ form.protein_per_100g(class="form-control") }}
-            {% if form.protein_per_100g.errors %}
-                <div class="invalid-feedback d-block">
-                    {% for error in form.protein_per_100g.errors %}
-                        <span>{{ error }}</span>
-                    {% endfor %}
+                
+                <h4 class="mt-4">Nutritional Information (per 100g)</h4>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.calories_per_100g.label(class="form-label") }}
+                        {{ form.calories_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.protein_per_100g.label(class="form-label") }}
+                        {{ form.protein_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.carbs_per_100g.label(class="form-label") }}
+                        {{ form.carbs_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.fat_per_100g.label(class="form-label") }}
+                        {{ form.fat_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.saturated_fat_per_100g.label(class="form-label") }}
+                        {{ form.saturated_fat_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.trans_fat_per_100g.label(class="form-label") }}
+                        {{ form.trans_fat_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.cholesterol_mg_per_100g.label(class="form-label") }}
+                        {{ form.cholesterol_mg_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.sodium_mg_per_100g.label(class="form-label") }}
+                        {{ form.sodium_mg_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.fiber_per_100g.label(class="form-label") }}
+                        {{ form.fiber_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.sugars_per_100g.label(class="form-label") }}
+                        {{ form.sugars_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.vitamin_d_mcg_per_100g.label(class="form-label") }}
+                        {{ form.vitamin_d_mcg_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.calcium_mg_per_100g.label(class="form-label") }}
+                        {{ form.calcium_mg_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.iron_mg_per_100g.label(class="form-label") }}
+                        {{ form.iron_mg_per_100g(class="form-control") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.potassium_mg_per_100g.label(class="form-label") }}
+                        {{ form.potassium_mg_per_100g(class="form-control") }}
+                    </div>
                 </div>
-            {% endif %}
+
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="{{ url_for('database.my_foods') }}" class="btn btn-secondary">Back to My Foods</a>
+            </form>
         </div>
-        <div class="mb-3">
-            {{ form.carbs_per_100g.label(class="form-label") }}
-            {{ form.carbs_per_100g(class="form-control") }}
-            {% if form.carbs_per_100g.errors %}
-                <div class="invalid-feedback d-block">
-                    {% for error in form.carbs_per_100g.errors %}
-                        <span>{{ error }}</span>
-                    {% endfor %}
+
+        <div class="col-md-4">
+            <h2>Portions</h2>
+            <ul class="list-group mb-3">
+                {% for portion in food.portions %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ portion.description }} ({{ portion.gram_weight }}g)
+                    <form action="{{ url_for('database.delete_portion', portion_id=portion.id) }}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </li>
+                {% else %}
+                <li class="list-group-item">No custom portions added yet.</li>
+                {% endfor %}
+            </ul>
+
+            <h4>Add New Portion</h4>
+            <form method="POST" action="{{ url_for('database.add_portion', food_id=food.id) }}">
+                {{ portion_form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ portion_form.description.label(class="form-label") }}
+                    {{ portion_form.description(class="form-control") }}
                 </div>
-            {% endif %}
-        </div>
-        <div class="mb-3">
-            {{ form.fat_per_100g.label(class="form-label") }}
-            {{ form.fat_per_100g(class="form-control") }}
-            {% if form.fat_per_100g.errors %}
-                <div class="invalid-feedback d-block">
-                    {% for error in form.fat_per_100g.errors %}
-                        <span>{{ error }}</span>
-                    {% endfor %}
+                <div class="mb-3">
+                    {{ portion_form.gram_weight.label(class="form-label") }}
+                    {{ portion_form.gram_weight(class="form-control") }}
                 </div>
-            {% endif %}
+                {{ portion_form.submit(class="btn btn-success") }}
+            </form>
         </div>
-        <div class="mb-3">
-            {{ form.saturated_fat_per_100g.label(class="form-label") }}
-            {{ form.saturated_fat_per_100g(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.trans_fat_per_100g.label(class="form-label") }}
-            {{ form.trans_fat_per_100g(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.cholesterol_mg_per_100g.label(class="form-label") }}
-            {{ form.cholesterol_mg_per_100g(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.sodium_mg_per_100g.label(class="form-label") }}
-            {{ form.sodium_mg_per_100g(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.fiber_per_100g.label(class="form-label") }}
-            {{ form.fiber_per_100g(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.sugars_per_100g.label(class="form-label") }}
-            {{ form.sugars_per_100g(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.vitamin_d_mcg_per_100g.label(class="form-label") }}
-            {{ form.vitamin_d_mcg_per_100g(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.calcium_mg_per_100g.label(class="form-label") }}
-            {{ form.calcium_mg_per_100g(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.iron_mg_per_100g.label(class="form-label") }}
-            {{ form.iron_mg_per_100g(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.potassium_mg_per_100g.label(class="form-label") }}
-            {{ form.potassium_mg_per_100g(class="form-control") }}
-        </div>
-        <button type="submit" class="btn btn-primary">Update Food</button>
-        <a href="{{ url_for('database.my_foods') }}" class="btn btn-secondary">Cancel</a>
-    </form>
+    </div>
 </div>
 {% endblock %}
