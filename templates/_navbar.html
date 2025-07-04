@@ -1,44 +1,32 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+{# templates/_navbar.html (Final Version with Indented Sub-Nav) #}
+
+{# --- Primary Navigation Bar (Top Tier) - Stays Full Width --- #}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">OpenNourish</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#primaryNavbar" aria-controls="primaryNavbar" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
+        <div class="collapse navbar-collapse" id="primaryNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('dashboard.index') }}">Dashboard</a>
+                    <a class="nav-link {% if request.blueprint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard.index') }}">Dashboard</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('diary.diary') }}">Food Diary</a>
+                    <a class="nav-link {% if request.blueprint in ['diary', 'database', 'recipes'] %}active{% endif %}" href="{{ url_for('diary.diary') }}">Food</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('recipes.recipes') }}">Recipes</a>
-                </li>
-                
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('database.my_foods') }}">My Foods</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('diary.my_meals') }}">My Meals</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('exercise.log_exercise') }}">Log Exercise</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('exercise.exercise_history') }}">Exercise History</a>
+                    <a class="nav-link {% if request.blueprint in ['exercise', 'tracking'] %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise & Progress</a>
                 </li>
             </ul>
-            <ul class="navbar-nav ms-auto">
+            <ul class="navbar-nav">
                 {% if current_user.is_authenticated %}
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         {{ current_user.username }}
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                         <li><a class="dropdown-item" href="{{ url_for('goals.goals') }}">Goals</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('tracking.new_check_in') }}">Check-In</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('tracking.progress') }}">Progress</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('settings.settings') }}">Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
@@ -48,6 +36,51 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
                 </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+{# --- Secondary Navigation Bar (Bottom Tier) - Now uses .container --- #}
+<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-4">
+    {# --- THIS IS THE ONLY LINE THAT CHANGED --- #}
+    <div class="container">
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav">
+                {# --- Food Sub-Menu --- #}
+                {% if request.blueprint in ['diary', 'database', 'recipes'] %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint.startswith('diary.') and 'my_meals' not in request.endpoint %}active{% endif %}" href="{{ url_for('diary.diary') }}">Food Diary</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint.startswith('recipes.') %}active{% endif %}" href="{{ url_for('recipes.recipes') }}">My Recipes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'diary.my_meals' %}active{% endif %}" href="{{ url_for('diary.my_meals') }}">My Meals</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'database.my_foods' %}active{% endif %}" href="{{ url_for('database.my_foods') }}">My Foods</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'database.search' %}active{% endif %}" href="{{ url_for('database.search') }}">Search USDA</a>
+                    </li>
+                {% endif %}
+
+                {# --- Exercise & Progress Sub-Menu --- #}
+                {% if request.blueprint in ['exercise', 'tracking'] %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'exercise.log_exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Log Exercise</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'exercise.exercise_history' %}active{% endif %}" href="{{ url_for('exercise.exercise_history') }}">Exercise History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'tracking.new_check_in' %}active{% endif %}" href="{{ url_for('tracking.new_check_in') }}">Check-In</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'tracking.progress' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Progress Chart</a>
+                    </li>
                 {% endif %}
             </ul>
         </div>
