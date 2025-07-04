@@ -24,7 +24,15 @@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4>{{ meal_name }}</h4>
-            <a href="{{ url_for('diary.search_for_diary', log_date_str=date.isoformat(), meal_name=meal_name) }}" class="btn btn-primary btn-sm">Add Food</a>
+            <div class="d-flex align-items-center">
+                <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex me-2">
+                    <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
+                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                    <input type="text" name="new_meal_name" class="form-control form-control-sm me-2" placeholder="Save as new meal...">
+                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                </form>
+                <a href="{{ url_for('diary.search_for_diary', log_date_str=date.isoformat(), meal_name=meal_name) }}" class="btn btn-primary btn-sm">Add Food</a>
+            </div>
         </div>
         <ul class="list-group list-group-flush">
             {% for item in items %}
@@ -64,14 +72,6 @@
             <li class="list-group-item">No items logged for this meal.</li>
             {% endfor %}
         </ul>
-        <div class="card-footer">
-            <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex">
-                <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
-                <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                <input type="text" name="new_meal_name" class="form-control me-2" placeholder="Enter meal name to save...">
-                <button type="submit" class="btn btn-success btn-sm">Save as Meal</button>
-            </form>
-        </div>
     </div>
     {% endfor %}
 </div>
