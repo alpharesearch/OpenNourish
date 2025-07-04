@@ -78,8 +78,8 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="{{ url_for('database.my_foods') }}" class="btn btn-secondary">Back to My Foods</a>
+                <button type="submit" class="btn btn-outline-primary">Save Changes</button>
+                <a href="{{ url_for('database.my_foods') }}" class="btn btn-outline-secondary">Back to My Foods</a>
             </form>
         </div>
 
@@ -90,7 +90,7 @@
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     {{ portion.description }} ({{ portion.gram_weight }}g)
                     <form action="{{ url_for('database.delete_portion', portion_id=portion.id) }}" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                     </form>
                 </li>
                 {% else %}

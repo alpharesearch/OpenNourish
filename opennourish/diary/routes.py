@@ -49,6 +49,14 @@ def diary(log_date_str=None):
                 for p in food_item.portions:
                     display_text = f"{p.description} ({p.gram_weight}g)"
                     available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
+        elif log.recipe_id:
+            food_item = db.session.get(Recipe, log.recipe_id)
+            if food_item:
+                # For recipes, portions are defined by RecipePortion
+                available_portions.append(SimpleNamespace(display_text='g', value_string='g')) # Always allow grams
+                for p in food_item.portions:
+                    display_text = f"{p.description} ({p.gram_weight}g)"
+                    available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
 
         if food_item:
             # Calculate display amount based on serving type
@@ -85,7 +93,7 @@ def search_for_diary(log_date_str, meal_name):
     search_term = request.form.get('search_term')
 
     if request.method == 'POST' and search_term:
-        usda_results = db.session.query(Food).filter(Food.description.ilike(f'%{search_term}%')).options(selectinload(Food.portions).joinedload(Portion.measure_unit)).limit(20).all()
+        usda_results = db.session.query(Food).filter(Food.description.ilike(f'%{search_term}%')).options(selectinload(Food.portions).selectinload(Portion.measure_unit)).limit(20).all()
         my_food_results = MyFood.query.filter_by(user_id=current_user.id).filter(MyFood.description.ilike(f'%{search_term}%')).options(selectinload(MyFood.portions)).limit(20).all()
         my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).filter(MyMeal.name.ilike(f'%{search_term}%')).limit(20).all()
     else:
@@ -180,8 +188,9 @@ def add_entry():
     meal_name = request.form.get('meal_name')
     quantity = request.form.get('quantity', type=float)
     portion_id = request.form.get('portion_id')
-    fdc_id = request.form.get('fdc_id', type=int)
-    my_food_id = request.form.get('my_food_id', type=int)
+    fdc_id = request.form.get('food_id', type=int) if request.form.get('food_type') == 'usda' else None
+    my_food_id = request.form.get('food_id', type=int) if request.form.get('food_type') == 'my_food' else None
+    recipe_id = request.form.get('food_id', type=int) if request.form.get('food_type') == 'recipe' else None
 
     if log_date_str and meal_name and quantity and portion_id:
         log_date = date.fromisoformat(log_date_str)
@@ -198,6 +207,10 @@ def add_entry():
                 portion = db.session.get(MyPortion, int(portion_id))
                 if portion:
                     amount_grams = portion.gram_weight * quantity
+            elif recipe_id:
+                portion = db.session.get(RecipePortion, int(portion_id))
+                if portion:
+                    amount_grams = portion.gram_weight * quantity
         
         if amount_grams > 0:
             new_log = DailyLog(
@@ -206,7 +219,8 @@ def add_entry():
                 meal_name=meal_name,
                 amount_grams=amount_grams,
                 fdc_id=fdc_id,
-                my_food_id=my_food_id
+                my_food_id=my_food_id,
+                recipe_id=recipe_id
             )
             db.session.add(new_log)
             db.session.commit()

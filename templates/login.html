@@ -21,7 +21,7 @@
         <div class="mb-3 form-check">
             {{ form.remember_me(class="form-check-input") }} {{ form.remember_me.label(class="form-check-label") }}
         </div>
-        <button type="submit" class="btn btn-primary">{{ form.submit.label }}</button>
+        <button type="submit" class="btn btn-outline-primary">{{ form.submit.label }}</button>
     </form>
     <p>New User? <a href="{{ url_for('auth.register') }}">Click to Register!</a></p>
 {% endblock %}

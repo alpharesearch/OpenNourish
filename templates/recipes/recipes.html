@@ -4,7 +4,7 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>My Recipes</h1>
-        <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-primary">
+        <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-outline-primary">
             <i class="bi bi-plus-circle"></i> Create New Recipe
         </a>
     </div>
@@ -33,7 +33,7 @@
     <div class="text-center py-5">
         <h4>No Recipes Found</h4>
         <p class="text-muted">Get started by creating your first recipe.</p>
-        <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-primary mt-3">Create a Recipe</a>
+        <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-outline-primary mt-3">Create a Recipe</a>
     </div>
     {% endif %}
 </div>

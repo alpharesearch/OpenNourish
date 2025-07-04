@@ -22,9 +22,9 @@
                             </small>
                         </div>
                         <div class="btn-group" role="group" aria-label="Food Actions">
-                            <a href="{{ url_for('database.edit_my_food', food_id=food.id) }}" class="btn btn-info btn-sm">Edit</a>
+                            <a href="{{ url_for('database.edit_my_food', food_id=food.id) }}" class="btn btn-outline-info btn-sm">Edit</a>
                             <form action="{{ url_for('database.delete_my_food', food_id=food.id) }}" method="post" class="d-inline">
-                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                             </form>
                         </div>
                     </li>
@@ -125,8 +125,8 @@
             {{ form.potassium_mg_per_100g.label(class="form-label") }}
             {{ form.potassium_mg_per_100g(class="form-control") }}
         </div>
-        <button type="submit" class="btn btn-primary">Add Food</button>
-                <a href="{{ url_for('database.search') }}" class="btn btn-secondary ms-2">Add Food from USDA</a>
+        <button type="submit" class="btn btn-outline-primary">Add Food</button>
+                <a href="{{ url_for('database.search') }}" class="btn btn-outline-secondary ms-2">Add Food from USDA</a>
             </form>
         </div>
     </div>

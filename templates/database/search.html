@@ -6,7 +6,7 @@
     <form method="GET" action="{{ url_for('database.search') }}" class="mb-4">
         <div class="input-group">
             <input type="text" class="form-control" name="q" placeholder="Enter a food name..." value="{{ search_term or '' }}">
-            <button class="btn btn-primary" type="submit">Search</button>
+            <button class="btn btn-outline-primary" type="submit">Search</button>
         </div>
     </form>
 
@@ -26,7 +26,7 @@
                         {% if food.nutrients|length > 20 %}
                             <span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>
                         {% endif %}
-                        <a href="{{ url_for('main.food_detail', fdc_id=food.fdc_id, q=search_term) }}" class="btn btn-info btn-sm">View Details</a>
+                        <a href="{{ url_for('main.food_detail', fdc_id=food.fdc_id, q=search_term) }}" class="btn btn-outline-info btn-sm">View Details</a>
                         <a href="{{ url_for('database.copy_food', fdc_id=food.fdc_id) }}" class="btn btn-success btn-sm">Add to My Foods</a>
                     </div>
                 </li>
