@@ -325,8 +325,9 @@ def update_entry(log_id):
 @login_required
 def edit_meal(meal_id):
     meal = db.session.query(MyMeal).options(
-        joinedload(MyMeal.items).joinedload(MyMealItem.my_food)
+        selectinload(MyMeal.items).selectinload(MyMealItem.my_food).selectinload(MyFood.portions)
     ).filter_by(id=meal_id).first()
+
     if not meal or meal.user_id != current_user.id:
         flash('Meal not found or you do not have permission to edit it.', 'danger')
         return redirect(url_for('diary.my_meals'))
@@ -339,8 +340,19 @@ def edit_meal(meal_id):
         return redirect(url_for('diary.edit_meal', meal_id=meal.id))
 
     for item in meal.items:
+        item.available_portions = []
         if item.fdc_id:
-            item.usda_food = db.session.get(Food, item.fdc_id)
+            item.food = db.session.get(Food, item.fdc_id)
+            if item.food:
+                item.available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
+                for p in item.food.portions:
+                    display_text = f"{p.portion_description} ({p.gram_weight}g)"
+                    item.available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
+        elif item.my_food_id and item.my_food:
+            item.available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
+            for p in item.my_food.portions:
+                display_text = f"{p.description} ({p.gram_weight}g)"
+                item.available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
 
     return render_template('diary/edit_meal.html', meal=meal, form=form)
 
@@ -427,3 +439,31 @@ def my_meals():
                 item.usda_food = db.session.get(Food, item.fdc_id)
     
     return render_template('diary/my_meals.html', meals=meals)
+
+@diary_bp.route('/my_meals/update_item/<int:item_id>', methods=['POST'])
+@login_required
+def update_meal_item(item_id):
+    item = db.session.get(MyMealItem, item_id)
+    if not item or item.meal.user_id != current_user.id:
+        flash('Item not found or you do not have permission to edit it.', 'danger')
+        return redirect(request.referrer or url_for('diary.my_meals'))
+
+    quantity = request.form.get('quantity', type=float)
+    serving_type = request.form.get('serving_type')
+
+    if quantity and serving_type:
+        gram_weight = 1.0
+        if serving_type != 'g':
+            try:
+                gram_weight = float(serving_type.split('(')[-1].split('g')[0])
+            except (IndexError, ValueError):
+                flash('Invalid serving type format.', 'danger')
+                return redirect(url_for('diary.edit_meal', meal_id=item.my_meal_id))
+
+        item.amount_grams = quantity * gram_weight
+        db.session.commit()
+        flash('Meal item updated.', 'success')
+    else:
+        flash('Invalid data.', 'danger')
+
+    return redirect(url_for('diary.edit_meal', meal_id=item.my_meal_id))
