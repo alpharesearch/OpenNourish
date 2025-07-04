@@ -75,6 +75,7 @@ To maintain a consistent and professional look and feel, all generated HTML temp
 - **Informational Links/Buttons:** Use for non-critical actions like "View Details" or "Edit".
   - **Class:** `btn btn-outline-info` or `btn btn-outline-primary`
 - **Forms:** All forms should be rendered cleanly. Each form field should have a proper `<label>` and be wrapped in a `div class="mb-3"` for correct spacing. Validation errors should be displayed prominently.
+  - **Separate Forms for Actions:** For clarity and to prevent unintended side effects, each distinct action (e.g., saving data, deleting a record) should be handled by its own `<form>` element. Do not nest forms or use a single form for multiple, unrelated actions. This ensures that submitting one action does not inadvertently trigger another, and simplifies backend processing.
 - **Tables:** All tables should use Bootstrap's `table-striped` class for improved readability.
   - **Class:** `table table-striped`
 - **Charts:** All charts should be generated using Chart.js. They should be responsive and include clear labels and titles.
