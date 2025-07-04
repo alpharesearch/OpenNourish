@@ -19,6 +19,8 @@
                                 (My Food)
                             {% elif item.type == 'my_meal' %}
                                 (My Meal)
+                            {% elif item.type == 'recipe' %}
+                                (Recipe)
                             {% endif %}
                         </small>
                     </div>
@@ -33,6 +35,10 @@
                                         <option value="{{ portion.id }}">{{ portion.portion_description or portion.measure_unit.name }} ({{ portion.gram_weight }}g)</option>
                                     {% endfor %}
                                 {% elif item.type == 'my_food' %}
+                                    {% for portion in item.portions %}
+                                        <option value="{{ portion.id }}">{{ portion.description }} ({{ portion.gram_weight }}g)</option>
+                                    {% endfor %}
+                                {% elif item.type == 'recipe' %}
                                     {% for portion in item.portions %}
                                         <option value="{{ portion.id }}">{{ portion.description }} ({{ portion.gram_weight }}g)</option>
                                     {% endfor %}
