@@ -6,6 +6,7 @@ This file provides context and guidelines for the Gemini CLI agent when working 
 OpenNourish is a lightweight, open-source web application for personal nutrition tracking. Its core purpose is to allow users to log their daily food intake, create custom recipes, and track their progress against personal goals. The application uses a static USDA nutritional database and a dynamic user database.
 
 ## 2. Key Technologies
+- **Containerization:** Docker, Docker Compose
 - **Language:** Python
 - **Web Framework:** Flask
 - **Database:** SQLite (two separate files)
@@ -23,6 +24,13 @@ To set up the development environment:
 3.  Place the downloaded USDA CSV files into a directory named `usda_data/` in the project root.
 4.  Generate the static USDA database: `python import_usda_data.py`
 5.  Initialize and migrate the user database: `flask db init` (first time only), then `flask db upgrade`
+
+Alternatively, use Docker for development:
+1.  Ensure Docker and Docker Compose (v2.x) are installed.
+2.  Follow the "Initial Database Setup" steps in `README.md` to prepare `user_data.db` and `usda_data.db` on your host.
+3.  Build the Docker image: `docker compose build`
+4.  Run the application: `docker compose up -d`
+5.  Access at `http://localhost:8081`.
 
 ## 4. Running the Application
 To run the Flask development server:
