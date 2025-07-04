@@ -133,10 +133,12 @@ def search_for_meal_item(meal_id):
         my_food_results = MyFood.query.filter_by(user_id=current_user.id).filter(MyFood.description.ilike(f'%{search_term}%')).limit(20).all()
         # Exclude the current meal from the search results to prevent circular dependencies
         my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).filter(MyMeal.name.ilike(f'%{search_term}%')).filter(MyMeal.id != meal_id).limit(20).all()
+        recipe_results = Recipe.query.filter_by(user_id=current_user.id).filter(Recipe.name.ilike(f'%{search_term}%')).limit(20).all()
     else:
         usda_results = []
         my_food_results = MyFood.query.filter_by(user_id=current_user.id).limit(20).all()
         my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).filter(MyMeal.id != meal_id).limit(20).all()
+        recipe_results = Recipe.query.filter_by(user_id=current_user.id).limit(20).all()
 
     for item in usda_results:
         item.type = 'usda'
@@ -147,8 +149,14 @@ def search_for_meal_item(meal_id):
     for item in my_meal_results:
         item.type = 'my_meal'
         search_results.append(item)
+    for item in recipe_results:
+        item.type = 'recipe'
+        search_results.append(item)
 
-    return render_template('diary/search.html', meal=meal, search_results=search_results, search_term=search_term)
+    url_action = 'diary.add_meal_item'
+    url_params = {'meal_id': meal_id}
+
+    return render_template('diary/search.html', meal=meal, search_results=search_results, search_term=search_term, url_action=url_action, url_params=url_params)
 
 @diary_bp.route('/diary/add_meal', methods=['POST'])
 @login_required
@@ -241,10 +249,14 @@ def add_meal_item(meal_id):
         flash('Meal not found or you do not have permission to edit it.', 'danger')
         return redirect(url_for('diary.my_meals'))
 
-    amount = request.form.get('amount', type=float)
-    fdc_id = request.form.get('fdc_id', type=int)
-    my_food_id = request.form.get('my_food_id', type=int)
+    fdc_id = request.form.get('food_id', type=int) if request.form.get('food_type') == 'usda' else None
+    my_food_id = request.form.get('food_id', type=int) if request.form.get('food_type') == 'my_food' else None
+    recipe_id = request.form.get('food_id', type=int) if request.form.get('food_type') == 'recipe' else None
+
     source_meal_id = request.form.get('source_meal_id', type=int)
+    quantity = request.form.get('quantity', type=float) # Get quantity for multiplier
+
+    # Force reload comment
 
     if source_meal_id:
         source_meal = db.session.get(MyMeal, source_meal_id)
@@ -254,28 +266,27 @@ def add_meal_item(meal_id):
                     meal=meal,
                     fdc_id=item.fdc_id,
                     my_food_id=item.my_food_id,
-                    amount_grams=item.amount_grams
+                    recipe_id=item.recipe_id,
+                    amount_grams=item.amount_grams * quantity # Apply multiplier here
                 )
                 db.session.add(new_item)
             db.session.commit()
             flash(f'Items from meal "{source_meal.name}" added.', 'success')
         else:
             flash('Source meal not found or you do not have permission to add it.', 'danger')
-    elif amount:
-        if fdc_id or my_food_id:
-            new_item = MyMealItem(
-                meal=meal,
-                fdc_id=fdc_id,
-                my_food_id=my_food_id,
-                amount_grams=amount
-            )
-            db.session.add(new_item)
-            db.session.commit()
-            flash('Item added to meal.', 'success')
-        else:
-            flash('Invalid food item.', 'danger')
+    elif fdc_id or my_food_id or recipe_id:
+        new_item = MyMealItem(
+            meal=meal,
+            fdc_id=fdc_id,
+            my_food_id=my_food_id,
+            recipe_id=recipe_id,
+            amount_grams=quantity
+        )
+        db.session.add(new_item)
+        db.session.commit()
+        flash('Item added to meal.', 'success')
     else:
-        flash('Invalid amount.', 'danger')
+        flash('Invalid food item.', 'danger')
 
     return redirect(url_for('diary.edit_meal', meal_id=meal.id))
 
@@ -343,7 +354,8 @@ def update_entry(log_id):
 @login_required
 def edit_meal(meal_id):
     meal = db.session.query(MyMeal).options(
-        selectinload(MyMeal.items).selectinload(MyMealItem.my_food).selectinload(MyFood.portions)
+        selectinload(MyMeal.items).selectinload(MyMealItem.my_food).selectinload(MyFood.portions),
+        selectinload(MyMeal.items).selectinload(MyMealItem.recipe)
     ).filter_by(id=meal_id).first()
 
     if not meal or meal.user_id != current_user.id:
@@ -369,6 +381,11 @@ def edit_meal(meal_id):
         elif item.my_food_id and item.my_food:
             item.available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
             for p in item.my_food.portions:
+                display_text = f"{p.description} ({p.gram_weight}g)"
+                item.available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
+        elif item.recipe_id and item.recipe:
+            item.available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
+            for p in item.recipe.portions:
                 display_text = f"{p.description} ({p.gram_weight}g)"
                 item.available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
 
@@ -406,8 +423,12 @@ def delete_meal_item(meal_id, item_id):
         flash('Item not found or you do not have permission to delete it.', 'danger')
         return redirect(url_for('diary.edit_meal', meal_id=meal_id))
 
+    print(f"DEBUG: Attempting to delete item {item.id} from meal {meal.id}")
+    print(f"DEBUG: Item state before delete: {db.inspect(item).persistent}")
     db.session.delete(item)
+    print(f"DEBUG: Item state after db.session.delete: {db.inspect(item).deleted}")
     db.session.commit()
+    print(f"DEBUG: Item {item.id} deleted and committed.")
     flash('Meal item deleted.', 'success')
     return redirect(url_for('diary.edit_meal', meal_id=meal_id))
 
@@ -448,7 +469,8 @@ def save_meal():
 @login_required
 def my_meals():
     meals = MyMeal.query.filter_by(user_id=current_user.id).options(
-        joinedload(MyMeal.items).joinedload(MyMealItem.my_food)
+        joinedload(MyMeal.items).joinedload(MyMealItem.my_food),
+        joinedload(MyMeal.items).joinedload(MyMealItem.recipe)
     ).all()
 
     for meal in meals:
