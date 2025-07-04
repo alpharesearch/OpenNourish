@@ -22,28 +22,41 @@
     </form>
 
     <h2 class="mt-4">Meal Items</h2>
-    <ul class="list-group mb-4">
-        {% for item in meal.items %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-                {% if item.fdc_id %}
-                    {{ item.usda_food.description }}
-                {% elif item.my_food_id %}
-                    {{ item.my_food.description }}
-                {% endif %}
-                - {{ item.amount_grams }}g
+<ul class="list-group mb-4">
+    {% for item in meal.items %}
+    <li class="list-group-item">
+        <form method="POST" action="{{ url_for('diary.update_meal_item', item_id=item.id) }}">
+            <div class="row align-items-center">
+                <div class="col-md-5">
+                    {% if item.fdc_id %}
+                        {{ item.food.description }}
+                    {% elif item.my_food_id %}
+                        {{ item.my_food.description }}
+                    {% endif %}
+                </div>
+                <div class="col-md-7">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <input type="number" name="quantity" value="{{ item.amount_grams|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
+                        <select name="serving_type" class="form-select form-select-sm ms-2" style="width: 180px;">
+                            {% for portion in item.available_portions %}
+                                <option value="{{ portion.value_string }}" {% if item.serving_type == portion.value_string %}selected{% endif %}>
+                                    {{ portion.display_text }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="btn-group ms-2">
+                            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                            <a href="{{ url_for('diary.delete_meal_item', meal_id=meal.id, item_id=item.id) }}" class="btn btn-danger btn-sm">Delete</a>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="btn-group" role="group" aria-label="Meal Item Actions">
-                <a href="{{ url_for('diary.edit_meal_item', meal_id=meal.id, item_id=item.id) }}" class="btn btn-info btn-sm">Edit</a>
-                <form action="{{ url_for('diary.delete_meal_item', meal_id=meal.id, item_id=item.id) }}" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                </form>
-            </div>
-        </li>
-        {% else %}
-        <li class="list-group-item">No items in this meal yet.</li>
-        {% endfor %}
-    </ul>
+        </form>
+    </li>
+    {% else %}
+    <li class="list-group-item">No items in this meal yet.</li>
+    {% endfor %}
+</ul>
 
     <h2 class="mt-4">Add Food to Meal</h2>
     <form action="{{ url_for('diary.search_for_meal_item', meal_id=meal.id) }}" method="GET" class="mb-3">
