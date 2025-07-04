@@ -37,26 +37,26 @@ def diary(log_date_str=None):
             food_item = db.session.get(Food, log.fdc_id)
             if food_item:
                 # Always add grams as an option
-                available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
+                available_portions.append(SimpleNamespace(id='g', display_text='g', value_string='g'))
                 for p in food_item.portions:
                     display_text = f"{p.portion_description} ({p.gram_weight}g)"
-                    available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
+                    available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
         elif log.my_food_id:
             food_item = db.session.get(MyFood, log.my_food_id)
             if food_item:
                 # Always add grams as an option
-                available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
+                available_portions.append(SimpleNamespace(id='g', display_text='g', value_string='g'))
                 for p in food_item.portions:
                     display_text = f"{p.description} ({p.gram_weight}g)"
-                    available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
+                    available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
         elif log.recipe_id:
             food_item = db.session.get(Recipe, log.recipe_id)
             if food_item:
                 # For recipes, portions are defined by RecipePortion
-                available_portions.append(SimpleNamespace(display_text='g', value_string='g')) # Always allow grams
+                available_portions.append(SimpleNamespace(id='g', display_text='g', value_string='g')) # Always allow grams
                 for p in food_item.portions:
                     display_text = f"{p.description} ({p.gram_weight}g)"
-                    available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
+                    available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
 
         if food_item:
             # Calculate display amount based on serving type
@@ -97,10 +97,12 @@ def search_for_diary(log_date_str, meal_name):
         usda_results = db.session.query(Food).filter(Food.description.ilike(f'%{search_term}%')).options(selectinload(Food.portions).selectinload(Portion.measure_unit)).limit(20).all()
         my_food_results = MyFood.query.filter_by(user_id=current_user.id).filter(MyFood.description.ilike(f'%{search_term}%')).options(selectinload(MyFood.portions)).limit(20).all()
         my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).filter(MyMeal.name.ilike(f'%{search_term}%')).limit(20).all()
+        recipe_results = Recipe.query.filter_by(user_id=current_user.id).filter(Recipe.name.ilike(f'%{search_term}%')).limit(20).all()
     else:
         usda_results = []
         my_food_results = MyFood.query.filter_by(user_id=current_user.id).options(selectinload(MyFood.portions)).limit(20).all()
         my_meal_results = MyMeal.query.filter_by(user_id=current_user.id).limit(20).all()
+        recipe_results = Recipe.query.filter_by(user_id=current_user.id).limit(20).all()
 
     for item in usda_results:
         item.type = 'usda'
@@ -110,6 +112,9 @@ def search_for_diary(log_date_str, meal_name):
         search_results.append(item)
     for item in my_meal_results:
         item.type = 'my_meal'
+        search_results.append(item)
+    for item in recipe_results:
+        item.type = 'recipe'
         search_results.append(item)
 
     url_action = 'diary.add_entry'
@@ -371,24 +376,33 @@ def edit_meal(meal_id):
 
     for item in meal.items:
         item.available_portions = []
-        if item.fdc_id:
-            item.food = db.session.get(Food, item.fdc_id)
-            if item.food:
-                item.available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
-                for p in item.food.portions:
-                    display_text = f"{p.portion_description} ({p.gram_weight}g)"
-                    item.available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
-        elif item.my_food_id and item.my_food:
-            item.available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
-            for p in item.my_food.portions:
-                display_text = f"{p.description} ({p.gram_weight}g)"
-                item.available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
-        elif item.recipe_id and item.recipe:
-            item.available_portions.append(SimpleNamespace(display_text='g', value_string='g'))
-            for p in item.recipe.portions:
-                display_text = f"{p.description} ({p.gram_weight}g)"
-                item.available_portions.append(SimpleNamespace(display_text=display_text, value_string=display_text))
+        item.selected_portion_id = 'g' # Default to grams
+        item.display_amount = item.amount_grams # Default to grams for display
 
+        if item.fdc_id:
+            food_item = db.session.get(Food, item.fdc_id)
+            if food_item:
+                item.food = food_item # Attach food object for description
+                item.available_portions.append(SimpleNamespace(id='g', display_text='g'))
+                for p in food_item.portions:
+                    display_text = f"{p.portion_description} ({p.gram_weight}g)"
+                    item.available_portions.append(SimpleNamespace(id=p.id, display_text=display_text))
+        elif item.my_food_id:
+            my_food_item = db.session.get(MyFood, item.my_food_id)
+            if my_food_item:
+                item.my_food = my_food_item # Attach my_food object for description
+                item.available_portions.append(SimpleNamespace(id='g', display_text='g'))
+                for p in my_food_item.portions:
+                    display_text = f"{p.description} ({p.gram_weight}g)"
+                    item.available_portions.append(SimpleNamespace(id=p.id, display_text=display_text))
+        elif item.recipe_id:
+            recipe_item = db.session.get(Recipe, item.recipe_id)
+            if recipe_item:
+                item.recipe = recipe_item # Attach recipe object for name
+                item.available_portions.append(SimpleNamespace(id='g', display_text='g'))
+                for p in recipe_item.portions:
+                    display_text = f"{p.description} ({p.gram_weight}g)"
+                    item.available_portions.append(SimpleNamespace(id=p.id, display_text=display_text))
     return render_template('diary/edit_meal.html', meal=meal, form=form)
 
 @diary_bp.route('/my_meals/<int:meal_id>/edit_item/<int:item_id>', methods=['GET', 'POST'])
@@ -489,20 +503,32 @@ def update_meal_item(item_id):
         return redirect(request.referrer or url_for('diary.my_meals'))
 
     quantity = request.form.get('quantity', type=float)
-    serving_type = request.form.get('serving_type')
+    portion_id = request.form.get('portion_id')
 
-    if quantity and serving_type:
-        gram_weight = 1.0
-        if serving_type != 'g':
-            try:
-                gram_weight = float(serving_type.split('(')[-1].split('g')[0])
-            except (IndexError, ValueError):
-                flash('Invalid serving type format.', 'danger')
-                return redirect(url_for('diary.edit_meal', meal_id=item.my_meal_id))
-
-        item.amount_grams = quantity * gram_weight
-        db.session.commit()
-        flash('Meal item updated.', 'success')
+    if quantity and portion_id:
+        amount_grams = 0
+        if portion_id == 'g':
+            amount_grams = quantity
+        else:
+            if item.fdc_id:
+                portion = db.session.get(Portion, int(portion_id))
+                if portion:
+                    amount_grams = portion.gram_weight * quantity
+            elif item.my_food_id:
+                portion = db.session.get(MyPortion, int(portion_id))
+                if portion:
+                    amount_grams = portion.gram_weight * quantity
+            elif item.recipe_id:
+                portion = db.session.get(RecipePortion, int(portion_id))
+                if portion:
+                    amount_grams = portion.gram_weight * quantity
+        
+        if amount_grams > 0:
+            item.amount_grams = amount_grams
+            db.session.commit()
+            flash('Meal item updated.', 'success')
+        else:
+            flash('Invalid portion selected.', 'danger')
     else:
         flash('Invalid data.', 'danger')
 
