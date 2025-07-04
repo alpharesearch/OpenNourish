@@ -9,6 +9,8 @@ from datetime import date
 @login_required
 def log_exercise():
     form = ExerciseLogForm()
+    if request.method == 'GET':
+        form.log_date.data = date.today()
     if form.validate_on_submit():
         calories_burned = 0
         if form.activity.data:
@@ -28,7 +30,7 @@ def log_exercise():
 
         exercise_log = ExerciseLog(
             user_id=current_user.id,
-            log_date=date.today(),
+            log_date=form.log_date.data,
             activity_id=form.activity.data.id if form.activity.data else None,
             manual_description=manual_description,
             duration_minutes=form.duration_minutes.data,
@@ -56,7 +58,10 @@ def edit_exercise(log_id):
         return redirect(url_for('exercise.exercise_history'))
 
     form = ExerciseLogForm(obj=exercise_log)
+    if request.method == 'GET':
+        form.log_date.data = exercise_log.log_date
     if form.validate_on_submit():
+        exercise_log.log_date = form.log_date.data
         exercise_log.duration_minutes = form.duration_minutes.data
         
         if form.activity.data:
@@ -77,8 +82,7 @@ def edit_exercise(log_id):
         flash('Exercise log updated successfully!', 'success')
         return redirect(url_for('exercise.exercise_history'))
     
-    return render_template('exercise/log_exercise.html', form=form)
-
+    return render_template('exercise/log_exercise.html', form=form, log_id=log_id)
 @exercise_bp.route('/exercise/delete/<int:log_id>', methods=['POST'])
 @login_required
 def delete_exercise(log_id):
