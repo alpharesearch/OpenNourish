@@ -18,15 +18,28 @@ def calculate_nutrition_for_items(items):
     # Get nutrient IDs for common nutrients to avoid repeated lookups
     nutrient_ids = Config.CORE_NUTRIENT_IDS
 
+    usda_fdc_ids = set()
+    for item in items:
+        if item.fdc_id:
+            usda_fdc_ids.add(item.fdc_id)
+
+    nutrients_map = {}
+    if usda_fdc_ids:
+        # Fetch all relevant FoodNutrient objects in one query
+        # Use .all() to execute the query and fetch results
+        food_nutrients = db.session.query(FoodNutrient).filter(FoodNutrient.fdc_id.in_(usda_fdc_ids)).all()
+        for fn in food_nutrients:
+            if fn.fdc_id not in nutrients_map:
+                nutrients_map[fn.fdc_id] = {}
+            nutrients_map[fn.fdc_id][fn.nutrient_id] = fn.amount
+
     for item in items:
         scaling_factor = item.amount_grams / 100.0
         if item.fdc_id:
-            food = db.session.get(Food, item.fdc_id)
-            if food:
+            if item.fdc_id in nutrients_map:
                 for name, nid in nutrient_ids.items():
-                    nutrient = db.session.query(FoodNutrient).filter_by(fdc_id=food.fdc_id, nutrient_id=nid).first()
-                    if nutrient:
-                        totals[name] += nutrient.amount * scaling_factor
+                    if nid in nutrients_map[item.fdc_id]:
+                        totals[name] += nutrients_map[item.fdc_id][nid] * scaling_factor
 
         elif item.my_food_id:
             my_food = db.session.get(MyFood, item.my_food_id)
