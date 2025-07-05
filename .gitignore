@@ -32,6 +32,7 @@ user_data.db
 user_data.db-journal
 test.pdf
 project_snapshot.txt
+.vscode/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
