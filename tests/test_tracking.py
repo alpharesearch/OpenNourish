@@ -57,3 +57,55 @@ def test_check_in_crud_lifecycle(auth_client):
     with auth_client.application.app_context():
         check_in = db.session.get(CheckIn, created_check_in_id)
         assert check_in is None
+
+@pytest.fixture
+def two_users(app_with_db):
+    with app_with_db.app_context():
+        user_one = User(username='user_one')
+        user_one.set_password('password')
+        db.session.add(user_one)
+
+        user_two = User(username='user_two')
+        user_two.set_password('password')
+        db.session.add(user_two)
+        db.session.commit()
+        # Return user IDs instead of user objects
+        return user_one.id, user_two.id
+
+@pytest.fixture
+def auth_client_user_two(app_with_db, two_users):
+    user_one_id, user_two_id = two_users
+    with app_with_db.test_client() as client:
+        with app_with_db.app_context():
+            user_one_in_context = db.session.get(User, user_one_id)
+            user_two_in_context = db.session.get(User, user_two_id)
+            user_id = user_two_in_context.id
+
+        with client.session_transaction() as sess:
+            sess['_user_id'] = user_id
+            sess['_fresh'] = True
+        yield client, user_one_in_context, user_two_in_context
+
+def test_user_cannot_edit_other_users_check_in(auth_client_user_two):
+    """
+    Tests that a user cannot edit another user's check-in.
+    """
+    client, user_one_from_fixture, user_two_from_fixture = auth_client_user_two
+
+    with client.application.app_context():
+        # Re-fetch user_one within the current app context
+        user_one = db.session.get(User, user_one_from_fixture.id)
+        # Create a check-in belonging to user_one
+        check_in_user_one = CheckIn(user_id=user_one.id, checkin_date=date.today(), weight_kg=70.0)
+        db.session.add(check_in_user_one)
+        db.session.commit()
+        check_in_id = check_in_user_one.id
+
+    # Attempt to make a GET request to the 'edit_check_in' page for user_one's check-in as user_two
+    response = client.get(f'/tracking/check-in/{check_in_id}/edit')
+    assert response.status_code == 302 # Redirects to /tracking/progress
+
+    # Follow the redirect to check the final status code and flash message
+    response = client.get(response.headers['Location'])
+    assert response.status_code == 200
+    assert b'Entry not found or you do not have permission to edit it.' in response.data

@@ -20,6 +20,11 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    @property
+    def weight_kg_for_exercise_calc(self):
+        latest_checkin = CheckIn.query.filter_by(user_id=self.id).order_by(CheckIn.checkin_date.desc()).first()
+        return latest_checkin.weight_kg if latest_checkin else 70.0 # Default weight if no check-ins
+
 class UserGoal(db.Model):
     __tablename__ = 'user_goals'
     id = db.Column(db.Integer, primary_key=True)

@@ -23,9 +23,16 @@ def test_add_usda_food_to_diary(auth_client):
         'portion_id': 'g',
         'fdc_id': 10001
     }
-    response = auth_client.post('/diary/add_entry', data=diary_data, follow_redirects=True)
+    response = auth_client.post('/search/add_item', data={
+        'food_id': diary_data['fdc_id'],
+        'food_type': 'usda',
+        'target': 'diary',
+        'log_date': diary_data['log_date'],
+        'meal_name': diary_data['meal_name'],
+        'quantity': diary_data['quantity']
+    }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Food added to diary.' in response.data
+    assert b'USDA Apple added to your diary.' in response.data
 
     # Check total calories on diary page
     response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
@@ -59,9 +66,16 @@ def test_add_my_food_to_diary(auth_client):
         'portion_id': 'g',
         'my_food_id': my_food_id
     }
-    response = auth_client.post('/diary/add_entry', data=diary_data, follow_redirects=True)
+    response = auth_client.post('/search/add_item', data={
+        'food_id': diary_data['my_food_id'],
+        'food_type': 'my_food',
+        'target': 'diary',
+        'log_date': diary_data['log_date'],
+        'meal_name': diary_data['meal_name'],
+        'quantity': diary_data['quantity']
+    }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Food added to diary.' in response.data
+    assert b'My Custom Bread added to your diary.' in response.data
 
     # Check total calories on diary page
     response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
@@ -107,16 +121,15 @@ def test_add_usda_food_with_portion(auth_client):
         portion = Portion(id=1, fdc_id=10002, seq_num=1, measure_unit_id=9999, portion_description='slice', gram_weight=28.0)
         db.session.add(portion)
         db.session.commit()
-        portion_id = portion.id
 
-    diary_data = {
+    auth_client.post('/search/add_item', data={
+        'food_id': 10002,
+        'food_type': 'usda',
+        'target': 'diary',
         'log_date': date.today().strftime('%Y-%m-%d'),
         'meal_name': 'Snack',
-        'quantity': 2,
-        'portion_id': portion_id,
-        'fdc_id': 10002
-    }
-    auth_client.post('/diary/add_entry', data=diary_data)
+        'quantity': 56
+    })
 
     with auth_client.application.app_context():
         log_entry = DailyLog.query.filter_by(fdc_id=10002).first()
@@ -137,16 +150,15 @@ def test_add_my_food_with_portion(auth_client):
         my_portion = MyPortion(my_food_id=my_food_id, description='handful', gram_weight=40.0)
         db.session.add(my_portion)
         db.session.commit()
-        my_portion_id = my_portion.id
 
-    diary_data = {
+    auth_client.post('/search/add_item', data={
+        'food_id': my_food_id,
+        'food_type': 'my_food',
+        'target': 'diary',
         'log_date': date.today().strftime('%Y-%m-%d'),
         'meal_name': 'Snack',
-        'quantity': 3,
-        'portion_id': my_portion_id,
-        'my_food_id': my_food_id
-    }
-    auth_client.post('/diary/add_entry', data=diary_data)
+        'quantity': 120
+    })
 
     with auth_client.application.app_context():
         log_entry = DailyLog.query.filter_by(my_food_id=my_food_id).first()

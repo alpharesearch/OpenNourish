@@ -31,7 +31,7 @@
                     <input type="text" name="new_meal_name" class="form-control form-control-sm me-2" placeholder="Save as new meal...">
                     <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
                 </form>
-                <a href="{{ url_for('diary.search_for_diary', log_date_str=date.isoformat(), meal_name=meal_name) }}" class="btn btn-outline-primary btn-sm">Add Food</a>
+                <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}" class="btn btn-outline-primary btn-sm">Add Food</a>
             </div>
         </div>
         <ul class="list-group list-group-flush">

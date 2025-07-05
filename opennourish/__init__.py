@@ -1,6 +1,6 @@
 from flask import Flask
 import os
-from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, Portion, MyPortion, RecipePortion, RecipeIngredient, MyMeal, MyMealItem
+from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, Portion, MyPortion, RecipePortion, RecipeIngredient, MyMeal, MyMealItem, ExerciseActivity, ExerciseLog
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import Config
@@ -31,11 +31,8 @@ def create_app(config_class=Config):
     from opennourish.dashboard import dashboard_bp
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
 
-    from opennourish.search import search_bp
-    app.register_blueprint(search_bp, url_prefix='/search')
-
-    from opennourish.database import database_bp
-    app.register_blueprint(database_bp, url_prefix='/database')
+    from opennourish.my_foods.routes import my_foods_bp
+    app.register_blueprint(my_foods_bp, url_prefix='/my_foods')
 
     from opennourish.diary import diary_bp
     app.register_blueprint(diary_bp, url_prefix='/')
@@ -57,6 +54,9 @@ def create_app(config_class=Config):
 
     from opennourish.main.routes import main_bp
     app.register_blueprint(main_bp)
+
+    from opennourish.search import search_bp
+    app.register_blueprint(search_bp, url_prefix='/search')
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -91,9 +91,35 @@ def create_app(config_class=Config):
             db.session.query(MyPortion).delete()
             db.session.query(MyFood).delete()
             db.session.query(UserGoal).delete()
+            db.session.query(DailyLog).delete()
+            db.session.query(CheckIn).delete()
+            db.session.query(MyMealItem).delete()
+            db.session.query(MyMeal).delete()
+            db.session.query(RecipeIngredient).delete()
+            db.session.query(RecipePortion).delete()
+            db.session.query(Recipe).delete()
+            db.session.query(MyPortion).delete()
+            db.session.query(MyFood).delete()
+            db.session.query(UserGoal).delete()
+            db.session.query(ExerciseLog).delete()
+            db.session.query(ExerciseActivity).delete()
             db.session.query(User).delete()
             db.session.commit()
             print("Cleared existing user data.")
+
+            # Add default exercise activities
+            print("Adding default exercise activities...")
+            activities = [
+                ExerciseActivity(name='Walking', met_value=3.5),
+                ExerciseActivity(name='Running (moderate)', met_value=8.0),
+                ExerciseActivity(name='Cycling (leisure)', met_value=5.0),
+                ExerciseActivity(name='Swimming (freestyle)', met_value=7.0),
+                ExerciseActivity(name='Weightlifting', met_value=3.0),
+                ExerciseActivity(name='Yoga', met_value=2.5),
+            ]
+            db.session.add_all(activities)
+            db.session.commit()
+            print("Default exercise activities added.")
 
             print("Creating main test user...")
             test_user = User(username='markus')
@@ -111,6 +137,7 @@ def create_app(config_class=Config):
             my_meals_created = 0
             my_meal_items_created = 0
             daily_logs_created = 0
+            exercise_logs_created = 0
 
             # Fetch some FDC IDs from the USDA database for linking
             # This assumes usda_data.db is already populated
@@ -173,6 +200,34 @@ def create_app(config_class=Config):
                     )
                     db.session.add(check_in)
                 check_ins_created += num_check_ins
+
+                # Exercise Logs
+                num_exercise_logs = random.randint(30, 50)
+                all_activities = ExerciseActivity.query.all()
+                for j in range(num_exercise_logs):
+                    log_date = date.today() - timedelta(days=random.randint(0, 60))
+                    duration = random.randint(15, 90) # minutes
+                    
+                    if random.random() < 0.8 and all_activities: # 80% chance to use a predefined activity
+                        activity = random.choice(all_activities)
+                        calories_burned = int((activity.met_value * 3.5 * user.weight_kg_for_exercise_calc / 200) * duration) if user.weight_kg_for_exercise_calc else 0
+                        exercise_log = ExerciseLog(
+                            user_id=user.id,
+                            log_date=log_date,
+                            activity_id=activity.id,
+                            duration_minutes=duration,
+                            calories_burned=calories_burned
+                        )
+                    else: # 20% chance for a manual entry
+                        exercise_log = ExerciseLog(
+                            user_id=user.id,
+                            log_date=log_date,
+                            manual_description=fake.sentence(nb_words=4),
+                            duration_minutes=duration,
+                            calories_burned=random.randint(50, 500) # Random calories for manual entry
+                        )
+                    db.session.add(exercise_log)
+                exercise_logs_created += num_exercise_logs
 
                 # Recipes
                 num_recipes = random.randint(2, 5)
@@ -328,6 +383,6 @@ def create_app(config_class=Config):
                 users_created += 1
 
             db.session.commit()
-            print(f"Database seeded with {users_created} users, {my_foods_created} MyFoods, {check_ins_created} CheckIns, {recipes_created} Recipes, {my_meals_created} MyMeals, {my_meal_items_created} MyMealItems, and {daily_logs_created} Daily Logs.")
+            print(f"Database seeded with {users_created} users, {my_foods_created} MyFoods, {check_ins_created} CheckIns, {recipes_created} Recipes, {my_meals_created} MyMeals, {my_meal_items_created} MyMealItems, {daily_logs_created} Daily Logs, and {exercise_logs_created} Exercise Logs.")
 
     return app

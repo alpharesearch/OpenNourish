@@ -58,13 +58,14 @@
 </ul>
 
     <h2 class="mt-4">Add Food to Meal</h2>
-    <form action="{{ url_for('diary.search_for_meal_item', meal_id=meal.id) }}" method="GET" class="mb-3">
+    <form action="{{ url_for('search.search') }}" method="GET" class="mb-3">
+        <input type="hidden" name="target" value="meal">
+        <input type="hidden" name="recipe_id" value="{{ meal.id }}">
         <div class="input-group">
             <input type="text" class="form-control" placeholder="Search for food or meal..." name="search_term">
             <button class="btn btn-outline-primary" type="submit">Search</button>
         </div>
     </form>
-    <a href="{{ url_for('diary.search_for_meal_item', meal_id=meal.id) }}" class="btn btn-outline-primary mb-3">Browse All Foods/Meals</a>
 
 </div>
 {% endblock %}
