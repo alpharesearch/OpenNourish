@@ -11,7 +11,7 @@ from opennourish.utils import calculate_recipe_nutrition_per_100g
 @search_bp.route('/', methods=['GET', 'POST'])
 @login_required
 def search():
-    search_term = ""
+    search_term = request.form.get('search_term') or request.args.get('search_term', '')
     results = {
         "usda_foods": [],
         "my_foods": [],
