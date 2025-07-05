@@ -39,6 +39,8 @@ def new_my_food():
         db.session.commit()
         flash('Custom food added successfully!', 'success')
         return redirect(url_for('my_foods.my_foods'))
+    else:
+        flash('Please correct the errors below.', 'danger')
     return render_template('my_foods/new_my_food.html', form=form)
 
 @my_foods_bp.route('/edit/<int:food_id>', methods=['GET', 'POST'])
