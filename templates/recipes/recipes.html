@@ -9,32 +9,35 @@
         </a>
     </div>
 
-    {% if recipes %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {% for recipe in recipes %}
-        <div class="col">
-            <div class="card h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">{{ recipe.name }}</h5>
-                    <p class="card-text text-muted flex-grow-1">{{ recipe.instructions|truncate(100) }}</p>
-                    <div class="mt-auto">
-                        <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-info">View</a>
-                        <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+    <div class="list-group">
+        {% if recipes %}
+            {% for recipe in recipes %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">{{ recipe.name }}</h5>
+                        <small class="text-muted">
+                            Calories: {{ recipe.nutrition_per_100g.calories|round(0) }} kcal | Protein: {{ recipe.nutrition_per_100g.protein|round(1) }}g | Carbs: {{ recipe.nutrition_per_100g.carbs|round(1) }}g | Fat: {{ recipe.nutrition_per_100g.fat|round(1) }}g
+                        </small>
+                        <small class="text-muted">
+                            {{ recipe.instructions|truncate(150) }}
+                        </small>
+                    </div>
+                    <div class="btn-group" role="group" aria-label="Recipe Actions">
+                        <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info btn-sm">View</a>
+                        <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                         <form action="{{ url_for('recipes.delete_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                         </form>
                     </div>
                 </div>
+            {% endfor %}
+        {% else %}
+            <div class="list-group-item text-center py-5">
+                <h4>No Recipes Found</h4>
+                <p class="text-muted">Get started by creating your first recipe.</p>
+                <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-outline-primary mt-3">Create a Recipe</a>
             </div>
-        </div>
-        {% endfor %}
+        {% endif %}
     </div>
-    {% else %}
-    <div class="text-center py-5">
-        <h4>No Recipes Found</h4>
-        <p class="text-muted">Get started by creating your first recipe.</p>
-        <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-outline-primary mt-3">Create a Recipe</a>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

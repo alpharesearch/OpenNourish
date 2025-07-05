@@ -118,54 +118,63 @@ def calculate_nutrition_for_items(items):
     return totals
 
 def generate_nutrition_label_pdf(fdc_id):
-    food = db.session.get(Food, fdc_id)
+    food = db.session.query(Food).options(selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)).get(fdc_id)
     if not food:
         return "Food not found", 404
 
     # Map common nutrition label fields to USDA nutrient names and their units
     nutrient_info = {
-        "Energy": {"names": ["Energy", "Energy (Atwater General Factors)"], "unit": "kcal", "format": ".0f"},
-        "Total lipid (fat)": {"names": ["Total lipid (fat)"], "unit": "g", "format": ".1f"},
+        "Energy": {"names": ["Energy", "Energy (Atwater General Factors)", "Energy (Atwater Specific Factors)"], "unit": "kcal", "format": ".0f"},
+        "Total lipid (fat)": {"names": ["Total lipid (fat)", "Lipids"], "unit": "g", "format": ".1f"},
         "Fatty acids, total saturated": {"names": ["Fatty acids, total saturated"], "unit": "g", "format": ".1f"},
         "Fatty acids, total trans": {"names": ["Fatty acids, total trans"], "unit": "g", "format": ".1f"},
         "Cholesterol": {"names": ["Cholesterol"], "unit": "mg", "format": ".0f"},
-        "Sodium": {"names": ["Sodium"], "unit": "mg", "format": ".0f"},
-        "Carbohydrate, by difference": {"names": ["Carbohydrate, by difference"], "unit": "g", "format": ".1f"},
-        "Fiber, total dietary": {"names": ["Fiber, total dietary"], "unit": "g", "format": ".1f"},
-        "Sugars, total including NLEA": {"names": ["Sugars, total including NLEA"], "unit": "g", "format": ".1f"},
-        "Protein": {"names": ["Protein"], "unit": "g", "format": ".1f"},
-        "Vitamin D (D2 + D3)": {"names": ["Vitamin D (D2 + D3)"], "unit": "mcg", "format": ".0f", "key": "vitamin_d"},
-        "Calcium": {"names": ["Calcium"], "unit": "mg", "format": ".0f", "key": "calcium"},
-        "Iron": {"names": ["Iron"], "unit": "mg", "format": ".1f", "key": "iron"},
-        "Potassium": {"names": ["Potassium"], "unit": "mg", "format": ".0f", "key": "potassium"},
-        "Vitamin A, RAE": {"names": ["Vitamin A, RAE"], "unit": "mcg", "format": ".0f", "key": "vitamin_a"},
-        "Vitamin C, total ascorbic acid": {"names": ["Vitamin C, total ascorbic acid"], "unit": "mg", "format": ".0f", "key": "vitamin_c"}
+        "Sodium": {"names": ["Sodium", "Sodium, Na"], "unit": "mg", "format": ".0f"},
+        "Carbohydrate, by difference": {"names": ["Carbohydrate, by difference", "Carbohydrates"], "unit": "g", "format": ".1f"},
+        "Fiber, total dietary": {"names": ["Fiber, total dietary", "Total dietary fiber (AOAC 2011.25)"], "unit": "g", "format": ".1f"},
+        "Sugars, total including NLEA": {"names": ["Sugars, total including NLEA", "Sugars, total", "Total Sugars"], "unit": "g", "format": ".1f"},
+        "Sugars, added": {"names": ["Sugars, added"], "unit": "g", "format": ".1f"},
+        "Protein": {"names": ["Protein", "Adjusted Protein"], "unit": "g", "format": ".1f"},
+        "Vitamin D": {"names": ["Vitamin D (D2 + D3)"], "unit": "mcg", "format": ".0f", "key": "vitamin_d"},
+        "Calcium": {"names": ["Calcium", "Calcium, Ca", "Calcium, added", "Calcium, intrinsic"], "unit": "mg", "format": ".0f", "key": "calcium"},
+        "Iron": {"names": ["Iron", "Iron, Fe", "Iron, heme", "Iron, non-heme", "Iron, added", "Iron, intrinsic"], "unit": "mg", "format": ".1f", "key": "iron"},
+        "Potassium": {"names": ["Potassium", "Potassium, K"], "unit": "mg", "format": ".0f", "key": "potassium"}
+    
     }
 
     # Extract nutrient values
     nutrients_for_label = {}
     for label_field, info in nutrient_info.items():
-        found_value = 0.0
+        found_value = None  # Initialize to None to distinguish from 0.0
         for usda_name in info["names"]:
+            # Iterate through the eager-loaded food.nutrients
             for fn in food.nutrients:
                 if fn.nutrient.name == usda_name:
                     found_value = fn.amount
-                    break
-            if found_value > 0:
+                    break  # Break as soon as a match is found
+            # If a value was found for the current usda_name, stop searching other names for this label_field
+            if found_value is not None:
                 break
-        nutrients_for_label[label_field] = found_value
+        nutrients_for_label[label_field] = found_value if found_value is not None else 0.0 # Assign 0.0 if not found
+
+    print(f"Debug: Potassium value for PDF: {nutrients_for_label.get('Potassium')}")
+
 
     # Prepare data for Typst
-    # Construct the micronutrients array for Typst
-    micronutrients_typst = []
-    for label_field, info in nutrient_info.items():
-        if "key" in info: # These are micronutrients
-            value = nutrients_for_label[label_field]
-            micronutrients_typst.append(                    f"(name: \"{label_field}\", key: \"{info['key']}\", value: {value}, unit: \"{info['unit']}\", dv: 0)"
-            )
-
-    # Join micronutrients for Typst array syntax
-    micronutrients_typst_str = ",\n    ".join(micronutrients_typst)
+    ingredients_str = food.ingredients if food.ingredients else "N/A"
+    portions_str = ""
+    if food.portions:
+        portions_list = []
+        for p in food.portions:
+            desc = p.portion_description if p.portion_description else ""
+            if p.amount and p.measure_unit:
+                desc = f"{p.amount} {p.measure_unit.name} {desc}"
+            if p.modifier:
+                desc = f"{desc} ({p.modifier})"
+            portions_list.append(f"{desc} ({p.gram_weight}g)")
+        portions_str = "; ".join(portions_list)
+    else:
+        portions_str = "N/A"
 
     typst_content = f"""
 #import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
@@ -182,16 +191,27 @@ def generate_nutrition_label_pdf(fdc_id):
   carbohydrate: (value: {nutrients_for_label['Carbohydrate, by difference']:{nutrient_info['Carbohydrate, by difference']['format']}}, unit: "{nutrient_info['Carbohydrate, by difference']['unit']}"),
   fiber: (value: {nutrients_for_label['Fiber, total dietary']:{nutrient_info['Fiber, total dietary']['format']}}, unit: "{nutrient_info['Fiber, total dietary']['unit']}"),
   sugars: (value: {nutrients_for_label['Sugars, total including NLEA']:{nutrient_info['Sugars, total including NLEA']['format']}}, unit: "{nutrient_info['Sugars, total including NLEA']['unit']}"),
-  added_sugars: (value: 0, unit: "g"), // Assuming no added sugars data for now
+  added_sugars: (value: {nutrients_for_label['Sugars, added']:{nutrient_info['Sugars, added']['format']}}, unit: "{nutrient_info['Sugars, added']['unit']}"),
   protein: (value: {nutrients_for_label['Protein']:{nutrient_info['Protein']['format']}}, unit: "{nutrient_info['Protein']['unit']}"),
   micronutrients: (
-    {micronutrients_typst_str}
+    (name: "Vitamin D", key: "vitamin_d", value: {nutrients_for_label['Vitamin D']:{nutrient_info['Vitamin D']['format']}}, unit: "mcg"),
+    (name: "Calcium", key: "calcium", value: {nutrients_for_label['Calcium']:{nutrient_info['Calcium']['format']}}, unit: "mg"),
+    (name: "Iron", key: "iron", value: {nutrients_for_label['Iron']:{nutrient_info['Iron']['format']}}, unit: "mg"),
+    (name: "Potassium", key: "potassium", value: {nutrients_for_label['Potassium']:{nutrient_info['Potassium']['format']}}, unit: "mg"),
   ),
 )
 
+= {food.description}
+
+== Ingredients: 
+{ingredients_str}
+
+== Portion Sizes: 
+{portions_str}
+
+== Lable:
 #show: nutrition-label-nam(data)
 
-#align(center, text(20pt, "Nutrition Facts for {food.description}"))
 
 """
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -216,3 +236,23 @@ def generate_nutrition_label_pdf(fdc_id):
             return f"Error generating PDF: {e.stderr}", 500
         except FileNotFoundError:
             return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
+
+def calculate_recipe_nutrition_per_100g(recipe):
+    """
+    Calculates the nutritional values per 100g for a given recipe.
+    """
+    total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
+    total_grams = sum(ing.amount_grams for ing in recipe.ingredients)
+
+    nutrition_per_100g = {
+        'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0
+    }
+
+    if total_grams > 0:
+        scaling_factor = 100.0 / total_grams
+        nutrition_per_100g['calories'] = total_nutrition['calories'] * scaling_factor
+        nutrition_per_100g['protein'] = total_nutrition['protein'] * scaling_factor
+        nutrition_per_100g['carbs'] = total_nutrition['carbs'] * scaling_factor
+        nutrition_per_100g['fat'] = total_nutrition['fat'] * scaling_factor
+    
+    return nutrition_per_100g
