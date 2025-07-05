@@ -24,46 +24,133 @@ def search():
     meal_name = request.args.get('meal_name') or request.form.get('meal_name')
     search_mode = request.form.get('search_mode') or request.args.get('search_mode', 'all') # 'all' or 'usda_only'
     current_app.logger.debug(f"Debug: search_mode in search route: {search_mode}")
+    current_app.logger.debug(f"Debug: request.method: {request.method}, target: {target}, search_term: {search_term}")
 
-    if request.method == 'POST' or request.args.get('search_term'):
-        search_term = request.form.get('search_term', '').strip() or request.args.get('search_term', '').strip()
-        if search_term:
-            # Search USDA Foods
-            usda_foods_query = Food.query.options(
-                selectinload(Food.portions).selectinload(Portion.measure_unit),
-                selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
-            ).filter(Food.description.ilike(f'%{search_term}%')).limit(10).all()
+    if search_term:
+        # Search USDA Foods
+        usda_foods_query = Food.query.options(
+            selectinload(Food.portions).selectinload(Portion.measure_unit),
+            selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
+        ).filter(Food.description.ilike(f'%{search_term}%')).limit(10).all()
+        
+        for food in usda_foods_query:
+            results["usda_foods"].append({
+                'fdc_id': food.fdc_id,
+                'description': food.description,
+                'has_portions': bool(food.portions),
+                'has_ingredients': bool(food.ingredients),
+                'has_rich_nutrients': len(food.nutrients) > 20 # Arbitrary threshold for "rich"
+            })
+
+        if search_mode != 'usda_only':
+            # Search MyFoods
+            my_foods_query = MyFood.query.options(
+                selectinload(MyFood.portions)
+            ).filter(MyFood.description.ilike(f'%{search_term}%'), MyFood.user_id == current_user.id).limit(10).all()
             
-            for food in usda_foods_query:
-                results["usda_foods"].append({
-                    'fdc_id': food.fdc_id,
+            for food in my_foods_query:
+                results["my_foods"].append({
+                    'id': food.id,
                     'description': food.description,
                     'has_portions': bool(food.portions),
-                    'has_ingredients': bool(food.ingredients),
-                    'has_rich_nutrients': len(food.nutrients) > 20 # Arbitrary threshold for "rich"
+                    'has_ingredients': bool(food.ingredients) # MyFood has an ingredients string
                 })
 
-            if search_mode != 'usda_only':
-                # Search MyFoods
-                my_foods_query = MyFood.query.options(
-                    selectinload(MyFood.portions)
-                ).filter(MyFood.description.ilike(f'%{search_term}%'), MyFood.user_id == current_user.id).limit(10).all()
-                
-                for food in my_foods_query:
+            # Search Recipes
+            recipes_query = Recipe.query.options(
+                selectinload(Recipe.ingredients),
+                selectinload(Recipe.portions)
+            ).filter(Recipe.name.ilike(f'%{search_term}%'), Recipe.user_id == current_user.id).limit(10).all()
+            
+            for recipe in recipes_query:
+                nutrition_per_100g = calculate_recipe_nutrition_per_100g(recipe)
+                results["recipes"].append({
+                    'id': recipe.id,
+                    'name': recipe.name,
+                    'has_ingredients': bool(recipe.instructions),
+                    'has_portions': bool(recipe.portions),
+                    'calories_per_100g': nutrition_per_100g['calories'],
+                    'protein_per_100g': nutrition_per_100g['protein'],
+                    'carbs_per_100g': nutrition_per_100g['carbs'],
+                    'fat_per_100g': nutrition_per_100g['fat']
+                })
+
+            # Search MyMeals
+            my_meals_query = MyMeal.query.options(
+                selectinload(MyMeal.items)
+            ).filter(MyMeal.name.ilike(f'%{search_term}%'), MyMeal.user_id == current_user.id).limit(10).all()
+            
+            for meal in my_meals_query:
+                # For MyMeals, we can indicate if they have items (ingredients)
+                results["my_meals"].append({
+                    'id': meal.id,
+                    'name': meal.name,
+                    'has_items': bool(meal.items)
+                })
+    elif request.method == 'GET' and not search_term and target == 'diary':
+        # Get top 10 most used USDA Foods
+        top_usda_foods_ids = db.session.query(DailyLog.fdc_id, db.func.count(DailyLog.fdc_id)).\
+                            filter(DailyLog.user_id == current_user.id, DailyLog.fdc_id.isnot(None)).\
+                            group_by(DailyLog.fdc_id).order_by(db.func.count(DailyLog.fdc_id).desc()).limit(10).all()
+        
+        usda_food_ids = [item[0] for item in top_usda_foods_ids]
+        if usda_food_ids:
+            usda_foods = Food.query.options(
+                selectinload(Food.portions).selectinload(Portion.measure_unit),
+                selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
+            ).filter(Food.fdc_id.in_(usda_food_ids)).all()
+            
+            # Sort by usage count
+            usda_foods_dict = {food.fdc_id: food for food in usda_foods}
+            for fdc_id, _ in top_usda_foods_ids:
+                food = usda_foods_dict.get(fdc_id)
+                if food:
+                    results["usda_foods"].append({
+                        'fdc_id': food.fdc_id,
+                        'description': food.description,
+                        'has_portions': bool(food.portions),
+                        'has_ingredients': bool(food.ingredients),
+                        'has_rich_nutrients': len(food.nutrients) > 20
+                    })
+
+        # Get top 10 most used MyFoods
+        top_my_foods_ids = db.session.query(DailyLog.my_food_id, db.func.count(DailyLog.my_food_id)).\
+                        filter(DailyLog.user_id == current_user.id, DailyLog.my_food_id.isnot(None)).\
+                        group_by(DailyLog.my_food_id).order_by(db.func.count(DailyLog.my_food_id).desc()).limit(10).all()
+        
+        my_food_ids = [item[0] for item in top_my_foods_ids]
+        if my_food_ids:
+            my_foods = MyFood.query.options(
+                selectinload(MyFood.portions)
+            ).filter(MyFood.id.in_(my_food_ids), MyFood.user_id == current_user.id).all()
+            
+            my_foods_dict = {food.id: food for food in my_foods}
+            for my_food_id, _ in top_my_foods_ids:
+                food = my_foods_dict.get(my_food_id)
+                if food:
                     results["my_foods"].append({
                         'id': food.id,
                         'description': food.description,
                         'has_portions': bool(food.portions),
-                        'has_ingredients': bool(food.ingredients) # MyFood has an ingredients string
+                        'has_ingredients': bool(food.ingredients)
                     })
 
-                # Search Recipes
-                recipes_query = Recipe.query.options(
-                    selectinload(Recipe.ingredients),
-                    selectinload(Recipe.portions)
-                ).filter(Recipe.name.ilike(f'%{search_term}%'), Recipe.user_id == current_user.id).limit(10).all()
-                
-                for recipe in recipes_query:
+        # Get top 10 most used Recipes
+        top_recipes_ids = db.session.query(DailyLog.recipe_id, db.func.count(DailyLog.recipe_id)).\
+                        filter(DailyLog.user_id == current_user.id, DailyLog.recipe_id.isnot(None)).\
+                        group_by(DailyLog.recipe_id).order_by(db.func.count(DailyLog.recipe_id).desc()).limit(10).all()
+        
+        recipe_ids = [item[0] for item in top_recipes_ids]
+        if recipe_ids:
+            recipes = Recipe.query.options(
+                selectinload(Recipe.ingredients),
+                selectinload(Recipe.portions)
+            ).filter(Recipe.id.in_(recipe_ids), Recipe.user_id == current_user.id).all()
+            
+            recipes_dict = {recipe.id: recipe for recipe in recipes}
+            for recipe_id, _ in top_recipes_ids:
+                recipe = recipes_dict.get(recipe_id)
+                if recipe:
                     nutrition_per_100g = calculate_recipe_nutrition_per_100g(recipe)
                     results["recipes"].append({
                         'id': recipe.id,
@@ -76,18 +163,16 @@ def search():
                         'fat_per_100g': nutrition_per_100g['fat']
                     })
 
-                # Search MyMeals
-                my_meals_query = MyMeal.query.options(
-                    selectinload(MyMeal.items)
-                ).filter(MyMeal.name.ilike(f'%{search_term}%'), MyMeal.user_id == current_user.id).limit(10).all()
-                
-                for meal in my_meals_query:
-                    # For MyMeals, we can indicate if they have items (ingredients)
-                    results["my_meals"].append({
-                        'id': meal.id,
-                        'name': meal.name,
-                        'has_items': bool(meal.items)
-                    })
+        # Get top 10 most used MyMeals
+        top_my_meals = MyMeal.query.filter_by(user_id=current_user.id).order_by(MyMeal.usage_count.desc()).limit(10).all()
+        
+        if top_my_meals:
+            for meal in top_my_meals:
+                results["my_meals"].append({
+                    'id': meal.id,
+                    'name': meal.name,
+                    'has_items': bool(meal.items)
+                })
     return render_template('search/index.html',
                            search_term=search_term,
                            results=results,
@@ -184,6 +269,7 @@ def add_item():
             elif food_type == 'my_meal':
                 my_meal = db.session.get(MyMeal, food_id)
                 if my_meal and my_meal.user_id == current_user.id:
+                    my_meal.usage_count += 1  # Increment usage count
                     for item in my_meal.items:
                         daily_log = DailyLog(
                             user_id=current_user.id,

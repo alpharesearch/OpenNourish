@@ -56,13 +56,13 @@
                     <a class="nav-link px-2 {% if request.endpoint.startswith('diary.') and 'my_meals' not in request.endpoint %}active{% endif %}" href="{{ url_for('diary.diary') }}">Food Diary</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint.startswith('recipes.') %}active{% endif %}" href="{{ url_for('recipes.recipes') }}">My Recipes</a>
+                    <a class="nav-link px-2 {% if request.endpoint == 'my_foods.my_foods' %}active{% endif %}" href="{{ url_for('my_foods.my_foods') }}">My Foods</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link px-2 {% if request.endpoint == 'diary.my_meals' %}active{% endif %}" href="{{ url_for('diary.my_meals') }}">My Meals</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'my_foods.my_foods' %}active{% endif %}" href="{{ url_for('my_foods.my_foods') }}">My Foods</a>
+                    <a class="nav-link px-2 {% if request.endpoint.startswith('recipes.') %}active{% endif %}" href="{{ url_for('recipes.recipes') }}">My Recipes</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link px-2 {% if request.endpoint == 'search.search' and search_mode == 'usda_only' %}active{% endif %}" href="{{ url_for('search.search', search_mode='usda_only') }}">Search USDA</a>

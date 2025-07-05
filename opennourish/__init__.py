@@ -307,7 +307,7 @@ def create_app(config_class=Config):
                     fdc_id = None
                     my_food_id = None
                     recipe_id = None
-                    my_meal_log_id = None
+                    
 
                     if choice == 'usda' and usda_fdc_ids:
                         fdc_id = random.choice(usda_fdc_ids)
@@ -317,6 +317,7 @@ def create_app(config_class=Config):
                         recipe_id = random.choice(user_recipes).id
                     elif choice == 'my_meal' and user_my_meals:
                         selected_meal = random.choice(user_my_meals)
+                        selected_meal.usage_count += 1 # Increment usage count
                         for item in selected_meal.items:
                             log_entry = DailyLog(
                                 user_id=user.id,

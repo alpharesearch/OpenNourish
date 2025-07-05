@@ -122,6 +122,7 @@ class MyMeal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String, nullable=False)
+    usage_count = db.Column(db.Integer, default=0, nullable=False)
     items = db.relationship('MyMealItem', backref='meal', cascade="all, delete-orphan")
 
 class MyMealItem(db.Model):
