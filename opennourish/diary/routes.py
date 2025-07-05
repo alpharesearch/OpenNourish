@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 from . import diary_bp
 from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe
 from datetime import date, timedelta
-from opennourish.utils import calculate_nutrition_for_items
+from opennourish.utils import calculate_nutrition_for_items, get_available_portions
 from .forms import MealForm, DailyLogForm, MealItemForm
 from sqlalchemy.orm import joinedload, selectinload
 from models import Portion, MyPortion
@@ -31,35 +31,15 @@ def diary(log_date_str=None):
     totals = calculate_nutrition_for_items(daily_logs)
 
     for log in daily_logs:
-        food_item = None
-        available_portions = []
-        
         if log.fdc_id:
-            food_item = db.session.get(Food, log.fdc_id)
-            if food_item:
-                # Always add grams as an option
-                available_portions.append(SimpleNamespace(id='g', display_text='g', value_string='g'))
-                for p in food_item.portions:
-                    display_text = f"{p.portion_description} ({p.gram_weight}g)"
-                    available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
+            food_item = db.session.query(Food).options(joinedload(Food.portions).joinedload(Portion.measure_unit)).get(log.fdc_id)
         elif log.my_food_id:
             food_item = db.session.get(MyFood, log.my_food_id)
-            if food_item:
-                # Always add grams as an option
-                available_portions.append(SimpleNamespace(id='g', display_text='g', value_string='g'))
-                for p in food_item.portions:
-                    display_text = f"{p.description} ({p.gram_weight}g)"
-                    available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
         elif log.recipe_id:
             food_item = db.session.get(Recipe, log.recipe_id)
-            if food_item:
-                # For recipes, portions are defined by RecipePortion
-                available_portions.append(SimpleNamespace(id='g', display_text='g', value_string='g')) # Always allow grams
-                for p in food_item.portions:
-                    display_text = f"{p.description} ({p.gram_weight}g)"
-                    available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
 
         if food_item:
+            available_portions = get_available_portions(food_item)
             # Calculate display amount based on serving type
             gram_weight = 1.0
             if log.serving_type and log.serving_type != 'g':
@@ -94,7 +74,7 @@ def diary(log_date_str=None):
 
 
 
-@diary_bp.route('/diary/delete/<int:log_id>', methods=['POST'])
+@diary_bp.route('/diary/log/<int:log_id>/delete', methods=['POST'])
 @login_required
 def delete_log(log_id):
     log_entry = db.session.get(DailyLog, log_id)
@@ -108,7 +88,7 @@ def delete_log(log_id):
     flash('Entry not found or you do not have permission to delete it.', 'danger')
     return redirect(url_for('diary.diary'))
 
-@diary_bp.route('/my_meals/delete/<int:meal_id>', methods=['POST'])
+@diary_bp.route('/my_meals/<int:meal_id>/delete', methods=['POST'])
 @login_required
 def delete_meal(meal_id):
     meal = db.session.get(MyMeal, meal_id)
@@ -174,31 +154,9 @@ def edit_meal(meal_id):
         return redirect(url_for('diary.edit_meal', meal_id=meal.id))
 
     for item in meal.items:
-        item.available_portions = []
+        item.available_portions = get_available_portions(item.food or item.my_food or item.recipe)
         item.selected_portion_id = 'g' # Default to grams
         item.display_amount = item.amount_grams # Default to grams for display
-
-        if item.fdc_id:
-            food_item = db.session.get(Food, item.fdc_id)
-            if food_item:
-                item.available_portions.append(SimpleNamespace(id='g', display_text='g'))
-                for p in food_item.portions:
-                    display_text = f"{p.portion_description} ({p.gram_weight}g)"
-                    item.available_portions.append(SimpleNamespace(id=p.id, display_text=display_text))
-        elif item.my_food_id:
-            my_food_item = db.session.get(MyFood, item.my_food_id)
-            if my_food_item:
-                item.available_portions.append(SimpleNamespace(id='g', display_text='g'))
-                for p in my_food_item.portions:
-                    display_text = f"{p.description} ({p.gram_weight}g)"
-                    item.available_portions.append(SimpleNamespace(id=p.id, display_text=display_text))
-        elif item.recipe_id:
-            recipe_item = db.session.get(Recipe, item.recipe_id)
-            if recipe_item:
-                item.available_portions.append(SimpleNamespace(id='g', display_text='g'))
-                for p in recipe_item.portions:
-                    display_text = f"{p.description} ({p.gram_weight}g)"
-                    item.available_portions.append(SimpleNamespace(id=p.id, display_text=display_text))
     return render_template('diary/edit_meal.html', meal=meal, form=form)
 
 @diary_bp.route('/my_meals/<int:meal_id>/edit_item/<int:item_id>', methods=['GET', 'POST'])
@@ -283,11 +241,23 @@ def my_meals():
         joinedload(MyMeal.items).joinedload(MyMealItem.recipe)
     ).all()
 
+    # Collect all unique fdc_ids from all meal items across all meals
+    all_usda_food_ids = {item.fdc_id for meal in meals for item in meal.items if item.fdc_id}
+
+    # Fetch all relevant USDA Food objects in one query, eagerly loading portions and measure units
+    usda_foods_map = {}
+    if all_usda_food_ids:
+        usda_foods = Food.query.options(joinedload(Food.portions).joinedload(Portion.measure_unit)).filter(Food.fdc_id.in_(all_usda_food_ids)).all()
+        usda_foods_map = {food.fdc_id: food for food in usda_foods}
+
     for meal in meals:
         for item in meal.items:
             if item.fdc_id:
-                item.usda_food = db.session.get(Food, item.fdc_id)
-    
+                # Attach the pre-loaded USDA food object to the meal item
+                item.usda_food = usda_foods_map.get(item.fdc_id)
+        # Calculate total nutrition for the meal
+        meal.totals = calculate_nutrition_for_items(meal.items)
+
     return render_template('diary/my_meals.html', meals=meals)
 
 @diary_bp.route('/my_meals/update_item/<int:item_id>', methods=['POST'])

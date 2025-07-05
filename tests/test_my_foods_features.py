@@ -90,7 +90,7 @@ def test_edit_my_food(auth_client):
         'carbs_per_100g': 15.0,
         'fat_per_100g': 7.0
     }
-    response = auth_client.post(f'/my_foods/edit/{food_id}', data=updated_food_data, follow_redirects=True)
+    response = auth_client.post(f'/my_foods/{food_id}/edit', data=updated_food_data, follow_redirects=True)
     assert response.status_code == 200
     assert b'Food updated successfully!' in response.data
 
@@ -118,7 +118,7 @@ def test_delete_my_food(auth_client):
         db.session.commit()
         food_id = food_to_delete.id
 
-    response = auth_client.post(f'/my_foods/delete/{food_id}', follow_redirects=True)
+    response = auth_client.post(f'/my_foods/{food_id}/delete', follow_redirects=True)
     assert response.status_code == 200
     assert b'Food deleted successfully!' in response.data
 

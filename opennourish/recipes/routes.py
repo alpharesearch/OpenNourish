@@ -31,7 +31,7 @@ def new_recipe():
         return redirect(url_for('recipes.edit_recipe', recipe_id=new_recipe.id))
     return render_template('recipes/edit_recipe.html', form=form, recipe=None, portion_form=RecipePortionForm())
 
-@recipes_bp.route("/recipe/edit/<int:recipe_id>", methods=['GET', 'POST'])
+@recipes_bp.route('/<int:recipe_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_recipe(recipe_id):
     recipe = Recipe.query.options(
@@ -45,6 +45,9 @@ def edit_recipe(recipe_id):
         usda_foods = Food.query.options(selectinload(Food.portions).selectinload(Portion.measure_unit)).filter(Food.fdc_id.in_(usda_food_ids)).all()
         usda_foods_map = {food.fdc_id: food for food in usda_foods}
         
+    for ing in recipe.ingredients:
+        if ing.fdc_id:
+            ing.usda_food = usda_foods_map.get(ing.fdc_id)
 
     if recipe.user_id != current_user.id:
         flash('You are not authorized to edit this recipe.', 'danger')
@@ -89,7 +92,7 @@ def edit_recipe(recipe_id):
     )
 
 
-@recipes_bp.route("/recipe/ingredient/<int:ingredient_id>/delete", methods=['POST'])
+@recipes_bp.route('/ingredients/<int:ingredient_id>/delete', methods=['POST'])
 @login_required
 def delete_ingredient(ingredient_id):
     ingredient = RecipeIngredient.query.get_or_404(ingredient_id)
@@ -141,7 +144,7 @@ def update_ingredient(ingredient_id):
     return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
 
-@recipes_bp.route("/recipe/view/<int:recipe_id>")
+@recipes_bp.route('/<int:recipe_id>')
 @login_required
 def view_recipe(recipe_id):
     recipe = Recipe.query.options(
@@ -190,7 +193,7 @@ def view_recipe(recipe_id):
     )
 
 
-@recipes_bp.route("/recipe/delete/<int:recipe_id>", methods=['POST'])
+@recipes_bp.route('/<int:recipe_id>/delete', methods=['POST'])
 @login_required
 def delete_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)

@@ -20,8 +20,10 @@
                 <td>{{ check_in.body_fat_percentage }}</td>
                 <td>{{ check_in.waist_cm }}</td>
                 <td>
-                    <a href="{{ url_for('tracking.edit_check_in', check_in_id=check_in.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
-                    <a href="{{ url_for('tracking.delete_check_in', check_in_id=check_in.id) }}" class="btn btn-sm btn-outline-danger">Delete</a>
+                    <a href="{{ url_for('tracking.edit_check_in', check_in_id=check_in.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <form action="{{ url_for('tracking.delete_check_in', check_in_id=check_in.id) }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}

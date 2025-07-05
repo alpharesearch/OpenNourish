@@ -9,6 +9,12 @@
             <div class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
                     <h5 class="mb-1">{{ meal.name }}</h5>
+                    <small class="text-muted">
+                        Calories: {{ meal.totals.calories|round(0) }} kcal |
+                        Protein: {{ meal.totals.protein|round(1) }}g |
+                        Carbs: {{ meal.totals.carbs|round(1) }}g |
+                        Fat: {{ meal.totals.fat|round(1) }}g
+                    </small>
                     <ul class="list-unstyled mb-0">
                         {% for item in meal.items %}
                             <li>
