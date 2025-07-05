@@ -188,9 +188,9 @@ def create_app(config_class=Config):
                         db.session.add(portion)
 
                 # CheckIn
-                num_check_ins = random.randint(50, 60)
+                num_check_ins = 52 # Approximately one year of weekly check-ins
                 for j in range(num_check_ins):
-                    checkin_date = date.today() - timedelta(days=j)
+                    checkin_date = date.today() - timedelta(weeks=j)
                     check_in = CheckIn(
                         user_id=user.id,
                         checkin_date=checkin_date,
