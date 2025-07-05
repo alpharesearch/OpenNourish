@@ -28,7 +28,7 @@ def new_check_in():
             flash('Your check-in has been recorded.', 'success')
         db.session.commit()
         return redirect(url_for('tracking.progress'))
-    return render_template('tracking/check_in.html', form=form, title='Submit Your Daily Check-In')
+    return render_template('tracking/check_in.html', form=form, title='Submit Your Check-In')
 
 @tracking_bp.route('/progress')
 @login_required

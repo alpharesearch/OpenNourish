@@ -13,6 +13,8 @@ from opennourish.utils import calculate_nutrition_for_items
 @dashboard_bp.route('/<string:log_date_str>')
 @login_required
 def index(log_date_str=None):
+    time_range = request.args.get('time_range', '3_month') # Default to 3 months
+
     if log_date_str:
         date_obj = date.fromisoformat(log_date_str)
     else:
@@ -51,10 +53,28 @@ def index(log_date_str=None):
             if my_food:
                 food_names[log.id] = my_food.description
 
-    check_ins = CheckIn.query.filter_by(user_id=current_user.id).order_by(CheckIn.checkin_date.asc()).limit(30).all()
+    # Filter check-ins based on time_range
+    check_ins_query = CheckIn.query.filter_by(user_id=current_user.id)
+
+    if time_range == '1_month':
+        start_date = date.today() - timedelta(days=30)
+        check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
+    elif time_range == '3_month':
+        start_date = date.today() - timedelta(days=90)
+        check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
+    elif time_range == '6_month':
+        start_date = date.today() - timedelta(days=180)
+        check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
+    elif time_range == '1_year':
+        start_date = date.today() - timedelta(days=365)
+        check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
+    # 'all_time' doesn't need a filter
+
+    check_ins = check_ins_query.order_by(CheckIn.checkin_date.asc()).all()
+
     chart_labels = [check_in.checkin_date.strftime('%Y-%m-%d') for check_in in check_ins]
     weight_data = [check_in.weight_kg for check_in in check_ins]
     body_fat_data = [check_in.body_fat_percentage for check_in in check_ins]
     waist_data = [check_in.waist_cm for check_in in check_ins]
 
-    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data)
+    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, time_range=time_range)

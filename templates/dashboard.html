@@ -64,8 +64,15 @@
     </div>
 
     <div class="card mb-4">
-        <div class="card-header">
-            <h2 class="card-title mb-0">Weight Progress (Last 30 entries)</h2>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="card-title mb-0">Weight Progress</h2>
+            <div class="btn-group" role="group" aria-label="Time Range">
+                <a href="{{ url_for('dashboard.index', time_range='1_month') }}" class="btn btn-sm {% if time_range == '1_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">1 Month</a>
+                <a href="{{ url_for('dashboard.index', time_range='3_month') }}" class="btn btn-sm {% if time_range == '3_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">3 Months</a>
+                <a href="{{ url_for('dashboard.index', time_range='6_month') }}" class="btn btn-sm {% if time_range == '6_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">6 Months</a>
+                <a href="{{ url_for('dashboard.index', time_range='1_year') }}" class="btn btn-sm {% if time_range == '1_year' %}btn-primary{% else %}btn-outline-primary{% endif %}">1 Year</a>
+                <a href="{{ url_for('dashboard.index', time_range='all_time') }}" class="btn btn-sm {% if time_range == 'all_time' %}btn-primary{% else %}btn-outline-primary{% endif %}">All Time</a>
+            </div>
         </div>
         <div class="card-body">
             {% if chart_labels and (weight_data or body_fat_data or waist_data) %}
@@ -118,7 +125,7 @@
                     label: 'Waist (cm)',
                     data: waistData,
                     borderColor: 'rgb(54, 162, 235)',
-                    yAxisID: 'y2',
+                    yAxisID: 'y1',
                     fill: false
                 }
             ]
@@ -159,23 +166,7 @@
                     },
                     title: {
                         display: true,
-                        text: 'Body Fat (%)'
-                    }
-                },
-                y2: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    ticks: {
-                        beginAtZero: false,
-                        stepSize: 1
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                    title: {
-                        display: true,
-                        text: 'Waist (cm)'
+                        text: 'Body Fat (%) / Waist (cm)'
                     }
                 }
             }
