@@ -7,16 +7,7 @@
         <a href="{{ url_for('my_foods.new_my_food') }}" class="btn btn-outline-primary">Add New Food</a>
     </div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+    
 
     {% if my_foods %}
     <div class="card">
@@ -26,10 +17,10 @@
                 <div>
                     <h5>{{ food.description }}</h5>
                     <small class="text-muted">
-                        Calories: {{ food.calories_per_100g|round(0) }} kcal/100g |
-                        Protein: {{ food.protein_per_100g|round(1) }}g/100g |
-                        Carbs: {{ food.carbs_per_100g|round(1) }}g/100g |
-                        Fat: {{ food.fat_per_100g|round(1) }}g/100g
+                        Calories: {{ food.calories_per_100g|default(0)|round(0) }} kcal/100g |
+                    Protein: {{ food.protein_per_100g|default(0)|round(1) }}g |
+                    Carbs: {{ food.carbs_per_100g|default(0)|round(1) }}g |
+                    Fat: {{ food.fat_per_100g|default(0)|round(1) }}g
                     </small>
                 </div>
                 <div>
