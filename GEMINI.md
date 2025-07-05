@@ -57,14 +57,14 @@ To run the Flask development server:
 
 ## 7. Design Directives & UI Conventions
 To maintain a consistent and professional look and feel, all generated HTML templates should adhere to these Bootstrap 5 conventions and outline variants button styles for consistency across the the application. 
-- **Primary Actions (Submit, Save, Create, Add):** Buttons for primary actions should always use the main theme color.
-  - **Class:** `btn btn-outline-primary`  `btn-outline-success`
+- **Primary Actions (Submit, Create, Add, Edit):** Buttons for these primary actions should always use the main theme color.
+  - **Class:** `btn btn-outline-primary`
+- **Save Actions:** Buttons specifically for saving data.
+  - **Class:** `btn btn-outline-success`
 - **Secondary Actions (Cancel, Go Back):** Buttons for secondary or less important actions.
   - **Class:** `btn btn-outline-secondary`
 - **Destructive Actions (Delete, Remove):** Buttons that trigger a deletion or other irreversible action must be clearly marked in red. Confirmation pop-ups (e.g., JavaScript `confirm()`) should NOT be used for these actions, as an undo system will be implemented.
   - **Class:** `btn btn-outline-danger`
-- **Other Actions:** Buttons for other actions.
-  - **Class:** `btn-outline-success`
 - **Success Feedback:** Use green for success alerts and messages (e.g., after a form is saved).
   - **Class:** `alert alert-success`
 - **Flash Messages:** User feedback and notifications must be handled using Flask's flashing system.
@@ -74,7 +74,7 @@ To maintain a consistent and professional look and feel, all generated HTML temp
     - `'warning'` for non-critical alerts.
     - `'info'` for neutral information.
   - **Template:** All flashed messages should be rendered in the `base.html` template, typically right after the navbar and before the main content block. This ensures they appear consistently on every page. The rendering logic must loop through the messages and use the message's category to apply the corresponding Bootstrap alert class.
-- **Informational Links/Buttons:** Use for non-critical actions like "View Details" or "Edit".
+- **Informational Links/Buttons:** Use `btn btn-outline-info` for non-critical actions like "View Details". Use `btn btn-outline-primary` for "Edit" actions that lead to a primary editing page.
   - **Class:** `btn btn-outline-info` or `btn btn-outline-primary`
 - **Forms:** All forms should be rendered cleanly. Each form field should have a proper `<label>` and be wrapped in a `div class="mb-3"` for correct spacing. Validation errors should be displayed prominently.
   - **Separate Forms for Actions:** For clarity and to prevent unintended side effects, each distinct action (e.g., saving data, deleting a record) should be handled by its own `<form>` element. Do not nest forms or use a single form for multiple, unrelated actions. This ensures that submitting one action does not inadvertently trigger another, and simplifies backend processing.
