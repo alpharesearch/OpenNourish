@@ -101,7 +101,7 @@ def test_delete_diary_entry(auth_client):
         db.session.commit()
         log_id = log_entry.id
 
-    response = auth_client.post(f'/diary/delete/{log_id}', follow_redirects=True)
+    response = auth_client.post(f'/diary/log/{log_id}/delete', follow_redirects=True)
     assert response.status_code == 200
     assert b'Entry deleted.' in response.data
 

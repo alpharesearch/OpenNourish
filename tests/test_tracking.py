@@ -50,7 +50,7 @@ def test_check_in_crud_lifecycle(auth_client):
         assert check_in.waist_cm == 81.0
 
     # 4. Delete
-    response = auth_client.get(f'/tracking/check-in/{created_check_in_id}/delete', follow_redirects=True)
+    response = auth_client.post(f'/tracking/check-in/{created_check_in_id}/delete', follow_redirects=True)
     assert response.status_code == 200
     assert b'Your check-in has been deleted.' in response.data
 

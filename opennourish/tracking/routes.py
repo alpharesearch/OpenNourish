@@ -55,7 +55,7 @@ def edit_check_in(check_in_id):
         return redirect(url_for('tracking.progress'))
     return render_template('tracking/edit_check_in.html', form=form)
 
-@tracking_bp.route('/check-in/<int:check_in_id>/delete', methods=['GET'])
+@tracking_bp.route('/check-in/<int:check_in_id>/delete', methods=['POST'])
 @login_required
 def delete_check_in(check_in_id):
     check_in = CheckIn.query.get_or_404(check_in_id)

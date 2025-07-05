@@ -54,7 +54,7 @@ def test_recipe_creation_and_editing(auth_client_with_user):
         'name': 'My Super Awesome Recipe',
         'instructions': 'Step 1: Do something new. Step 2: Do something else new.'
     }
-    response = client.post(f'/recipes/recipe/edit/{created_recipe_id}', data=edited_recipe_data, follow_redirects=True)
+    response = client.post(f'/recipes/{created_recipe_id}/edit', data=edited_recipe_data, follow_redirects=True)
     assert response.status_code == 200
     assert b'Recipe updated successfully.' in response.data
 
@@ -112,7 +112,7 @@ def test_recipe_nutrition_calculation(auth_client_with_user):
             'quantity': 50
         }, follow_redirects=True)
 
-    response = client.get(f'/recipes/recipe/view/{recipe_id}')
+    response = client.get(f'/recipes/{recipe_id}')
     assert response.status_code == 200
     # Expected calories: (100 kcal/100g * 100g) + (200 kcal/100g * 50g) = 100 + 100 = 200 kcal
     assert b'<strong>Calories</strong>' in response.data
@@ -139,7 +139,7 @@ def test_delete_recipe(auth_client_with_user):
         db.session.commit()
         ingredient_id = ingredient.id
 
-    response = client.post(f'/recipes/recipe/delete/{recipe_id}', follow_redirects=True)
+    response = client.post(f'/recipes/{recipe_id}/delete', follow_redirects=True)
     assert response.status_code == 200
     assert b'Recipe deleted.' in response.data
 
@@ -197,7 +197,7 @@ def test_delete_ingredient_from_recipe(auth_client_with_user):
         db.session.commit()
         ingredient_id = ingredient.id
 
-    response = client.post(f'/recipes/recipe/ingredient/{ingredient_id}/delete', follow_redirects=True)
+    response = client.post(f'/recipes/ingredients/{ingredient_id}/delete', follow_redirects=True)
     assert response.status_code == 200
     assert b'Ingredient removed.' in response.data
 
@@ -259,7 +259,7 @@ def test_user_cannot_edit_other_users_recipe(auth_client_user_two):
         recipe_id = recipe_user_one.id
 
     # Attempt to make a GET request to the 'edit_recipe' page for user_one's recipe as user_two
-    response = client.get(f'/recipes/recipe/edit/{recipe_id}')
+    response = client.get(f'/recipes/{recipe_id}/edit')
     assert response.status_code == 302 # Redirects to /recipes
 
     # Follow the redirect to check the final status code and flash message
@@ -281,7 +281,7 @@ def test_user_cannot_delete_other_users_recipe(auth_client_user_two):
         recipe_id = recipe_user_one.id
 
     # Attempt to make a POST request to delete user_one's recipe as user_two
-    response = client.post(f'/recipes/recipe/delete/{recipe_id}', follow_redirects=True)
+    response = client.post(f'/recipes/{recipe_id}/delete', follow_redirects=True)
     assert response.status_code == 200
     assert b'You are not authorized to delete this recipe.' in response.data
 

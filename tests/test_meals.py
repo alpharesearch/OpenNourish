@@ -68,7 +68,7 @@ def test_delete_my_meal(auth_client_with_user):
         meal_id = meal.id
 
         # POST to delete the meal
-        response = client.post(f'/my_meals/delete/{meal_id}', follow_redirects=True)
+        response = client.post(f'/my_meals/{meal_id}/delete', follow_redirects=True)
         assert response.status_code == 200
 
         # Assert that the meal and its items are deleted
