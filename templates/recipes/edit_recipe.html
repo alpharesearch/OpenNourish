@@ -126,14 +126,16 @@
             Add New Ingredient
         </div>
         <div class="card-body">
-            <form method="GET" action="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="mb-3">
+            <form method="GET" action="{{ url_for('search.search') }}" class="mb-3">
+                <input type="hidden" name="target" value="recipe">
+                <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
                 <div class="input-group">
-                    <input type="text" name="q" class="form-control" placeholder="Search for foods or meals..." value="{{ query or '' }}">
+                    <input type="text" name="search_term" class="form-control" placeholder="Search for foods or meals..." value="{{ search_term or '' }}">
                     <button type="submit" class="btn btn-outline-primary">Search</button>
                 </div>
             </form>
-            {% if query %}
-                {% include '_search_results.html' %}
+            {% if search_term %}
+                {# The unified search template will handle displaying results #}
             {% endif %}
         </div>
     </div>

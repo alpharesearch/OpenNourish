@@ -12,7 +12,7 @@ def test_create_my_food(auth_client):
         'carbs_per_100g': 60.0,
         'fat_per_100g': 20.0
     }
-    response = auth_client.post('/database/my_foods', data=food_data, follow_redirects=True)
+    response = auth_client.post('/my_foods/new', data=food_data, follow_redirects=True)
     assert response.status_code == 200
     assert b'Custom food added successfully!' in response.data
 
@@ -42,10 +42,19 @@ def test_copy_usda_food(auth_client):
         db.session.add(FoodNutrient(fdc_id=12345, nutrient_id=1005, amount=13.8))
         db.session.add(FoodNutrient(fdc_id=12345, nutrient_id=1004, amount=0.2))
         db.session.commit()
+        fdc_id = test_food.fdc_id
 
-    response = auth_client.get('/database/copy_food/12345', follow_redirects=True)
+    response = auth_client.post('/search/add_item', data={
+        'food_id': fdc_id,
+        'food_type': 'usda',
+        'target': 'my_foods',
+        'quantity': 100 # Quantity is not directly used for copying, but required by the form
+    }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'USDA Test Apple has been added to your foods.' in response.data
+    with auth_client.application.app_context():
+        from flask import get_flashed_messages
+        flashed_messages = [str(message) for message in get_flashed_messages()]
+        assert 'USDA Test Apple has been added to your foods.' in flashed_messages
 
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
@@ -81,7 +90,7 @@ def test_edit_my_food(auth_client):
         'carbs_per_100g': 15.0,
         'fat_per_100g': 7.0
     }
-    response = auth_client.post(f'/database/my_foods/edit/{food_id}', data=updated_food_data, follow_redirects=True)
+    response = auth_client.post(f'/my_foods/edit/{food_id}', data=updated_food_data, follow_redirects=True)
     assert response.status_code == 200
     assert b'Food updated successfully!' in response.data
 
@@ -109,7 +118,7 @@ def test_delete_my_food(auth_client):
         db.session.commit()
         food_id = food_to_delete.id
 
-    response = auth_client.post(f'/database/my_foods/delete/{food_id}', follow_redirects=True)
+    response = auth_client.post(f'/my_foods/delete/{food_id}', follow_redirects=True)
     assert response.status_code == 200
     assert b'Food deleted successfully!' in response.data
 

@@ -1,10 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, SubmitField, TextAreaField, validators
-from wtforms.validators import DataRequired, NumberRange, Optional
+from wtforms import StringField, FloatField, SubmitField
+from wtforms.validators import DataRequired, Optional, NumberRange
 
 class MyFoodForm(FlaskForm):
     description = StringField('Description', validators=[DataRequired()])
-    ingredients = TextAreaField('Ingredients', validators=[Optional()])
     calories_per_100g = FloatField('Calories (per 100g)', validators=[Optional(), NumberRange(min=0)])
     protein_per_100g = FloatField('Protein (g per 100g)', validators=[Optional(), NumberRange(min=0)])
     carbs_per_100g = FloatField('Carbohydrates (g per 100g)', validators=[Optional(), NumberRange(min=0)])
@@ -23,5 +22,5 @@ class MyFoodForm(FlaskForm):
 
 class MyPortionForm(FlaskForm):
     description = StringField('Portion Description', validators=[DataRequired()])
-    gram_weight = FloatField('Gram Weight', validators=[DataRequired(), NumberRange(min=0.1)])
+    gram_weight = FloatField('Gram Weight', validators=[DataRequired(), NumberRange(min=0.01)])
     submit = SubmitField('Add Portion')

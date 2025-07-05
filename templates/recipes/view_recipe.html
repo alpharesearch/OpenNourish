@@ -76,18 +76,7 @@
                     Add to Today's Diary
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('recipes.add_to_log', recipe_id=recipe.id) }}">
-                        {{ form.hidden_tag() }}
-                        <div class="mb-3">
-                            <label for="portion_id" class="form-label">Serving</label>
-                            <select name="portion_id" id="portion_id" class="form-select">
-                                {% for portion in recipe.portions %}
-                                    <option value="{{ portion.id }}">{{ portion.description }} ({{ '%.2f'|format(portion.gram_weight) }}g)</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        {{ form.submit(class="btn btn-outline-success w-100") }}
-                    </form>
+                    
                 </div>
             </div>
         </div>

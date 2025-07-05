@@ -82,6 +82,63 @@ To maintain a consistent and professional look and feel, all generated HTML temp
   - **Class:** `table table-striped`
 - **Charts:** All charts should be generated using Chart.js. They should be responsive and include clear labels and titles.
 
+---
+### 7.1. Unified Search and Add System
+
+**Directive:** To prevent code duplication and ensure a consistent user experience, the project uses a single, unified system for all "search and add food" operations. Any new feature or modification requiring the user to search for an item (from USDA, My Foods, Recipes, or Meals) and add it to a destination (like the daily diary, a recipe, or a meal) **MUST** integrate with this system. **Do not create new, separate search routes or templates.**
+
+**How It Works:**
+
+*   The entire system is managed by the `search` blueprint.
+*   The user is always directed to a single search page, rendered by the `search.index` route.
+*   This route is made context-aware via URL parameters. The `target` parameter tells the system *where* the food will be added (e.g., `'diary'`, `'recipe'`, `'meal'`). Other parameters provide necessary IDs or data (e.g., `log_date`, `recipe_id`, `meal_id`).
+*   A single `search.add_item` endpoint handles the logic for adding the selected item to the correct destination based on the context provided.
+
+**Example Usage in a Template:**
+
+```html
+<!-- Example 1: Link to add food to the 'Breakfast' meal in the diary -->
+<a href="{{ url_for('search.index', target='diary', log_date=date.isoformat(), meal_name='Breakfast') }}" class="btn btn-outline-primary">
+  Add Food
+</a>
+
+<!-- Example 2: Link to add an ingredient to a recipe -->
+<a href="{{ url_for('search.index', target='recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary">
+  Add Ingredient
+</a>
+
+<!-- Example 3: Link to add an item to a custom meal -->
+<a href="{{ url_for('search.index', target='meal', meal_id=meal.id) }}" class="btn btn-outline-primary">
+  Add Item to Meal
+</a>
+```
+
+### 7.2. URL Structure for Resource Actions
+
+**Directive:** To maintain a clear, hierarchical, and RESTful routing structure, all URLs that perform an action on a specific instance of a resource (e.g., editing a specific recipe, deleting a specific food) **MUST** follow the pattern: `/{resource_collection}/{id}/{action}`. The unique ID of the resource must come before the action verb.
+
+**Reasoning:** This structure clearly identifies the resource first (`/myfoods/11`) and then specifies the action being performed on it (`/edit`). This improves readability and organization.
+
+**Examples:**
+
+| Action | Good (Use this pattern) | Bad (Avoid this pattern) |
+| :--- | :--- | :--- |
+| Editing a Recipe | `/recipes/5/edit` | `/recipes/edit/5` |
+| Deleting a Check-in | `/tracking/check-in/42/delete` | `/tracking/delete-check-in/42` |
+| Deleting a Food | `/myfoods/112/delete` | `/myfoods/delete/112`|
+
+**Standard Actions:**
+
+*   **Render Edit Form (GET):** `.../{id}/edit`
+*   **Process Edit Form (POST):** `.../{id}/edit`
+*   **Process Deletion (POST):** `.../{id}/delete`
+
+**Note on Collections:** This directive applies to actions on *specific items*. Routes that act on the entire collection (like rendering a list or creating a new item) should not include an ID.
+*   **List all items (GET):** `/recipes/`
+*   **Render New Item Form (GET):** `/recipes/new`
+*   **Process New Item Form (POST):** `/recipes/new`
+
+
 ## 8. Testing
 - **Framework:** Testing is done using the **pytest** framework.
 - **Test Directory:** All tests are located in the `tests/` directory.

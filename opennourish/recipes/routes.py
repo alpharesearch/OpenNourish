@@ -83,67 +83,11 @@ def edit_recipe(recipe_id):
         form=form,
         recipe=recipe,
         portion_form=portion_form,
-        search_results=search_results,
-        query=query,
+        
         url_action='recipes.add_ingredient',
         url_params={'recipe_id': recipe.id}
     )
-@recipes_bp.route("/recipe/<int:recipe_id>/add_ingredient", methods=['POST'])
-@login_required
-def add_ingredient(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.user_id != current_user.id:
-        flash('You are not authorized to modify this recipe.', 'danger')
-        return redirect(url_for('recipes.recipes'))
 
-    food_id = request.form.get('food_id', type=int)
-    food_type = request.form.get('food_type')
-    amount = request.form.get('quantity', type=float)
-    meal_id = request.form.get('meal_id', type=int)
-
-    if food_type == 'my_meal':
-        meal = db.session.get(MyMeal, meal_id)
-        if meal and meal.user_id == current_user.id:
-            for item in meal.items:
-                new_ingredient = RecipeIngredient(
-                    recipe_id=recipe.id,
-                    fdc_id=item.fdc_id,
-                    my_food_id=item.my_food_id,
-                    amount_grams=item.amount_grams
-                )
-                db.session.add(new_ingredient)
-            db.session.commit()
-            flash(f'All foods from meal "{meal.name}" added to recipe.', 'success')
-        else:
-            flash('Meal not found or you do not have permission to add it.', 'danger')
-    elif food_id and food_type:
-        if amount is None or amount <= 0:
-            flash('Please enter a valid amount for the ingredient.', 'danger')
-        else:
-            # Check if ingredient already exists
-            existing_ingredient = RecipeIngredient.query.filter_by(
-                recipe_id=recipe_id,
-                fdc_id=food_id if food_type == 'usda' else None,
-                my_food_id=food_id if food_type == 'my_food' else None
-            ).first()
-
-            if existing_ingredient:
-                existing_ingredient.amount_grams += amount
-            else:
-                new_ingredient = RecipeIngredient(
-                    recipe_id=recipe.id,
-                    fdc_id=food_id if food_type == 'usda' else None,
-                    my_food_id=food_id if food_type == 'my_food' else None,
-                    amount_grams=amount
-                )
-                db.session.add(new_ingredient)
-            
-            db.session.commit()
-            flash('Ingredient added successfully.', 'success')
-    else:
-        flash('Invalid ingredient data.', 'danger')
-
-    return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
 @recipes_bp.route("/recipe/ingredient/<int:ingredient_id>/delete", methods=['POST'])
 @login_required
@@ -244,35 +188,7 @@ def view_recipe(recipe_id):
         totals=total_nutrition,
         form=form
     )
-@recipes_bp.route("/recipe/add_to_log/<int:recipe_id>", methods=['POST'])
-@login_required
-def add_to_log(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.user_id != current_user.id:
-        flash('You are not authorized to log this recipe.', 'danger')
-        return redirect(url_for('recipes.recipes'))
 
-    portion_id = request.form.get('portion_id', type=int)
-    if not portion_id:
-        flash('Please select a serving size.', 'danger')
-        return redirect(url_for('recipes.view_recipe', recipe_id=recipe.id))
-
-    portion = RecipePortion.query.get_or_404(portion_id)
-    if portion.recipe_id != recipe.id:
-        flash('Invalid serving size selected.', 'danger')
-        return redirect(url_for('recipes.view_recipe', recipe_id=recipe.id))
-
-    new_log = DailyLog(
-        user_id=current_user.id,
-        log_date=date.today(),
-        recipe_id=recipe.id,
-        amount_grams=portion.gram_weight,
-        meal_name='Snack'  # Default meal name
-    )
-    db.session.add(new_log)
-    db.session.commit()
-    flash('Recipe added to your diary.', 'success')
-    return redirect(url_for('diary.diary'))
 
 @recipes_bp.route("/recipe/delete/<int:recipe_id>", methods=['POST'])
 @login_required
