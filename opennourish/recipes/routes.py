@@ -4,7 +4,7 @@ from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal,
 from .forms import RecipeForm, IngredientForm, AddToLogForm, RecipePortionForm
 from sqlalchemy.orm import joinedload, selectinload
 from datetime import date
-from opennourish.utils import calculate_nutrition_for_items
+from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g
 
 recipes_bp = Blueprint('recipes', __name__, template_folder='templates')
 
@@ -12,6 +12,8 @@ recipes_bp = Blueprint('recipes', __name__, template_folder='templates')
 @login_required
 def recipes():
     user_recipes = Recipe.query.filter_by(user_id=current_user.id).all()
+    for recipe in user_recipes:
+        recipe.nutrition_per_100g = calculate_recipe_nutrition_per_100g(recipe)
     return render_template("recipes/recipes.html", recipes=user_recipes)
 
 @recipes_bp.route("/recipe/new", methods=['GET', 'POST'])
