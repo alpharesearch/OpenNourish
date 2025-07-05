@@ -56,7 +56,7 @@ To run the Flask development server:
 - **Templates & Static Files:** Templates are in `templates/`, and static files (CSS, JS) are in `static/`.
 
 ## 7. Design Directives & UI Conventions
-To maintain a consistent and professional look and feel, all generated HTML templates should adhere to these Bootstrap 5 conventions.
+To maintain a consistent and professional look and feel, all generated HTML templates should adhere to these Bootstrap 5 conventions and outline variants button styles for consistency across the the application. 
 - **Primary Actions (Submit, Save, Create, Add):** Buttons for primary actions should always use the main theme color.
   - **Class:** `btn btn-outline-primary`  `btn-outline-success`
 - **Secondary Actions (Cancel, Go Back):** Buttons for secondary or less important actions.

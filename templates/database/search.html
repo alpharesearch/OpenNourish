@@ -27,7 +27,7 @@
                             <span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>
                         {% endif %}
                         <a href="{{ url_for('main.food_detail', fdc_id=food.fdc_id, q=search_term) }}" class="btn btn-outline-info btn-sm">View Details</a>
-                        <a href="{{ url_for('database.copy_food', fdc_id=food.fdc_id) }}" class="btn btn-success btn-sm">Add to My Foods</a>
+                        <a href="{{ url_for('database.copy_food', fdc_id=food.fdc_id) }}" class="btn btn-outline-success btn-sm">Add to My Foods</a>
                     </div>
                 </li>
             {% endfor %}

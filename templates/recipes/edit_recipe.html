@@ -74,7 +74,7 @@
                                 <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
                             </form>
                             <form action="{{ url_for('recipes.delete_ingredient', ingredient_id=ingredient.id) }}" method="POST">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to remove this ingredient?')">Delete</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger" ">Delete</button>
                             </form>
                         </li>
                         {% else %}
