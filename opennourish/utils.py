@@ -64,7 +64,9 @@ def calculate_nutrition_for_items(items):
             nutrients_map[fn.fdc_id][fn.nutrient_id] = fn.amount
 
     for item in items:
+        # Initialize scaling_factor for the current item
         scaling_factor = item.amount_grams / 100.0
+
         if item.fdc_id:
             if item.fdc_id in nutrients_map:
                 for name, nid in nutrient_ids.items():
@@ -88,6 +90,30 @@ def calculate_nutrition_for_items(items):
                 totals['calcium'] += (my_food.calcium_mg_per_100g or 0) * scaling_factor
                 totals['iron'] += (my_food.iron_mg_per_100g or 0) * scaling_factor
                 totals['potassium'] += (my_food.potassium_mg_per_100g or 0) * scaling_factor
+
+        elif item.recipe_id:
+            # Handle nested recipes recursively
+            from models import Recipe # Import here to avoid circular dependency
+            nested_recipe = db.session.query(Recipe).options(selectinload(Recipe.ingredients)).get(item.recipe_id)
+            if nested_recipe:
+                # Calculate nutrition for the nested recipe's ingredients
+                nested_nutrition = calculate_nutrition_for_items(nested_recipe.ingredients)
+                
+                # Determine the scaling factor for the nested recipe
+                # item.amount_grams is the total grams of the nested recipe as an ingredient
+                # We need to find the total grams of the nested recipe itself.
+                total_nested_recipe_grams = sum(ing.amount_grams for ing in nested_recipe.ingredients)
+
+                if total_nested_recipe_grams > 0:
+                    # Scale based on the actual grams of the nested recipe used as an ingredient
+                    scaling_factor = item.amount_grams / total_nested_recipe_grams
+                else:
+                    # If nested recipe has no grams, or is 0, then it contributes no nutrition
+                    scaling_factor = 0
+
+                for key, value in nested_nutrition.items():
+                    totals[key] += value * scaling_factor
+
     return totals
 
 def generate_nutrition_label_pdf(fdc_id):

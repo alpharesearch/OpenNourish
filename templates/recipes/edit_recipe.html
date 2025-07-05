@@ -63,7 +63,7 @@
                                 <input type="number" step="any" name="quantity" class="form-control form-control-sm" style="width: 100px;" value="{{ '%.2f'|format(ingredient.amount_grams) }}">
                                         
                                         <select name="portion_id" class="form-select form-select-sm" style="width: 200px;">
-                                            <option value="">g</option>
+                                            <option value="g" {% if ingredient.serving_type == 'g' %}selected{% endif %}>g</option>
                                     {% set food_item = ingredient.food or ingredient.my_food %}
                                     {% for portion in food_item.portions %}
                                         <option value="{{ portion.id }}">

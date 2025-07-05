@@ -92,7 +92,7 @@ class Recipe(db.Model):
     name = db.Column(db.String)
     instructions = db.Column(db.Text)
     servings = db.Column(db.Float, default=1)
-    ingredients = db.relationship('RecipeIngredient', backref='recipe', cascade="all, delete-orphan")
+    ingredients = db.relationship('RecipeIngredient', backref='recipe', cascade="all, delete-orphan", foreign_keys='RecipeIngredient.recipe_id')
     portions = db.relationship('RecipePortion', backref='recipe', cascade='all, delete-orphan')
 
 class RecipeIngredient(db.Model):
@@ -101,12 +101,14 @@ class RecipeIngredient(db.Model):
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=False)
     fdc_id = db.Column(db.Integer, nullable=True)
     my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
+    recipe_id_link = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True) # For nested recipes
     amount_grams = db.Column(db.Float)
 
     @property
     def food(self):
         return db.session.get(Food, self.fdc_id)
     my_food = db.relationship('MyFood', foreign_keys=[my_food_id])
+    linked_recipe = db.relationship('Recipe', foreign_keys=[recipe_id_link])
 
 class RecipePortion(db.Model):
     __tablename__ = 'recipe_portions'

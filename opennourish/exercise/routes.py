@@ -83,7 +83,7 @@ def edit_exercise(log_id):
         return redirect(url_for('exercise.exercise_history'))
     
     return render_template('exercise/log_exercise.html', form=form, log_id=log_id)
-@exercise_bp.route('/exercise/delete/<int:log_id>', methods=['POST'])
+@exercise_bp.route('/log/<int:log_id>/delete', methods=['POST'])
 @login_required
 def delete_exercise(log_id):
     exercise_log = ExerciseLog.query.get_or_404(log_id)
