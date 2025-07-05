@@ -57,12 +57,14 @@ To run the Flask development server:
 
 ## 7. Design Directives & UI Conventions
 To maintain a consistent and professional look and feel, all generated HTML templates should adhere to these Bootstrap 5 conventions.
-- **Primary Actions (Submit, Save, Create):** Buttons for primary actions should always use the main theme color.
-  - **Class:** `btn btn-outline-primary`
+- **Primary Actions (Submit, Save, Create, Add):** Buttons for primary actions should always use the main theme color.
+  - **Class:** `btn btn-outline-primary`  `btn-outline-success`
 - **Secondary Actions (Cancel, Go Back):** Buttons for secondary or less important actions.
   - **Class:** `btn btn-outline-secondary`
 - **Destructive Actions (Delete, Remove):** Buttons that trigger a deletion or other irreversible action must be clearly marked in red.
   - **Class:** `btn btn-outline-danger`
+- **Other Actions:** Buttons for other actions.
+  - **Class:** `btn-outline-success`
 - **Success Feedback:** Use green for success alerts and messages (e.g., after a form is saved).
   - **Class:** `alert alert-success`
 - **Flash Messages:** User feedback and notifications must be handled using Flask's flashing system.
@@ -84,8 +86,8 @@ To maintain a consistent and professional look and feel, all generated HTML temp
 - **Framework:** Testing is done using the **pytest** framework.
 - **Test Directory:** All tests are located in the `tests/` directory.
 - **Running Tests:**
-  - To run all tests: `pytest`
-  - To run only the fast application tests: `pytest -m "not integration"`
+- - To run only the fast application tests: `pytest -m "not integration"` (use this!)
+  - To run all tests: `pytest` (very slow!)
 - **Database Safety:**
   - Standard application tests (`not integration`) **must** use an in-memory SQLite database to ensure they are fast and do not touch the real database files.
   - The `integration` test verifies the full USDA data import process. It is slow and should be run intentionally.

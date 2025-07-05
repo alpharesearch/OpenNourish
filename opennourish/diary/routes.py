@@ -382,7 +382,6 @@ def edit_meal(meal_id):
         if item.fdc_id:
             food_item = db.session.get(Food, item.fdc_id)
             if food_item:
-                item.food = food_item # Attach food object for description
                 item.available_portions.append(SimpleNamespace(id='g', display_text='g'))
                 for p in food_item.portions:
                     display_text = f"{p.portion_description} ({p.gram_weight}g)"
@@ -390,7 +389,6 @@ def edit_meal(meal_id):
         elif item.my_food_id:
             my_food_item = db.session.get(MyFood, item.my_food_id)
             if my_food_item:
-                item.my_food = my_food_item # Attach my_food object for description
                 item.available_portions.append(SimpleNamespace(id='g', display_text='g'))
                 for p in my_food_item.portions:
                     display_text = f"{p.description} ({p.gram_weight}g)"
@@ -398,7 +396,6 @@ def edit_meal(meal_id):
         elif item.recipe_id:
             recipe_item = db.session.get(Recipe, item.recipe_id)
             if recipe_item:
-                item.recipe = recipe_item # Attach recipe object for name
                 item.available_portions.append(SimpleNamespace(id='g', display_text='g'))
                 for p in recipe_item.portions:
                     display_text = f"{p.description} ({p.gram_weight}g)"
