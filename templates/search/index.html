@@ -18,93 +18,150 @@
         {% if meal_name %}
             <input type="hidden" name="meal_name" value="{{ meal_name }}">
         {% endif %}
+        <input type="hidden" name="search_mode" value="{{ search_mode }}">
     </form>
 
     {% if results %}
         <h2>Search Results</h2>
         {% if results.usda_foods %}
             <h3>USDA Foods</h3>
-            <ul>
+            <ul class="list-group mb-3">
                 {% for food in results.usda_foods %}
-                    <li>
-                        {{ food.description }} (FDC ID: {{ food.fdc_id }})
-                        <form method="POST" action="{{ url_for('search.add_item') }}" style="display:inline;">
-                            <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
-                            <input type="hidden" name="food_type" value="usda">
-                            <input type="hidden" name="target" value="{{ target }}">
-                            <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                            <input type="hidden" name="log_date" value="{{ log_date }}">
-                            <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                            <input type="number" name="quantity" value="100" min="1" style="width: 80px;">g
-                            <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
-                        </form>
-                        <a href="{{ url_for('main.food_detail', fdc_id=food.fdc_id) }}" class="btn btn-sm btn-outline-info">View Details</a>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            {{ food.description }}
+                            {% if food.has_portions %}
+                                <span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>
+                            {% endif %}
+                            {% if food.has_ingredients %}
+                                <span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>
+                            {% endif %}
+                            {% if food.has_rich_nutrients %}
+                                <span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <form method="POST" action="{{ url_for('search.add_item') }}" class="d-inline">
+                                <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
+                                <input type="hidden" name="food_type" value="usda">
+                                <input type="hidden" name="target" value="{{ target }}">
+                                <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+                                <input type="hidden" name="log_date" value="{{ log_date }}">
+                                <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                                {% if target %}
+                                    <input type="number" name="quantity" value="100" min="1" class="form-control form-control-sm d-inline-block w-auto">g
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
+                                {% else %}
+                                    <input type="hidden" name="quantity" value="100"> {# Default quantity for my_foods #}
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Add to My Foods</button>
+                                {% endif %}
+                            </form>
+                            <a href="{{ url_for('main.food_detail', fdc_id=food.fdc_id) }}" class="btn btn-sm btn-outline-info">View Details</a>
+                        </div>
                     </li>
                 {% endfor %}
             </ul>
         {% endif %}
 
-        {% if results.my_foods %}
-            <h3>My Foods</h3>
-            <ul>
-                {% for food in results.my_foods %}
-                    <li>
-                        {{ food.description }} (ID: {{ food.id }})
-                        <form method="POST" action="{{ url_for('search.add_item') }}" style="display:inline;">
-                            <input type="hidden" name="food_id" value="{{ food.id }}">
-                            <input type="hidden" name="food_type" value="my_food">
-                            <input type="hidden" name="target" value="{{ target }}">
-                            <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                            <input type="hidden" name="log_date" value="{{ log_date }}">
-                            <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                            <input type="number" name="quantity" value="100" min="1" style="width: 80px;">g
-                            <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
-                        </form>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+        {% if search_mode != 'usda_only' %}
+            {% if results.my_foods %}
+                <h3>My Foods</h3>
+                <ul class="list-group mb-3">
+                    {% for food in results.my_foods %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                {{ food.description }}
+                                {% if food.has_portions %}
+                                    <span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>
+                                {% endif %}
+                                {% if food.has_ingredients %}
+                                    <span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <form method="POST" action="{{ url_for('search.add_item') }}" class="d-inline">
+                                    <input type="hidden" name="food_id" value="{{ food.id }}">
+                                    <input type="hidden" name="food_type" value="my_food">
+                                    <input type="hidden" name="target" value="{{ target }}">
+                                    <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+                                    <input type="hidden" name="log_date" value="{{ log_date }}">
+                                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                                    <input type="number" name="quantity" value="100" min="1" class="form-control form-control-sm d-inline-block w-auto">g
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
+                                </form>
+                                <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
 
-        {% if results.recipes %}
-            <h3>Recipes</h3>
-            <ul>
-                {% for recipe in results.recipes %}
-                    <li>
-                        {{ recipe.name }} (ID: {{ recipe.id }})
-                        <form method="POST" action="{{ url_for('search.add_item') }}" style="display:inline;">
-                            <input type="hidden" name="food_id" value="{{ recipe.id }}">
-                            <input type="hidden" name="food_type" value="recipe">
-                            <input type="hidden" name="target" value="{{ target }}">
-                            <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                            <input type="hidden" name="log_date" value="{{ log_date }}">
-                            <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                            <input type="number" name="quantity" value="1" min="1" style="width: 80px;"> servings
-                            <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
-                        </form>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+            {% if results.recipes %}
+                <h3>Recipes</h3>
+                <ul class="list-group mb-3">
+                    {% for recipe in results.recipes %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                {{ recipe.name }}
+                                {% if recipe.has_portions %}
+                                    <span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>
+                                {% endif %}
+                                {% if recipe.has_ingredients %}
+                                    <span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>
+                                {% endif %}
+                                <small class="text-muted">
+                                    ({{ recipe.calories_per_100g|round(0) }} kcal,
+                                    {{ recipe.protein_per_100g|round(1) }}g P,
+                                    {{ recipe.carbs_per_100g|round(1) }}g C,
+                                    {{ recipe.fat_per_100g|round(1) }}g F per 100g)
+                                </small>
+                            </div>
+                            <div>
+                                <form method="POST" action="{{ url_for('search.add_item') }}" class="d-inline">
+                                    <input type="hidden" name="food_id" value="{{ recipe.id }}">
+                                    <input type="hidden" name="food_type" value="recipe">
+                                    <input type="hidden" name="target" value="{{ target }}">
+                                    <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+                                    <input type="hidden" name="log_date" value="{{ log_date }}">
+                                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                                    <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm d-inline-block w-auto"> servings
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
+                                </form>
+                                <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
 
-        {% if results.my_meals %}
-            <h3>My Meals</h3>
-            <ul>
-                {% for meal in results.my_meals %}
-                    <li>
-                        {{ meal.name }} (ID: {{ meal.id }})
-                        <form method="POST" action="{{ url_for('search.add_item') }}" style="display:inline;">
-                            <input type="hidden" name="food_id" value="{{ meal.id }}">
-                            <input type="hidden" name="food_type" value="my_meal">
-                            <input type="hidden" name="target" value="{{ target }}">
-                            <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                            <input type="hidden" name="log_date" value="{{ log_date }}">
-                            <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                            <input type="number" name="quantity" value="1" min="1" style="width: 80px;"> servings
-                            <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
-                        </form>
-                    </li>
-                {% endfor %}
-            </ul>
+            {% if results.my_meals %}
+                <h3>My Meals</h3>
+                <ul class="list-group mb-3">
+                    {% for meal in results.my_meals %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                {{ meal.name }}
+                                {% if meal.has_items %}
+                                    <span class="me-2 fw-bold text-info" title="Contains items">M</span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <form method="POST" action="{{ url_for('search.add_item') }}" class="d-inline">
+                                    <input type="hidden" name="food_id" value="{{ meal.id }}">
+                                    <input type="hidden" name="food_type" value="my_meal">
+                                    <input type="hidden" name="target" value="{{ target }}">
+                                    <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+                                    <input type="hidden" name="log_date" value="{{ log_date }}">
+                                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                                    <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm d-inline-block w-auto"> servings
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
+                                </form>
+                                <a href="{{ url_for('diary.edit_meal', meal_id=meal.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
         {% endif %}
 
         {% if not results.usda_foods and not results.my_foods and not results.recipes and not results.my_meals %}

@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, current_app
 from flask_login import current_user, login_required
 from . import diary_bp
 from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe
@@ -190,13 +190,12 @@ def delete_meal_item(meal_id, item_id):
     if not meal or meal.user_id != current_user.id or not item or item.my_meal_id != meal.id:
         flash('Item not found or you do not have permission to delete it.', 'danger')
         return redirect(url_for('diary.edit_meal', meal_id=meal_id))
-
-    print(f"DEBUG: Attempting to delete item {item.id} from meal {meal.id}")
-    print(f"DEBUG: Item state before delete: {db.inspect(item).persistent}")
+    current_app.logger.debug(f"DEBUG: Attempting to delete item {item.id} from meal {meal.id}")
+    current_app.logger.debug(f"DEBUG: Item state before delete: {db.inspect(item).persistent}")
     db.session.delete(item)
-    print(f"DEBUG: Item state after db.session.delete: {db.inspect(item).deleted}")
+    current_app.logger.debug(f"DEBUG: Item state after db.session.delete: {db.inspect(item).deleted}")
     db.session.commit()
-    print(f"DEBUG: Item {item.id} deleted and committed.")
+    current_app.logger.debug(f"DEBUG: Item {item.id} deleted and committed.")
     flash('Meal item deleted.', 'success')
     return redirect(url_for('diary.edit_meal', meal_id=meal_id))
 

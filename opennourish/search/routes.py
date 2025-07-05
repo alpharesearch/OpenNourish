@@ -1,8 +1,12 @@
-from flask import render_template, request, flash, redirect, url_for
+from flask import render_template, request, flash, redirect, url_for, current_app
 from . import search_bp
 from models import db, Food, MyFood, Recipe, MyMeal, DailyLog, RecipeIngredient, MyMealItem, Portion, MyPortion, FoodNutrient
 from flask_login import login_required, current_user
 from datetime import date
+from sqlalchemy.orm import joinedload, selectinload
+from opennourish.utils import calculate_recipe_nutrition_per_100g
+from sqlalchemy.orm import joinedload, selectinload
+from opennourish.utils import calculate_recipe_nutrition_per_100g
 
 @search_bp.route('/', methods=['GET', 'POST'])
 @login_required
@@ -18,26 +22,72 @@ def search():
     recipe_id = request.args.get('recipe_id') or request.form.get('recipe_id')
     log_date = request.args.get('log_date') or request.form.get('log_date')
     meal_name = request.args.get('meal_name') or request.form.get('meal_name')
+    search_mode = request.form.get('search_mode') or request.args.get('search_mode', 'all') # 'all' or 'usda_only'
+    current_app.logger.debug(f"Debug: search_mode in search route: {search_mode}")
 
     if request.method == 'POST' or request.args.get('search_term'):
         search_term = request.form.get('search_term', '').strip() or request.args.get('search_term', '').strip()
         if search_term:
             # Search USDA Foods
-            usda_foods_query = Food.query.filter(Food.description.ilike(f'%{search_term}%')).limit(10).all()
-            results["usda_foods"] = [{'fdc_id': food.fdc_id, 'description': food.description} for food in usda_foods_query]
+            usda_foods_query = Food.query.options(
+                selectinload(Food.portions).selectinload(Portion.measure_unit),
+                selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
+            ).filter(Food.description.ilike(f'%{search_term}%')).limit(10).all()
+            
+            for food in usda_foods_query:
+                results["usda_foods"].append({
+                    'fdc_id': food.fdc_id,
+                    'description': food.description,
+                    'has_portions': bool(food.portions),
+                    'has_ingredients': bool(food.ingredients),
+                    'has_rich_nutrients': len(food.nutrients) > 20 # Arbitrary threshold for "rich"
+                })
 
-            # Search MyFoods
-            my_foods_query = MyFood.query.filter(MyFood.description.ilike(f'%{search_term}%')).limit(10).all()
-            results["my_foods"] = [{'id': food.id, 'description': food.description} for food in my_foods_query]
+            if search_mode != 'usda_only':
+                # Search MyFoods
+                my_foods_query = MyFood.query.options(
+                    selectinload(MyFood.portions)
+                ).filter(MyFood.description.ilike(f'%{search_term}%'), MyFood.user_id == current_user.id).limit(10).all()
+                
+                for food in my_foods_query:
+                    results["my_foods"].append({
+                        'id': food.id,
+                        'description': food.description,
+                        'has_portions': bool(food.portions),
+                        'has_ingredients': bool(food.ingredients) # MyFood has an ingredients string
+                    })
 
-            # Search Recipes
-            recipes_query = Recipe.query.filter(Recipe.name.ilike(f'%{search_term}%')).limit(10).all()
-            results["recipes"] = [{'id': recipe.id, 'name': recipe.name} for recipe in recipes_query]
+                # Search Recipes
+                recipes_query = Recipe.query.options(
+                    selectinload(Recipe.ingredients),
+                    selectinload(Recipe.portions)
+                ).filter(Recipe.name.ilike(f'%{search_term}%'), Recipe.user_id == current_user.id).limit(10).all()
+                
+                for recipe in recipes_query:
+                    nutrition_per_100g = calculate_recipe_nutrition_per_100g(recipe)
+                    results["recipes"].append({
+                        'id': recipe.id,
+                        'name': recipe.name,
+                        'has_ingredients': bool(recipe.instructions),
+                        'has_portions': bool(recipe.portions),
+                        'calories_per_100g': nutrition_per_100g['calories'],
+                        'protein_per_100g': nutrition_per_100g['protein'],
+                        'carbs_per_100g': nutrition_per_100g['carbs'],
+                        'fat_per_100g': nutrition_per_100g['fat']
+                    })
 
-            # Search MyMeals
-            my_meals_query = MyMeal.query.filter(MyMeal.name.ilike(f'%{search_term}%')).limit(10).all()
-            results["my_meals"] = [{'id': meal.id, 'name': meal.name} for meal in my_meals_query]
-
+                # Search MyMeals
+                my_meals_query = MyMeal.query.options(
+                    selectinload(MyMeal.items)
+                ).filter(MyMeal.name.ilike(f'%{search_term}%'), MyMeal.user_id == current_user.id).limit(10).all()
+                
+                for meal in my_meals_query:
+                    # For MyMeals, we can indicate if they have items (ingredients)
+                    results["my_meals"].append({
+                        'id': meal.id,
+                        'name': meal.name,
+                        'has_items': bool(meal.items)
+                    })
     return render_template('search/index.html',
                            search_term=search_term,
                            results=results,
@@ -63,7 +113,7 @@ def add_item():
         if target == 'diary':
             if not log_date_str:
                 flash('Log date is required for diary entries.', 'danger')
-                return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
+                return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
             log_date = date.fromisoformat(log_date_str)
 
             if food_type == 'usda':
@@ -81,6 +131,7 @@ def add_item():
                     flash(f'{food.description} added to your diary.', 'success')
                 else:
                     flash('USDA Food not found.', 'danger')
+                    return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
             elif food_type == 'my_food':
                 food = db.session.get(MyFood, food_id)
                 if food and food.user_id == current_user.id:
@@ -96,6 +147,7 @@ def add_item():
                     flash(f'{food.description} added to your diary.', 'success')
                 else:
                     flash('My Food not found or not authorized.', 'danger')
+                    return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
             elif food_type == 'recipe':
                 # Eagerly load ingredients to calculate total grams without N+1
                 recipe = db.session.query(Recipe).options(
@@ -105,13 +157,13 @@ def add_item():
                 if recipe and recipe.user_id == current_user.id:
                     if not recipe.servings or recipe.servings <= 0:
                         flash(f'Recipe "{recipe.name}" has no servings defined. Cannot add to diary by servings.', 'danger')
-                        return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
+                        return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
 
                     total_recipe_grams = sum(ing.amount_grams for ing in recipe.ingredients)
 
                     if total_recipe_grams <= 0:
                         flash(f'Recipe "{recipe.name}" has no ingredients or zero total grams. Cannot add to diary.', 'danger')
-                        return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
+                        return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
 
                     grams_per_serving = total_recipe_grams / recipe.servings
                     calculated_amount_grams = grams_per_serving * quantity # quantity is servings from form
@@ -153,7 +205,7 @@ def add_item():
         elif target == 'recipe':
             if not recipe_id:
                 flash('Recipe ID is required to add to a recipe.', 'danger')
-                return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
+                return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
             
             target_recipe = db.session.get(Recipe, recipe_id)
             if not target_recipe or target_recipe.user_id != current_user.id:

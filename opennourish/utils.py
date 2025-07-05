@@ -228,8 +228,6 @@ def generate_nutrition_label_pdf(fdc_id):
     if not food:
         return "Food not found", 404
 
-    print(f"Debug: Potassium value for PDF: {nutrients_for_label.get('Potassium')}")
-
     typst_content = _generate_typst_content(food, nutrient_info, nutrients_for_label, include_extra_info=True)
 
     with tempfile.TemporaryDirectory() as tmpdir:

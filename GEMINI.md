@@ -94,38 +94,11 @@ To maintain a consistent and professional look and feel, all generated HTML temp
 *   This route is made context-aware via URL parameters. The `target` parameter tells the system *where* the food will be added (e.g., `'diary'`, `'recipe'`, `'meal'`). Other parameters provide necessary IDs or data (e.g., `log_date`, `recipe_id`, `meal_id`).
 *   A single `search.add_item` endpoint handles the logic for adding the selected item to the correct destination based on the context provided.
 
-**Example Usage in a Template:**
-
-```html
-<!-- Example 1: Link to add food to the 'Breakfast' meal in the diary -->
-<a href="{{ url_for('search.index', target='diary', log_date=date.isoformat(), meal_name='Breakfast') }}" class="btn btn-outline-primary">
-  Add Food
-</a>
-
-<!-- Example 2: Link to add an ingredient to a recipe -->
-<a href="{{ url_for('search.index', target='recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary">
-  Add Ingredient
-</a>
-
-<!-- Example 3: Link to add an item to a custom meal -->
-<a href="{{ url_for('search.index', target='meal', meal_id=meal.id) }}" class="btn btn-outline-primary">
-  Add Item to Meal
-</a>
-```
-
 ### 7.2. URL Structure for Resource Actions
 
 **Directive:** To maintain a clear, hierarchical, and RESTful routing structure, all URLs that perform an action on a specific instance of a resource (e.g., editing a specific recipe, deleting a specific food) **MUST** follow the pattern: `/{resource_collection}/{id}/{action}`. The unique ID of the resource must come before the action verb.
 
 **Reasoning:** This structure clearly identifies the resource first (`/myfoods/11`) and then specifies the action being performed on it (`/edit`). This improves readability and organization.
-
-**Examples:**
-
-| Action | Good (Use this pattern) | Bad (Avoid this pattern) |
-| :--- | :--- | :--- |
-| Editing a Recipe | `/recipes/5/edit` | `/recipes/edit/5` |
-| Deleting a Check-in | `/tracking/check-in/42/delete` | `/tracking/delete-check-in/42` |
-| Deleting a Food | `/myfoods/112/delete` | `/myfoods/delete/112`|
 
 **Standard Actions:**
 
@@ -149,3 +122,27 @@ To maintain a consistent and professional look and feel, all generated HTML temp
   - Standard application tests (`not integration`) **must** use an in-memory SQLite database to ensure they are fast and do not touch the real database files.
   - The `integration` test verifies the full USDA data import process. It is slow and should be run intentionally.
 - **Test Creation:** When generating new application tests, ensure they use a fixture that configures the app for testing and provides a test client.
+
+## 9. Debugging with the Flask Logger
+To maintain a clean and professional codebase, **do not use `print()` statements for debugging.** Instead, use Flask's built-in logger, which is automatically configured to show messages only when the application is in debug mode.
+
+### 9.1. Why Use the Logger?
+-   **Automatic Toggling:** Log messages with the level `DEBUG` will only appear in your console when `FLASK_DEBUG=1` or `app.run(debug=True)` is active. They are automatically silenced in a production environment.
+-   **Contextual Information:** The logger provides valuable context, including a timestamp, the log level, and the module where the message originated.
+-   **Configurable and Standard:** It's the standard, production-ready way to handle application messages and can be configured to write to files or other services.
+
+### 9.2. How to Add a Debug Message
+1.  **Import `current_app`** from Flask in the route file you are working on.
+    ```python
+    from flask import current_app
+    ```
+2.  **Call the logger** at the point in your code you want to inspect. Use an f-string to easily include variables.
+    ```python
+    current_app.logger.debug(f"This is a debug message. The value is: {my_variable}")
+    ```
+
+### 9.3. Other Log Levels
+You can also use other log levels for different situations:
+-   `current_app.logger.info("A standard informational message.")`
+-   `current_app.logger.warning("Something unexpected happened, but the app continues.")`
+-   `current_app.logger.error("A serious error occurred.")`

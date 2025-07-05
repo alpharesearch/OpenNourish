@@ -65,7 +65,7 @@
                     <a class="nav-link px-2 {% if request.endpoint == 'my_foods.my_foods' %}active{% endif %}" href="{{ url_for('my_foods.my_foods') }}">My Foods</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'search.search' %}active{% endif %}" href="{{ url_for('search.search') }}">Search USDA</a>
+                    <a class="nav-link px-2 {% if request.endpoint == 'search.search' and search_mode == 'usda_only' %}active{% endif %}" href="{{ url_for('search.search', search_mode='usda_only') }}">Search USDA</a>
                 </li>
             {% endif %}
 

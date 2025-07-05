@@ -9,7 +9,7 @@ def seed_activities():
     """Seeds the ExerciseActivity table with common exercises."""
     with current_app.app_context():
         if ExerciseActivity.query.first():
-            print("Exercise activities already exist.")
+            current_app.logger.debug("Exercise activities already exist.")
             return
 
         activities = [
@@ -35,6 +35,6 @@ def seed_activities():
             db.session.add(activity)
 
         db.session.commit()
-        print("Exercise activities seeded successfully.")
+        current_app.logger.debug("Exercise activities seeded successfully.")
 
 from . import routes
