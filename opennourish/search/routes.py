@@ -97,14 +97,31 @@ def add_item():
                 else:
                     flash('My Food not found or not authorized.', 'danger')
             elif food_type == 'recipe':
-                recipe = db.session.get(Recipe, food_id)
+                # Eagerly load ingredients to calculate total grams without N+1
+                recipe = db.session.query(Recipe).options(
+                    selectinload(Recipe.ingredients)
+                ).get(food_id)
+
                 if recipe and recipe.user_id == current_user.id:
+                    if not recipe.servings or recipe.servings <= 0:
+                        flash(f'Recipe "{recipe.name}" has no servings defined. Cannot add to diary by servings.', 'danger')
+                        return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
+
+                    total_recipe_grams = sum(ing.amount_grams for ing in recipe.ingredients)
+
+                    if total_recipe_grams <= 0:
+                        flash(f'Recipe "{recipe.name}" has no ingredients or zero total grams. Cannot add to diary.', 'danger')
+                        return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
+
+                    grams_per_serving = total_recipe_grams / recipe.servings
+                    calculated_amount_grams = grams_per_serving * quantity # quantity is servings from form
+
                     daily_log = DailyLog(
                         user_id=current_user.id,
                         log_date=log_date,
                         meal_name=meal_name,
                         recipe_id=recipe.id,
-                        amount_grams=quantity
+                        amount_grams=calculated_amount_grams
                     )
                     db.session.add(daily_log)
                     db.session.commit()
