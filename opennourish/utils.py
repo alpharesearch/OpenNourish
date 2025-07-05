@@ -157,9 +157,6 @@ def generate_nutrition_label_pdf(fdc_id):
                 break
         nutrients_for_label[label_field] = found_value if found_value is not None else 0.0 # Assign 0.0 if not found
 
-    print(f"Debug: Potassium value for PDF: {nutrients_for_label.get('Potassium')}")
-
-
     # Prepare data for Typst
     ingredients_str = food.ingredients if food.ingredients else "N/A"
     portions_str = ""
@@ -277,8 +274,6 @@ def generate_nutrition_label_svg(fdc_id):
                 break
         nutrients_for_label[label_field] = found_value if found_value is not None else 0.0 # Assign 0.0 if not found
 
-    print(f"Debug: Potassium value for PDF: {nutrients_for_label.get('Potassium')}")
-
 
     # Prepare data for Typst
     ingredients_str = food.ingredients if food.ingredients else "N/A"
@@ -298,6 +293,7 @@ def generate_nutrition_label_svg(fdc_id):
 
     typst_content = f"""
 #import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
+#set page(width: 12cm, height: 18cm)
 #let data = (
   servings: "1", // Assuming 1 serving for 100g
   serving_size: "100g",
@@ -319,7 +315,6 @@ def generate_nutrition_label_svg(fdc_id):
     (name: "Potassium", key: "potassium", value: {nutrients_for_label['Potassium']:{nutrient_info['Potassium']['format']}}, unit: "mg"),
   ),
 )
-#set page(width: 12cm, height: 12cm)
 #show: nutrition-label-nam(data)
 """
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -332,11 +327,11 @@ def generate_nutrition_label_svg(fdc_id):
         try:
             # Run Typst command
             result = subprocess.run(
-                ["typst", "compile --format svg", os.path.basename(typ_file_path), os.path.basename(svg_file_path)],
+                ["typst", "compile", "--format", "svg", os.path.basename(typ_file_path), os.path.basename(svg_file_path)],
                 capture_output=True, text=True, check=True, cwd=tmpdir
             )
 
-            return send_file(svg_file_path, as_attachment=False, download_name=f"nutrition_label_{fdc_id}.svg", mimetype='application/svg')
+            return send_file(svg_file_path, as_attachment=False, download_name=f"nutrition_label_{fdc_id}.svg", mimetype='image/svg+xml')
         except subprocess.CalledProcessError as e:
             print(f"Typst compilation failed: {e}")
             print(f"Stdout: {e.stdout}")

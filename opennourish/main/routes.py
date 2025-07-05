@@ -32,8 +32,12 @@ def upc_search(barcode):
     else:
         return "UPC not found", 404
 
-from opennourish.utils import generate_nutrition_label_pdf
+from opennourish.utils import generate_nutrition_label_pdf, generate_nutrition_label_svg
 
 @main_bp.route('/generate_nutrition_label/<int:fdc_id>')
 def generate_nutrition_label(fdc_id):
     return generate_nutrition_label_pdf(fdc_id)
+
+@main_bp.route('/nutrition_label_svg/<int:fdc_id>')
+def nutrition_label_svg(fdc_id):
+    return generate_nutrition_label_svg(fdc_id)
