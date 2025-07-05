@@ -27,11 +27,13 @@ def search():
     current_app.logger.debug(f"Debug: request.method: {request.method}, target: {target}, search_term: {search_term}")
 
     if search_term:
+        current_app.logger.debug(f"Debug: Performing search for term: '{search_term}'")
         # Search USDA Foods
         usda_foods_query = Food.query.options(
             selectinload(Food.portions).selectinload(Portion.measure_unit),
             selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
         ).filter(Food.description.ilike(f'%{search_term}%')).limit(10).all()
+        current_app.logger.debug(f"Debug: USDA Foods found: {len(usda_foods_query)}")
         
         for food in usda_foods_query:
             results["usda_foods"].append({
@@ -47,6 +49,7 @@ def search():
             my_foods_query = MyFood.query.options(
                 selectinload(MyFood.portions)
             ).filter(MyFood.description.ilike(f'%{search_term}%'), MyFood.user_id == current_user.id).limit(10).all()
+            current_app.logger.debug(f"Debug: MyFoods found: {len(my_foods_query)}")
             
             for food in my_foods_query:
                 results["my_foods"].append({
@@ -61,6 +64,7 @@ def search():
                 selectinload(Recipe.ingredients),
                 selectinload(Recipe.portions)
             ).filter(Recipe.name.ilike(f'%{search_term}%'), Recipe.user_id == current_user.id).limit(10).all()
+            current_app.logger.debug(f"Debug: Recipes found: {len(recipes_query)}")
             
             for recipe in recipes_query:
                 nutrition_per_100g = calculate_recipe_nutrition_per_100g(recipe)
@@ -79,6 +83,7 @@ def search():
             my_meals_query = MyMeal.query.options(
                 selectinload(MyMeal.items)
             ).filter(MyMeal.name.ilike(f'%{search_term}%'), MyMeal.user_id == current_user.id).limit(10).all()
+            current_app.logger.debug(f"Debug: MyMeals found: {len(my_meals_query)}")
             
             for meal in my_meals_query:
                 # For MyMeals, we can indicate if they have items (ingredients)
