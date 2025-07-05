@@ -1,4 +1,5 @@
-from models import db, Food, MyFood, Nutrient, FoodNutrient
+from models import db, Food, MyFood, Nutrient, FoodNutrient, Recipe
+from sqlalchemy.orm import selectinload
 from config import Config
 from flask import send_file
 import subprocess
