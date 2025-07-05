@@ -21,7 +21,7 @@
                 <td>{{ check_in.waist_cm }}</td>
                 <td>
                     <a href="{{ url_for('tracking.edit_check_in', check_in_id=check_in.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
-                    <a href="{{ url_for('tracking.delete_check_in', check_in_id=check_in.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this check-in?');">Delete</a>
+                    <a href="{{ url_for('tracking.delete_check_in', check_in_id=check_in.id) }}" class="btn btn-sm btn-outline-danger">Delete</a>
                 </td>
             </tr>
             {% endfor %}

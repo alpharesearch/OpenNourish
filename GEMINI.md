@@ -61,7 +61,7 @@ To maintain a consistent and professional look and feel, all generated HTML temp
   - **Class:** `btn btn-outline-primary`  `btn-outline-success`
 - **Secondary Actions (Cancel, Go Back):** Buttons for secondary or less important actions.
   - **Class:** `btn btn-outline-secondary`
-- **Destructive Actions (Delete, Remove):** Buttons that trigger a deletion or other irreversible action must be clearly marked in red.
+- **Destructive Actions (Delete, Remove):** Buttons that trigger a deletion or other irreversible action must be clearly marked in red. Confirmation pop-ups (e.g., JavaScript `confirm()`) should NOT be used for these actions, as an undo system will be implemented.
   - **Class:** `btn btn-outline-danger`
 - **Other Actions:** Buttons for other actions.
   - **Class:** `btn-outline-success`
