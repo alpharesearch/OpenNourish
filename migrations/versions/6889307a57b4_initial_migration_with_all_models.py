@@ -1,8 +1,8 @@
-"""Initial migration
+"""Initial migration with all models
 
-Revision ID: 93478c54a431
+Revision ID: 6889307a57b4
 Revises: 
-Create Date: 2025-07-04 14:08:09.009924
+Create Date: 2025-07-05 18:02:45.451176
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '93478c54a431'
+revision = '6889307a57b4'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -58,20 +58,20 @@ def upgrade():
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
     sa.Column('ingredients', sa.Text(), nullable=True),
-    sa.Column('calories_per_100g', sa.Float(), nullable=True),
-    sa.Column('protein_per_100g', sa.Float(), nullable=True),
-    sa.Column('carbs_per_100g', sa.Float(), nullable=True),
-    sa.Column('fat_per_100g', sa.Float(), nullable=True),
-    sa.Column('saturated_fat_per_100g', sa.Float(), nullable=True),
-    sa.Column('trans_fat_per_100g', sa.Float(), nullable=True),
-    sa.Column('cholesterol_mg_per_100g', sa.Float(), nullable=True),
-    sa.Column('sodium_mg_per_100g', sa.Float(), nullable=True),
-    sa.Column('fiber_per_100g', sa.Float(), nullable=True),
-    sa.Column('sugars_per_100g', sa.Float(), nullable=True),
-    sa.Column('vitamin_d_mcg_per_100g', sa.Float(), nullable=True),
-    sa.Column('calcium_mg_per_100g', sa.Float(), nullable=True),
-    sa.Column('iron_mg_per_100g', sa.Float(), nullable=True),
-    sa.Column('potassium_mg_per_100g', sa.Float(), nullable=True),
+    sa.Column('calories_per_100g', sa.Float(), nullable=False),
+    sa.Column('protein_per_100g', sa.Float(), nullable=False),
+    sa.Column('carbs_per_100g', sa.Float(), nullable=False),
+    sa.Column('fat_per_100g', sa.Float(), nullable=False),
+    sa.Column('saturated_fat_per_100g', sa.Float(), nullable=False),
+    sa.Column('trans_fat_per_100g', sa.Float(), nullable=False),
+    sa.Column('cholesterol_mg_per_100g', sa.Float(), nullable=False),
+    sa.Column('sodium_mg_per_100g', sa.Float(), nullable=False),
+    sa.Column('fiber_per_100g', sa.Float(), nullable=False),
+    sa.Column('sugars_per_100g', sa.Float(), nullable=False),
+    sa.Column('vitamin_d_mcg_per_100g', sa.Float(), nullable=False),
+    sa.Column('calcium_mg_per_100g', sa.Float(), nullable=False),
+    sa.Column('iron_mg_per_100g', sa.Float(), nullable=False),
+    sa.Column('potassium_mg_per_100g', sa.Float(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -141,9 +141,11 @@ def upgrade():
     sa.Column('recipe_id', sa.Integer(), nullable=False),
     sa.Column('fdc_id', sa.Integer(), nullable=True),
     sa.Column('my_food_id', sa.Integer(), nullable=True),
+    sa.Column('recipe_id_link', sa.Integer(), nullable=True),
     sa.Column('amount_grams', sa.Float(), nullable=True),
     sa.ForeignKeyConstraint(['my_food_id'], ['my_foods.id'], ),
     sa.ForeignKeyConstraint(['recipe_id'], ['recipes.id'], ),
+    sa.ForeignKeyConstraint(['recipe_id_link'], ['recipes.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('recipe_portions',

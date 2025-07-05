@@ -94,7 +94,8 @@ def search():
                            target=target,
                            recipe_id=recipe_id,
                            log_date=log_date,
-                           meal_name=meal_name)
+                           meal_name=meal_name,
+                           search_mode=search_mode)
 
 @search_bp.route('/add_item', methods=['POST'])
 @login_required

@@ -79,33 +79,7 @@ def create_app(config_class=Config):
     def seed_dev_data_command(count):
         """Populates the user database with realistic test data."""
         with app.app_context():
-            print("Clearing existing user data...")
-            # Delete in reverse dependency order
-            db.session.query(DailyLog).delete()
-            db.session.query(CheckIn).delete()
-            db.session.query(MyMealItem).delete()
-            db.session.query(MyMeal).delete()
-            db.session.query(RecipeIngredient).delete()
-            db.session.query(RecipePortion).delete()
-            db.session.query(Recipe).delete()
-            db.session.query(MyPortion).delete()
-            db.session.query(MyFood).delete()
-            db.session.query(UserGoal).delete()
-            db.session.query(DailyLog).delete()
-            db.session.query(CheckIn).delete()
-            db.session.query(MyMealItem).delete()
-            db.session.query(MyMeal).delete()
-            db.session.query(RecipeIngredient).delete()
-            db.session.query(RecipePortion).delete()
-            db.session.query(Recipe).delete()
-            db.session.query(MyPortion).delete()
-            db.session.query(MyFood).delete()
-            db.session.query(UserGoal).delete()
-            db.session.query(ExerciseLog).delete()
-            db.session.query(ExerciseActivity).delete()
-            db.session.query(User).delete()
-            db.session.commit()
-            print("Cleared existing user data.")
+            print("Skipping clearing existing user data as it's handled by seed_db.sh script.")
 
             # Add default exercise activities
             print("Adding default exercise activities...")
@@ -235,7 +209,7 @@ def create_app(config_class=Config):
                 for _ in range(num_recipes):
                     recipe = Recipe(
                         user_id=user.id,
-                        name=fake.word().capitalize() + ' ' + fake.word() + ' Recipe',
+                        name=fake.word().capitalize() + ' ' + fake.word() + ' My Recipe',
                         instructions=fake.paragraph(nb_sentences=5),
                         servings=random.randint(1, 6)
                     )

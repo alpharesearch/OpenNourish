@@ -2,7 +2,7 @@
 
 This document contains notes and procedures for developers working on the OpenNourish project.
 
-## Resetting the User Database and Migrations
+## 1. Resetting the User Database and Migrations
 
 There are times during development when you may need to completely reset the user database (`user_data.db`) and start fresh. This is useful when the migration history gets corrupted or you want to revert to a clean slate.
 
@@ -42,7 +42,7 @@ Follow these steps to reset the database and Alembic migration configuration:
 
 After these steps, you will have a fresh `user_data.db` file and a clean migration history.
 
-## Making Non-Destructive Database Schema Changes
+## 2. Making Non-Destructive Database Schema Changes
 
 When you need to make changes to the database schema (e.g., adding a new table or column), you should always use a non-destructive workflow to avoid losing data. This is the standard process for evolving the database schema as the application grows.
 
@@ -66,7 +66,7 @@ Follow these steps to make non-destructive schema changes:
 
 By following this process, you can safely evolve your database schema as you develop the application, without worrying about losing your data.
 
-## Database Seeding for Development
+## 3. Database Seeding for Development
 
 To quickly populate your `user_data.db` with realistic test data for development and testing purposes, you can use the `seed-dev-data` Flask CLI command.
 
@@ -104,7 +104,7 @@ Replace `<number_of_users>` with the desired count (e.g., `flask seed-dev-data -
 
 This command is invaluable for quickly setting up a development environment with sufficient data to test pagination, data display, and other features.
 
-### Using the `seed_db.sh` Script
+### 3.1 Using the `seed_db.sh` Script
 
 For a fully automated, non-destructive seeding process, you can use the `seed_db.sh` shell script. This script will ensure your database schema is up-to-date and then populate it with development data, preserving your existing database file and migration history.
 
