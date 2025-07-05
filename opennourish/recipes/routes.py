@@ -44,9 +44,7 @@ def edit_recipe(recipe_id):
     if usda_food_ids:
         usda_foods = Food.query.options(selectinload(Food.portions).selectinload(Portion.measure_unit)).filter(Food.fdc_id.in_(usda_food_ids)).all()
         usda_foods_map = {food.fdc_id: food for food in usda_foods}
-        for ingredient in recipe.ingredients:
-            if ingredient.fdc_id in usda_foods_map:
-                ingredient.food = usda_foods_map[ingredient.fdc_id]
+        
 
     if recipe.user_id != current_user.id:
         flash('You are not authorized to edit this recipe.', 'danger')
@@ -100,7 +98,7 @@ def add_ingredient(recipe_id):
 
     food_id = request.form.get('food_id', type=int)
     food_type = request.form.get('food_type')
-    amount = request.form.get('amount', type=float)
+    amount = request.form.get('quantity', type=float)
     meal_id = request.form.get('meal_id', type=int)
 
     if food_type == 'my_meal':
