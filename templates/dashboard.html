@@ -51,6 +51,7 @@
                     <p class="mb-2">
                         Remaining: {{ "%.1f" % remaining[key] }} g
                     </p>
+                    <br>
                     <div class="progress" style="height: 25px;">
                         {% set percentage = (totals[key] / goals[key]) * 100 if goals[key] > 0 else 0 %}
                         <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}" aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
@@ -85,7 +86,19 @@
         </div>
     </div>
 
-    <h2 class="mt-4">{{ date.strftime('%A, %B %d, %Y') }}'s Log</h2>
+    <h2 class="mt-4">Exercise History</h2>
+    <ul class="list-group">
+        {% for log in exercise_logs %}
+            <li class="list-group-item">
+                {% if log.activity %}{{ log.activity.name }}{% else %}{{ log.manual_description }}{% endif %} - 
+                {{ log.duration_minutes }} mins - {{ log.calories_burned }} kcal
+            </li>
+        {% else %}
+            <li class="list-group-item">No exercise logged for today.</li>
+        {% endfor %}
+    </ul>
+
+    <h2 class="mt-4">Food Log</h2>
     <ul class="list-group">
         {% for log in daily_logs %}
             <li class="list-group-item">{{ food_names.get(log.id, 'Unknown Food') }} - {{ "%.1f" % log.amount_grams }}g</li>
@@ -93,7 +106,7 @@
             <li class="list-group-item">No entries for today.</li>
         {% endfor %}
     </ul>
-
+    
 {% if chart_labels and (weight_data or body_fat_data or waist_data) %}
 <script>
     const ctx = document.getElementById('weightChart');
