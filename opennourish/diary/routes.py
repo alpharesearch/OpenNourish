@@ -32,7 +32,7 @@ def diary(log_date_str=None):
 
     for log in daily_logs:
         if log.fdc_id:
-            food_item = db.session.query(Food).options(joinedload(Food.portions).joinedload(Portion.measure_unit)).get(log.fdc_id)
+            food_item = db.session.query(Food).options(joinedload(Food.portions)).get(log.fdc_id)
         elif log.my_food_id:
             food_item = db.session.get(MyFood, log.my_food_id)
         elif log.recipe_id:
@@ -246,7 +246,7 @@ def my_meals():
     # Fetch all relevant USDA Food objects in one query, eagerly loading portions and measure units
     usda_foods_map = {}
     if all_usda_food_ids:
-        usda_foods = Food.query.options(joinedload(Food.portions).joinedload(Portion.measure_unit)).filter(Food.fdc_id.in_(all_usda_food_ids)).all()
+        usda_foods = Food.query.options(joinedload(Food.portions)).filter(Food.fdc_id.in_(all_usda_food_ids)).all()
         usda_foods_map = {food.fdc_id: food for food in usda_foods}
 
     for meal in meals:

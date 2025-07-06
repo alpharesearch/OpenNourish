@@ -30,7 +30,7 @@ def search():
         current_app.logger.debug(f"Debug: Performing search for term: '{search_term}'")
         # Search USDA Foods
         usda_foods_query = Food.query.options(
-            selectinload(Food.portions).selectinload(Portion.measure_unit),
+            selectinload(Food.portions),
             selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
         ).filter(Food.description.ilike(f'%{search_term}%')).limit(10).all()
         current_app.logger.debug(f"Debug: USDA Foods found: {len(usda_foods_query)}")
@@ -101,7 +101,7 @@ def search():
         usda_food_ids = [item[0] for item in top_usda_foods_ids]
         if usda_food_ids:
             usda_foods = Food.query.options(
-                selectinload(Food.portions).selectinload(Portion.measure_unit),
+                selectinload(Food.portions),
                 selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
             ).filter(Food.fdc_id.in_(usda_food_ids)).all()
             
@@ -438,6 +438,8 @@ def add_item():
                     user_id=current_user.id,
                     description=usda_food.description,
                     ingredients=usda_food.ingredients,
+                    fdc_id=usda_food.fdc_id,
+                    upc=usda_food.upc,
                     calories_per_100g=FoodNutrient.query.filter_by(fdc_id=food_id, nutrient_id=1008).with_entities(FoodNutrient.amount).scalar() or 0.0,
                     protein_per_100g=FoodNutrient.query.filter_by(fdc_id=food_id, nutrient_id=1003).with_entities(FoodNutrient.amount).scalar() or 0.0,
                     carbs_per_100g=FoodNutrient.query.filter_by(fdc_id=food_id, nutrient_id=1005).with_entities(FoodNutrient.amount).scalar() or 0.0,

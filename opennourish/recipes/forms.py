@@ -18,4 +18,9 @@ class AddToLogForm(FlaskForm):
 
 
 class RecipePortionForm(FlaskForm):
-    description = StringField('Description', validators=[DataRequired()])
+    amount = FloatField('Amount', validators=[DataRequired()])
+    measure_unit_description = StringField('Unit (e.g., cup, slice)', validators=[DataRequired()])
+    description = StringField('Description (e.g., large, chopped)')
+    modifier = StringField('Modifier (e.g., raw, cooked)')
+    gram_weight = FloatField('Gram Weight', validators=[DataRequired(), NumberRange(min=0.1)])
+    submit = SubmitField('Add Portion')

@@ -1,5 +1,5 @@
 import pytest
-from models import db, User, Food, FoodNutrient, Nutrient, MyFood, DailyLog, Portion, MyPortion, MeasureUnit
+from models import db, User, Food, FoodNutrient, Nutrient, MyFood, DailyLog, Portion, MyPortion
 from datetime import date
 from opennourish.utils import calculate_nutrition_for_items
 
@@ -116,10 +116,8 @@ def test_add_usda_food_with_portion(auth_client):
     with auth_client.application.app_context():
         test_food = Food(fdc_id=10002, description='USDA Cheese')
         db.session.add(test_food)
-        measure_unit = MeasureUnit(id=9999, name='unit')
-        db.session.add(measure_unit)
-        portion = Portion(id=1, fdc_id=10002, seq_num=1, measure_unit_id=9999, portion_description='slice', gram_weight=28.0)
-        db.session.add(portion)
+        
+        
         db.session.commit()
 
     auth_client.post('/search/add_item', data={

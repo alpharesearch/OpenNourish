@@ -32,7 +32,7 @@ def get_available_portions(food_item):
         # For Recipes (has 'recipe_portions')
         elif hasattr(food_item, 'recipe_portions'):
             for p in food_item.recipe_portions:
-                display_text = f"{p.description} ({p.gram_weight}g)"
+                display_text = f"{p.full_description} ({p.gram_weight}g)"
                 available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
                 
     return available_portions
@@ -162,14 +162,7 @@ def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_ex
     ingredients_str = food.ingredients if food.ingredients else "N/A"
     portions_str = ""
     if food.portions:
-        portions_list = []
-        for p in food.portions:
-            desc = p.portion_description if p.portion_description else ""
-            if p.amount and p.measure_unit:
-                desc = f"{p.amount} {p.measure_unit.name} {desc}"
-            if p.modifier:
-                desc = f"{desc} ({p.modifier})"
-            portions_list.append(f"{desc} ({p.gram_weight}g)")
+        portions_list = [f"{p.full_description} ({p.gram_weight}g)" for p in food.portions]
         portions_str = "; ".join(portions_list)
     else:
         portions_str = "N/A"

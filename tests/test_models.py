@@ -1,5 +1,5 @@
 import pytest
-from models import db, Food, Nutrient, FoodNutrient, MeasureUnit, Portion, User
+from models import db, Food, Nutrient, FoodNutrient, Portion, User
 
 def test_food_creation(client):
     with client.application.app_context():
@@ -29,24 +29,7 @@ def test_food_nutrient_association(client):
         assert len(retrieved_food.nutrients) == 1
         assert retrieved_food.nutrients[0].amount == 10.5
 
-def test_measure_unit_creation(client):
-    with client.application.app_context():
-        unit = MeasureUnit(id=300, name='Test Unit')
-        db.session.add(unit)
-        db.session.commit()
-        assert db.session.execute(db.select(MeasureUnit)).scalar_one() is not None
 
-def test_portion_creation(client):
-    with client.application.app_context():
-        food = Food(fdc_id=102, description='Food for Portion')
-        unit = MeasureUnit(id=301, name='Portion Unit')
-        portion = Portion(fdc_id=102, seq_num=1, amount=1.0, measure_unit_id=301, gram_weight=100.0)
-
-        db.session.add_all([food, unit, portion])
-        db.session.commit()
-
-        retrieved_portion = db.session.get(Portion, portion.id)
-        assert retrieved_portion.gram_weight == 100.0
 
 def test_food_search_returns_result(client):
     with client.application.app_context():

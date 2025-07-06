@@ -4,7 +4,7 @@ from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal,
 from .forms import RecipeForm, IngredientForm, AddToLogForm, RecipePortionForm
 from sqlalchemy.orm import joinedload, selectinload
 from datetime import date
-from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g
+from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g, get_available_portions
 
 recipes_bp = Blueprint('recipes', __name__, template_folder='templates')
 
@@ -44,7 +44,7 @@ def edit_recipe(recipe_id):
     # Manually fetch USDA food data
     usda_food_ids = [ing.fdc_id for ing in recipe.ingredients if ing.fdc_id]
     if usda_food_ids:
-        usda_foods = Food.query.options(selectinload(Food.portions).selectinload(Portion.measure_unit)).filter(Food.fdc_id.in_(usda_food_ids)).all()
+        usda_foods = Food.query.options(selectinload(Food.portions)).filter(Food.fdc_id.in_(usda_food_ids)).all()
         usda_foods_map = {food.fdc_id: food for food in usda_foods}
         
     for ing in recipe.ingredients:
@@ -88,9 +88,8 @@ def edit_recipe(recipe_id):
         form=form,
         recipe=recipe,
         portion_form=portion_form,
-        
-        url_action='recipes.add_ingredient',
-        url_params={'recipe_id': recipe.id}
+        get_available_portions=get_available_portions,
+        search_term=query
     )
 
 
@@ -219,21 +218,99 @@ def add_recipe_portion(recipe_id):
 
     form = RecipePortionForm()
     if form.validate_on_submit():
-        total_grams = sum(ing.amount_grams for ing in recipe.ingredients)
-        if recipe.servings > 0 and total_grams > 0:
-            gram_weight = total_grams / recipe.servings
-            new_portion = RecipePortion(
-                recipe_id=recipe.id,
-                description=form.description.data,
-                gram_weight=gram_weight
-            )
-            db.session.add(new_portion)
-            db.session.commit()
-            flash('Recipe portion added.', 'success')
-        else:
-            flash('Cannot create a portion for a recipe with 0 servings or no ingredients.', 'warning')
+        # Construct the full description string
+        desc_parts = []
+        amount = form.amount.data
+        unit = form.measure_unit_description.data
+        description = form.description.data
+        modifier = form.modifier.data
+
+        if amount:
+            if amount.is_integer():
+                desc_parts.append(str(int(amount)))
+            else:
+                desc_parts.append(str(amount))
+        
+        if unit:
+            desc_parts.append(unit)
+        
+        if description:
+            desc_parts.append(description)
+            
+        if modifier:
+            desc_parts.append(modifier)
+        
+        full_description = " ".join(desc_parts)
+
+        new_portion = RecipePortion(
+            recipe_id=recipe.id,
+            amount=form.amount.data,
+            measure_unit_description=form.measure_unit_description.data,
+            description=form.description.data,
+            modifier=form.modifier.data,
+            gram_weight=form.gram_weight.data,
+            full_description=full_description
+        )
+        db.session.add(new_portion)
+        db.session.commit()
+        flash('Recipe portion added.', 'success')
     else:
-        flash('Invalid form submission.', 'danger')
+        # Collect and flash form errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
+
+    return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
+
+@recipes_bp.route("/recipe/portion/auto_add/<int:recipe_id>", methods=['POST'])
+@login_required
+def auto_add_recipe_portion(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.user_id != current_user.id:
+        flash('You are not authorized to modify this recipe.', 'danger')
+        return redirect(url_for('recipes.recipes'))
+
+    # First, update the recipe with any form data that might have been changed
+    # This ensures the servings count is up-to-date before creating the portion
+    form = RecipeForm(request.form)
+    if form.validate():
+        recipe.name = form.name.data
+        recipe.instructions = form.instructions.data
+        recipe.servings = form.servings.data
+        db.session.commit()
+        flash('Recipe details saved.', 'info')
+    else:
+        flash('Could not save recipe details before creating portion.', 'warning')
+
+
+    total_grams = sum(ing.amount_grams for ing in recipe.ingredients if ing.amount_grams)
+    servings = recipe.servings
+
+    if servings and servings > 0 and total_grams > 0:
+        gram_weight_per_serving = total_grams / servings
+        
+        # Use singular "serving" if servings is 1
+        serving_text = "serving" if servings == 1 else "servings"
+        
+        # Create a description like "1 of 4 servings"
+        full_description = f"1 of {int(servings) if isinstance(servings, float) and servings.is_integer() else servings} {serving_text}"
+
+        new_portion = RecipePortion(
+            recipe_id=recipe.id,
+            amount=1,
+            measure_unit_description=f"of {int(servings) if isinstance(servings, float) and servings.is_integer() else servings} {serving_text}",
+            description=None,
+            modifier=None,
+            gram_weight=gram_weight_per_serving,
+            full_description=full_description
+        )
+        db.session.add(new_portion)
+        db.session.commit()
+        flash(f'Portion "{full_description}" added.', 'success')
+    else:
+        flash('Cannot create a portion for a recipe with 0 servings or no ingredients.', 'warning')
+        
     return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
 

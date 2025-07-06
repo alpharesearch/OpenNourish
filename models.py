@@ -49,6 +49,8 @@ class MyFood(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     description = db.Column(db.String)
     ingredients = db.Column(db.Text, nullable=True)
+    fdc_id = db.Column(db.Integer, nullable=True)
+    upc = db.Column(db.String, nullable=True)
     calories_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     protein_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     carbs_per_100g = db.Column(db.Float, nullable=False, default=0.0)
@@ -114,8 +116,12 @@ class RecipePortion(db.Model):
     __tablename__ = 'recipe_portions'
     id = db.Column(db.Integer, primary_key=True)
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=False)
-    description = db.Column(db.String, nullable=False)
+    amount = db.Column(db.Float)
+    measure_unit_description = db.Column(db.String)
+    description = db.Column(db.String)
+    modifier = db.Column(db.String)
     gram_weight = db.Column(db.Float, nullable=False)
+    full_description = db.Column(db.String)
 
 class MyMeal(db.Model):
     __tablename__ = 'my_meals'
@@ -187,21 +193,16 @@ class FoodNutrient(db.Model):
     nutrient = db.relationship('Nutrient', backref='food_nutrients')
 
 
-class MeasureUnit(db.Model):
-    __bind_key__ = 'usda'
-    __tablename__ = 'measure_units'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-
 class Portion(db.Model):
     __bind_key__ = 'usda'
     __tablename__ = 'portions'
     id = db.Column(db.Integer, primary_key=True)
     fdc_id = db.Column(db.Integer, db.ForeignKey('foods.fdc_id'), nullable=False)
-    seq_num = db.Column(db.Integer, nullable=False)
+    seq_num = db.Column(db.Integer)
     amount = db.Column(db.Float)
-    measure_unit_id = db.Column(db.Integer, db.ForeignKey('measure_units.id'), nullable=False)
+    measure_unit_description = db.Column(db.String)
     portion_description = db.Column(db.String)
     modifier = db.Column(db.String)
     gram_weight = db.Column(db.Float, nullable=False)
-    measure_unit = db.relationship('MeasureUnit', backref='portions')
+    full_description = db.Column(db.String)
+

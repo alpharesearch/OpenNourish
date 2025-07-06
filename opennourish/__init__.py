@@ -218,7 +218,7 @@ def create_app(config_class=Config):
                 recipes_created += num_recipes
                 db.session.flush()  # To get recipe.id for ingredients and portions
 
-                # RecipeIngredients and RecipePortions
+                # RecipeIngredients
                 for r in user_recipes:
                     # Add some ingredients
                     num_ingredients = random.randint(3, 8)
@@ -241,17 +241,22 @@ def create_app(config_class=Config):
                             else:
                                 continue  # Skip if no MyFoods available
                         db.session.add(ingredient)
+                db.session.flush() # Ensure ingredients are in the session to be calculated
 
-                    # Add some recipe portions
-                    if random.random() < 0.8:  # 80% chance to add custom recipe portions
-                        num_recipe_portions = random.randint(1, 3)
-                        for _ in range(num_recipe_portions):
-                            portion = RecipePortion(
-                                recipe_id=r.id,
-                                description=random.choice(['bowl', 'plate', 'cup', 'serving']),
-                                gram_weight=random.uniform(100, 500)
-                            )
-                            db.session.add(portion)
+                # Seed Recipe Portions
+                for r in user_recipes:
+                    # Create a random portion for the recipe
+                    amount = random.randint(1, 8)
+                    measure_unit = random.choice(['bowl', 'plate', 'cup', 'serving'])
+                    
+                    new_portion = RecipePortion(
+                        recipe_id=r.id,
+                        amount=amount,
+                        measure_unit_description=measure_unit,
+                        gram_weight=random.uniform(100, 500), # Random weight for the portion
+                        full_description=f"{amount} {measure_unit}"
+                    )
+                    db.session.add(new_portion)
 
                 # MyMeals
                 num_my_meals = random.randint(5, 10)

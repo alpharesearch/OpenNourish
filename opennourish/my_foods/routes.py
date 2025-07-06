@@ -20,6 +20,7 @@ def new_my_food():
         my_food = MyFood(
             user_id=current_user.id,
             description=form.description.data,
+            ingredients=form.ingredients.data,
             calories_per_100g=form.calories_per_100g.data,
             protein_per_100g=form.protein_per_100g.data,
             carbs_per_100g=form.carbs_per_100g.data,
