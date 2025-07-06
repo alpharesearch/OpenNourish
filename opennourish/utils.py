@@ -8,32 +8,33 @@ import os
 from types import SimpleNamespace
 
 def get_available_portions(food_item):
+    """
+    Returns a list of available portions for a given food item.
+    It now prioritizes the pre-computed full_description for USDA portions.
+    """
     available_portions = []
-    # Always add grams as an option
+    # Always add grams as a base option
     available_portions.append(SimpleNamespace(id='g', display_text='g', value_string='g'))
 
     if food_item:
-        if hasattr(food_item, 'portions'): # USDA Food or MyFood
+        # For USDA Foods (has 'portions' with 'full_description')
+        if hasattr(food_item, 'portions') and food_item.portions and hasattr(food_item.portions[0], 'full_description'):
             for p in food_item.portions:
-                # Determine the correct description attribute based on object type
-                if hasattr(p, 'portion_description') and p.portion_description: # This is a USDA Portion
-                    desc = p.portion_description
-                    # Add amount and measure unit for USDA portions
-                    if p.amount and p.measure_unit:
-                        desc = f"{p.amount} {p.measure_unit.name} {desc}"
-                    if p.modifier:
-                        desc = f"{desc} ({p.modifier})"
-                elif hasattr(p, 'description'): # This is a MyPortion or RecipePortion
-                    desc = p.description
-                else:
-                    desc = "" # Fallback if neither exists (shouldn't happen with current models)
-
-                display_text = f"{desc or ''} ({p.gram_weight}g)"
+                display_text = f"{p.full_description} ({p.gram_weight}g)"
                 available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
-        elif hasattr(food_item, 'recipe_portions'): # Recipe
+        
+        # For MyFoods (has 'portions' but without 'full_description')
+        elif hasattr(food_item, 'portions'): 
+            for p in food_item.portions:
+                display_text = f"{p.description} ({p.gram_weight}g)"
+                available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
+
+        # For Recipes (has 'recipe_portions')
+        elif hasattr(food_item, 'recipe_portions'):
             for p in food_item.recipe_portions:
                 display_text = f"{p.description} ({p.gram_weight}g)"
                 available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
+                
     return available_portions
 
 def calculate_nutrition_for_items(items):
