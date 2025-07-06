@@ -10,15 +10,47 @@
 
     <div class="card mb-4">
         <div class="card-header">
-            <h3>Daily Totals</h3>
+            <h3>Daily Nutrition Summary</h3>
         </div>
         <div class="card-body">
-            <p class="card-text mb-0">
-                <strong>Calories:</strong> {{ totals.calories|round(0) }} kcal |
-                <strong>Protein:</strong> {{ totals.protein|round(1) }}g |
-                <strong>Carbs:</strong> {{ totals.carbs|round(1) }}g |
-                <strong>Fat:</strong> {{ totals.fat|round(1) }}g
-            </p>
+            <div class="row">
+                <div class="col-md-12">
+                    <h5 class="mb-1">Calories Progress</h5>
+                    <small class="text-muted d-block mb-1">
+                        Goal: {{ "%.1f" % goals.calories }} kcal | Consumed: {{ "%.1f" % totals.calories }} kcal | Burned: {{ "%.1f" % calories_burned }} kcal
+                    </small>
+                    <p class="mb-2">
+                        Remaining: {{ "%.1f" % (goals.calories - totals.calories + calories_burned) }} kcal
+                    </p>
+                    <div class="progress" style="height: 15px;">
+                        {% set net_calories = totals.calories - calories_burned %}
+
+                        {% set percentage = (net_calories / goals.calories) * 100 if goals.calories > 0 else 0 %}
+
+                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ net_calories }}" aria-valuemin="0" aria-valuemax="{{ goals.calories }}">
+
+                            {{ "%.1f" % percentage }}%
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                {% set nutrients = [('Protein', 'protein'), ('Carbohydrates', 'carbs'), ('Fat', 'fat')] %}
+                {% for label, key in nutrients %}
+                <div class="col-md-4 mb-3">
+                    <h5 class="mb-1">{{ label }} Progress</h5>
+                    <small class="text-muted d-block mb-1">
+                        Goal: {{ "%.1f" % goals[key] }}g | Consumed: {{ "%.1f" % totals[key] }}g
+                    </small>
+                    <div class="progress" style="height: 15px;">
+                        {% set percentage = (totals[key] / goals[key]) * 100 if goals[key] > 0 else 0 %}
+                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}" aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
+                            {{ "%.1f" % percentage }}%
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
         </div>
     </div>
 

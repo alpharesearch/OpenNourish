@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, current_app
 from flask_login import current_user, login_required
 from . import diary_bp
-from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe
+from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog
 from datetime import date, timedelta
 from opennourish.utils import calculate_nutrition_for_items, get_available_portions
 from .forms import MealForm, DailyLogForm, MealItemForm
@@ -20,7 +20,15 @@ def diary(log_date_str=None):
     else:
         log_date = date.today()
 
+    user_goal = db.session.get(UserGoal, current_user.id)
+    if not user_goal:
+        # Create a temporary default goal if none exists
+        user_goal = UserGoal(calories=2000, protein=150, carbs=250, fat=60)
+
     daily_logs = DailyLog.query.filter_by(user_id=current_user.id, log_date=log_date).all()
+    
+    exercise_logs = ExerciseLog.query.filter_by(user_id=current_user.id, log_date=log_date).all()
+    calories_burned = sum(log.calories_burned for log in exercise_logs)
     
     meals = {
         'Breakfast': [], 'Snack (morning)': [], 'Lunch': [], 
@@ -65,7 +73,7 @@ def diary(log_date_str=None):
     prev_date = log_date - timedelta(days=1)
     next_date = log_date + timedelta(days=1)
 
-    return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date)
+    return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned)
 
 
 

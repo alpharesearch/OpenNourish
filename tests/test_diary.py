@@ -38,7 +38,7 @@ def test_add_usda_food_to_diary(auth_client):
     response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
     assert response.status_code == 200
     # Expected calories: 150 kcal/100g * 200g = 300 kcal
-    assert b'<strong>Calories:</strong> 300' in response.data
+    assert b'Consumed: 300.0 kcal' in response.data
 
 def test_add_my_food_to_diary(auth_client):
     """
@@ -81,7 +81,7 @@ def test_add_my_food_to_diary(auth_client):
     response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
     assert response.status_code == 200
     # Expected calories: 250 kcal/100g * 150g = 375 kcal
-    assert b'<strong>Calories:</strong> 375' in response.data
+    assert b'Consumed: 375.0 kcal' in response.data
 
 def test_delete_diary_entry(auth_client):
     """
