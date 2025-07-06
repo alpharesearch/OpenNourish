@@ -147,8 +147,7 @@ def create_app(config_class=Config):
                     if random.random() < 0.5 and usda_fdc_ids: # 50% chance to create a USDA-sourced MyFood
                         fdc_id = random.choice(usda_fdc_ids)
                         usda_food = db.session.query(Food).options(
-                            joinedload(Food.nutrients).joinedload(FoodNutrient.nutrient),
-                            joinedload(Food.portions)
+                            joinedload(Food.nutrients).joinedload(FoodNutrient.nutrient)
                         ).filter_by(fdc_id=fdc_id).first()
 
                         if usda_food:
@@ -178,12 +177,17 @@ def create_app(config_class=Config):
                             my_foods_created += 1
                             db.session.flush() # To get my_food.id for portions
 
-                            # Copy portions from USDA food
-                            for portion in usda_food.portions:
+                            # Fetch portions from UnifiedPortion table using fdc_id
+                            usda_food_portions = UnifiedPortion.query.filter_by(fdc_id=usda_food.fdc_id).all()
+                            for portion in usda_food_portions:
                                 my_portion = UnifiedPortion(
                                     my_food_id=my_food.id,
-                                    description=portion.portion_description or portion.measure_unit_description,
-                                    gram_weight=portion.gram_weight
+                                    portion_description=portion.portion_description or portion.measure_unit_description,
+                                    gram_weight=portion.gram_weight,
+                                    amount=portion.amount,
+                                    measure_unit_description=portion.measure_unit_description,
+                                    modifier=portion.modifier,
+                                    full_description=portion.full_description
                                 )
                                 db.session.add(my_portion)
                     else: # Create a purely custom MyFood
@@ -205,7 +209,7 @@ def create_app(config_class=Config):
                         if random.random() < 0.5:  # 50% chance to add a custom portion
                             portion = UnifiedPortion(
                                 my_food_id=my_food.id,
-                                description=random.choice(['cup', 'slice', 'serving', 'piece']),
+                                portion_description=random.choice(['cup', 'slice', 'serving', 'piece']),
                                 gram_weight=random.uniform(30, 200)
                             )
                             db.session.add(portion)
