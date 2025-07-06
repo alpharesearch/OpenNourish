@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, send_file
 from flask_login import current_user
-from models import db, Food
+from models import db, Food, UnifiedPortion
+from sqlalchemy.orm import sessionmaker
 import subprocess
 import tempfile
 import os
@@ -19,7 +20,18 @@ def food_detail(fdc_id):
     food = db.session.get(Food, fdc_id)
     if not food:
         return "Food not found", 404
-    return render_template('food_detail.html', food=food, search_term=q)
+
+    # Manually fetch portions for this USDA food
+    # Manually fetch portions for this USDA food
+    DefaultSession = sessionmaker(bind=db.get_engine(bind=None))
+    default_session = DefaultSession()
+
+    try:
+        portions = default_session.query(UnifiedPortion).filter_by(fdc_id=fdc_id).all()
+    finally:
+        default_session.close()
+
+    return render_template('food_detail.html', food=food, search_term=q, portions=portions)
 
 @main_bp.route('/upc/<barcode>')
 def upc_search(barcode):

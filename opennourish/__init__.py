@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, current_app
 import os
 from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, UnifiedPortion, RecipeIngredient, MyMeal, MyMealItem, ExerciseActivity, ExerciseLog
 from sqlalchemy.orm import joinedload
@@ -100,7 +100,6 @@ def create_app(config_class=Config):
             test_user = User(username='markus')
             test_user.set_password('1')
             db.session.add(test_user)
-            db.session.commit()
             print(f"Created main test user: {test_user.username}")
 
             fake = Faker()
@@ -131,6 +130,7 @@ def create_app(config_class=Config):
                 print(f"Created test user{i}: {user.username}")
 
                 # UserGoal
+                current_app.logger.debug(f"UserGoal columns: {[c.name for c in UserGoal.__table__.columns]}")
                 # Get latest check-in for initial goal weight/body_fat, if available
                 latest_checkin = CheckIn.query.filter_by(user_id=user.id).order_by(CheckIn.checkin_date.desc()).first()
                 
@@ -139,9 +139,7 @@ def create_app(config_class=Config):
                     calories=random.randint(1800, 2500),
                     protein=random.randint(100, 200),
                     carbs=random.randint(200, 350),
-                    fat=random.randint(50, 100),
-                    initial_weight_kg=latest_checkin.weight_kg if latest_checkin else None,
-                    initial_body_fat_percentage=latest_checkin.body_fat_percentage if latest_checkin else None
+                    fat=random.randint(50, 100)
                 )
                 db.session.add(goal)
 
@@ -242,7 +240,10 @@ def create_app(config_class=Config):
                     
                     if random.random() < 0.8 and all_activities: # 80% chance to use a predefined activity
                         activity = random.choice(all_activities)
-                        calories_burned = int((activity.met_value * 3.5 * user.weight_kg_for_exercise_calc / 200) * duration) if user.weight_kg_for_exercise_calc else 0
+                        # Fetch the user's most recent weight for calorie calculation
+                        latest_checkin = CheckIn.query.filter_by(user_id=user.id).order_by(CheckIn.checkin_date.desc()).first()
+                        user_weight_kg = latest_checkin.weight_kg if latest_checkin else 70.0 # Default weight if no check-ins
+                        calories_burned = int((activity.met_value * 3.5 * user_weight_kg / 200) * duration)
                         exercise_log = ExerciseLog(
                             user_id=user.id,
                             log_date=log_date,

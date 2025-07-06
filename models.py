@@ -24,11 +24,6 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    @property
-    def weight_kg_for_exercise_calc(self):
-        latest_checkin = CheckIn.query.filter_by(user_id=self.id).order_by(CheckIn.checkin_date.desc()).first()
-        return latest_checkin.weight_kg if latest_checkin else 70.0 # Default weight if no check-ins
-
 class UserGoal(db.Model):
     __tablename__ = 'user_goals'
     id = db.Column(db.Integer, primary_key=True)
@@ -46,6 +41,41 @@ class CheckIn(db.Model):
     weight_kg = db.Column(db.Float)
     body_fat_percentage = db.Column(db.Float)
     waist_cm = db.Column(db.Float)
+
+class UnifiedPortion(db.Model):
+    __tablename__ = 'portions'
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Foreign Keys to link to different parent types
+    my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
+    fdc_id = db.Column(db.Integer, index=True, nullable=True) # Logical link to usda_data.db
+
+    # Common fields
+    seq_num = db.Column(db.Integer)
+    amount = db.Column(db.Float)
+    measure_unit_description = db.Column(db.String)
+    portion_description = db.Column(db.String)
+    modifier = db.Column(db.String)
+    gram_weight = db.Column(db.Float, nullable=False)
+    full_description = db.Column(db.String)
+
+    @property
+    def full_description_str(self):
+        parts = []
+        if self.amount:
+            # Format amount to avoid trailing .0 if it's a whole number
+            amount_str = f'{self.amount:.0f}' if self.amount == int(self.amount) else f'{self.amount:.2f}'
+            parts.append(amount_str)
+        if self.measure_unit_description:
+            parts.append(self.measure_unit_description)
+        if self.portion_description:
+            parts.append(self.portion_description)
+        if self.modifier:
+            parts.append(f"({self.modifier})")
+        
+        return " ".join(parts).strip()
+
 
 class MyFood(db.Model):
     __tablename__ = 'my_foods'
@@ -69,7 +99,7 @@ class MyFood(db.Model):
     calcium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     iron_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     potassium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
-    portions = db.relationship('UnifiedPortion', backref='my_food', cascade='all, delete-orphan')
+    portions = db.relationship('UnifiedPortion', foreign_keys=[UnifiedPortion.my_food_id], backref='my_food', cascade='all, delete-orphan')
 
 
 class DailyLog(db.Model):
@@ -92,7 +122,7 @@ class Recipe(db.Model):
     instructions = db.Column(db.Text)
     servings = db.Column(db.Float, default=1)
     ingredients = db.relationship('RecipeIngredient', backref='recipe', cascade="all, delete-orphan", foreign_keys='RecipeIngredient.recipe_id')
-    portions = db.relationship('UnifiedPortion', backref='recipe', cascade='all, delete-orphan')
+    portions = db.relationship('UnifiedPortion', foreign_keys=[UnifiedPortion.recipe_id], backref='recipe', cascade='all, delete-orphan')
 
 class RecipeIngredient(db.Model):
     __tablename__ = 'recipe_ingredients'
@@ -151,41 +181,6 @@ class ExerciseLog(db.Model):
     activity = db.relationship('ExerciseActivity')
 
 
-class UnifiedPortion(db.Model):
-    __tablename__ = 'portions'
-    id = db.Column(db.Integer, primary_key=True)
-    
-    # Foreign Keys to link to different parent types
-    my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
-    recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
-    fdc_id = db.Column(db.Integer, nullable=True) # Logical link to usda_data.db
-
-    # Common fields
-    seq_num = db.Column(db.Integer)
-    amount = db.Column(db.Float)
-    measure_unit_description = db.Column(db.String)
-    portion_description = db.Column(db.String)
-    modifier = db.Column(db.String)
-    gram_weight = db.Column(db.Float, nullable=False)
-    full_description = db.Column(db.String)
-
-    @property
-    def full_description_str(self):
-        parts = []
-        if self.amount:
-            # Format amount to avoid trailing .0 if it's a whole number
-            amount_str = f'{self.amount:.0f}' if self.amount == int(self.amount) else f'{self.amount:.2f}'
-            parts.append(amount_str)
-        if self.measure_unit_description:
-            parts.append(self.measure_unit_description)
-        if self.portion_description:
-            parts.append(self.portion_description)
-        if self.modifier:
-            parts.append(f"({self.modifier})")
-        
-        return " ".join(parts).strip()
-
-
 # --- USDA Data Models (USDA Bind) ---
 
 class Food(db.Model):
@@ -195,6 +190,12 @@ class Food(db.Model):
     description = db.Column(db.String, nullable=False)
     upc = db.Column(db.String, unique=True)
     ingredients = db.Column(db.String)
+    portions = db.relationship(
+        'UnifiedPortion',
+        primaryjoin="foreign(UnifiedPortion.fdc_id) == Food.fdc_id",
+        viewonly=True,
+        uselist=True
+    )
     nutrients = db.relationship('FoodNutrient', backref='food')
 
 class Nutrient(db.Model):
@@ -211,4 +212,5 @@ class FoodNutrient(db.Model):
     nutrient_id = db.Column(db.Integer, db.ForeignKey('nutrients.id'), primary_key=True)
     amount = db.Column(db.Float, nullable=False)
     nutrient = db.relationship('Nutrient', backref='food_nutrients')
+
 

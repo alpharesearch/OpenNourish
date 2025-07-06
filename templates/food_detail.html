@@ -25,9 +25,9 @@
 
             <h2>Portion Sizes</h2>
             <ul>
-                {% for portion in food.portions %}
+                {% for portion in portions %}
                     <li>
-                        {{ portion.full_description }}: {{ portion.gram_weight }}g
+                        {{ portion.full_description_str }}: {{ portion.gram_weight }}g
                     </li>
                 {% endfor %}
             </ul>
