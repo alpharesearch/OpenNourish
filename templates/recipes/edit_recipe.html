@@ -54,6 +54,7 @@
                 </div>
                 <div class="card-body">
                     <p>Define custom serving sizes for this recipe (e.g., "1 bowl", "1 slice").</p>
+                    {% if recipe %}
                     <form action="{{ url_for('recipes.add_recipe_portion', recipe_id=recipe.id) }}" method="POST">
                         {{ portion_form.hidden_tag() }}
                         <div class="row g-2 mb-2">
@@ -89,6 +90,9 @@
                         <li class="list-group-item p-1"><small>No custom portions defined.</small></li>
                         {% endfor %}
                     </ul>
+                    {% else %}
+                    <p>Save the recipe first to add custom portions.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -113,7 +117,7 @@
                             {% elif ingredient.recipe_id_link %}
                                 {{ ingredient.linked_recipe.name }} (Recipe)
                             {% endif %}
-                        </h5>
+                        </h6>
                         <small class="text-muted">
                             Calories: {{ ingredient.calories|default(0)|round(0) }} kcal |
                             Protein: {{ ingredient.protein|default(0)|round(1) }}g |
@@ -127,7 +131,7 @@
                             <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
                         </form>
                         <form action="{{ url_for('recipes.delete_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
                         </form>
                     </div>
                 </li>
