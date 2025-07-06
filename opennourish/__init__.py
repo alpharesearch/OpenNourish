@@ -131,12 +131,17 @@ def create_app(config_class=Config):
                 print(f"Created test user{i}: {user.username}")
 
                 # UserGoal
+                # Get latest check-in for initial goal weight/body_fat, if available
+                latest_checkin = CheckIn.query.filter_by(user_id=user.id).order_by(CheckIn.checkin_date.desc()).first()
+                
                 goal = UserGoal(
                     user_id=user.id,
                     calories=random.randint(1800, 2500),
                     protein=random.randint(100, 200),
                     carbs=random.randint(200, 350),
-                    fat=random.randint(50, 100)
+                    fat=random.randint(50, 100),
+                    initial_weight_kg=latest_checkin.weight_kg if latest_checkin else None,
+                    initial_body_fat_percentage=latest_checkin.body_fat_percentage if latest_checkin else None
                 )
                 db.session.add(goal)
 

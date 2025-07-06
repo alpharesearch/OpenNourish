@@ -161,6 +161,6 @@ def goals():
                 gender=current_user.gender,
                 body_fat_percentage=body_fat_for_bmr
             )
-        return render_template('goals/goals.html', form=form, bmr=bmr, latest_checkin_exists=bool(latest_checkin), diet_presets=Config.DIET_PRESETS)
+        return render_template('goals/goals.html', form=form, bmr=bmr, latest_checkin=latest_checkin, diet_presets=Config.DIET_PRESETS)
 
-    return render_template('goals/goals.html', form=form, bmr=bmr, latest_checkin_exists=bool(latest_checkin), diet_presets=Config.DIET_PRESETS)
+    return render_template('goals/goals.html', form=form, bmr=bmr, latest_checkin=latest_checkin, diet_presets=Config.DIET_PRESETS)

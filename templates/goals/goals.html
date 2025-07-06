@@ -45,14 +45,14 @@
         <div class="row">
             <div class="col-md-6 mb-3">
                 {{ form.weight_kg.label(class="form-label") }}
-                {{ form.weight_kg(class="form-control") }}
+                {{ form.weight_kg(class="form-control", value=latest_checkin.weight_kg if latest_checkin else '') }}
                 {% if form.weight_kg.errors %}
                     <div class="text-danger">{% for error in form.weight_kg.errors %}{{ error }}{% endfor %}</div>
                 {% endif %}
             </div>
             <div class="col-md-6 mb-3">
                 {{ form.body_fat_percentage.label(class="form-label") }}
-                {{ form.body_fat_percentage(class="form-control") }}
+                {{ form.body_fat_percentage(class="form-control", value=latest_checkin.body_fat_percentage if latest_checkin else '') }}
                 {% if form.body_fat_percentage.errors %}
                     <div class="text-danger">{% for error in form.body_fat_percentage.errors %}{{ error }}{% endfor %}</div>
                 {% endif %}

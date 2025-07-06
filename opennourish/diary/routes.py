@@ -2,6 +2,10 @@ from flask import render_template, request, redirect, url_for, flash, current_ap
 from flask_login import current_user, login_required
 from . import diary_bp
 from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog, UnifiedPortion
+from datetime import date, timedelta
+from opennourish.utils import calculate_nutrition_for_items, get_available_portions
+from .forms import MealForm, DailyLogForm, MealItemForm
+from sqlalchemy.orm import joinedload, selectinload
 
 from types import SimpleNamespace
 # ... (other imports)
