@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, Portion, MyPortion, RecipePortion
-from .forms import RecipeForm, IngredientForm, AddToLogForm, RecipePortionForm
+from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, UnifiedPortion
+from opennourish.my_foods.forms import PortionForm, MyFoodForm as RecipeForm
 from sqlalchemy.orm import joinedload, selectinload
 from datetime import date
 from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g, get_available_portions
@@ -31,7 +31,7 @@ def new_recipe():
         db.session.commit()
         flash('Recipe created successfully. Now add ingredients.', 'success')
         return redirect(url_for('recipes.edit_recipe', recipe_id=new_recipe.id))
-    return render_template('recipes/edit_recipe.html', form=form, recipe=None, portion_form=RecipePortionForm())
+    return render_template('recipes/edit_recipe.html', form=form, recipe=None, portion_form=PortionForm())
 
 @recipes_bp.route('/<int:recipe_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -65,7 +65,7 @@ def edit_recipe(recipe_id):
         return redirect(url_for('recipes.recipes'))
 
     form = RecipeForm(obj=recipe)
-    portion_form = RecipePortionForm()
+    portion_form = UnifiedPortionForm()
 
     if form.validate_on_submit():
         recipe.name = form.name.data
@@ -135,9 +135,9 @@ def update_ingredient(ingredient_id):
     gram_weight = 0
     if portion_id:
         if ingredient.fdc_id:
-            portion = Portion.query.filter_by(id=portion_id, fdc_id=ingredient.fdc_id).first()
+            portion = UnifiedPortion.query.filter_by(id=portion_id, fdc_id=ingredient.fdc_id).first()
         elif ingredient.my_food_id:
-            portion = MyPortion.query.filter_by(id=portion_id, my_food_id=ingredient.my_food_id).first()
+            portion = UnifiedPortion.query.filter_by(id=portion_id, my_food_id=ingredient.my_food_id).first()
         
         if portion:
             gram_weight = portion.gram_weight
@@ -225,7 +225,7 @@ def add_recipe_portion(recipe_id):
         flash('You are not authorized to modify this recipe.', 'danger')
         return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
-    form = RecipePortionForm()
+    form = UnifiedPortionForm()
     if form.validate_on_submit():
         # Construct the full description string
         desc_parts = []
@@ -251,7 +251,7 @@ def add_recipe_portion(recipe_id):
         
         full_description = " ".join(desc_parts)
 
-        new_portion = RecipePortion(
+        new_portion = UnifiedPortion(
             recipe_id=recipe.id,
             amount=form.amount.data,
             measure_unit_description=form.measure_unit_description.data,
@@ -305,7 +305,7 @@ def auto_add_recipe_portion(recipe_id):
         # Create a description like "1 of 4 servings"
         full_description = f"1 of {int(servings) if isinstance(servings, float) and servings.is_integer() else servings} {serving_text}"
 
-        new_portion = RecipePortion(
+        new_portion = UnifiedPortion(
             recipe_id=recipe.id,
             amount=1,
             measure_unit_description=f"of {int(servings) if isinstance(servings, float) and servings.is_integer() else servings} {serving_text}",
@@ -326,7 +326,7 @@ def auto_add_recipe_portion(recipe_id):
 @recipes_bp.route("/recipe/portion/delete/<int:portion_id>", methods=['POST'])
 @login_required
 def delete_recipe_portion(portion_id):
-    portion = RecipePortion.query.get_or_404(portion_id)
+    portion = UnifiedPortion.query.get_or_404(portion_id)
     recipe = portion.recipe
     if recipe.user_id != current_user.id:
         flash('You are not authorized to modify this recipe.', 'danger')

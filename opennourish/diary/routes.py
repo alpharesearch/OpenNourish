@@ -1,12 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, current_app
 from flask_login import current_user, login_required
 from . import diary_bp
-from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog
-from datetime import date, timedelta
-from opennourish.utils import calculate_nutrition_for_items, get_available_portions
-from .forms import MealForm, DailyLogForm, MealItemForm
-from sqlalchemy.orm import joinedload, selectinload
-from models import Portion, MyPortion
+from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog, UnifiedPortion
 
 from types import SimpleNamespace
 # ... (other imports)
@@ -283,18 +278,9 @@ def update_meal_item(item_id):
         if portion_id == 'g':
             amount_grams = quantity
         else:
-            if item.fdc_id:
-                portion = db.session.get(Portion, int(portion_id))
-                if portion:
-                    amount_grams = portion.gram_weight * quantity
-            elif item.my_food_id:
-                portion = db.session.get(MyPortion, int(portion_id))
-                if portion:
-                    amount_grams = portion.gram_weight * quantity
-            elif item.recipe_id:
-                portion = db.session.get(RecipePortion, int(portion_id))
-                if portion:
-                    amount_grams = portion.gram_weight * quantity
+            portion = db.session.get(UnifiedPortion, int(portion_id))
+            if portion:
+                amount_grams = portion.gram_weight * quantity
         
         if amount_grams > 0:
             item.amount_grams = amount_grams

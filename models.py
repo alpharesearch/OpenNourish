@@ -68,14 +68,7 @@ class MyFood(db.Model):
     calcium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     iron_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     potassium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
-    portions = db.relationship('MyPortion', backref='my_food', cascade='all, delete-orphan')
-
-class MyPortion(db.Model):
-    __tablename__ = 'my_portions'
-    id = db.Column(db.Integer, primary_key=True)
-    my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=False)
-    description = db.Column(db.String, nullable=False)
-    gram_weight = db.Column(db.Float, nullable=False)
+    portions = db.relationship('UnifiedPortion', backref='my_food', cascade='all, delete-orphan')
 
 
 class DailyLog(db.Model):
@@ -98,7 +91,7 @@ class Recipe(db.Model):
     instructions = db.Column(db.Text)
     servings = db.Column(db.Float, default=1)
     ingredients = db.relationship('RecipeIngredient', backref='recipe', cascade="all, delete-orphan", foreign_keys='RecipeIngredient.recipe_id')
-    portions = db.relationship('RecipePortion', backref='recipe', cascade='all, delete-orphan')
+    portions = db.relationship('UnifiedPortion', backref='recipe', cascade='all, delete-orphan')
 
 class RecipeIngredient(db.Model):
     __tablename__ = 'recipe_ingredients'
@@ -114,17 +107,6 @@ class RecipeIngredient(db.Model):
         return db.session.get(Food, self.fdc_id)
     my_food = db.relationship('MyFood', foreign_keys=[my_food_id])
     linked_recipe = db.relationship('Recipe', foreign_keys=[recipe_id_link])
-
-class RecipePortion(db.Model):
-    __tablename__ = 'recipe_portions'
-    id = db.Column(db.Integer, primary_key=True)
-    recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=False)
-    amount = db.Column(db.Float)
-    measure_unit_description = db.Column(db.String)
-    description = db.Column(db.String)
-    modifier = db.Column(db.String)
-    gram_weight = db.Column(db.Float, nullable=False)
-    full_description = db.Column(db.String)
 
 class MyMeal(db.Model):
     __tablename__ = 'my_meals'
@@ -168,6 +150,25 @@ class ExerciseLog(db.Model):
     activity = db.relationship('ExerciseActivity')
 
 
+class UnifiedPortion(db.Model):
+    __tablename__ = 'portions'
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Foreign Keys to link to different parent types
+    my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
+    fdc_id = db.Column(db.Integer, nullable=True) # Logical link to usda_data.db
+
+    # Common fields
+    seq_num = db.Column(db.Integer)
+    amount = db.Column(db.Float)
+    measure_unit_description = db.Column(db.String)
+    portion_description = db.Column(db.String)
+    modifier = db.Column(db.String)
+    gram_weight = db.Column(db.Float, nullable=False)
+    full_description = db.Column(db.String)
+
+
 # --- USDA Data Models (USDA Bind) ---
 
 class Food(db.Model):
@@ -178,7 +179,6 @@ class Food(db.Model):
     upc = db.Column(db.String, unique=True)
     ingredients = db.Column(db.String)
     nutrients = db.relationship('FoodNutrient', backref='food')
-    portions = db.relationship('Portion', backref='food')
 
 class Nutrient(db.Model):
     __bind_key__ = 'usda'
@@ -194,18 +194,4 @@ class FoodNutrient(db.Model):
     nutrient_id = db.Column(db.Integer, db.ForeignKey('nutrients.id'), primary_key=True)
     amount = db.Column(db.Float, nullable=False)
     nutrient = db.relationship('Nutrient', backref='food_nutrients')
-
-
-class Portion(db.Model):
-    __bind_key__ = 'usda'
-    __tablename__ = 'portions'
-    id = db.Column(db.Integer, primary_key=True)
-    fdc_id = db.Column(db.Integer, db.ForeignKey('foods.fdc_id'), nullable=False)
-    seq_num = db.Column(db.Integer)
-    amount = db.Column(db.Float)
-    measure_unit_description = db.Column(db.String)
-    portion_description = db.Column(db.String)
-    modifier = db.Column(db.String)
-    gram_weight = db.Column(db.Float, nullable=False)
-    full_description = db.Column(db.String)
 

@@ -1,6 +1,6 @@
 from flask import render_template, request, flash, redirect, url_for, current_app
 from . import search_bp
-from models import db, Food, MyFood, Recipe, MyMeal, DailyLog, RecipeIngredient, MyMealItem, Portion, MyPortion, FoodNutrient
+from models import db, Food, MyFood, Recipe, MyMeal, DailyLog, RecipeIngredient, MyMealItem, UnifiedPortion, FoodNutrient
 from flask_login import login_required, current_user
 from datetime import date
 from sqlalchemy.orm import joinedload, selectinload
@@ -460,7 +460,7 @@ def add_item():
 
                 # Copy portions
                 for portion in usda_food.portions:
-                    my_portion = MyPortion(
+                    my_portion = UnifiedPortion(
                         my_food_id=my_food.id,
                         description=portion.portion_description,
                         gram_weight=portion.gram_weight

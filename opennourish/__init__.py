@@ -1,6 +1,6 @@
 from flask import Flask
 import os
-from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, Portion, MyPortion, RecipePortion, RecipeIngredient, MyMeal, MyMealItem, ExerciseActivity, ExerciseLog
+from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, UnifiedPortion, RecipeIngredient, MyMeal, MyMealItem, ExerciseActivity, ExerciseLog
 from sqlalchemy.orm import joinedload
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -180,7 +180,7 @@ def create_app(config_class=Config):
 
                             # Copy portions from USDA food
                             for portion in usda_food.portions:
-                                my_portion = MyPortion(
+                                my_portion = UnifiedPortion(
                                     my_food_id=my_food.id,
                                     description=portion.portion_description or portion.measure_unit_description,
                                     gram_weight=portion.gram_weight
@@ -203,7 +203,7 @@ def create_app(config_class=Config):
 
                         # MyPortions for custom MyFood
                         if random.random() < 0.5:  # 50% chance to add a custom portion
-                            portion = MyPortion(
+                            portion = UnifiedPortion(
                                 my_food_id=my_food.id,
                                 description=random.choice(['cup', 'slice', 'serving', 'piece']),
                                 gram_weight=random.uniform(30, 200)
@@ -298,7 +298,7 @@ def create_app(config_class=Config):
                     amount = random.randint(1, 8)
                     measure_unit = random.choice(['bowl', 'plate', 'cup', 'serving'])
                     
-                    new_portion = RecipePortion(
+                    new_portion = UnifiedPortion(
                         recipe_id=r.id,
                         amount=amount,
                         measure_unit_description=measure_unit,
@@ -413,5 +413,100 @@ def create_app(config_class=Config):
 
             db.session.commit()
             print(f"Database seeded with {users_created} users, {my_foods_created} MyFoods, {check_ins_created} CheckIns, {recipes_created} Recipes, {my_meals_created} MyMeals, {my_meal_items_created} MyMealItems, {daily_logs_created} Daily Logs, and {exercise_logs_created} Exercise Logs.")
+
+    @app.cli.command("seed-usda-portions")
+    def seed_usda_portions_command():
+        """Seeds USDA food portions into the unified portions table in the user database."""
+        import csv
+        import os
+        import sqlite3 # For reading usda_data.db directly
+
+        with app.app_context():
+            print("Seeding USDA portions...")
+
+            # 1. Delete existing USDA-linked portions from the user database
+            # This ensures idempotency for USDA portions
+            deleted_count = UnifiedPortion.query.filter(UnifiedPortion.fdc_id.isnot(None)).delete()
+            db.session.commit()
+            print(f"Deleted {deleted_count} existing USDA-linked portions from user_data.db.")
+
+            usda_data_dir = 'usda_data'
+            usda_db_file = os.path.join(os.getcwd(), 'usda_data.db')
+
+            if not os.path.exists(usda_db_file):
+                print(f"Error: USDA database not found at {usda_db_file}. Please run 'python import_usda_data.py' first.")
+                return
+
+            # Load measure units from CSV for efficient lookup
+            measure_units = {}
+            measure_unit_csv_path = os.path.join(usda_data_dir, 'measure_unit.csv')
+            if not os.path.exists(measure_unit_csv_path):
+                print(f"Error: measure_unit.csv not found at {measure_unit_csv_path}.")
+                return
+            with open(measure_unit_csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader) # Skip header
+                for row in reader:
+                    measure_units[row[0]] = row[1]
+            print(f"Loaded {len(measure_units)} measure units from CSV.")
+
+            portions_to_add = []
+            food_portion_csv_path = os.path.join(usda_data_dir, 'food_portion.csv')
+
+            if not os.path.exists(food_portion_csv_path):
+                print(f"Error: food_portion.csv not found at {food_portion_csv_path}.")
+                return
+
+            with open(food_portion_csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader) # Skip header
+                for row in reader:
+                    fdc_id = int(row[1])
+                    seq_num = int(row[2]) if row[2] else None
+                    amount_str = row[3]
+                    measure_unit_id = row[4]
+                    portion_description = row[5]
+                    modifier = row[6]
+                    gram_weight = float(row[7])
+
+                    # Construct the full description string
+                    desc_parts = []
+                    if amount_str:
+                        try:
+                            amount_float = float(amount_str)
+                            if amount_float.is_integer():
+                                desc_parts.append(str(int(amount_float)))
+                            else:
+                                desc_parts.append(str(amount_float))
+                        except ValueError:
+                            desc_parts.append(amount_str)
+                    
+                    unit_name = measure_units.get(measure_unit_id)
+                    if unit_name and measure_unit_id != '9999':
+                        desc_parts.append(unit_name)
+
+                    if portion_description:
+                        desc_parts.append(portion_description)
+                    
+                    if modifier:
+                        desc_parts.append(modifier)
+                    
+                    full_description = " ".join(desc_parts)
+
+                    portion = UnifiedPortion(
+                        fdc_id=fdc_id,
+                        seq_num=seq_num,
+                        amount=float(amount_str) if amount_str else None,
+                        measure_unit_description=measure_units.get(measure_unit_id, "") if measure_unit_id != '9999' else "",
+                        portion_description=portion_description,
+                        modifier=modifier,
+                        gram_weight=gram_weight,
+                        full_description=full_description
+                    )
+                    portions_to_add.append(portion)
+            
+            db.session.add_all(portions_to_add)
+            db.session.commit()
+            print(f"Successfully added {len(portions_to_add)} USDA portions to the user database.")
 
     return app

@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, Blueprint
 from flask_login import login_required, current_user
-from models import db, MyFood, Food, Nutrient, FoodNutrient, Portion, MyPortion
-from opennourish.my_foods.forms import MyFoodForm, MyPortionForm
+from models import db, MyFood, Food, Nutrient, FoodNutrient, UnifiedPortion
+from opennourish.my_foods.forms import MyFoodForm, PortionForm
 from sqlalchemy.orm import joinedload
 
 my_foods_bp = Blueprint('my_foods', __name__, template_folder='templates')
@@ -47,7 +47,7 @@ def new_my_food():
 def edit_my_food(food_id):
     my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
     form = MyFoodForm(obj=my_food)
-    portion_form = MyPortionForm()
+    portion_form = PortionForm()
 
     if form.validate_on_submit():
         form.populate_obj(my_food)
@@ -72,9 +72,9 @@ def delete_my_food(food_id):
 @login_required
 def add_my_food_portion(food_id):
     my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
-    form = MyPortionForm()
+    form = PortionForm()
     if form.validate_on_submit():
-        new_portion = MyPortion(
+        new_portion = UnifiedPortion(
             my_food_id=my_food.id,
             description=form.description.data,
             gram_weight=form.gram_weight.data
@@ -89,7 +89,7 @@ def add_my_food_portion(food_id):
 @my_foods_bp.route('/delete_portion/<int:portion_id>', methods=['POST'])
 @login_required
 def delete_my_food_portion(portion_id):
-    portion = MyPortion.query.get_or_404(portion_id)
+    portion = UnifiedPortion.query.get_or_404(portion_id)
     if portion.my_food.user_id != current_user.id:
         flash('You are not authorized to delete this portion.', 'danger')
         return redirect(url_for('my_foods.my_foods'))

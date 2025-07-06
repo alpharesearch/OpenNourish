@@ -144,62 +144,7 @@ def import_usda_data(db_file=None, keep_newest_upc_only=False):
             print(f"-> Imported {len(to_insert)} unique food nutrients.")
             print(f"-> Skipped {skipped} duplicate entries.")
 
-            # --- FINAL FIX FOR 'portions' TABLE - PROVIDES ALL COLUMNS ---
-            print("\nPopulating 'portions' table...")
-
-            # Load measure units into memory for efficient lookup
-            print("\nLoading 'measure_units'...")
-            measure_units = {}
-            with open(os.path.join(usda_data_dir, 'measure_unit.csv'), 'r', encoding='utf-8') as f:
-                reader = csv.reader(f)
-                next(reader) # Skip header
-                for row in reader:
-                    measure_units[row[0]] = row[1] # id -> name
-            print(f"-> Loaded {len(measure_units)} measure units.")
-            portions_data = []
-            with open(os.path.join(usda_data_dir, 'food_portion.csv'), 'r', encoding='utf-8') as f:
-                reader = csv.reader(f)
-                next(reader)
-                for row in reader:
-                    # Original data
-                    fdc_id = row[1]
-                    seq_num = row[2]
-                    amount_str = row[3]
-                    measure_unit_id = row[4]
-                    portion_description = row[5]
-                    modifier = row[6]
-                    gram_weight = row[7]
-
-                    # Construct the full description string
-                    desc_parts = []
-                    if amount_str:
-                        try:
-                            # Format numbers to be more readable (e.g., "1.0" -> "1")
-                            amount_float = float(amount_str)
-                            if amount_float.is_integer():
-                                desc_parts.append(str(int(amount_float)))
-                            else:
-                                desc_parts.append(str(amount_float))
-                        except ValueError:
-                            desc_parts.append(amount_str) # Append as is if not a number
-                    
-                    unit_name = measure_units.get(measure_unit_id)
-                    if unit_name and measure_unit_id != '9999':
-                        desc_parts.append(unit_name)
-
-                    if portion_description:
-                        desc_parts.append(portion_description)
-                    
-                    if modifier:
-                        desc_parts.append(modifier)
-                    
-                    full_description = " ".join(desc_parts)
-                    
-                    measure_unit_desc = measure_units.get(measure_unit_id, "") if measure_unit_id != '9999' else ""
-                    portions_data.append((fdc_id, seq_num, amount_str, measure_unit_desc, portion_description, modifier, gram_weight, full_description))
-
-            cursor.executemany("INSERT INTO portions (fdc_id, seq_num, amount, measure_unit_description, portion_description, modifier, gram_weight, full_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", portions_data)
-            print(f"-> Imported {len(portions_data)} food portions.")
+            
 
         print("\n--- Import successful. Database is ready. ---")
         conn.close()

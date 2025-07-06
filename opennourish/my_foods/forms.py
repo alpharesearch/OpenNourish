@@ -23,7 +23,7 @@ class MyFoodForm(FlaskForm):
     potassium_mg_per_100g = FloatField('Potassium (mg per 100g)', validators=[Optional(), NumberRange(min=0)], default=0.0)
     submit = SubmitField('Save Food')
 
-class MyPortionForm(FlaskForm):
+class PortionForm(FlaskForm):
     description = StringField('Portion Description', validators=[DataRequired()])
     gram_weight = FloatField('Gram Weight', validators=[DataRequired(), NumberRange(min=0.01)])
     submit = SubmitField('Add Portion')
