@@ -122,7 +122,7 @@ def test_diet_preset_prefills_form(auth_client):
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
         # Ensure a UserGoal exists for the user
-        user_goal = UserGoal(user_id=user.id)
+        user_goal = UserGoal(user_id=user.id, calories=100, protein=10, carbs=10, fat=10)
         db.session.add(user_goal)
         db.session.commit()
 

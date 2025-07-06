@@ -63,30 +63,25 @@ def goals():
             db.session.add(new_checkin)
             flash('New check-in entry created!', 'info')
 
-        # Handle diet preset selection
-        if form.diet_preset.data and form.diet_preset.data in Config.DIET_PRESETS:
-            preset = Config.DIET_PRESETS[form.diet_preset.data]
-            form.calories.data = preset['calories']
-            form.protein.data = preset['protein']
-            form.carbs.data = preset['carbs']
-            form.fat.data = preset['fat']
-
-        # Handle diet preset selection
-        if form.diet_preset.data and form.diet_preset.data in Config.DIET_PRESETS:
-            preset = Config.DIET_PRESETS[form.diet_preset.data]
-            form.calories.data = preset['calories']
-            form.protein.data = preset['protein']
-            form.carbs.data = preset['carbs']
-            form.fat.data = preset['fat']
+        
 
         # Update UserGoal model fields
-        if user_goal:
-            pass # Populate after preset application
-        else:
+        if not user_goal:
             user_goal = UserGoal(user_id=current_user.id)
             db.session.add(user_goal)
 
-        form.populate_obj(user_goal) # Populate after preset application
+        # Handle diet preset selection
+        if form.diet_preset.data and form.diet_preset.data in Config.DIET_PRESETS:
+            preset = Config.DIET_PRESETS[form.diet_preset.data]
+            user_goal.calories = preset['calories']
+            user_goal.protein = preset['protein']
+            user_goal.carbs = preset['carbs']
+            user_goal.fat = preset['fat']
+        else:
+            user_goal.calories = form.calories.data
+            user_goal.protein = form.protein.data
+            user_goal.carbs = form.carbs.data
+            user_goal.fat = form.fat.data
         
         db.session.commit()
         flash('Goals and personal info updated!', 'success')
