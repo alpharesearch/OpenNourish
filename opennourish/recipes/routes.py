@@ -1,7 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, UnifiedPortion
-from opennourish.my_foods.forms import PortionForm, MyFoodForm as RecipeForm
+from opennourish.recipes.forms import RecipeForm
+from opennourish.recipes.forms import RecipeForm
+from opennourish.recipes.forms import RecipeForm
+from opennourish.recipes.forms import RecipeForm
+from opennourish.my_foods.forms import PortionForm
 from sqlalchemy.orm import joinedload, selectinload
 from datetime import date
 from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g, get_available_portions
@@ -65,15 +69,36 @@ def edit_recipe(recipe_id):
         return redirect(url_for('recipes.recipes'))
 
     form = RecipeForm(obj=recipe)
+    servings_param = request.args.get('servings_param', type=float)
+    name_param = request.args.get('name_param', type=str)
+    instructions_param = request.args.get('instructions_param', type=str)
+
+    if servings_param is not None:
+        form.servings.data = servings_param
+    if name_param is not None:
+        form.name.data = name_param
+    if instructions_param is not None:
+        form.instructions.data = instructions_param
+
     portion_form = PortionForm()
 
     if form.validate_on_submit():
-        recipe.name = form.name.data
-        recipe.instructions = form.instructions.data
-        recipe.servings = form.servings.data
+        form.populate_obj(recipe)
         db.session.commit()
         flash('Recipe updated successfully.', 'success')
         return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
+    # If it's a POST request but not a form submission (e.g., auto_add_portion), 
+    # or if form validation fails, ensure form fields are populated from request.form
+    # to retain user input.
+    if request.method == 'POST':
+        form = RecipeForm(request.form, obj=recipe)
+        if servings_param is not None:
+            form.servings.data = servings_param
+        if name_param is not None:
+            form.name.data = name_param
+        if instructions_param is not None:
+            form.instructions.data = instructions_param
 
     query = request.args.get('q')
     search_results = []
@@ -217,6 +242,43 @@ def delete_recipe(recipe_id):
     return redirect(url_for('recipes.recipes'))
 
 
+@recipes_bp.route("/recipe/portion/auto_add/<int:recipe_id>", methods=['POST'])
+@login_required
+def auto_add_recipe_portion(recipe_id):
+    recipe = Recipe.query.options(selectinload(Recipe.ingredients)).get_or_404(recipe_id)
+    if recipe.user_id != current_user.id:
+        flash('You are not authorized to modify this recipe.', 'danger')
+        return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
+    servings_from_form = request.form.get('servings', type=float)
+    if servings_from_form is None or servings_from_form <= 0:
+        flash('Invalid servings value provided.', 'danger')
+        return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
+    total_gram_weight = sum(ing.amount_grams for ing in recipe.ingredients)
+    gram_weight_per_serving = total_gram_weight / servings_from_form
+
+    new_portion = UnifiedPortion(
+        recipe_id=recipe.id,
+        my_food_id=None,
+        fdc_id=None,
+        amount=1.0,
+        measure_unit_description="serving",
+        portion_description=None,
+        modifier=None,
+        gram_weight=gram_weight_per_serving
+    )
+    new_portion.full_description = new_portion.full_description_str
+    db.session.add(new_portion)
+    db.session.commit()
+    name_from_form = request.form.get('name', type=str)
+    instructions_from_form = request.form.get('instructions', type=str)
+
+    # ... (existing code)
+
+    return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id, servings_param=servings_from_form, name_param=name_from_form, instructions_param=instructions_from_form))
+
+
 @recipes_bp.route("/recipe/portion/add/<int:recipe_id>", methods=['POST'])
 @login_required
 def add_recipe_portion(recipe_id):
@@ -237,6 +299,7 @@ def add_recipe_portion(recipe_id):
             modifier=form.modifier.data,
             gram_weight=form.gram_weight.data
         )
+        new_portion.full_description = new_portion.full_description_str
         db.session.add(new_portion)
         db.session.commit()
         flash('Recipe portion added.', 'success')
@@ -247,6 +310,27 @@ def add_recipe_portion(recipe_id):
                 flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
 
     return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
+
+@recipes_bp.route("/recipe/portion/update/<int:portion_id>", methods=['POST'])
+@login_required
+def update_recipe_portion(portion_id):
+    portion = db.session.get(UnifiedPortion, portion_id)
+    if not portion or portion.recipe.user_id != current_user.id:
+        flash('Portion not found or you do not have permission to edit it.', 'danger')
+        return redirect(url_for('recipes.recipes'))
+
+    form = PortionForm(request.form, obj=portion)
+    if form.validate_on_submit():
+        form.populate_obj(portion)
+        portion.full_description = portion.full_description_str
+        db.session.commit()
+        flash('Portion updated successfully!', 'success')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
+    return redirect(url_for('recipes.edit_recipe', recipe_id=portion.recipe_id))
 
 
 @recipes_bp.route("/recipe/portion/delete/<int:portion_id>", methods=['POST'])
