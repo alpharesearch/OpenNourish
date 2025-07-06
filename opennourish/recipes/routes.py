@@ -38,6 +38,7 @@ def new_recipe():
 def edit_recipe(recipe_id):
     recipe = Recipe.query.options(
         selectinload(Recipe.ingredients).selectinload(RecipeIngredient.my_food).selectinload(MyFood.portions),
+        selectinload(Recipe.ingredients).selectinload(RecipeIngredient.linked_recipe), # Load linked recipes
         selectinload(Recipe.portions)
     ).get_or_404(recipe_id)
 
@@ -50,6 +51,14 @@ def edit_recipe(recipe_id):
     for ing in recipe.ingredients:
         if ing.fdc_id:
             ing.usda_food = usda_foods_map.get(ing.fdc_id)
+        
+        # Calculate nutrition for each individual ingredient
+        # calculate_nutrition_for_items expects a list of items, so wrap the single ingredient
+        ingredient_nutrition = calculate_nutrition_for_items([ing])
+        ing.calories = ingredient_nutrition['calories']
+        ing.protein = ingredient_nutrition['protein']
+        ing.carbs = ingredient_nutrition['carbs']
+        ing.fat = ingredient_nutrition['fat']
 
     if recipe.user_id != current_user.id:
         flash('You are not authorized to edit this recipe.', 'danger')
@@ -279,7 +288,7 @@ def auto_add_recipe_portion(recipe_id):
         recipe.instructions = form.instructions.data
         recipe.servings = form.servings.data
         db.session.commit()
-        flash('Recipe details saved.', 'info')
+        flash('Recipe details saved.', 'success')
     else:
         flash('Could not save recipe details before creating portion.', 'warning')
 
