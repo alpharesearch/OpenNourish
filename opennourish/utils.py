@@ -7,18 +7,47 @@ import tempfile
 import os
 from types import SimpleNamespace
 
-def calculate_bmr(weight_kg, height_cm, age, gender):
+def calculate_bmr(weight_kg, height_cm, age, gender, body_fat_percentage=None):
     """
-    Calculates Basal Metabolic Rate (BMR) using the Mifflin-St Jeor equation.
-    Weight in kg, Height in cm, Age in years.
+    Calculates Basal Metabolic Rate (BMR).
+    Uses Katch-McArdle formula if body_fat_percentage is provided, otherwise Mifflin-St Jeor.
+    Returns a tuple of (bmr, formula_name).
     """
-    if gender == 'Male':
-        bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) + 5
-    elif gender == 'Female':
-        bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) - 161
+    if body_fat_percentage is not None and body_fat_percentage > 0:
+        lean_body_mass = weight_kg * (1 - (body_fat_percentage / 100))
+        bmr = 370 + (21.6 * lean_body_mass)
+        formula_name = "Katch-McArdle"
     else:
-        return None # Or raise an error for invalid gender
-    return bmr
+        formula_name = "Mifflin-St Jeor"
+        if gender == 'Male':
+            bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) + 5
+        elif gender == 'Female':
+            bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) - 161
+        else:
+            return None, None # Or raise an error for invalid gender
+    return bmr, formula_name
+
+def calculate_goals_from_preset(bmr, preset_name):
+    """
+    Calculates nutritional goals based on a BMR and a diet preset.
+    """
+    preset = Config.DIET_PRESETS.get(preset_name)
+    if not preset:
+        return None
+
+    # For simplicity, we'll use BMR as the calorie target.
+    # In a real app, you might add an activity multiplier.
+    calories = bmr
+    protein_grams = (calories * preset['protein']) / 4
+    carbs_grams = (calories * preset['carbs']) / 4
+    fat_grams = (calories * preset['fat']) / 9
+
+    return {
+        'calories': round(calories),
+        'protein': round(protein_grams),
+        'carbs': round(carbs_grams),
+        'fat': round(fat_grams)
+    }
 
 def get_available_portions(food_item):
     """

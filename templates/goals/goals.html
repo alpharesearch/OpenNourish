@@ -6,62 +6,63 @@
 <div class="container">
     <h1 class="mb-4">Set Your Nutritional Goals</h1>
     <form method="POST" action="{{ url_for('goals.goals') }}">
+        {% if not testing %}
         {{ form.hidden_tag() }}
+        {% endif %}
 
         <h2 class="mt-4 mb-3">Personal Information</h2>
-        <div class="mb-3">
-            {{ form.age.label(class="form-label") }}
-            {{ form.age(class="form-control") }}
-            {% if form.age.errors %}
-                <div class="text-danger">{% for error in form.age.errors %}{{ error }}{% endfor %}</div>
-            {% endif %}
-        </div>
-        <div class="mb-3">
-            {{ form.gender.label(class="form-label") }}
-            <div>
-                {% for subfield in form.gender %}
-                    <div class="form-check form-check-inline">
-                        {{ subfield(class="form-check-input") }}
-                        {{ subfield.label(class="form-check-label") }}
-                    </div>
-                {% endfor %}
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                {{ form.age.label(class="form-label") }}
+                {{ form.age(class="form-control") }}
+                {% if form.age.errors %}
+                    <div class="text-danger">{% for error in form.age.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
             </div>
-            {% if form.gender.errors %}
-                <div class="text-danger">{% for error in form.gender.errors %}{{ error }}{% endfor %}</div>
-            {% endif %}
-        </div>
-        <div class="mb-3">
-            {{ form.height_cm.label(class="form-label") }}
-            {{ form.height_cm(class="form-control") }}
-            {% if form.height_cm.errors %}
-                <div class="text-danger">{% for error in form.height_cm.errors %}{{ error }}{% endfor %}</div>
-            {% endif %}
+            <div class="col-md-4 mb-3">
+                {{ form.gender.label(class="form-label") }}
+                <div>
+                    {% for subfield in form.gender %}
+                        <div class="form-check form-check-inline">
+                            {{ subfield(class="form-check-input") }}
+                            {{ subfield.label(class="form-check-label") }}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if form.gender.errors %}
+                    <div class="text-danger">{% for error in form.gender.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+                {{ form.height_cm.label(class="form-label") }}
+                {{ form.height_cm(class="form-control") }}
+                {% if form.height_cm.errors %}
+                    <div class="text-danger">{% for error in form.height_cm.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
         </div>
 
-        {% if not latest_checkin_exists %}
-        <h3 class="mt-4 mb-3">Initial Check-in (No previous data found)</h3>
-        <div class="mb-3">
-            {{ form.weight_kg.label(class="form-label") }}
-            {{ form.weight_kg(class="form-control") }}
-            {% if form.weight_kg.errors %}
-                <div class="text-danger">{% for error in form.weight_kg.errors %}{{ error }}{% endfor %}</div>
-            {% endif %}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form.weight_kg.label(class="form-label") }}
+                {{ form.weight_kg(class="form-control") }}
+                {% if form.weight_kg.errors %}
+                    <div class="text-danger">{% for error in form.weight_kg.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                {{ form.body_fat_percentage.label(class="form-label") }}
+                {{ form.body_fat_percentage(class="form-control") }}
+                {% if form.body_fat_percentage.errors %}
+                    <div class="text-danger">{% for error in form.body_fat_percentage.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
         </div>
-        <div class="mb-3">
-            {{ form.body_fat_percentage.label(class="form-label") }}
-            {{ form.body_fat_percentage(class="form-control") }}
-            {% if form.body_fat_percentage.errors %}
-                <div class="text-danger">{% for error in form.body_fat_percentage.errors %}{{ error }}{% endfor %}</div>
-            {% endif %}
-        </div>
-        {% endif %}
 
-        {% if bmr %}
-        <div class="alert alert-info mt-4" role="alert">
-            Your estimated Basal Metabolic Rate (BMR) is: <strong>{{ "%.0f"|format(bmr) }} kcal/day</strong>.
-            This is the number of calories your body burns at rest.
+        <div class="alert alert-info mt-4" id="bmr-display" style="display: none;" role="alert">
+            Your estimated Basal Metabolic Rate (BMR) is: <strong id="bmr-value"></strong> kcal/day.
+            <small class="d-block">Calculated using the <strong id="bmr-formula"></strong> formula.</small>
         </div>
-        {% endif %}
 
         <h2 class="mt-4 mb-3">Nutritional Goals</h2>
         <div class="mb-3">
@@ -71,33 +72,37 @@
                 <div class="text-danger">{% for error in form.diet_preset.errors %}{{ error }}{% endfor %}</div>
             {% endif %}
         </div>
-        <div class="mb-3">
-            {{ form.calories.label(class="form-label") }}
-            {{ form.calories(class="form-control") }}
-            {% if form.calories.errors %}
-                <div class="text-danger">{% for error in form.calories.errors %}{{ error }}{% endfor %}</div>
-            {% endif %}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form.calories.label(class="form-label") }}
+                {{ form.calories(class="form-control", value=user_goal.calories if user_goal else '') }}
+                {% if form.calories.errors %}
+                    <div class="text-danger">{% for error in form.calories.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                {{ form.protein.label(class="form-label") }}
+                {{ form.protein(class="form-control", value=user_goal.protein if user_goal else '') }}
+                {% if form.protein.errors %}
+                    <div class="text-danger">{% for error in form.protein.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
         </div>
-        <div class="mb-3">
-            {{ form.protein.label(class="form-label") }}
-            {{ form.protein(class="form-control") }}
-            {% if form.protein.errors %}
-                <div class="text-danger">{% for error in form.protein.errors %}{{ error }}{% endfor %}</div>
-            {% endif %}
-        </div>
-        <div class="mb-3">
-            {{ form.carbs.label(class="form-label") }}
-            {{ form.carbs(class="form-control") }}
-            {% if form.carbs.errors %}
-                <div class="text-danger">{% for error in form.carbs.errors %}{{ error }}{% endfor %}</div>
-            {% endif %}
-        </div>
-        <div class="mb-3">
-            {{ form.fat.label(class="form-label") }}
-            {{ form.fat(class="form-control") }}
-            {% if form.fat.errors %}
-                <div class="text-danger">{% for error in form.fat.errors %}{{ error }}{% endfor %}</div>
-            {% endif %}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form.carbs.label(class="form-label") }}
+                {{ form.carbs(class="form-control", value=user_goal.carbs if user_goal else '') }}
+                {% if form.carbs.errors %}
+                    <div class="text-danger">{% for error in form.carbs.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                {{ form.fat.label(class="form-label") }}
+                {{ form.fat(class="form-control", value=user_goal.fat if user_goal else '') }}
+                {% if form.fat.errors %}
+                    <div class="text-danger">{% for error in form.fat.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
         </div>
         <button type="submit" class="btn btn-outline-success">Save Goals</button>
     </form>
@@ -110,7 +115,6 @@
         const proteinField = document.getElementById('protein');
         const carbsField = document.getElementById('carbs');
         const fatField = document.getElementById('fat');
-
         const dietPresets = {{ diet_presets | tojson }};
 
         dietPresetSelect.addEventListener('change', function() {
@@ -123,6 +127,64 @@
                 fatField.value = preset.fat;
             }
         });
+
+        const bmrFields = ['age', 'height_cm', 'weight_kg', 'body_fat_percentage'];
+        const bmrDisplay = document.getElementById('bmr-display');
+        const bmrValue = document.getElementById('bmr-value');
+        const bmrFormula = document.getElementById('bmr-formula');
+
+        function calculateBmrAndGoals() {
+            const age = document.getElementById('age').value;
+            const gender = document.querySelector('input[name="gender"]:checked')?.value;
+            const height_cm = document.getElementById('height_cm').value;
+            const weight_kg = document.getElementById('weight_kg')?.value;
+            const body_fat_percentage = document.getElementById('body_fat_percentage')?.value;
+            const diet_preset = dietPresetSelect.value;
+
+            if (age && gender && height_cm && weight_kg) {
+                fetch('{{ url_for("goals.calculate_bmr_route") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ form.csrf_token._value() }}'
+                    },
+                    body: JSON.stringify({ age, gender, height_cm, weight_kg, body_fat_percentage, diet_preset })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.bmr) {
+                        bmrValue.textContent = data.bmr.toFixed(0);
+                        bmrFormula.textContent = data.formula;
+                        bmrDisplay.style.display = 'block';
+
+                        if (data.adjusted_goals) {
+                            caloriesField.value = data.adjusted_goals.calories;
+                            proteinField.value = data.adjusted_goals.protein;
+                            carbsField.value = data.adjusted_goals.carbs;
+                            fatField.value = data.adjusted_goals.fat;
+                        }
+                    } else {
+                        bmrDisplay.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        bmrFields.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', calculateBmrAndGoals);
+            }
+        });
+
+        document.querySelectorAll('input[name="gender"]').forEach(radio => {
+            radio.addEventListener('change', calculateBmrAndGoals);
+        });
+
+        dietPresetSelect.addEventListener('change', calculateBmrAndGoals);
+
+        // Initial calculation on page load
+        calculateBmrAndGoals();
     });
 </script>
 {% endblock %}

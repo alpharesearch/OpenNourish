@@ -14,10 +14,10 @@ class Config:
     }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DIET_PRESETS = {
-        'SAD': {'calories': 2000, 'protein': 75, 'carbs': 275, 'fat': 65},
-        'Keto': {'calories': 1800, 'protein': 100, 'carbs': 20, 'fat': 150},
-        'Paleo': {'calories': 2200, 'protein': 120, 'carbs': 150, 'fat': 100},
-        'Mediterranean': {'calories': 2100, 'protein': 90, 'carbs': 250, 'fat': 80}
+        'SAD': {'protein': 0.15, 'carbs': 0.50, 'fat': 0.35},
+        'Keto': {'protein': 0.20, 'carbs': 0.05, 'fat': 0.75},
+        'Paleo': {'protein': 0.30, 'carbs': 0.30, 'fat': 0.40},
+        'Mediterranean': {'protein': 0.20, 'carbs': 0.40, 'fat': 0.40}
     }
     CORE_NUTRIENT_IDS = {
         'calories': 1008,
