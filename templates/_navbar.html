@@ -51,7 +51,7 @@
         {# The .navbar-nav class will automatically handle wrapping on small screens. #}
         <ul class="navbar-nav flex-row flex-wrap">
             {# --- Food Sub-Menu --- #}
-            {% if request.blueprint in ['diary', 'my_foods', 'recipes', 'search'] %}
+            {% if request.blueprint in ['diary', 'my_foods', 'recipes', 'search', 'main'] %}
                 <li class="nav-item">
                     <a class="nav-link px-2 {% if request.endpoint.startswith('diary.') and 'my_meals' not in request.endpoint %}active{% endif %}" href="{{ url_for('diary.diary') }}">Food Diary</a>
                 </li>

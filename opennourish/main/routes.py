@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, send_file, current_app
 from flask_login import current_user
 from models import db, Food, UnifiedPortion
 from sqlalchemy.orm import sessionmaker
@@ -17,6 +17,7 @@ def index():
 @main_bp.route('/food/<int:fdc_id>')
 def food_detail(fdc_id):
     q = request.args.get('q')
+    current_app.logger.debug(f"Debug: In food_detail, received q: {q}")
     food = db.session.get(Food, fdc_id)
     if not food:
         return "Food not found", 404
