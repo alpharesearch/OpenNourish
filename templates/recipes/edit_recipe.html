@@ -66,7 +66,7 @@
                             </div>
                         </div>
                         <div class="mb-2">
-                            {{ portion_form.description(class="form-control form-control-sm", placeholder="Description (e.g., large, chopped)") }}
+                            {{ portion_form.portion_description(class="form-control form-control-sm", placeholder="Description (e.g., large, chopped)") }}
                         </div>
                         <div class="mb-2">
                             {{ portion_form.modifier(class="form-control form-control-sm", placeholder="Modifier (e.g., raw, cooked)") }}
@@ -81,7 +81,7 @@
                     <ul class="list-group list-group-flush">
                         {% for portion in recipe.portions %}
                         <li class="list-group-item d-flex justify-content-between align-items-center p-1">
-                            <small>{{ portion.full_description }} ({{ '%.1f'|format(portion.gram_weight) }}g)</small>
+                            <small>{{ portion.portion_description }} ({{ '%.1f'|format(portion.gram_weight) }}g)</small>
                             <form action="{{ url_for('recipes.delete_recipe_portion', portion_id=portion.id) }}" method="POST">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
                             </form>
@@ -126,13 +126,17 @@
                         </small>
                     </div>
                     <div class="d-flex gap-2">
-                        <form action="{{ url_for('recipes.update_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-flex align-items-center gap-2">
-                            <input type="number" step="any" name="quantity" class="form-control form-control-sm" style="width: 100px;" value="{{ '%.2f'|format(ingredient.amount_grams) }}">
-                            <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
-                        </form>
-                        <form action="{{ url_for('recipes.delete_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
-                        </form>
+                        <div>
+                            <form action="{{ url_for('recipes.update_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-flex align-items-center gap-2">
+                                <input type="number" step="any" name="quantity" class="form-control form-control-sm" style="width: 100px;" value="{{ '%.2f'|format(ingredient.amount_grams) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
+                            </form>
+                        </div>
+                        <div>
+                            <form action="{{ url_for('recipes.delete_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
+                            </form>
+                        </div>
                     </div>
                 </li>
                 {% else %}
@@ -172,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
         autoPortionBtn.addEventListener('click', function(event) {
             event.preventDefault(); // Stop the form from submitting to the default action
             var form = document.getElementById('recipe-details-form');
-            form.action = "{{ url_for('recipes.auto_add_recipe_portion', recipe_id=recipe.id) }}";
+            form.action = "{{ url_for('recipes.add_recipe_portion', recipe_id=recipe.id) }}";
             form.submit();
         });
     }

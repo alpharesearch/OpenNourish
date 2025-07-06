@@ -169,6 +169,22 @@ class UnifiedPortion(db.Model):
     gram_weight = db.Column(db.Float, nullable=False)
     full_description = db.Column(db.String)
 
+    @property
+    def full_description_str(self):
+        parts = []
+        if self.amount:
+            # Format amount to avoid trailing .0 if it's a whole number
+            amount_str = f'{self.amount:.0f}' if self.amount == int(self.amount) else f'{self.amount:.2f}'
+            parts.append(amount_str)
+        if self.measure_unit_description:
+            parts.append(self.measure_unit_description)
+        if self.portion_description:
+            parts.append(self.portion_description)
+        if self.modifier:
+            parts.append(f"({self.modifier})")
+        
+        return " ".join(parts).strip()
+
 
 # --- USDA Data Models (USDA Bind) ---
 

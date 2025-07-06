@@ -30,7 +30,6 @@ def search():
         current_app.logger.debug(f"Debug: Performing search for term: '{search_term}'")
         # Search USDA Foods
         usda_foods_query = Food.query.options(
-            selectinload(Food.portions),
             selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
         ).filter(Food.description.ilike(f'%{search_term}%')).limit(10).all()
         current_app.logger.debug(f"Debug: USDA Foods found: {len(usda_foods_query)}")
@@ -39,7 +38,7 @@ def search():
             results["usda_foods"].append({
                 'fdc_id': food.fdc_id,
                 'description': food.description,
-                'has_portions': bool(food.portions),
+                'has_portions': bool(UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).first()),
                 'has_ingredients': bool(food.ingredients),
                 'has_rich_nutrients': len(food.nutrients) > 20 # Arbitrary threshold for "rich"
             })
@@ -55,7 +54,7 @@ def search():
                 results["my_foods"].append({
                     'id': food.id,
                     'description': food.description,
-                    'has_portions': bool(food.portions),
+                    'has_portions': bool(UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).first()),
                     'has_ingredients': bool(food.ingredients) # MyFood has an ingredients string
                 })
 
@@ -113,7 +112,7 @@ def search():
                     results["usda_foods"].append({
                         'fdc_id': food.fdc_id,
                         'description': food.description,
-                        'has_portions': bool(food.portions),
+                        'has_portions': bool(UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).first()),
                         'has_ingredients': bool(food.ingredients),
                         'has_rich_nutrients': len(food.nutrients) > 20
                     })
@@ -136,7 +135,7 @@ def search():
                     results["my_foods"].append({
                         'id': food.id,
                         'description': food.description,
-                        'has_portions': bool(food.portions),
+                        'has_portions': bool(UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).first()),
                         'has_ingredients': bool(food.ingredients)
                     })
 
@@ -198,13 +197,29 @@ def add_item():
     recipe_id = request.form.get('recipe_id')
     log_date_str = request.form.get('log_date')
     meal_name = request.form.get('meal_name')
-    quantity = float(request.form.get('quantity', 100))
+    quantity = float(request.form.get('quantity', 1))
+    portion_id = request.form.get('portion_id')
+    if portion_id is None:
+        portion_id = 'g'
+
+    amount_grams = 0
+    serving_type = 'g'
+    if portion_id == 'g':
+        amount_grams = quantity
+    else:
+        portion = db.session.get(UnifiedPortion, int(portion_id))
+        if portion:
+            amount_grams = quantity * portion.gram_weight
+            serving_type = f"{portion.portion_description} ({portion.gram_weight}g)"
+        else:
+            flash('Invalid portion selected.', 'danger')
+            return redirect(request.referrer)
 
     try:
         if target == 'diary':
             if not log_date_str:
                 flash('Log date is required for diary entries.', 'danger')
-                return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
+                return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name))
             log_date = date.fromisoformat(log_date_str)
 
             if food_type == 'usda':
@@ -215,14 +230,14 @@ def add_item():
                         log_date=log_date,
                         meal_name=meal_name,
                         fdc_id=food.fdc_id,
-                        amount_grams=quantity
+                        amount_grams=amount_grams,
+                        serving_type=serving_type
                     )
                     db.session.add(daily_log)
                     db.session.commit()
                     flash(f'{food.description} added to your diary.', 'success')
                 else:
                     flash('USDA Food not found.', 'danger')
-                    return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
             elif food_type == 'my_food':
                 food = db.session.get(MyFood, food_id)
                 if food and food.user_id == current_user.id:
@@ -231,40 +246,24 @@ def add_item():
                         log_date=log_date,
                         meal_name=meal_name,
                         my_food_id=food.id,
-                        amount_grams=quantity
+                        amount_grams=amount_grams,
+                        serving_type=serving_type
                     )
                     db.session.add(daily_log)
                     db.session.commit()
                     flash(f'{food.description} added to your diary.', 'success')
                 else:
                     flash('My Food not found or not authorized.', 'danger')
-                    return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
             elif food_type == 'recipe':
-                # Eagerly load ingredients to calculate total grams without N+1
-                recipe = db.session.query(Recipe).options(
-                    selectinload(Recipe.ingredients)
-                ).get(food_id)
-
+                recipe = db.session.get(Recipe, food_id)
                 if recipe and recipe.user_id == current_user.id:
-                    if not recipe.servings or recipe.servings <= 0:
-                        flash(f'Recipe "{recipe.name}" has no servings defined. Cannot add to diary by servings.', 'danger')
-                        return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
-
-                    total_recipe_grams = sum(ing.amount_grams for ing in recipe.ingredients)
-
-                    if total_recipe_grams <= 0:
-                        flash(f'Recipe "{recipe.name}" has no ingredients or zero total grams. Cannot add to diary.', 'danger')
-                        return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
-
-                    grams_per_serving = total_recipe_grams / recipe.servings
-                    calculated_amount_grams = grams_per_serving * quantity # quantity is servings from form
-
                     daily_log = DailyLog(
                         user_id=current_user.id,
                         log_date=log_date,
                         meal_name=meal_name,
                         recipe_id=recipe.id,
-                        amount_grams=calculated_amount_grams
+                        amount_grams=amount_grams,
+                        serving_type=serving_type
                     )
                     db.session.add(daily_log)
                     db.session.commit()
@@ -274,7 +273,7 @@ def add_item():
             elif food_type == 'my_meal':
                 my_meal = db.session.get(MyMeal, food_id)
                 if my_meal and my_meal.user_id == current_user.id:
-                    my_meal.usage_count += 1  # Increment usage count
+                    my_meal.usage_count += 1
                     for item in my_meal.items:
                         daily_log = DailyLog(
                             user_id=current_user.id,
@@ -283,7 +282,7 @@ def add_item():
                             fdc_id=item.fdc_id,
                             my_food_id=item.my_food_id,
                             recipe_id=item.recipe_id,
-                            amount_grams=item.amount_grams * (quantity / 100)
+                            amount_grams=item.amount_grams * quantity
                         )
                         db.session.add(daily_log)
                     db.session.commit()
@@ -297,7 +296,7 @@ def add_item():
         elif target == 'recipe':
             if not recipe_id:
                 flash('Recipe ID is required to add to a recipe.', 'danger')
-                return redirect(url_for('search.search', target=target, recipe_id=recipe_id, log_date=log_date_str, meal_name=meal_name, search_mode=search_mode))
+                return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
             
             target_recipe = db.session.get(Recipe, recipe_id)
             if not target_recipe or target_recipe.user_id != current_user.id:
@@ -310,7 +309,7 @@ def add_item():
                     ingredient = RecipeIngredient(
                         recipe_id=target_recipe.id,
                         fdc_id=food.fdc_id,
-                        amount_grams=quantity
+                        amount_grams=amount_grams
                     )
                     db.session.add(ingredient)
                     db.session.commit()
@@ -323,7 +322,7 @@ def add_item():
                     ingredient = RecipeIngredient(
                         recipe_id=target_recipe.id,
                         my_food_id=food.id,
-                        amount_grams=quantity
+                        amount_grams=amount_grams
                     )
                     db.session.add(ingredient)
                     db.session.commit()
@@ -336,7 +335,7 @@ def add_item():
                     ingredient = RecipeIngredient(
                         recipe_id=target_recipe.id,
                         recipe_id_link=sub_recipe.id,
-                        amount_grams=quantity
+                        amount_grams=amount_grams
                     )
                     db.session.add(ingredient)
                     db.session.commit()
@@ -351,7 +350,7 @@ def add_item():
                             recipe_id=target_recipe.id,
                             fdc_id=item.fdc_id,
                             my_food_id=item.my_food_id,
-                            amount_grams=item.amount_grams * (quantity / 100)
+                            amount_grams=item.amount_grams
                         )
                         db.session.add(ingredient)
                     db.session.commit()
@@ -379,7 +378,7 @@ def add_item():
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         fdc_id=food.fdc_id,
-                        amount_grams=quantity
+                        amount_grams=amount_grams
                     )
                     db.session.add(meal_item)
                     db.session.commit()
@@ -392,7 +391,7 @@ def add_item():
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         my_food_id=food.id,
-                        amount_grams=quantity
+                        amount_grams=amount_grams
                     )
                     db.session.add(meal_item)
                     db.session.commit()
@@ -405,7 +404,7 @@ def add_item():
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         recipe_id=recipe.id,
-                        amount_grams=quantity
+                        amount_grams=amount_grams
                     )
                     db.session.add(meal_item)
                     db.session.commit()
@@ -418,7 +417,7 @@ def add_item():
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         my_meal_id_link=sub_my_meal.id,
-                        amount_grams=quantity
+                        amount_grams=amount_grams
                     )
                     db.session.add(meal_item)
                     db.session.commit()
@@ -456,16 +455,6 @@ def add_item():
                     potassium_mg_per_100g=FoodNutrient.query.filter_by(fdc_id=food_id, nutrient_id=1092).with_entities(FoodNutrient.amount).scalar() or 0.0
                 )
                 db.session.add(my_food)
-                db.session.commit()
-
-                # Copy portions
-                for portion in usda_food.portions:
-                    my_portion = UnifiedPortion(
-                        my_food_id=my_food.id,
-                        description=portion.portion_description,
-                        gram_weight=portion.gram_weight
-                    )
-                    db.session.add(my_portion)
                 db.session.commit()
 
                 flash(f'{usda_food.description} has been added to your foods.', 'success')

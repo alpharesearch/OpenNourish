@@ -59,17 +59,17 @@
             {% if results.my_meals %}
                 <h3>My Meals</h3>
                 <ul class="list-group mb-3">
-                    {% for meal in results.my_meals %}
+                    {% for searched_meal in results.my_meals %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
-                                {{ meal.name }}
-                                {% if meal.has_items %}
+                                {{ searched_meal.name }}
+                                {% if searched_meal.has_items %}
                                     <span class="me-2 fw-bold text-info" title="Contains items">M</span>
                                 {% endif %}
                             </div>
                             <div>
                                 <form method="POST" action="{{ url_for('search.add_item') }}" class="d-inline">
-                                    <input type="hidden" name="food_id" value="{{ meal.id }}">
+                                    <input type="hidden" name="food_id" value="{{ searched_meal.id }}">
                                     <input type="hidden" name="food_type" value="my_meal">
                                     <input type="hidden" name="target" value="{{ target }}">
                                     <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
@@ -78,7 +78,7 @@
                                     <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm d-inline-block w-auto"> servings
                                     <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
                                 </form>
-                                <a href="{{ url_for('diary.edit_meal', meal_id=meal.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
+                                <a href="{{ url_for('diary.edit_meal', meal_id=searched_meal.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
                             </div>
                         </li>
                     {% endfor %}

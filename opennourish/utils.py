@@ -1,4 +1,4 @@
-from models import db, Food, MyFood, Nutrient, FoodNutrient, Recipe
+from models import db, Food, MyFood, Nutrient, FoodNutrient, Recipe, UnifiedPortion
 from sqlalchemy.orm import selectinload
 from config import Config
 from flask import send_file
@@ -52,30 +52,14 @@ def calculate_goals_from_preset(bmr, preset_name):
 def get_available_portions(food_item):
     """
     Returns a list of available portions for a given food item.
-    It now prioritizes the pre-computed full_description for USDA portions.
     """
     available_portions = []
     # Always add grams as a base option
-    available_portions.append(SimpleNamespace(id='g', display_text='g', value_string='g'))
+    available_portions.append(SimpleNamespace(id='g', portion_description='g', gram_weight=1))
 
     if food_item:
-        # For USDA Foods (has 'portions' with 'full_description')
-        if hasattr(food_item, 'portions') and food_item.portions and hasattr(food_item.portions[0], 'full_description'):
-            for p in food_item.portions:
-                display_text = f"{p.full_description} ({p.gram_weight}g)"
-                available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
-        
-        # For MyFoods (has 'portions' but without 'full_description')
-        elif hasattr(food_item, 'portions'): 
-            for p in food_item.portions:
-                display_text = f"{p.description} ({p.gram_weight}g)"
-                available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
-
-        # For Recipes (has 'recipe_portions')
-        elif hasattr(food_item, 'recipe_portions'):
-            for p in food_item.recipe_portions:
-                display_text = f"{p.full_description} ({p.gram_weight}g)"
-                available_portions.append(SimpleNamespace(id=p.id, display_text=display_text, value_string=display_text))
+        if hasattr(food_item, 'portions'):
+            available_portions.extend(food_item.portions)
                 
     return available_portions
 
@@ -203,8 +187,9 @@ def _get_nutrition_label_data(fdc_id):
 def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_extra_info=False):
     ingredients_str = food.ingredients if food.ingredients else "N/A"
     portions_str = ""
-    if food.portions:
-        portions_list = [f"{p.full_description} ({p.gram_weight}g)" for p in food.portions]
+    food_portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
+    if food_portions:
+        portions_list = [f"{p.portion_description} ({p.gram_weight}g)" for p in food_portions]
         portions_str = "; ".join(portions_list)
     else:
         portions_str = "N/A"

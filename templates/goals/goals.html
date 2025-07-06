@@ -6,9 +6,7 @@
 <div class="container">
     <h1 class="mb-4">Set Your Nutritional Goals</h1>
     <form method="POST" action="{{ url_for('goals.goals') }}">
-        {% if not testing %}
-        {{ form.hidden_tag() }}
-        {% endif %}
+    {{ form.hidden_tag() }}
 
         <h2 class="mt-4 mb-3">Personal Information</h2>
         <div class="row">

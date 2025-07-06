@@ -1,5 +1,5 @@
 import pytest
-from models import db, Food, Nutrient, FoodNutrient, Portion, User
+from models import db, Food, Nutrient, FoodNutrient, UnifiedPortion, User
 
 def test_food_creation(client):
     with client.application.app_context():

@@ -3,7 +3,10 @@ from wtforms import StringField, FloatField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Optional, NumberRange
 
 class MyFoodForm(FlaskForm):
+    name = StringField('Name', validators=[Optional()])
     description = StringField('Description', validators=[DataRequired()])
+    servings = FloatField('Servings', validators=[Optional(), NumberRange(min=0)], default=1.0)
+    instructions = TextAreaField('Instructions', validators=[Optional()])
     fdc_id = StringField('USDA FDC ID', validators=[Optional()])
     upc = StringField('UPC Code', validators=[Optional()])
     ingredients = TextAreaField('Ingredients', validators=[Optional()])
@@ -24,6 +27,9 @@ class MyFoodForm(FlaskForm):
     submit = SubmitField('Save Food')
 
 class PortionForm(FlaskForm):
-    description = StringField('Portion Description', validators=[DataRequired()])
+    amount = FloatField('Amount', validators=[Optional(), NumberRange(min=0)])
+    measure_unit_description = StringField('Unit', validators=[Optional()])
+    portion_description = StringField('Description', validators=[DataRequired()])
+    modifier = StringField('Modifier', validators=[Optional()])
     gram_weight = FloatField('Gram Weight', validators=[DataRequired(), NumberRange(min=0.01)])
     submit = SubmitField('Add Portion')

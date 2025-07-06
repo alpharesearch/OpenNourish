@@ -87,10 +87,11 @@
                             <div class="d-flex justify-content-end align-items-center">
                                 <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}" class="d-flex align-items-center">
                                     <input type="number" name="amount" value="{{ item.amount|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
-                                    <select name="serving_type" class="form-select form-select-sm ms-2" style="width: 180px;">
+                                    <select name="portion_id" class="form-select form-select-sm ms-2" style="width: 180px;">
+                                        <option value="g" {% if item.serving_type == 'g' %}selected{% endif %}>g</option>
                                         {% for portion in item.portions %}
-                                            <option value="{{ portion.value_string }}" {% if item.serving_type == portion.value_string %}selected{% endif %}>
-                                                {{ portion.display_text }}
+                                            <option value="{{ portion.id }}" {% if item.serving_type == portion.portion_description + ' (' + portion.gram_weight|string + 'g)' %}selected{% endif %}>
+                                                {{ portion.portion_description }} ({{ portion.gram_weight }}g)
                                             </option>
                                         {% endfor %}
                                     </select>

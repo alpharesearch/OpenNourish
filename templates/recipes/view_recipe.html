@@ -43,6 +43,19 @@
         <div class="col-lg-4">
             <div class="card mb-4">
                 <div class="card-header">
+                    Portions
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for portion in recipe.portions %}
+                        <li class="list-group-item">{{ portion.portion_description }} - {{ '%.2f'|format(portion.gram_weight) }}g</li>
+                    {% else %}
+                        <li class="list-group-item">No custom portions defined.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
                     Nutrition per Serving
                 </div>
                 <div class="card-body">

@@ -145,7 +145,7 @@ def test_add_my_food_with_portion(auth_client):
         db.session.commit()
         my_food_id = my_food.id
 
-        my_portion = UnifiedPortion(my_food_id=my_food_id, description='handful', gram_weight=40.0)
+        my_portion = UnifiedPortion(my_food_id=my_food_id, portion_description='handful', gram_weight=40.0)
         db.session.add(my_portion)
         db.session.commit()
 

@@ -39,7 +39,7 @@ def diary(log_date_str=None):
 
     for log in daily_logs:
         if log.fdc_id:
-            food_item = db.session.query(Food).options(joinedload(Food.portions)).get(log.fdc_id)
+            food_item = db.session.query(Food).get(log.fdc_id)
         elif log.my_food_id:
             food_item = db.session.get(MyFood, log.my_food_id)
         elif log.recipe_id:
@@ -117,22 +117,21 @@ def update_entry(log_id):
         return redirect(url_for('diary.diary'))
 
     amount = request.form.get('amount', type=float)
-    serving_type = request.form.get('serving_type')
+    portion_id = request.form.get('portion_id')
 
-    if amount and serving_type:
-        # Find the gram weight from the serving type string
-        gram_weight = 1.0
-        if serving_type != 'g':
-            # Example serving_type string: "cup (128g)"
-            try:
-                # Extract the number from the parentheses
-                gram_weight = float(serving_type.split('(')[1].split('g')[0])
-            except (IndexError, ValueError):
-                flash('Invalid serving type format.', 'danger')
+    if amount and portion_id:
+        if portion_id == 'g':
+            log_entry.amount_grams = amount
+            log_entry.serving_type = 'g'
+        else:
+            portion = db.session.get(UnifiedPortion, int(portion_id))
+            if portion:
+                log_entry.amount_grams = amount * portion.gram_weight
+                log_entry.serving_type = f"{portion.portion_description} ({portion.gram_weight}g)"
+            else:
+                flash('Invalid portion selected.', 'danger')
                 return redirect(url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()))
 
-        log_entry.amount_grams = amount * gram_weight
-        log_entry.serving_type = serving_type
         db.session.commit()
         flash('Entry updated successfully!', 'success')
     else:
@@ -253,7 +252,7 @@ def my_meals():
     # Fetch all relevant USDA Food objects in one query, eagerly loading portions and measure units
     usda_foods_map = {}
     if all_usda_food_ids:
-        usda_foods = Food.query.options(joinedload(Food.portions)).filter(Food.fdc_id.in_(all_usda_food_ids)).all()
+        usda_foods = Food.query.filter(Food.fdc_id.in_(all_usda_food_ids)).all()
         usda_foods_map = {food.fdc_id: food for food in usda_foods}
 
     for meal in meals:

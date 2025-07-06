@@ -110,26 +110,63 @@
             Portions for {{ my_food.description }}
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ url_for('my_foods.add_my_food_portion', food_id=my_food.id) }}">
-                {{ portion_form.hidden_tag() }}
-                <div class="input-group mb-3">
-                    {{ portion_form.description(class="form-control", placeholder="e.g., cup, slice") }}
-                    {{ portion_form.gram_weight(class="form-control", placeholder="Gram Weight") }}
-                    <button type="submit" class="btn btn-outline-primary">Add Portion</button>
-                </div>
-            </form>
-            <ul class="list-group mt-3">
+            <h6>Existing Portions</h6>
+            <ul class="list-group mb-3">
                 {% for portion in my_food.portions %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    {{ portion.description }} ({{ portion.gram_weight }}g)
+                    <form action="{{ url_for('my_foods.update_my_food_portion', portion_id=portion.id) }}" method="POST" class="d-flex align-items-center w-100">
+                        {{ portion_form.hidden_tag() }}
+                        <div class="row g-2 flex-grow-1 me-2">
+                            <div class="col-md-3">
+                                <input type="number" step="any" name="amount" class="form-control form-control-sm" value="{{ portion.amount if portion.amount is not none else '' }}" placeholder="Amount">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" name="measure_unit_description" class="form-control form-control-sm" value="{{ portion.measure_unit_description if portion.measure_unit_description is not none else '' }}" placeholder="Unit">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" name="portion_description" class="form-control form-control-sm" value="{{ portion.portion_description if portion.portion_description is not none else '' }}" placeholder="Description">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" name="modifier" class="form-control form-control-sm" value="{{ portion.modifier if portion.modifier is not none else '' }}" placeholder="Modifier">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" step="any" name="gram_weight" class="form-control form-control-sm" value="{{ portion.gram_weight }}" placeholder="Gram Weight">
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-outline-success me-1">Save</button>
+                    </form>
                     <form action="{{ url_for('my_foods.delete_my_food_portion', portion_id=portion.id) }}" method="POST" class="d-inline">
-                        <button type="submit" class="btn btn-outline-danger btn-sm">&times;</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
                     </form>
                 </li>
                 {% else %}
                 <li class="list-group-item">No custom portions defined.</li>
                 {% endfor %}
             </ul>
+
+            <hr>
+            <h6>Add New Portion</h6>
+            <form method="POST" action="{{ url_for('my_foods.add_my_food_portion', food_id=my_food.id) }}" class="d-flex align-items-center gap-2">
+                {{ portion_form.hidden_tag() }}
+                <div class="row g-2 flex-grow-1 me-2">
+                    <div class="col-md-3">
+                        {{ portion_form.amount(class="form-control form-control-sm", placeholder="Amount") }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ portion_form.measure_unit_description(class="form-control form-control-sm", placeholder="Unit") }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ portion_form.portion_description(class="form-control form-control-sm", placeholder="Description") }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ portion_form.modifier(class="form-control form-control-sm", placeholder="Modifier") }}
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    {{ portion_form.gram_weight(class="form-control form-control-sm", placeholder="Gram Weight") }}
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Add Portion</button>
+            </form>
         </div>
     </div>
     {% endif %}

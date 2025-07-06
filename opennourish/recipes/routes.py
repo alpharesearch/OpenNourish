@@ -45,7 +45,7 @@ def edit_recipe(recipe_id):
     # Manually fetch USDA food data
     usda_food_ids = [ing.fdc_id for ing in recipe.ingredients if ing.fdc_id]
     if usda_food_ids:
-        usda_foods = Food.query.options(selectinload(Food.portions)).filter(Food.fdc_id.in_(usda_food_ids)).all()
+        usda_foods = Food.query.filter(Food.fdc_id.in_(usda_food_ids)).all()
         usda_foods_map = {food.fdc_id: food for food in usda_foods}
         
     for ing in recipe.ingredients:
@@ -65,7 +65,7 @@ def edit_recipe(recipe_id):
         return redirect(url_for('recipes.recipes'))
 
     form = RecipeForm(obj=recipe)
-    portion_form = UnifiedPortionForm()
+    portion_form = PortionForm()
 
     if form.validate_on_submit():
         recipe.name = form.name.data
@@ -225,40 +225,17 @@ def add_recipe_portion(recipe_id):
         flash('You are not authorized to modify this recipe.', 'danger')
         return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
-    form = UnifiedPortionForm()
+    form = PortionForm()
     if form.validate_on_submit():
-        # Construct the full description string
-        desc_parts = []
-        amount = form.amount.data
-        unit = form.measure_unit_description.data
-        description = form.description.data
-        modifier = form.modifier.data
-
-        if amount:
-            if amount.is_integer():
-                desc_parts.append(str(int(amount)))
-            else:
-                desc_parts.append(str(amount))
-        
-        if unit:
-            desc_parts.append(unit)
-        
-        if description:
-            desc_parts.append(description)
-            
-        if modifier:
-            desc_parts.append(modifier)
-        
-        full_description = " ".join(desc_parts)
-
         new_portion = UnifiedPortion(
             recipe_id=recipe.id,
+            my_food_id=None,
+            fdc_id=None,
+            portion_description=form.portion_description.data,
             amount=form.amount.data,
             measure_unit_description=form.measure_unit_description.data,
-            description=form.description.data,
             modifier=form.modifier.data,
-            gram_weight=form.gram_weight.data,
-            full_description=full_description
+            gram_weight=form.gram_weight.data
         )
         db.session.add(new_portion)
         db.session.commit()
@@ -272,67 +249,16 @@ def add_recipe_portion(recipe_id):
     return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
 
-@recipes_bp.route("/recipe/portion/auto_add/<int:recipe_id>", methods=['POST'])
-@login_required
-def auto_add_recipe_portion(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.user_id != current_user.id:
-        flash('You are not authorized to modify this recipe.', 'danger')
-        return redirect(url_for('recipes.recipes'))
-
-    # First, update the recipe with any form data that might have been changed
-    # This ensures the servings count is up-to-date before creating the portion
-    form = RecipeForm(request.form)
-    if form.validate():
-        recipe.name = form.name.data
-        recipe.instructions = form.instructions.data
-        recipe.servings = form.servings.data
-        db.session.commit()
-        flash('Recipe details saved.', 'success')
-    else:
-        flash('Could not save recipe details before creating portion.', 'warning')
-
-
-    total_grams = sum(ing.amount_grams for ing in recipe.ingredients if ing.amount_grams)
-    servings = recipe.servings
-
-    if servings and servings > 0 and total_grams > 0:
-        gram_weight_per_serving = total_grams / servings
-        
-        # Use singular "serving" if servings is 1
-        serving_text = "serving" if servings == 1 else "servings"
-        
-        # Create a description like "1 of 4 servings"
-        full_description = f"1 of {int(servings) if isinstance(servings, float) and servings.is_integer() else servings} {serving_text}"
-
-        new_portion = UnifiedPortion(
-            recipe_id=recipe.id,
-            amount=1,
-            measure_unit_description=f"of {int(servings) if isinstance(servings, float) and servings.is_integer() else servings} {serving_text}",
-            description=None,
-            modifier=None,
-            gram_weight=gram_weight_per_serving,
-            full_description=full_description
-        )
-        db.session.add(new_portion)
-        db.session.commit()
-        flash(f'Portion "{full_description}" added.', 'success')
-    else:
-        flash('Cannot create a portion for a recipe with 0 servings or no ingredients.', 'warning')
-        
-    return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
-
-
 @recipes_bp.route("/recipe/portion/delete/<int:portion_id>", methods=['POST'])
 @login_required
 def delete_recipe_portion(portion_id):
-    portion = UnifiedPortion.query.get_or_404(portion_id)
-    recipe = portion.recipe
-    if recipe.user_id != current_user.id:
-        flash('You are not authorized to modify this recipe.', 'danger')
+    portion = db.session.get(UnifiedPortion, portion_id)
+    if portion and portion.recipe and portion.recipe.user_id == current_user.id:
+        recipe_id = portion.recipe_id
+        db.session.delete(portion)
+        db.session.commit()
+        flash('Recipe portion deleted.', 'success')
+        return redirect(url_for('recipes.edit_recipe', recipe_id=recipe_id))
+    else:
+        flash('Portion not found or you do not have permission to delete it.', 'danger')
         return redirect(url_for('recipes.recipes'))
-    
-    db.session.delete(portion)
-    db.session.commit()
-    flash('Recipe portion deleted.', 'success')
-    return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
