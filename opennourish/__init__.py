@@ -1,6 +1,7 @@
 from flask import Flask
 import os
 from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, Portion, MyPortion, RecipePortion, RecipeIngredient, MyMeal, MyMealItem, ExerciseActivity, ExerciseLog
+from sqlalchemy.orm import joinedload
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import Config
@@ -138,28 +139,71 @@ def create_app(config_class=Config):
                 num_my_foods = random.randint(20, 30)
                 user_my_foods = []
                 for _ in range(num_my_foods):
-                    my_food = MyFood(
-                        user_id=user.id,
-                        description=fake.word().capitalize() + ' ' + fake.word()+ ' My Foods',
-                        calories_per_100g=random.uniform(50, 500),
-                        protein_per_100g=random.uniform(1, 50),
-                        carbs_per_100g=random.uniform(1, 80),
-                        fat_per_100g=random.uniform(1, 50)
-                    )
-                    db.session.add(my_food)
-                    user_my_foods.append(my_food)
-                my_foods_created += num_my_foods
-                db.session.flush()  # To get my_food.id for portions
+                    if random.random() < 0.5 and usda_fdc_ids: # 50% chance to create a USDA-sourced MyFood
+                        fdc_id = random.choice(usda_fdc_ids)
+                        usda_food = db.session.query(Food).options(
+                            joinedload(Food.nutrients).joinedload(FoodNutrient.nutrient),
+                            joinedload(Food.portions)
+                        ).filter_by(fdc_id=fdc_id).first()
 
-                # MyPortions for MyFood
-                for mf in user_my_foods:
-                    if random.random() < 0.5:  # 50% chance to add a custom portion
-                        portion = MyPortion(
-                            my_food_id=mf.id,
-                            description=random.choice(['cup', 'slice', 'serving', 'piece']),
-                            gram_weight=random.uniform(30, 200)
+                        if usda_food:
+                            my_food = MyFood(
+                                user_id=user.id,
+                                description=usda_food.description,
+                                ingredients=usda_food.ingredients,
+                                fdc_id=usda_food.fdc_id,
+                                upc=usda_food.upc,
+                                calories_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1008), 0.0),
+                                protein_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1003), 0.0),
+                                carbs_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1005), 0.0),
+                                fat_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1004), 0.0),
+                                saturated_fat_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1258), 0.0),
+                                trans_fat_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1257), 0.0),
+                                cholesterol_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1253), 0.0),
+                                sodium_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1093), 0.0),
+                                fiber_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1079), 0.0),
+                                sugars_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 2000), 0.0),
+                                vitamin_d_mcg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1110), 0.0),
+                                calcium_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1087), 0.0),
+                                iron_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1089), 0.0),
+                                potassium_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1092), 0.0)
+                            )
+                            db.session.add(my_food)
+                            user_my_foods.append(my_food)
+                            my_foods_created += 1
+                            db.session.flush() # To get my_food.id for portions
+
+                            # Copy portions from USDA food
+                            for portion in usda_food.portions:
+                                my_portion = MyPortion(
+                                    my_food_id=my_food.id,
+                                    description=portion.portion_description or portion.measure_unit_description,
+                                    gram_weight=portion.gram_weight
+                                )
+                                db.session.add(my_portion)
+                    else: # Create a purely custom MyFood
+                        my_food = MyFood(
+                            user_id=user.id,
+                            description=fake.word().capitalize() + ' ' + fake.word()+ ' Custom Food',
+                            ingredients=fake.sentence(nb_words=6),
+                            calories_per_100g=random.uniform(50, 500),
+                            protein_per_100g=random.uniform(1, 50),
+                            carbs_per_100g=random.uniform(1, 80),
+                            fat_per_100g=random.uniform(1, 50)
                         )
-                        db.session.add(portion)
+                        db.session.add(my_food)
+                        user_my_foods.append(my_food)
+                        my_foods_created += 1
+                        db.session.flush()  # To get my_food.id for portions
+
+                        # MyPortions for custom MyFood
+                        if random.random() < 0.5:  # 50% chance to add a custom portion
+                            portion = MyPortion(
+                                my_food_id=my_food.id,
+                                description=random.choice(['cup', 'slice', 'serving', 'piece']),
+                                gram_weight=random.uniform(30, 200)
+                            )
+                            db.session.add(portion)
 
                 # CheckIn
                 num_check_ins = 52 # Approximately one year of weekly check-ins
