@@ -24,29 +24,41 @@ To set up the development environment:
 3.  Place the downloaded USDA CSV files into a directory named `usda_data/` in the project root.
 4.  Generate the static USDA database: `python import_usda_data.py`
 5.  Initialize and migrate the user database: `flask db init` (first time only), then `flask db upgrade`
-
-Alternatively, use Docker for development:
-1.  Ensure Docker and Docker Compose (v2.x) are installed.
-2.  Follow the "Initial Database Setup" steps in `README.md` to prepare `user_data.db` and `usda_data.db` on your host.
-3.  Build the Docker image: `docker compose build`
-4.  Run the application: `docker compose up -d`
-5.  Access at `http://localhost:8081`.
+6.  **Seed the USDA portions into the user database:** `flask seed-usda-portions`
 
 ## 4. Running the Application
-To run the Flask development server:
-1. Set the FLASK_APP environment variable: `export FLASK_APP=app.py` (Linux/macOS) or `$env:FLASK_APP="app.py"` (PowerShell)
-2. Run the Flask application: `flask run`
+- **For Development:** `flask run`
+- **For Production (using Waitress):** `python serve.py`
 
 ## 5. Database Management
 - **Primary Database Files:** `user_data.db` (for all dynamic, user-specific data) and `usda_data.db` (for the static USDA FoodData Central). These files should never be committed to version control.
-- **Static DB Creation:** `usda_data.db` is created and managed exclusively by the `import_usda_data.py` script.
+- **Static DB Creation:** `usda_data.db` is created and managed exclusively by the `import_usda_data.py` script. It contains read-only data.
 - **User DB Schema Migrations:** All changes to the user database schema (i.e., modifying `models.py` for tables without a `__bind_key__`) MUST be managed using **Flask-Migrate (Alembic)**.
-  - To generate a new migration after changing a model: `flask db migrate -m "A short message describing the change"`
+  - To generate a new migration after changing a model: `flask db migrate -m "A short message"`
   - To apply the migration to the database: `flask db upgrade`
 
-### 8.1. Cross-Database Queries
-- **Challenge:** A common challenge in this project is querying relationships between the user database (`user_data.db`) and the static USDA database (`usda_data.db`). Standard SQLAlchemy eager loading strategies like `joinedload` or `selectinload` can fail, as they may attempt to join tables across different database files, resulting in `sqlite3.OperationalError: no such table`.
-- **Solution:** To handle these cross-database relationships, you must use a manual, two-step query process. First, query the primary database (usually the user database) to retrieve the main objects. Then, extract the foreign keys from the results and perform a second, separate query against the second database (usually the USDA database) to fetch the related objects. Finally, manually attach the related objects to the main objects in your Python code. This approach ensures that each query is sent to the correct database, avoiding the "no such table" error.
+### 5.1. The Unified Portion System
+To avoid code duplication, the application uses a **single, unified model (`UnifiedPortion`)** for all portion types, which resides in the primary `user_data.db`.
+- **Linking:** This model uses three nullable foreign key columns (`fdc_id`, `my_food_id`, `recipe_id`) to associate a portion with its parent (a USDA Food, a MyFood, or a Recipe).
+- **Data Seeding:** The static USDA portions are seeded into this table using the `flask seed-usda-portions` command. All user-created portions (for MyFoods and Recipes) are added directly by the application logic.
+- **Directive:** Any new feature that requires portion data **must** use and interact with this single, centralized model.
+
+## 6. Code Style and Project Structure
+- **Python:** Follow **PEP 8** for all Python code.
+- **Application Factory:** The project uses the application factory pattern (`create_app` function). Blueprints are registered within this factory.
+- **Blueprints:** All features are organized into Flask Blueprints within the `opennourish/` directory (e.g., `opennourish/auth`, `opennourish/tracking`).
+- **Configuration:** Store application configuration (like `SECRET_KEY`) in a `config.py` file.
+- **Templates & Static Files:** Templates are in `templates/`, and static files (CSS, JS) are in `static/`.
+
+## 7. Design Directives & UI Conventions
+To maintain a consistent and professional look and feel, all generated HTML templates should adhere to these Bootstrap 5 conventions.
+- **Primary Actions (Submit, Save, Create):** Buttons for primary actions should always use the main theme color.
+  - **Class:** `btn btn-primary`
+- **Secondary Actions (Cancel, Go Back):** Buttons for secondary or less important actions.
+  - **Class:** `btn btn-secondary`
+- **Destructive Actions (Delete, Remove):** Buttons that trigger a deletion or other irreversible action must be clearly marked in red.
+  - **Class:** `btn btn-danger`
+- **Flash Messages:** User feedback and notifications must be handled using Flask's flashing system with categories (`'success'`, `'danger'`, `'warning'`, `'info'`). All flashed messages should be rendered in `base.html` using the standard Bootstrap Alert component structure.
 
 ## 6. Code Style and Project Structure
 - **Python:** Follow **PEP 8** for all Python code.
@@ -122,6 +134,10 @@ To maintain a consistent and professional look and feel, all generated HTML temp
   - Standard application tests (`not integration`) **must** use an in-memory SQLite database to ensure they are fast and do not touch the real database files.
   - The `integration` test verifies the full USDA data import process. It is slow and should be run intentionally.
 - **Test Creation:** When generating new application tests, ensure they use a fixture that configures the app for testing and provides a test client.
+
+### 8.1. Cross-Database Queries
+- **Challenge:** A common challenge in this project is querying relationships between the user database (`user_data.db`) and the static USDA database (`usda_data.db`). Standard SQLAlchemy eager loading strategies like `joinedload` or `selectinload` can fail, as they may attempt to join tables across different database files, resulting in `sqlite3.OperationalError: no such table`.
+- **Solution:** To handle these cross-database relationships, you must use a manual, two-step query process. First, query the primary database (usually the user database) to retrieve the main objects. Then, extract the foreign keys from the results and perform a second, separate query against the second database (usually the USDA database) to fetch the related objects. Finally, manually attach the related objects to the main objects in your Python code. This approach ensures that each query is sent to the correct database, avoiding the "no such table" error.
 
 ## 9. Debugging with the Flask Logger
 To maintain a clean and professional codebase, **do not use `print()` statements for debugging.** Instead, use Flask's built-in logger, which is automatically configured to show messages only when the application is in debug mode.
