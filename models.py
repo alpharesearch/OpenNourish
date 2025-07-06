@@ -12,6 +12,9 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
+    age = db.Column(db.Integer, nullable=True)
+    gender = db.Column(db.String(10), nullable=True) # 'Male', 'Female'
+    height_cm = db.Column(db.Float, nullable=True)
     goal = db.relationship('UserGoal', backref='user', uselist=False)
 
     def set_password(self, password):

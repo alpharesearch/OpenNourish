@@ -119,7 +119,12 @@ def create_app(config_class=Config):
             usda_fdc_ids = [f.fdc_id for f in Food.query.all()]
 
             for i in range(count):
-                user = User(username='user'+f"{i}")
+                user = User(
+                    username='user'+f"{i}",
+                    age=random.randint(18, 70),
+                    gender=random.choice(['Male', 'Female']),
+                    height_cm=random.uniform(150, 190)
+                )
                 user.set_password('1')
                 db.session.add(user)
                 db.session.flush()  # To get user.id

@@ -12,7 +12,7 @@ def test_registration(client):
         follow_redirects=False
     )
     assert response.status_code == 302
-    assert '/auth/login' in response.headers['Location']
+    assert '/goals/' in response.headers['Location'] or '/dashboard' in response.headers['Location']
     response = client.get(response.headers['Location'], follow_redirects=True)
     assert b'Congratulations, you are now a registered user!' in response.data
 

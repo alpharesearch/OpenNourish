@@ -7,6 +7,19 @@ import tempfile
 import os
 from types import SimpleNamespace
 
+def calculate_bmr(weight_kg, height_cm, age, gender):
+    """
+    Calculates Basal Metabolic Rate (BMR) using the Mifflin-St Jeor equation.
+    Weight in kg, Height in cm, Age in years.
+    """
+    if gender == 'Male':
+        bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) + 5
+    elif gender == 'Female':
+        bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) - 161
+    else:
+        return None # Or raise an error for invalid gender
+    return bmr
+
 def get_available_portions(food_item):
     """
     Returns a list of available portions for a given food item.

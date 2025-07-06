@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, current_user
 from urllib.parse import urlsplit
 from . import auth_bp
 from .forms import LoginForm, RegistrationForm
-from models import db, User
+from models import db, User, UserGoal
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -38,5 +38,10 @@ def register():
         db.session.add(user)
         db.session.commit()
         flash('Congratulations, you are now a registered user!')
-        return redirect(url_for('auth.login'))
+        # After registration, check if the user has existing goals
+        user_goal = UserGoal.query.filter_by(user_id=user.id).first()
+        if user_goal:
+            return redirect(url_for('dashboard.index'))
+        else:
+            return redirect(url_for('goals.goals'))
     return render_template('register.html', title='Register', form=form)

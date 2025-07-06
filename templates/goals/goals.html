@@ -7,6 +7,70 @@
     <h1 class="mb-4">Set Your Nutritional Goals</h1>
     <form method="POST" action="{{ url_for('goals.goals') }}">
         {{ form.hidden_tag() }}
+
+        <h2 class="mt-4 mb-3">Personal Information</h2>
+        <div class="mb-3">
+            {{ form.age.label(class="form-label") }}
+            {{ form.age(class="form-control") }}
+            {% if form.age.errors %}
+                <div class="text-danger">{% for error in form.age.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.gender.label(class="form-label") }}
+            <div>
+                {% for subfield in form.gender %}
+                    <div class="form-check form-check-inline">
+                        {{ subfield(class="form-check-input") }}
+                        {{ subfield.label(class="form-check-label") }}
+                    </div>
+                {% endfor %}
+            </div>
+            {% if form.gender.errors %}
+                <div class="text-danger">{% for error in form.gender.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.height_cm.label(class="form-label") }}
+            {{ form.height_cm(class="form-control") }}
+            {% if form.height_cm.errors %}
+                <div class="text-danger">{% for error in form.height_cm.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+
+        {% if not latest_checkin_exists %}
+        <h3 class="mt-4 mb-3">Initial Check-in (No previous data found)</h3>
+        <div class="mb-3">
+            {{ form.weight_kg.label(class="form-label") }}
+            {{ form.weight_kg(class="form-control") }}
+            {% if form.weight_kg.errors %}
+                <div class="text-danger">{% for error in form.weight_kg.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.body_fat_percentage.label(class="form-label") }}
+            {{ form.body_fat_percentage(class="form-control") }}
+            {% if form.body_fat_percentage.errors %}
+                <div class="text-danger">{% for error in form.body_fat_percentage.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if bmr %}
+        <div class="alert alert-info mt-4" role="alert">
+            Your estimated Basal Metabolic Rate (BMR) is: <strong>{{ "%.0f"|format(bmr) }} kcal/day</strong>.
+            This is the number of calories your body burns at rest.
+        </div>
+        {% endif %}
+
+        <h2 class="mt-4 mb-3">Nutritional Goals</h2>
+        <div class="mb-3">
+            {{ form.diet_preset.label(class="form-label") }}
+            {{ form.diet_preset(class="form-select") }}
+            {% if form.diet_preset.errors %}
+                <div class="text-danger">{% for error in form.diet_preset.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
         <div class="mb-3">
             {{ form.calories.label(class="form-label") }}
             {{ form.calories(class="form-control") }}
@@ -38,4 +102,27 @@
         <button type="submit" class="btn btn-outline-success">Save Goals</button>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dietPresetSelect = document.getElementById('diet_preset');
+        const caloriesField = document.getElementById('calories');
+        const proteinField = document.getElementById('protein');
+        const carbsField = document.getElementById('carbs');
+        const fatField = document.getElementById('fat');
+
+        const dietPresets = {{ diet_presets | tojson }};
+
+        dietPresetSelect.addEventListener('change', function() {
+            const selectedPreset = this.value;
+            if (selectedPreset && dietPresets[selectedPreset]) {
+                const preset = dietPresets[selectedPreset];
+                caloriesField.value = preset.calories;
+                proteinField.value = preset.protein;
+                carbsField.value = preset.carbs;
+                fatField.value = preset.fat;
+            }
+        });
+    });
+</script>
 {% endblock %}
