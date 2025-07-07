@@ -117,6 +117,54 @@ def test_diet_preset_adjusts_goals(auth_client):
         assert user_goal.carbs == 22
         assert user_goal.fat == 148
 
+def test_exercise_goals_update(auth_client):
+    """
+    GIVEN a logged-in user with existing goals
+    WHEN the user submits the goals form with new exercise goal data
+    THEN the UserGoal object should be updated with the new exercise goal values.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        initial_goal = UserGoal(
+            user_id=user.id,
+            calories=2000,
+            protein=120,
+            carbs=250,
+            fat=70,
+            calories_burned_goal_weekly=1000,
+            exercises_per_week_goal=3,
+            minutes_per_exercise_goal=30
+        )
+        db.session.add(initial_goal)
+        db.session.commit()
+        initial_goal_id = initial_goal.id
+
+    data = {
+        'age': 30,
+        'gender': 'Male',
+        'height_cm': 180,
+        'weight_kg': 80,
+        'calories': 2000,
+        'protein': 120,
+        'carbs': 250,
+        'fat': 70,
+        'calories_burned_goal_weekly': 1500,
+        'exercises_per_week_goal': 5,
+        'minutes_per_exercise_goal': 45
+    }
+
+    response = auth_client.post('/goals/', data=data, follow_redirects=True)
+    assert response.status_code == 200
+
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        user_goal = UserGoal.query.filter_by(user_id=user.id).first()
+        assert user_goal is not None
+        assert user_goal.id == initial_goal_id
+        assert user_goal.calories_burned_goal_weekly == 1500
+        assert user_goal.exercises_per_week_goal == 5
+        assert user_goal.minutes_per_exercise_goal == 45
+
 def test_calculate_bmr_api(auth_client):
     """
     GIVEN a logged-in user
