@@ -140,6 +140,11 @@ def goals():
             user_goal.protein = form.protein.data
             user_goal.carbs = form.carbs.data
             user_goal.fat = form.fat.data
+
+        # Update Exercise Goals
+        user_goal.calories_burned_goal_weekly = form.calories_burned_goal_weekly.data
+        user_goal.exercises_per_week_goal = form.exercises_per_week_goal.data
+        user_goal.minutes_per_exercise_goal = form.minutes_per_exercise_goal.data
         
         db.session.commit()
         flash('Goals and personal info updated!', 'success')

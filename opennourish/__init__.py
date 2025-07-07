@@ -139,7 +139,10 @@ def create_app(config_class=Config):
                     calories=random.randint(1800, 2500),
                     protein=random.randint(100, 200),
                     carbs=random.randint(200, 350),
-                    fat=random.randint(50, 100)
+                    fat=random.randint(50, 100),
+                    calories_burned_goal_weekly=random.randint(1000, 3000),
+                    exercises_per_week_goal=random.randint(3, 7),
+                    minutes_per_exercise_goal=random.randint(30, 60)
                 )
                 db.session.add(goal)
 

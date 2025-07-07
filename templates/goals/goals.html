@@ -81,6 +81,23 @@
                 {{ form.fat(class="form-control") }}
             </div>
         </div>
+
+        <h2 class="mt-4 mb-3">Exercise Goals</h2>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                {{ form.calories_burned_goal_weekly.label(class="form-label") }}
+                {{ form.calories_burned_goal_weekly(class="form-control") }}
+            </div>
+            <div class="col-md-4 mb-3">
+                {{ form.exercises_per_week_goal.label(class="form-label") }}
+                {{ form.exercises_per_week_goal(class="form-control") }}
+            </div>
+            <div class="col-md-4 mb-3">
+                {{ form.minutes_per_exercise_goal.label(class="form-label") }}
+                {{ form.minutes_per_exercise_goal(class="form-control") }}
+            </div>
+        </div>
+
         <button type="submit" class="btn btn-outline-success">Save Goals</button>
     </form>
 </div>

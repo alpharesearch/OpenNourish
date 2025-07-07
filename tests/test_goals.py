@@ -2,6 +2,7 @@ import pytest
 from models import UserGoal, User, CheckIn, db
 from datetime import date
 from unittest.mock import MagicMock
+from opennourish.goals.forms import GoalForm
 
 def test_set_goals_for_new_user(auth_client):
     """
@@ -9,7 +10,7 @@ def test_set_goals_for_new_user(auth_client):
     WHEN the user submits the goals form
     THEN a new UserGoal object should be created
     """
-    response = auth_client.post('/goals/', data={
+    data = {
         'age': 30,
         'gender': 'Male',
         'height_cm': 180,
@@ -18,7 +19,12 @@ def test_set_goals_for_new_user(auth_client):
         'protein': 150,
         'carbs': 300,
         'fat': 80
-    }, follow_redirects=True)
+    }
+    with auth_client.application.app_context():
+        form = GoalForm()
+        data['csrf_token'] = form.csrf_token._value()
+
+    response = auth_client.post('/goals/', data=data, follow_redirects=True)
     assert response.status_code == 200
 
     with auth_client.application.app_context():
@@ -50,7 +56,7 @@ def test_update_existing_goals(auth_client):
         db.session.commit()
         initial_goal_id = initial_goal.id
 
-    response = auth_client.post('/goals/', data={
+    data = {
         'age': 31,
         'gender': 'Female',
         'height_cm': 170,
@@ -59,7 +65,12 @@ def test_update_existing_goals(auth_client):
         'protein': 140,
         'carbs': 280,
         'fat': 75
-    }, follow_redirects=True)
+    }
+    with auth_client.application.app_context():
+        form = GoalForm()
+        data['csrf_token'] = form.csrf_token._value()
+
+    response = auth_client.post('/goals/', data=data, follow_redirects=True)
     assert response.status_code == 200
 
     with auth_client.application.app_context():
@@ -79,7 +90,7 @@ def test_diet_preset_adjusts_goals(auth_client):
     WHEN the user submits the goals form with a diet preset
     THEN the UserGoal object should be created with BMR-adjusted values.
     """
-    response = auth_client.post('/goals/', data={
+    data = {
         'age': 30,
         'gender': 'Male',
         'height_cm': 180,
@@ -89,7 +100,12 @@ def test_diet_preset_adjusts_goals(auth_client):
         'protein': '',
         'carbs': '',
         'fat': ''
-    }, follow_redirects=True)
+    }
+    with auth_client.application.app_context():
+        form = GoalForm()
+        data['csrf_token'] = form.csrf_token._value()
+
+    response = auth_client.post('/goals/', data=data, follow_redirects=True)
     assert response.status_code == 200
 
     with auth_client.application.app_context():

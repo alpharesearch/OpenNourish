@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import FloatField, SelectField, RadioField, IntegerField
+from wtforms import FloatField, SelectField, RadioField, IntegerField, SubmitField
 from wtforms.validators import DataRequired, Optional, NumberRange
 from config import Config
 from flask_login import current_user
@@ -23,6 +23,13 @@ class GoalForm(FlaskForm):
     protein = FloatField('Protein (g)', validators=[Optional()])
     carbs = FloatField('Carbohydrates (g)', validators=[Optional()])
     fat = FloatField('Fat (g)', validators=[Optional()])
+
+    # Exercise Goals
+    calories_burned_goal_weekly = IntegerField('Weekly Calories Burned Goal', validators=[Optional(), NumberRange(min=0)])
+    exercises_per_week_goal = IntegerField('Weekly Exercise Frequency Goal', validators=[Optional(), NumberRange(min=0)])
+    minutes_per_exercise_goal = IntegerField('Minutes Per Exercise Goal', validators=[Optional(), NumberRange(min=0)])
+
+    submit = SubmitField('Save Goals')
 
     def __init__(self, *args, **kwargs):
         super(GoalForm, self).__init__(*args, **kwargs)

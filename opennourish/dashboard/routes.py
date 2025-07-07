@@ -77,4 +77,21 @@ def index(log_date_str=None):
     body_fat_data = [check_in.body_fat_percentage for check_in in check_ins]
     waist_data = [check_in.waist_cm for check_in in check_ins]
 
-    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, time_range=time_range)
+    # --- Weekly Exercise Goal Progress ---
+    today = date.today()
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
+
+    weekly_logs = ExerciseLog.query.filter(
+        ExerciseLog.user_id == current_user.id,
+        ExerciseLog.log_date >= start_of_week,
+        ExerciseLog.log_date <= end_of_week
+    ).all()
+
+    weekly_progress = {
+        'calories_burned': sum(log.calories_burned for log in weekly_logs),
+        'exercises': len(weekly_logs),
+        'minutes': sum(log.duration_minutes for log in weekly_logs)
+    }
+
+    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, time_range=time_range, weekly_progress=weekly_progress, exercise_logs=exercise_logs)

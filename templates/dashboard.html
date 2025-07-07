@@ -76,6 +76,46 @@
         </div>
     </div>
 
+    {% if goals and (goals.calories_burned_goal_weekly or goals.exercises_per_week_goal or goals.minutes_per_exercise_goal) %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Weekly Exercise Goals</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <h5>Calories Burned</h5>
+                    <small class="text-muted d-block mb-1">Goal: {{ goals.calories_burned_goal_weekly }} kcal</small>
+                    <p class="mb-2">Progress: {{ weekly_progress.calories_burned|round|int }} kcal</p>
+                    <div class="progress" style="height: 15px;">
+                        {% set percentage = (weekly_progress.calories_burned / goals.calories_burned_goal_weekly) * 100 if goals.calories_burned_goal_weekly > 0 else 0 %}
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.calories_burned }}" aria-valuemin="0" aria-valuemax="{{ goals.calories_burned_goal_weekly }}">{{ "%.0f" % percentage }}%</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h5>Workouts</h5>
+                    <small class="text-muted d-block mb-1">Goal: {{ goals.exercises_per_week_goal }}</small>
+                    <p class="mb-2">Progress: {{ weekly_progress.exercises }}</p>
+                    <div class="progress" style="height: 15px;">
+                        {% set percentage = (weekly_progress.exercises / goals.exercises_per_week_goal) * 100 if goals.exercises_per_week_goal > 0 else 0 %}
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.exercises }}" aria-valuemin="0" aria-valuemax="{{ goals.exercises_per_week_goal }}">{{ "%.0f" % percentage }}%</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h5>Exercise Minutes</h5>
+                    {% set total_minutes_goal = goals.minutes_per_exercise_goal * goals.exercises_per_week_goal %}
+                    <small class="text-muted d-block mb-1">Goal: {{ total_minutes_goal }} min</small>
+                    <p class="mb-2">Progress: {{ weekly_progress.minutes }} min</p>
+                    <div class="progress" style="height: 15px;">
+                        {% set percentage = (weekly_progress.minutes / total_minutes_goal) * 100 if total_minutes_goal > 0 else 0 %}
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.minutes }}" aria-valuemin="0" aria-valuemax="{{ total_minutes_goal }}">{{ "%.0f" % percentage }}%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <h2 class="mt-4">Exercise History</h2>
     <ul class="list-group">
         {% for log in exercise_logs %}

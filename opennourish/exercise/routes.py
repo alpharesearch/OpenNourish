@@ -3,8 +3,8 @@ from flask_login import login_required, current_user
 from . import exercise_bp
 from .forms import ExerciseLogForm
 from .utils import get_user_weight_kg, calculate_calories_burned
-from models import db, ExerciseLog
-from datetime import date
+from models import db, ExerciseLog, UserGoal
+from datetime import date, timedelta
 
 @exercise_bp.route('/log', methods=['GET', 'POST'])
 @login_required
@@ -52,11 +52,36 @@ def log_exercise():
         edit_form = ExerciseLogForm(obj=item, prefix=f"form-{item.id}")
         forms[item.id] = edit_form
 
+    # --- Weekly Exercise Goal Progress ---
+    user_goal = UserGoal.query.filter_by(user_id=current_user.id).first()
+    weekly_progress = {
+        'calories_burned': 0,
+        'exercises': 0,
+        'minutes': 0
+    }
+    if user_goal:
+        today = date.today()
+        start_of_week = today - timedelta(days=today.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+
+        weekly_logs = ExerciseLog.query.filter(
+            ExerciseLog.user_id == current_user.id,
+            ExerciseLog.log_date >= start_of_week,
+            ExerciseLog.log_date <= end_of_week
+        ).all()
+
+        if weekly_logs:
+            weekly_progress['calories_burned'] = sum(log.calories_burned for log in weekly_logs)
+            weekly_progress['exercises'] = len(weekly_logs)
+            weekly_progress['minutes'] = sum(log.duration_minutes for log in weekly_logs)
+
     return render_template('exercise/log_exercise.html', 
                            form=form, 
                            logs=logs, 
                            forms=forms,
-                           title='Exercise Log')
+                           title='Exercise Log',
+                           user_goal=user_goal,
+                           weekly_progress=weekly_progress)
 
 @exercise_bp.route('/<int:log_id>/edit', methods=['POST'])
 @login_required

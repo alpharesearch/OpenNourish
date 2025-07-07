@@ -38,10 +38,21 @@ def progress():
     forms = {}
     for item in check_ins_pagination.items:
         edit_form = CheckInForm(obj=item, prefix=f"form-{item.id}")
+
+        if edit_form.body_fat_percentage.data is not None:
+            edit_form.body_fat_percentage.data = round(edit_form.body_fat_percentage.data, 2)
+
         if current_user.measurement_system == 'us':
-            edit_form.weight_lbs.data = kg_to_lbs(item.weight_kg)
-            if item.waist_cm:
-                edit_form.waist_in.data = cm_to_in(item.waist_cm)
+            if item.weight_kg is not None:
+                edit_form.weight_lbs.data = round(kg_to_lbs(item.weight_kg), 2)
+            if item.waist_cm is not None:
+                edit_form.waist_in.data = round(cm_to_in(item.waist_cm), 2)
+        else:
+            if edit_form.weight_kg.data is not None:
+                edit_form.weight_kg.data = round(edit_form.weight_kg.data, 2)
+            if edit_form.waist_cm.data is not None:
+                edit_form.waist_cm.data = round(edit_form.waist_cm.data, 2)
+        
         forms[item.id] = edit_form
 
     return render_template('tracking/progress.html', 
