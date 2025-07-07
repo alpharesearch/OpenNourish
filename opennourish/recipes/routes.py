@@ -268,7 +268,6 @@ def auto_add_recipe_portion(recipe_id):
         modifier=None,
         gram_weight=gram_weight_per_serving
     )
-    new_portion.full_description = new_portion.full_description_str
     db.session.add(new_portion)
     db.session.commit()
     name_from_form = request.form.get('name', type=str)
@@ -299,7 +298,6 @@ def add_recipe_portion(recipe_id):
             modifier=form.modifier.data,
             gram_weight=form.gram_weight.data
         )
-        new_portion.full_description = new_portion.full_description_str
         db.session.add(new_portion)
         db.session.commit()
         flash('Recipe portion added.', 'success')
@@ -323,7 +321,6 @@ def update_recipe_portion(portion_id):
     form = PortionForm(request.form, obj=portion)
     if form.validate_on_submit():
         form.populate_obj(portion)
-        portion.full_description = portion.full_description_str
         db.session.commit()
         flash('Portion updated successfully!', 'success')
     else:

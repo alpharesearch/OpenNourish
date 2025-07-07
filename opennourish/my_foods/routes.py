@@ -84,7 +84,6 @@ def add_my_food_portion(food_id):
             modifier=form.modifier.data,
             gram_weight=form.gram_weight.data,
         )
-        new_portion.full_description = new_portion.full_description_str
         db.session.add(new_portion)
         db.session.commit()
         flash('Portion added successfully!', 'success')
@@ -103,7 +102,6 @@ def update_my_food_portion(portion_id):
     form = PortionForm(request.form, obj=portion)
     if form.validate_on_submit():
         form.populate_obj(portion)
-        portion.full_description = portion.full_description_str
         db.session.commit()
         flash('Portion updated successfully!', 'success')
     else:

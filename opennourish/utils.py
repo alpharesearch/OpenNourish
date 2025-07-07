@@ -54,8 +54,6 @@ def get_available_portions(food_item):
     Returns a list of available portions for a given food item.
     """
     available_portions = []
-    # Always add grams as a base option
-    available_portions.append(SimpleNamespace(id='g', portion_description='g', gram_weight=1))
 
     if food_item:
         if hasattr(food_item, 'portions'):

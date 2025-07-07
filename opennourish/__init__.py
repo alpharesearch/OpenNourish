@@ -180,17 +180,19 @@ def create_app(config_class=Config):
                             my_foods_created += 1
                             db.session.flush() # To get my_food.id for portions
 
-                            # Fetch portions from UnifiedPortion table using fdc_id
-                            usda_food_portions = UnifiedPortion.query.filter_by(fdc_id=usda_food.fdc_id).all()
-                            for portion in usda_food_portions:
+                            # Add diverse portions for USDA-sourced MyFood
+                            portion_types = [
+                                ("cup", random.uniform(100, 250)),
+                                ("serving", random.uniform(50, 150)),
+                                ("piece", random.uniform(10, 50))
+                            ]
+                            for desc, weight in portion_types:
                                 my_portion = UnifiedPortion(
                                     my_food_id=my_food.id,
-                                    portion_description=portion.portion_description or portion.measure_unit_description,
-                                    gram_weight=portion.gram_weight,
-                                    amount=portion.amount,
-                                    measure_unit_description=portion.measure_unit_description,
-                                    modifier=portion.modifier,
-                                    full_description=portion.full_description
+                                    portion_description=desc,
+                                    gram_weight=weight,
+                                    amount=1.0,
+                                    measure_unit_description=desc,
                                 )
                                 db.session.add(my_portion)
                     else: # Create a purely custom MyFood
@@ -208,12 +210,19 @@ def create_app(config_class=Config):
                         my_foods_created += 1
                         db.session.flush()  # To get my_food.id for portions
 
-                        # MyPortions for custom MyFood
-                        if random.random() < 0.5:  # 50% chance to add a custom portion
+                        # Add diverse portions for custom MyFood
+                        portion_types = [
+                            ("slice", random.uniform(15, 40)),
+                            ("bowl", random.uniform(150, 300)),
+                            ("unit", random.uniform(5, 20))
+                        ]
+                        for desc, weight in portion_types:
                             portion = UnifiedPortion(
                                 my_food_id=my_food.id,
-                                portion_description=random.choice(['cup', 'slice', 'serving', 'piece']),
-                                gram_weight=random.uniform(30, 200)
+                                portion_description=desc,
+                                gram_weight=weight,
+                                amount=1.0,
+                                measure_unit_description=desc,
                             )
                             db.session.add(portion)
 
@@ -304,18 +313,21 @@ def create_app(config_class=Config):
 
                 # Seed Recipe Portions
                 for r in user_recipes:
-                    # Create a random portion for the recipe
-                    amount = random.randint(1, 8)
-                    measure_unit = random.choice(['bowl', 'plate', 'cup', 'serving'])
-                    
-                    new_portion = UnifiedPortion(
-                        recipe_id=r.id,
-                        amount=amount,
-                        measure_unit_description=measure_unit,
-                        gram_weight=random.uniform(100, 500), # Random weight for the portion
-                        full_description=f"{amount} {measure_unit}"
-                    )
-                    db.session.add(new_portion)
+                    # Create a few random portions for the recipe
+                    portion_types = [
+                        ("serving", random.uniform(100, 300)),
+                        ("bowl", random.uniform(200, 500)),
+                        ("plate", random.uniform(300, 700))
+                    ]
+                    for desc, weight in portion_types:
+                        new_portion = UnifiedPortion(
+                            recipe_id=r.id,
+                            amount=1.0,
+                            measure_unit_description=desc,
+                            portion_description=desc,
+                            gram_weight=weight
+                        )
+                        db.session.add(new_portion)
 
                 # MyMeals
                 num_my_meals = random.randint(5, 10)
@@ -501,8 +513,6 @@ def create_app(config_class=Config):
                     if modifier:
                         desc_parts.append(modifier)
                     
-                    full_description = " ".join(desc_parts)
-
                     portion = UnifiedPortion(
                         fdc_id=fdc_id,
                         seq_num=seq_num,
@@ -510,8 +520,7 @@ def create_app(config_class=Config):
                         measure_unit_description=measure_units.get(measure_unit_id, "") if measure_unit_id != '9999' else "",
                         portion_description=portion_description,
                         modifier=modifier,
-                        gram_weight=gram_weight,
-                        full_description=full_description
+                        gram_weight=gram_weight
                     )
                     portions_to_add.append(portion)
             

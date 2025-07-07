@@ -38,6 +38,8 @@ def diary(log_date_str=None):
     totals = calculate_nutrition_for_items(daily_logs)
 
     for log in daily_logs:
+        food_item = None
+        description_to_display = "Unknown Food"
         if log.fdc_id:
             food_item = db.session.query(Food).get(log.fdc_id)
         elif log.my_food_id:
@@ -47,16 +49,17 @@ def diary(log_date_str=None):
 
         if food_item:
             available_portions = get_available_portions(food_item)
-            # Calculate display amount based on serving type
-            gram_weight = 1.0
-            if log.serving_type and log.serving_type != 'g':
-                try:
-                    # Example serving_type string: "cup (128g)"
-                    gram_weight = float(log.serving_type.split('(')[-1].replace('g)', ''))
-                except (IndexError, ValueError):
-                    gram_weight = 1.0 # Fallback
-
-            display_amount = log.amount_grams / gram_weight if gram_weight > 0 else log.amount_grams
+            current_app.logger.debug(f"Debug: Available portions for {description_to_display}: {[p.full_description_str if hasattr(p, 'full_description_str') else p.portion_description for p in available_portions]}")
+            
+            # Determine display_amount and selected_portion_id
+            display_amount = log.amount_grams
+            selected_portion_id = 'g' # Default to grams
+            
+            if log.portion_id_fk:
+                selected_portion = db.session.get(UnifiedPortion, log.portion_id_fk)
+                if selected_portion and selected_portion.gram_weight > 0:
+                    display_amount = log.amount_grams / selected_portion.gram_weight
+                    selected_portion_id = selected_portion.id
             
             nutrition = calculate_nutrition_for_items([log])
             description_to_display = food_item.description if hasattr(food_item, 'description') else food_item.name
@@ -66,7 +69,8 @@ def diary(log_date_str=None):
                 'amount': display_amount,
                 'nutrition': nutrition,
                 'portions': available_portions,
-                'serving_type': log.serving_type
+                'serving_type': log.serving_type,
+                'selected_portion_id': selected_portion_id
             })
 
     prev_date = log_date - timedelta(days=1)
@@ -123,11 +127,13 @@ def update_entry(log_id):
         if portion_id == 'g':
             log_entry.amount_grams = amount
             log_entry.serving_type = 'g'
+            log_entry.portion_id_fk = None
         else:
             portion = db.session.get(UnifiedPortion, int(portion_id))
             if portion:
                 log_entry.amount_grams = amount * portion.gram_weight
-                log_entry.serving_type = f"{portion.portion_description} ({portion.gram_weight}g)"
+                log_entry.serving_type = portion.full_description_str
+                log_entry.portion_id_fk = portion.id
             else:
                 flash('Invalid portion selected.', 'danger')
                 return redirect(url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()))

@@ -58,7 +58,6 @@ class UnifiedPortion(db.Model):
     portion_description = db.Column(db.String)
     modifier = db.Column(db.String)
     gram_weight = db.Column(db.Float, nullable=False)
-    full_description = db.Column(db.String)
 
     @property
     def full_description_str(self):
@@ -74,7 +73,7 @@ class UnifiedPortion(db.Model):
         if self.modifier:
             parts.append(f"({self.modifier})")
         
-        return " ".join(parts).strip()
+        return " ".join(parts).strip() or "g"
 
 
 class MyFood(db.Model):
@@ -113,6 +112,7 @@ class DailyLog(db.Model):
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
     amount_grams = db.Column(db.Float)
     serving_type = db.Column(db.String(50), default='g')
+    portion_id_fk = db.Column(db.Integer, db.ForeignKey('portions.id'), nullable=True)
 
 class Recipe(db.Model):
     __tablename__ = 'recipes'

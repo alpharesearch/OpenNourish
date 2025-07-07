@@ -46,8 +46,14 @@
                                     <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
                                     <input type="hidden" name="log_date" value="{{ log_date }}">
                                     <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                    <input type="number" name="quantity" value="100" min="1" class="form-control form-control-sm d-inline-block w-auto">g
-                                    <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
+                                    <input type="number" name="quantity" value="1" min="0.01" step="0.01" class="form-control form-control-sm d-inline-block w-auto">
+                                    <select name="portion_id" class="form-select form-select-sm ms-2 d-inline-block w-auto">
+                                        <option value="g">g</option>
+                                        {% for portion in food.portions %}
+                                            <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
                                 </form>
                                 <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
                             </div>
@@ -113,8 +119,14 @@
                                     <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
                                     <input type="hidden" name="log_date" value="{{ log_date }}">
                                     <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                    <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm d-inline-block w-auto"> servings
-                                    <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
+                                    <input type="number" name="quantity" value="1" min="0.01" step="0.01" class="form-control form-control-sm d-inline-block w-auto">
+                                    <select name="portion_id" class="form-select form-select-sm ms-2 d-inline-block w-auto">
+                                        <option value="g">g</option>
+                                        {% for portion in recipe.portions %}
+                                            <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
                                 </form>
                                 <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
                             </div>
@@ -150,8 +162,14 @@
                                 <input type="hidden" name="log_date" value="{{ log_date }}">
                                 <input type="hidden" name="meal_name" value="{{ meal_name }}">
                                 {% if target %}
-                                    <input type="number" name="quantity" value="100" min="1" class="form-control form-control-sm d-inline-block w-auto">g
-                                    <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
+                                    <input type="number" name="quantity" value="1" min="0.01" step="0.01" class="form-control form-control-sm d-inline-block w-auto">
+                                    <select name="portion_id" class="form-select form-select-sm ms-2 d-inline-block w-auto">
+                                        <option value="g">g</option>
+                                        {% for portion in food.portions %}
+                                            <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
                                 {% else %}
                                     <input type="hidden" name="quantity" value="100"> {# Default quantity for my_foods #}
                                     <button type="submit" class="btn btn-sm btn-outline-primary">Add to My Foods</button>

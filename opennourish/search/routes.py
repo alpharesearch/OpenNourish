@@ -35,10 +35,13 @@ def search():
         current_app.logger.debug(f"Debug: USDA Foods found: {len(usda_foods_query)}")
         
         for food in usda_foods_query:
+            # Manually fetch portions for USDA food
+            usda_portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
             results["usda_foods"].append({
                 'fdc_id': food.fdc_id,
                 'description': food.description,
-                'has_portions': bool(UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).first()),
+                'has_portions': bool(usda_portions),
+                'portions': usda_portions,
                 'has_ingredients': bool(food.ingredients),
                 'has_rich_nutrients': len(food.nutrients) > 20 # Arbitrary threshold for "rich"
             })
@@ -54,7 +57,8 @@ def search():
                 results["my_foods"].append({
                     'id': food.id,
                     'description': food.description,
-                    'has_portions': bool(UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).first()),
+                    'has_portions': bool(food.portions),
+                    'portions': food.portions,
                     'has_ingredients': bool(food.ingredients) # MyFood has an ingredients string
                 })
 
@@ -72,6 +76,7 @@ def search():
                     'name': recipe.name,
                     'has_ingredients': bool(recipe.instructions),
                     'has_portions': bool(recipe.portions),
+                    'portions': recipe.portions,
                     'calories_per_100g': nutrition_per_100g['calories'],
                     'protein_per_100g': nutrition_per_100g['protein'],
                     'carbs_per_100g': nutrition_per_100g['carbs'],
@@ -210,7 +215,7 @@ def add_item():
         portion = db.session.get(UnifiedPortion, int(portion_id))
         if portion:
             amount_grams = quantity * portion.gram_weight
-            serving_type = f"{portion.portion_description} ({portion.gram_weight}g)"
+            serving_type = portion.full_description_str
         else:
             flash('Invalid portion selected.', 'danger')
             return redirect(request.referrer)
@@ -231,7 +236,8 @@ def add_item():
                         meal_name=meal_name,
                         fdc_id=food.fdc_id,
                         amount_grams=amount_grams,
-                        serving_type=serving_type
+                        serving_type=serving_type,
+                        portion_id_fk=int(portion_id) if portion_id != 'g' else None
                     )
                     db.session.add(daily_log)
                     db.session.commit()
@@ -247,7 +253,8 @@ def add_item():
                         meal_name=meal_name,
                         my_food_id=food.id,
                         amount_grams=amount_grams,
-                        serving_type=serving_type
+                        serving_type=serving_type,
+                        portion_id_fk=int(portion_id) if portion_id != 'g' else None
                     )
                     db.session.add(daily_log)
                     db.session.commit()
@@ -263,7 +270,8 @@ def add_item():
                         meal_name=meal_name,
                         recipe_id=recipe.id,
                         amount_grams=amount_grams,
-                        serving_type=serving_type
+                        serving_type=serving_type,
+                        portion_id_fk=int(portion_id) if portion_id != 'g' else None
                     )
                     db.session.add(daily_log)
                     db.session.commit()

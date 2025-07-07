@@ -33,17 +33,5 @@ CREATE TABLE food_nutrients (
     FOREIGN KEY (nutrient_id) REFERENCES nutrients (id)
 );
 
--- This table provides user-friendly portion sizes for foods.
-CREATE TABLE portions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fdc_id INTEGER NOT NULL,
-    seq_num INTEGER,
-    amount REAL,
-    measure_unit_description TEXT,
-    portion_description TEXT,
-    modifier TEXT,
-    gram_weight REAL,
-    full_description TEXT,
-    FOREIGN KEY (fdc_id) REFERENCES foods (fdc_id)
-);
+-- DO NOT CREATE A PORTIONS TABLE HERE, unified portions table is now in the user database 
 
