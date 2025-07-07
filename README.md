@@ -71,6 +71,7 @@ OpenNourish can be easily containerized using Docker for consistent development 
         flask db init # Only run this once for a new project
         flask db upgrade
         ```
+5.  **Typst Binary:** Ensure the `typst/` directory (containing the `typst` executable and any necessary libraries) is present in the project root. This directory will be copied into the Docker image.
 
 ### Building the Docker Image
 

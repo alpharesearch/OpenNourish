@@ -34,6 +34,10 @@ COPY pytest.ini .
 COPY templates/ templates/
 COPY static/ static/
 
+# Copy Typst binary and associated files
+COPY typst/ /usr/local/bin/typst/
+ENV PATH="/usr/local/bin/typst:$PATH"
+
 # Expose the port Flask will run on
 EXPOSE 8081
 
