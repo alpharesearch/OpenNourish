@@ -17,7 +17,10 @@
                     <a class="nav-link {% if request.blueprint in ['diary', 'database', 'recipes'] %}active{% endif %}" href="{{ url_for('diary.diary') }}">Food</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.blueprint in ['exercise', 'tracking'] %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise & Progress</a>
+                    <a class="nav-link {% if request.blueprint == 'exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.blueprint == 'tracking' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Progress</a>
                 </li>
             </ul>
             <ul class="navbar-nav">
@@ -70,18 +73,12 @@
             {% endif %}
 
             {# --- Exercise & Progress Sub-Menu --- #}
-            {% if request.blueprint in ['exercise', 'tracking'] %}
+            {% if request.blueprint == 'exercise' or request.blueprint == 'tracking' %}
                 <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'exercise.log_exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Log Exercise</a>
+                    <a class="nav-link px-2 {% if request.endpoint == 'exercise.log_exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise Log</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'exercise.exercise_history' %}active{% endif %}" href="{{ url_for('exercise.exercise_history') }}">Exercise History</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'tracking.new_check_in' %}active{% endif %}" href="{{ url_for('tracking.new_check_in') }}">Check-In</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'tracking.progress' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Progress Chart</a>
+                    <a class="nav-link px-2 {% if request.endpoint == 'tracking.progress' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Check-in & Progress</a>
                 </li>
             {% endif %}
         </ul>

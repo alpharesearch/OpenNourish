@@ -1,51 +1,99 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="container">
-    <h2>{{ title }}</h2>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Weight ({{ check_ins[0].unit_labels.weight if check_ins else '' }})</th>
-                <th>Body Fat (%)</th>
-                <th>Waist ({{ check_ins[0].unit_labels.waist if check_ins else '' }})</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in check_ins %}
-            <tr>
-                <td>{{ item.check_in.checkin_date.strftime('%Y-%m-%d') }}</td>
-                <td>{{ item.weight if item.weight is not none }}</td>
-                <td>{{ item.check_in.body_fat_percentage if item.check_in.body_fat_percentage is not none }}</td>
-                <td>{{ item.waist if item.waist is not none }}</td>
-                <td>
-                    <a href="{{ url_for('tracking.edit_check_in', check_in_id=item.check_in.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                    <form action="{{ url_for('tracking.delete_check_in', check_in_id=item.check_in.id) }}" method="POST" class="d-inline">
+    <h2 class="mb-4">New Check-In</h2>
+    <form method="POST" action="{{ url_for('tracking.progress') }}" class="mb-5">
+        {{ form.hidden_tag() }}
+        <div class="row align-items-end">
+            <div class="col-md-3">
+                {{ form.checkin_date.label(class="form-label") }}
+                {{ form.checkin_date(class="form-control") }}
+            </div>
+            {% if current_user.measurement_system == 'us' %}
+            <div class="col-md-2">
+                {{ form.weight_lbs.label(class="form-label") }}
+                {{ form.weight_lbs(class="form-control") }}
+            </div>
+            <div class="col-md-2">
+                {{ form.waist_in.label(class="form-label") }}
+                {{ form.waist_in(class="form-control") }}
+            </div>
+            {% else %}
+            <div class="col-md-2">
+                {{ form.weight_kg.label(class="form-label") }}
+                {{ form.weight_kg(class="form-control") }}
+            </div>
+            <div class="col-md-2">
+                {{ form.waist_cm.label(class="form-label") }}
+                {{ form.waist_cm(class="form-control") }}
+            </div>
+            {% endif %}
+            <div class="col-md-2">
+                {{ form.body_fat_percentage.label(class="form-label") }}
+                {{ form.body_fat_percentage(class="form-control") }}
+            </div>
+            <div class="col-md-2">
+                {{ form.submit(class="btn btn-outline-primary w-100") }}
+            </div>
+        </div>
+    </form>
+
+    <h2 class="mb-4">History</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Weight</th>
+                    <th>Waist</th>
+                    <th>Body Fat %</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in check_ins.items %}
+                <tr>
+                    <form method="POST" action="{{ url_for('tracking.update_check_in', check_in_id=item.id) }}">
+                        {{ forms[item.id].hidden_tag() }}
+                        <td>{{ forms[item.id].checkin_date(class="form-control") }}</td>
+                        {% if current_user.measurement_system == 'us' %}
+                        <td>{{ forms[item.id].weight_lbs(class="form-control") }}</td>
+                        <td>{{ forms[item.id].waist_in(class="form-control") }}</td>
+                        {% else %}
+                        <td>{{ forms[item.id].weight_kg(class="form-control") }}</td>
+                        <td>{{ forms[item.id].waist_cm(class="form-control") }}</td>
+                        {% endif %}
+                        <td>{{ forms[item.id].body_fat_percentage(class="form-control") }}</td>
+                        <td>
+                            <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
+                    </form>
+                    <form action="{{ url_for('tracking.delete_check_in', check_in_id=item.id) }}" method="POST" class="d-inline">
                         <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                     </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     <nav aria-label="Page navigation">
         <ul class="pagination">
-            {% if pagination.has_prev %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=pagination.prev_num) }}">Previous</a></li>
+            {% if check_ins.has_prev %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=check_ins.prev_num) }}">Previous</a></li>
             {% endif %}
-            {% for page_num in pagination.iter_pages() %}
+            {% for page_num in check_ins.iter_pages() %}
             {% if page_num %}
-            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+            <li class="page-item {% if page_num == check_ins.page %}active{% endif %}">
                 <a class="page-link" href="{{ url_for('tracking.progress', page=page_num) }}">{{ page_num }}</a>
             </li>
             {% else %}
             <li class="page-item disabled"><span class="page-link">...</span></li>
             {% endif %}
             {% endfor %}
-            {% if pagination.has_next %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=pagination.next_num) }}">Next</a></li>
+            {% if check_ins.has_next %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=check_ins.next_num) }}">Next</a></li>
             {% endif %}
         </ul>
     </nav>

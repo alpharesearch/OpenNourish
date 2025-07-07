@@ -1,62 +1,140 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2>Log Exercise</h2>
-    <form method="POST" action="{% if log_id %}{{ url_for('exercise.edit_exercise', log_id=log_id) }}{% else %}{{ url_for('exercise.log_exercise') }}{% endif %}">
+<div class="container">
+    <h2 class="mb-4">New Exercise Log</h2>
+    <form method="POST" action="{{ url_for('.log_exercise') }}" class="mb-5">
         {{ form.hidden_tag() }}
-        <div class="mb-3">
-            {{ form.log_date.label(class="form-label") }}
-            {{ form.log_date(class="form-control", type="date") }}
-        </div>
-        <div class="mb-3">
-            {{ form.activity.label(class="form-label") }}
-            <select class="form-select" id="activity" name="activity">
-                {% for value, label, selected in form.activity.iter_choices() %}
-                    <option value="{{ value }}" {% if selected %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div id="manual-entry" style="display: none;">
-            <div class="mb-3">
-                {{ form.manual_description.label(class="form-label") }}
-                {{ form.manual_description(class="form-control") }}
+        <div class="row align-items-end">
+            <div class="col-md-3">
+                {{ form.log_date.label(class="form-label") }}
+                {{ form.log_date(class="form-control") }}
             </div>
-            <div class="mb-3">
+            <div class="col-md-3">
+                {{ form.activity.label(class="form-label") }}
+                <select id="activity" name="activity" class="form-select">
+                    {% for value, label, selected in form.activity.iter_choices() %}
+                        <option value="{{ value }}" {% if selected %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                {{ form.duration_minutes.label(class="form-label") }}
+                {{ form.duration_minutes(class="form-control") }}
+            </div>
+            <div class="col-md-2" id="manual-calories-burned-new" style="display: none;">
                 {{ form.calories_burned.label(class="form-label") }}
                 {{ form.calories_burned(class="form-control") }}
             </div>
+            <div class="col-md-2 align-self-end">
+                {{ form.submit(class="btn btn-outline-primary w-100") }}
+            </div>
         </div>
-        <div class="mb-3">
-            {{ form.duration_minutes.label(class="form-label") }}
-            {{ form.duration_minutes(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.submit(class="btn btn-outline-success") }}
+        <div class="row mt-3" id="manual-description-new" style="display: none;">
+            <div class="col-md-6">
+                {{ form.manual_description.label(class="form-label") }}
+                {{ form.manual_description(class="form-control") }}
+            </div>
         </div>
     </form>
+
+    <h2 class="mb-4">History</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Activity/Description</th>
+                    <th>Duration (min)</th>
+                    <th>Calories Burned</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in logs.items %}
+                <tr>
+                    <form method="POST" action="{{ url_for('.edit_exercise', log_id=item.id) }}">
+                        {{ forms[item.id].hidden_tag() }}
+                        <td>{{ forms[item.id].log_date(class="form-control") }}</td>
+                        <td>
+                            {% if item.activity %}
+                                <select name="activity" class="form-select">
+                                    {% for val, label, selected in forms[item.id].activity.iter_choices() %}
+                                    <option value="{{ val }}" {% if selected %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                {{ forms[item.id].manual_description(class="form-control") }}
+                            {% endif %}
+                        </td>
+                        <td>{{ forms[item.id].duration_minutes(class="form-control") }}</td>
+                        <td>
+                            {% if item.activity %}
+                                {{ item.calories_burned|round|int }}
+                            {% else %}
+                                {{ forms[item.id].calories_burned(class="form-control") }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
+                    </form>
+                    <form action="{{ url_for('.delete_exercise', log_id=item.id) }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            {% if logs.has_prev %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('.log_exercise', page=logs.prev_num) }}">Previous</a></li>
+            {% endif %}
+            {% for page_num in logs.iter_pages() %}
+            {% if page_num %}
+            <li class="page-item {% if page_num == logs.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('.log_exercise', page=page_num) }}">{{ page_num }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+            {% endfor %}
+            {% if logs.has_next %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('.log_exercise', page=logs.next_num) }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const activityField = document.getElementById('activity');
-        const manualEntryDiv = document.getElementById('manual-entry');
-        const manualDescriptionField = document.getElementById('manual_description');
-        const caloriesBurnedField = document.getElementById('calories_burned');
+document.addEventListener('DOMContentLoaded', function() {
+    const activityField = document.getElementById('activity');
+    const manualCaloriesDiv = document.getElementById('manual-calories-burned-new');
+    const manualDescriptionDiv = document.getElementById('manual-description-new');
+    const manualDescriptionField = document.querySelector('input[name="manual_description"]');
+    const caloriesBurnedField = document.querySelector('input[name="calories_burned"]');
 
-        function toggleManualEntry() {
-            if (activityField.value === '__None') { // This is the value for the blank option
-                manualEntryDiv.style.display = 'block';
-                manualDescriptionField.required = true;
-                caloriesBurnedField.required = true;
-            } else {
-                manualEntryDiv.style.display = 'none';
-                manualDescriptionField.required = false;
-                caloriesBurnedField.required = false;
-            }
+    function toggleManualEntry() {
+        if (activityField.value === '__None' || activityField.value === '') {
+            manualCaloriesDiv.style.display = 'block';
+            manualDescriptionDiv.style.display = 'block';
+            if(manualDescriptionField) manualDescriptionField.required = true;
+            if(caloriesBurnedField) caloriesBurnedField.required = true;
+        } else {
+            manualCaloriesDiv.style.display = 'none';
+            manualDescriptionDiv.style.display = 'none';
+            if(manualDescriptionField) manualDescriptionField.required = false;
+            if(caloriesBurnedField) caloriesBurnedField.required = false;
         }
+    }
 
+    if(activityField) {
         activityField.addEventListener('change', toggleManualEntry);
-        toggleManualEntry(); // Run on page load
-    });
+        toggleManualEntry();
+    }
+});
 </script>
 {% endblock %}
