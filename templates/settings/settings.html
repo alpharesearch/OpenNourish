@@ -1,33 +1,116 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Settings</h1>
-    <form action="" method="post">
-        {{ form.hidden_tag() }}
-        <div class="mb-3">
-            {{ form.password.label(class="form-label") }}
-            {{ form.password(class="form-control") }}
-            {% if form.password.errors %}
-                <div class="invalid-feedback d-block">
-                    {% for error in form.password.errors %}
-                        <span>{{ error }}</span>
-                    {% endfor %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Settings Form Column -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>User Settings</h4>
                 </div>
-            {% endif %}
-        </div>
-        <div class="mb-3">
-            {{ form.password2.label(class="form-label") }}
-            {{ form.password2(class="form-control") }}
-            {% if form.password2.errors %}
-                <div class="invalid-feedback d-block">
-                    {% for error in form.password2.errors %}
-                        <span>{{ error }}</span>
-                    {% endfor %}
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('settings.settings') }}">
+                        {{ settings_form.hidden_tag() }}
+
+                        <!-- Measurement System -->
+                        <div class="mb-3">
+                            {{ settings_form.measurement_system.label(class="form-label") }}
+                            <div>
+                                {% for subfield in settings_form.measurement_system %}
+                                <div class="form-check form-check-inline">
+                                    {{ subfield(class="form-check-input") }}
+                                    {{ subfield.label(class="form-check-label") }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Age and Gender -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ settings_form.age.label(class="form-label") }}
+                                {{ settings_form.age(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ settings_form.gender.label(class="form-label") }}
+                                {{ settings_form.gender(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <!-- Height Fields -->
+                        <div id="height-metric" class="mb-3">
+                            {{ settings_form.height_cm.label(class="form-label") }}
+                            {{ settings_form.height_cm(class="form-control") }}
+                        </div>
+                        <div id="height-us" class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ settings_form.height_ft.label(class="form-label") }}
+                                {{ settings_form.height_ft(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ settings_form.height_in.label(class="form-label") }}
+                                {{ settings_form.height_in(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <button type="submit" name="submit_settings" class="btn btn-outline-primary">Save Settings</button>
+                    </form>
                 </div>
-            {% endif %}
+            </div>
         </div>
-        <div class="mb-3">
-            {{ form.submit(class="btn btn-outline-success") }}
+
+        <!-- Change Password Form Column -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Change Password</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('settings.settings') }}">
+                        {{ password_form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ password_form.password.label(class="form-label") }}
+                            {{ password_form.password(class="form-control") }}
+                        </div>
+                        <div class="mb-3">
+                            {{ password_form.password2.label(class="form-label") }}
+                            {{ password_form.password2(class="form-control") }}
+                        </div>
+                        <button type="submit" name="submit_password" class="btn btn-outline-success">Change Password</button>
+                    </form>
+                </div>
+            </div>
         </div>
-    </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const measurementSystemRadios = document.querySelectorAll('input[name="measurement_system"]');
+    const heightMetricDiv = document.getElementById('height-metric');
+    const heightUsDiv = document.getElementById('height-us');
+
+    function toggleHeightFields() {
+        const selectedSystem = document.querySelector('input[name="measurement_system"]:checked').value;
+        if (selectedSystem === 'metric') {
+            heightMetricDiv.style.display = 'block';
+            heightUsDiv.style.display = 'none';
+        } else {
+            heightMetricDiv.style.display = 'none';
+            heightUsDiv.style.display = 'flex'; // Use flex for row layout
+        }
+    }
+
+    measurementSystemRadios.forEach(radio => {
+        radio.addEventListener('change', toggleHeightFields);
+    });
+
+    // Initial check
+    toggleHeightFields();
+});
+</script>
 {% endblock %}

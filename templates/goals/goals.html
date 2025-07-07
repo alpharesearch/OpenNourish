@@ -6,183 +6,178 @@
 <div class="container">
     <h1 class="mb-4">Set Your Nutritional Goals</h1>
     <form method="POST" action="{{ url_for('goals.goals') }}">
-    {{ form.hidden_tag() }}
+        {{ form.hidden_tag() }}
 
-        <h2 class="mt-4 mb-3">Personal Information</h2>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mt-4 mb-0">Personal Information</h2>
+            <button type="button" id="calculate-bmr-btn" class="btn btn-outline-info mt-3">Calculate BMR & Macros</button>
+        </div>
         <div class="row">
             <div class="col-md-4 mb-3">
                 {{ form.age.label(class="form-label") }}
                 {{ form.age(class="form-control") }}
-                {% if form.age.errors %}
-                    <div class="text-danger">{% for error in form.age.errors %}{{ error }}{% endfor %}</div>
-                {% endif %}
             </div>
             <div class="col-md-4 mb-3">
                 {{ form.gender.label(class="form-label") }}
-                <div>
-                    {% for subfield in form.gender %}
-                        <div class="form-check form-check-inline">
-                            {{ subfield(class="form-check-input") }}
-                            {{ subfield.label(class="form-check-label") }}
-                        </div>
-                    {% endfor %}
-                </div>
-                {% if form.gender.errors %}
-                    <div class="text-danger">{% for error in form.gender.errors %}{{ error }}{% endfor %}</div>
-                {% endif %}
+                {{ form.gender(class="form-select") }}
             </div>
+            {% if current_user.measurement_system == 'us' %}
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Height</label>
+                <div class="input-group">
+                    {{ form.height_ft(class="form-control", placeholder="ft") }}
+                    {{ form.height_in(class="form-control", placeholder="in") }}
+                </div>
+            </div>
+            {% else %}
             <div class="col-md-4 mb-3">
                 {{ form.height_cm.label(class="form-label") }}
                 {{ form.height_cm(class="form-control") }}
-                {% if form.height_cm.errors %}
-                    <div class="text-danger">{% for error in form.height_cm.errors %}{{ error }}{% endfor %}</div>
-                {% endif %}
             </div>
+            {% endif %}
         </div>
 
         <div class="row">
             <div class="col-md-6 mb-3">
-                {{ form.weight_kg.label(class="form-label") }}
-                {{ form.weight_kg(class="form-control", value=latest_checkin.weight_kg if latest_checkin else '') }}
-                {% if form.weight_kg.errors %}
-                    <div class="text-danger">{% for error in form.weight_kg.errors %}{{ error }}{% endfor %}</div>
+                {% if current_user.measurement_system == 'us' %}
+                    {{ form.weight_lbs.label(class="form-label") }}
+                    {{ form.weight_lbs(class="form-control") }}
+                {% else %}
+                    {{ form.weight_kg.label(class="form-label") }}
+                    {{ form.weight_kg(class="form-control") }}
                 {% endif %}
             </div>
             <div class="col-md-6 mb-3">
                 {{ form.body_fat_percentage.label(class="form-label") }}
-                {{ form.body_fat_percentage(class="form-control", value=latest_checkin.body_fat_percentage if latest_checkin else '') }}
-                {% if form.body_fat_percentage.errors %}
-                    <div class="text-danger">{% for error in form.body_fat_percentage.errors %}{{ error }}{% endfor %}</div>
-                {% endif %}
+                {{ form.body_fat_percentage(class="form-control") }}
             </div>
         </div>
 
-        <div class="alert alert-info mt-4" id="bmr-display" style="display: none;" role="alert">
-            Your estimated Basal Metabolic Rate (BMR) is: <strong id="bmr-value"></strong> kcal/day.
-            <small class="d-block">Calculated using the <strong id="bmr-formula"></strong> formula.</small>
+        <div class="alert alert-info mt-4" id="bmr-display" {% if not bmr %}style="display: none;"{% endif %} role="alert">
+            Your estimated Basal Metabolic Rate (BMR) is: <strong id="bmr-value">{{ "%.0f"|format(bmr) if bmr else '' }}</strong> kcal/day.
+            <small class="d-block">Calculated using the <strong id="bmr-formula">{{ formula_name if formula_name else '' }}</strong> formula.</small>
         </div>
 
         <h2 class="mt-4 mb-3">Nutritional Goals</h2>
         <div class="mb-3">
             {{ form.diet_preset.label(class="form-label") }}
             {{ form.diet_preset(class="form-select") }}
-            {% if form.diet_preset.errors %}
-                <div class="text-danger">{% for error in form.diet_preset.errors %}{{ error }}{% endfor %}</div>
-            {% endif %}
         </div>
         <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-3 mb-3">
                 {{ form.calories.label(class="form-label") }}
-                {{ form.calories(class="form-control", value=user_goal.calories if user_goal else '') }}
-                {% if form.calories.errors %}
-                    <div class="text-danger">{% for error in form.calories.errors %}{{ error }}{% endfor %}</div>
-                {% endif %}
+                {{ form.calories(class="form-control") }}
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-3 mb-3">
                 {{ form.protein.label(class="form-label") }}
-                {{ form.protein(class="form-control", value=user_goal.protein if user_goal else '') }}
-                {% if form.protein.errors %}
-                    <div class="text-danger">{% for error in form.protein.errors %}{{ error }}{% endfor %}</div>
-                {% endif %}
+                {{ form.protein(class="form-control") }}
             </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-3 mb-3">
                 {{ form.carbs.label(class="form-label") }}
-                {{ form.carbs(class="form-control", value=user_goal.carbs if user_goal else '') }}
-                {% if form.carbs.errors %}
-                    <div class="text-danger">{% for error in form.carbs.errors %}{{ error }}{% endfor %}</div>
-                {% endif %}
+                {{ form.carbs(class="form-control") }}
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-3 mb-3">
                 {{ form.fat.label(class="form-label") }}
-                {{ form.fat(class="form-control", value=user_goal.fat if user_goal else '') }}
-                {% if form.fat.errors %}
-                    <div class="text-danger">{% for error in form.fat.errors %}{{ error }}{% endfor %}</div>
-                {% endif %}
+                {{ form.fat(class="form-control") }}
             </div>
         </div>
         <button type="submit" class="btn btn-outline-success">Save Goals</button>
     </form>
 </div>
+{% endblock %}
 
+{% block scripts %}
+{{ super() }}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const dietPresetSelect = document.getElementById('diet_preset');
-        const caloriesField = document.getElementById('calories');
-        const proteinField = document.getElementById('protein');
-        const carbsField = document.getElementById('carbs');
-        const fatField = document.getElementById('fat');
-        const dietPresets = {{ diet_presets | tojson }};
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const calculateBtn = document.getElementById('calculate-bmr-btn');
+    const dietPresetSelect = document.getElementById('diet_preset');
+    const caloriesField = document.getElementById('calories');
+    const proteinField = document.getElementById('protein');
+    const carbsField = document.getElementById('carbs');
+    const fatField = document.getElementById('fat');
+    
+    const bmrDisplay = document.getElementById('bmr-display');
+    const bmrValue = document.getElementById('bmr-value');
+    const bmrFormula = document.getElementById('bmr-formula');
 
-        dietPresetSelect.addEventListener('change', function() {
-            const selectedPreset = this.value;
-            if (selectedPreset && dietPresets[selectedPreset]) {
-                const preset = dietPresets[selectedPreset];
-                caloriesField.value = preset.calories;
-                proteinField.value = preset.protein;
-                carbsField.value = preset.carbs;
-                fatField.value = preset.fat;
-            }
-        });
+    function calculateBmrAndGoals() {
+        const age = document.getElementById('age').value;
+        const gender = document.getElementById('gender').value;
+        const bodyFatInput = document.getElementById('body_fat_percentage');
+        const body_fat_percentage = bodyFatInput ? bodyFatInput.value : null;
+        const diet_preset = dietPresetSelect.value;
 
-        const bmrFields = ['age', 'height_cm', 'weight_kg', 'body_fat_percentage'];
-        const bmrDisplay = document.getElementById('bmr-display');
-        const bmrValue = document.getElementById('bmr-value');
-        const bmrFormula = document.getElementById('bmr-formula');
-
-        function calculateBmrAndGoals() {
-            const age = document.getElementById('age').value;
-            const gender = document.querySelector('input[name="gender"]:checked')?.value;
-            const height_cm = document.getElementById('height_cm').value;
-            const weight_kg = document.getElementById('weight_kg')?.value;
-            const body_fat_percentage = document.getElementById('body_fat_percentage')?.value;
-            const diet_preset = dietPresetSelect.value;
-
-            if (age && gender && height_cm && weight_kg) {
-                fetch('{{ url_for("goals.calculate_bmr_route") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ form.csrf_token._value() }}'
-                    },
-                    body: JSON.stringify({ age, gender, height_cm, weight_kg, body_fat_percentage, diet_preset })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.bmr) {
-                        bmrValue.textContent = data.bmr.toFixed(0);
-                        bmrFormula.textContent = data.formula;
-                        bmrDisplay.style.display = 'block';
-
-                        if (data.adjusted_goals) {
-                            caloriesField.value = data.adjusted_goals.calories;
-                            proteinField.value = data.adjusted_goals.protein;
-                            carbsField.value = data.adjusted_goals.carbs;
-                            fatField.value = data.adjusted_goals.fat;
-                        }
-                    } else {
-                        bmrDisplay.style.display = 'none';
-                    }
-                });
-            }
+        let payload = { age, gender, diet_preset };
+        if (body_fat_percentage) {
+            payload.body_fat_percentage = body_fat_percentage;
+        }
+        
+        if ("{{ current_user.measurement_system }}" === "us") {
+            const height_ft = document.getElementById('height_ft');
+            const height_in = document.getElementById('height_in');
+            const weight_lbs = document.getElementById('weight_lbs');
+            if (height_ft) payload.height_ft = height_ft.value;
+            if (height_in) payload.height_in = height_in.value;
+            if (weight_lbs) payload.weight_lbs = weight_lbs.value;
+        } else {
+            const height_cm = document.getElementById('height_cm');
+            const weight_kg = document.getElementById('weight_kg');
+            if (height_cm) payload.height_cm = height_cm.value;
+            if (weight_kg) payload.weight_kg = weight_kg.value;
         }
 
-        bmrFields.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.addEventListener('input', calculateBmrAndGoals);
+        fetch('{{ url_for("goals.calculate_bmr_route") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ form.csrf_token._value() }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (!response.ok) {
+                bmrDisplay.style.display = 'none';
+                return Promise.reject(`Server responded with ${response.status}`);
             }
+            return response.json();
+        })
+        .then(data => {
+            if (data.bmr) {
+                bmrValue.textContent = data.bmr.toFixed(0);
+                bmrFormula.textContent = data.formula;
+                bmrDisplay.style.display = 'block';
+
+                if (data.adjusted_goals && diet_preset) {
+                    caloriesField.value = data.adjusted_goals.calories;
+                    proteinField.value = data.adjusted_goals.protein;
+                    carbsField.value = data.adjusted_goals.carbs;
+                    fatField.value = data.adjusted_goals.fat;
+                }
+            } else {
+                bmrDisplay.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('BMR Calculation Error:', error);
+            bmrDisplay.style.display = 'none';
         });
+    }
 
-        document.querySelectorAll('input[name="gender"]').forEach(radio => {
-            radio.addEventListener('change', calculateBmrAndGoals);
-        });
+    // Attach event listener to the button
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateBmrAndGoals);
+    }
 
-        dietPresetSelect.addEventListener('change', calculateBmrAndGoals);
+    // Attach delegated event listeners for real-time updates
+    if (form) {
+        form.addEventListener('input', calculateBmrAndGoals);
+        form.addEventListener('change', calculateBmrAndGoals);
+    }
 
-        // Initial calculation on page load
-        calculateBmrAndGoals();
-    });
+    // Initial calculation on page load
+    calculateBmrAndGoals();
+});
 </script>
 {% endblock %}

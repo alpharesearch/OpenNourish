@@ -6,22 +6,22 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Weight (kg)</th>
+                <th>Weight ({{ check_ins[0].unit_labels.weight if check_ins else '' }})</th>
                 <th>Body Fat (%)</th>
-                <th>Waist (cm)</th>
+                <th>Waist ({{ check_ins[0].unit_labels.waist if check_ins else '' }})</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for check_in in check_ins %}
+            {% for item in check_ins %}
             <tr>
-                <td>{{ check_in.checkin_date.strftime('%Y-%m-%d') }}</td>
-                <td>{{ check_in.weight_kg }}</td>
-                <td>{{ check_in.body_fat_percentage }}</td>
-                <td>{{ check_in.waist_cm }}</td>
+                <td>{{ item.check_in.checkin_date.strftime('%Y-%m-%d') }}</td>
+                <td>{{ item.weight if item.weight is not none }}</td>
+                <td>{{ item.check_in.body_fat_percentage if item.check_in.body_fat_percentage is not none }}</td>
+                <td>{{ item.waist if item.waist is not none }}</td>
                 <td>
-                    <a href="{{ url_for('tracking.edit_check_in', check_in_id=check_in.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                    <form action="{{ url_for('tracking.delete_check_in', check_in_id=check_in.id) }}" method="POST" class="d-inline">
+                    <a href="{{ url_for('tracking.edit_check_in', check_in_id=item.check_in.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <form action="{{ url_for('tracking.delete_check_in', check_in_id=item.check_in.id) }}" method="POST" class="d-inline">
                         <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                     </form>
                 </td>
@@ -32,20 +32,20 @@
 
     <nav aria-label="Page navigation">
         <ul class="pagination">
-            {% if check_ins.has_prev %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=check_ins.prev_num) }}">Previous</a></li>
+            {% if pagination.has_prev %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=pagination.prev_num) }}">Previous</a></li>
             {% endif %}
-            {% for page_num in check_ins.iter_pages() %}
+            {% for page_num in pagination.iter_pages() %}
             {% if page_num %}
-            <li class="page-item {% if page_num == check_ins.page %}active{% endif %}">
+            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
                 <a class="page-link" href="{{ url_for('tracking.progress', page=page_num) }}">{{ page_num }}</a>
             </li>
             {% else %}
             <li class="page-item disabled"><span class="page-link">...</span></li>
             {% endif %}
             {% endfor %}
-            {% if check_ins.has_next %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=check_ins.next_num) }}">Next</a></li>
+            {% if pagination.has_next %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=pagination.next_num) }}">Next</a></li>
             {% endif %}
         </ul>
     </nav>

@@ -7,6 +7,61 @@ import tempfile
 import os
 from types import SimpleNamespace
 
+# --- Unit Conversion Utilities ---
+
+# Height
+def cm_to_ft_in(cm):
+    if not cm:
+        return None, None
+    inches_total = cm / 2.54
+    feet = int(inches_total // 12)
+    inches = round(inches_total % 12, 1)
+    return feet, inches
+
+def ft_in_to_cm(feet, inches):
+    if feet is None or inches is None:
+        return None
+    return (feet * 12 + inches) * 2.54
+
+# Weight
+def kg_to_lbs(kg):
+    if not kg:
+        return None
+    return round(kg * 2.20462, 1)
+
+def lbs_to_kg(lbs):
+    if lbs is None:
+        return None
+    return lbs / 2.20462
+
+# Waist
+def cm_to_in(cm):
+    if not cm:
+        return None
+    return round(cm / 2.54, 1)
+
+def in_to_cm(inches):
+    if inches is None:
+        return None
+    return inches * 2.54
+
+def get_display_weight(weight_kg, system):
+    if system == 'us':
+        return kg_to_lbs(weight_kg)
+    return weight_kg
+
+def get_display_waist(waist_cm, system):
+    if system == 'us':
+        return cm_to_in(waist_cm)
+    return waist_cm
+
+def get_display_height(height_cm, system):
+    if system == 'us':
+        return cm_to_ft_in(height_cm)
+    return height_cm
+
+# --- BMR and Goal Calculation ---
+
 def calculate_bmr(weight_kg, height_cm, age, gender, body_fat_percentage=None):
     """
     Calculates Basal Metabolic Rate (BMR).

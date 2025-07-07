@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     age = db.Column(db.Integer, nullable=True)
     gender = db.Column(db.String(10), nullable=True) # 'Male', 'Female'
+    measurement_system = db.Column(db.String(10), default='metric', nullable=False) # 'metric' or 'us'
     height_cm = db.Column(db.Float, nullable=True)
     goal = db.relationship('UserGoal', backref='user', uselist=False)
 
