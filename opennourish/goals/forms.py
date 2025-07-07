@@ -33,7 +33,7 @@ class GoalForm(FlaskForm):
 
     def __init__(self, *args, **kwargs):
         super(GoalForm, self).__init__(*args, **kwargs)
-        if current_user.is_authenticated:
+        if current_user and current_user.is_authenticated:
             if current_user.measurement_system == 'us':
                 del self.height_cm
                 del self.weight_kg

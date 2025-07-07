@@ -37,17 +37,20 @@ def test_recipe_creation_and_editing(auth_client_with_user):
     client, user = auth_client_with_user
     # 1. Create Recipe
     new_recipe_data = {
-        'name': 'My Awesome Recipe',
-        'instructions': 'Step 1: Do something. Step 2: Do something else.'
-    }
-    response = client.post('/recipes/recipe/new', data=new_recipe_data, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'Recipe created successfully. Now add ingredients.' in response.data
+            'name': 'My Awesome Recipe',
+            'instructions': 'Step 1: Do something. Step 2: Do something else.',
+            'servings': 1.0
+        }
+    response = client.post('/recipes/recipe/new', data=new_recipe_data)
+    assert response.status_code == 302 # Expect a redirect
+    # Extract recipe_id from the Location header
+    location = response.headers['Location']
+    created_recipe_id = int(location.split('/')[-2]) # Assumes /recipes/<id>/edit
+    assert f'/recipes/{created_recipe_id}/edit' in location
 
-    with client.application.app_context():
-        recipe = Recipe.query.filter_by(user_id=user.id, name='My Awesome Recipe').first()
-        assert recipe is not None
-        created_recipe_id = recipe.id
+    # Follow the redirect and check for the flash message
+    response = client.get(location)
+    assert b'Recipe created successfully. Now add ingredients.' in response.data
 
     # 2. Edit Recipe
     edited_recipe_data = {

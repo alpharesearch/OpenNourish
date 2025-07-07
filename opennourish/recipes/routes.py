@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, UnifiedPortion
 from opennourish.recipes.forms import RecipeForm
+from opennourish.diary.forms import AddToLogForm
 from opennourish.recipes.forms import RecipeForm
 from opennourish.recipes.forms import RecipeForm
 from opennourish.recipes.forms import RecipeForm

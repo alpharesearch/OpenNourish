@@ -29,15 +29,20 @@ class CheckInForm(FlaskForm):
                 del self.waist_in
 
     def validate(self, extra_validators=None):
-        if not super().validate(extra_validators):
-            return False
-        
+        # Call base FlaskForm validation first
+        initial_validation = super().validate(extra_validators)
+
+        # Custom validation for weight based on measurement system
+        # Only require weight if it's a new entry or if the field is present in submitted data
+        is_new_entry = not hasattr(self, 'obj') or self.obj is None
+
         if current_user.measurement_system == 'us':
-            if self.weight_lbs.data is None:
+            if self.weight_lbs.data is None and (is_new_entry or 'weight_lbs' in self.form):
                 self.weight_lbs.errors.append('This field is required.')
                 return False
-        else:
-            if self.weight_kg.data is None:
+        else: # metric
+            if self.weight_kg.data is None and (is_new_entry or 'weight_kg' in self.form):
                 self.weight_kg.errors.append('This field is required.')
                 return False
-        return True
+
+        return initial_validation

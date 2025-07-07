@@ -13,7 +13,7 @@ def test_check_in_crud_lifecycle(auth_client):
         'body_fat_percentage': 15.0,
         'waist_cm': 80.0
     }
-    response = auth_client.post('/tracking/check-in/new', data=checkin_data, follow_redirects=True)
+    response = auth_client.post('/tracking/progress', data=checkin_data, follow_redirects=True)
     assert response.status_code == 200
     assert b'Your check-in has been recorded.' in response.data
 
@@ -33,12 +33,12 @@ def test_check_in_crud_lifecycle(auth_client):
 
     # 3. Update
     updated_checkin_data = {
-        'checkin_date': date.today().strftime('%Y-%m-%d'),
-        'weight_kg': 76.0,
-        'body_fat_percentage': 15.5,
-        'waist_cm': 81.0
+        f'form-{created_check_in_id}-checkin_date': date.today().strftime('%Y-%m-%d'),
+        f'form-{created_check_in_id}-weight_kg': 76.0,
+        f'form-{created_check_in_id}-body_fat_percentage': 15.5,
+        f'form-{created_check_in_id}-waist_cm': 81.0
     }
-    response = auth_client.post(f'/tracking/check-in/{created_check_in_id}/edit', data=updated_checkin_data, follow_redirects=True)
+    response = auth_client.post(f'/tracking/check-in/{created_check_in_id}/update', data=updated_checkin_data, follow_redirects=True)
     assert response.status_code == 200
     assert b'Your check-in has been updated.' in response.data
 
@@ -101,11 +101,15 @@ def test_user_cannot_edit_other_users_check_in(auth_client_user_two):
         db.session.commit()
         check_in_id = check_in_user_one.id
 
-    # Attempt to make a GET request to the 'edit_check_in' page for user_one's check-in as user_two
-    response = client.get(f'/tracking/check-in/{check_in_id}/edit')
-    assert response.status_code == 302 # Redirects to /tracking/progress
-
-    # Follow the redirect to check the final status code and flash message
-    response = client.get(response.headers['Location'])
-    assert response.status_code == 200
+    # Attempt to make a POST request to update user_one's check-in as user_two
+    response = client.post(f'/tracking/check-in/{check_in_id}/update', data={
+        f'form-{check_in_id}-checkin_date': date.today().strftime('%Y-%m-%d'),
+        f'form-{check_in_id}-weight_kg': 999.9 # Attempt to change weight
+    }, follow_redirects=True)
+    assert response.status_code == 200 # Should redirect to progress page
     assert b'Entry not found or you do not have permission to edit it.' in response.data
+
+    with client.application.app_context():
+        # Verify the check-in was NOT updated
+        check_in_after_attempt = db.session.get(CheckIn, check_in_id)
+        assert check_in_after_attempt.weight_kg == 70.0

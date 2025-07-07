@@ -148,8 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('{{ url_for("goals.calculate_bmr_route") }}', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ form.csrf_token._value() }}'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
         })

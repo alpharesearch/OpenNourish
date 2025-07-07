@@ -20,9 +20,7 @@ def test_set_goals_for_new_user(auth_client):
         'carbs': 300,
         'fat': 80
     }
-    with auth_client.application.app_context():
-        form = GoalForm()
-        data['csrf_token'] = form.csrf_token._value()
+    
 
     response = auth_client.post('/goals/', data=data, follow_redirects=True)
     assert response.status_code == 200
@@ -66,9 +64,7 @@ def test_update_existing_goals(auth_client):
         'carbs': 280,
         'fat': 75
     }
-    with auth_client.application.app_context():
-        form = GoalForm()
-        data['csrf_token'] = form.csrf_token._value()
+    
 
     response = auth_client.post('/goals/', data=data, follow_redirects=True)
     assert response.status_code == 200
@@ -101,9 +97,7 @@ def test_diet_preset_adjusts_goals(auth_client):
         'carbs': '',
         'fat': ''
     }
-    with auth_client.application.app_context():
-        form = GoalForm()
-        data['csrf_token'] = form.csrf_token._value()
+    
 
     response = auth_client.post('/goals/', data=data, follow_redirects=True)
     assert response.status_code == 200

@@ -69,7 +69,7 @@ def update_check_in(check_in_id):
         flash('Entry not found or you do not have permission to edit it.', 'danger')
         return redirect(url_for('tracking.progress'))
     
-    form = CheckInForm(prefix=f"form-{check_in.id}")
+    form = CheckInForm(request.form, prefix=f"form-{check_in.id}")
     if form.validate_on_submit():
         if current_user.measurement_system == 'us':
             check_in.weight_kg = lbs_to_kg(form.weight_lbs.data)

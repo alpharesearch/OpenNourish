@@ -43,7 +43,8 @@ def search():
                 'has_portions': bool(usda_portions),
                 'portions': usda_portions,
                 'has_ingredients': bool(food.ingredients),
-                'has_rich_nutrients': len(food.nutrients) > 20 # Arbitrary threshold for "rich"
+                'has_rich_nutrients': len(food.nutrients) > 20,
+                'detail_url': url_for('main.food_detail', fdc_id=food.fdc_id)
             })
 
         if search_mode != 'usda_only':
@@ -290,7 +291,7 @@ def add_item():
                             fdc_id=item.fdc_id,
                             my_food_id=item.my_food_id,
                             recipe_id=item.recipe_id,
-                            amount_grams=item.amount_grams * quantity
+                            amount_grams=item.amount_grams * (quantity / 100)
                         )
                         db.session.add(daily_log)
                     db.session.commit()
