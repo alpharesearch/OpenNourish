@@ -25,7 +25,7 @@ def ft_in_to_cm(feet, inches):
 
 # Weight
 def kg_to_lbs(kg):
-    if not kg:
+    if kg is None:
         return None
     return round(kg * 2.20462, 1)
 
@@ -36,7 +36,7 @@ def lbs_to_kg(lbs):
 
 # Waist
 def cm_to_in(cm):
-    if not cm:
+    if cm is None:
         return None
     return round(cm / 2.54, 1)
 

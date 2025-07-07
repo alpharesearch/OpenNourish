@@ -43,15 +43,14 @@ def progress():
             edit_form.body_fat_percentage.data = round(edit_form.body_fat_percentage.data, 2)
 
         if current_user.measurement_system == 'us':
-            if item.weight_kg is not None:
-                edit_form.weight_lbs.data = round(kg_to_lbs(item.weight_kg), 2)
-            if item.waist_cm is not None:
-                edit_form.waist_in.data = round(cm_to_in(item.waist_cm), 2)
+            converted_weight_lbs = kg_to_lbs(item.weight_kg)
+            edit_form.weight_lbs.data = round(converted_weight_lbs, 2) if converted_weight_lbs is not None else None
+
+            converted_waist_in = cm_to_in(item.waist_cm)
+            edit_form.waist_in.data = round(converted_waist_in, 2) if converted_waist_in is not None else None
         else:
-            if edit_form.weight_kg.data is not None:
-                edit_form.weight_kg.data = round(edit_form.weight_kg.data, 2)
-            if edit_form.waist_cm.data is not None:
-                edit_form.waist_cm.data = round(edit_form.waist_cm.data, 2)
+            edit_form.weight_kg.data = round(item.weight_kg, 2) if item.weight_kg is not None else None
+            edit_form.waist_cm.data = round(item.waist_cm, 2) if item.waist_cm is not None else None
         
         forms[item.id] = edit_form
 
