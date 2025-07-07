@@ -376,46 +376,87 @@ def create_app(config_class=Config):
                 for j in range(num_daily_logs):
                     log_date = date.today() - timedelta(days=random.randint(0, 60))  # Last 2 months
                     meal_name = random.choice(['Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)'])
-                    amount_grams = random.uniform(50, 500)
 
                     # Randomly link to USDA, MyFood, Recipe, or MyMeal
                     choice = random.choice(['usda', 'my_food', 'recipe', 'my_meal'])
                     fdc_id = None
                     my_food_id = None
                     recipe_id = None
-                    
+                    food_item_for_portions = None
 
                     if choice == 'usda' and usda_fdc_ids:
                         fdc_id = random.choice(usda_fdc_ids)
+                        food_item_for_portions = db.session.get(Food, fdc_id)
                     elif choice == 'my_food' and user_my_foods:
-                        my_food_id = random.choice(user_my_foods).id
+                        selected_my_food = random.choice(user_my_foods)
+                        my_food_id = selected_my_food.id
+                        food_item_for_portions = selected_my_food
                     elif choice == 'recipe' and user_recipes:
-                        recipe_id = random.choice(user_recipes).id
+                        selected_recipe = random.choice(user_recipes)
+                        recipe_id = selected_recipe.id
+                        food_item_for_portions = selected_recipe
                     elif choice == 'my_meal' and user_my_meals:
                         selected_meal = random.choice(user_my_meals)
                         selected_meal.usage_count += 1 # Increment usage count
                         for item in selected_meal.items:
+                            # For my_meal items, we don't select portions, just log their base grams
                             log_entry = DailyLog(
                                 user_id=user.id,
                                 log_date=log_date,
                                 meal_name=meal_name,
-                                amount_grams=item.amount_grams,
                                 fdc_id=item.fdc_id,
                                 my_food_id=item.my_food_id,
-                                recipe_id=item.recipe_id
+                                recipe_id=item.recipe_id,
+                                amount_grams=item.amount_grams * random.uniform(0.8, 1.2) # Vary amount slightly
                             )
                             db.session.add(log_entry)
                             daily_logs_created += 1
                         continue # Skip the rest of the loop for this iteration
                     else:  # Fallback if no suitable item found
-                        if usda_fdc_ids:
+                        # Try to pick a food item that has portions, prioritizing MyFoods/Recipes
+                        potential_food_items = []
+                        if user_my_foods:
+                            potential_food_items.extend([mf for mf in user_my_foods if mf.portions])
+                        if user_recipes:
+                            potential_food_items.extend([r for r in user_recipes if r.portions])
+                        
+                        if potential_food_items:
+                            food_item_for_portions = random.choice(potential_food_items)
+                            if isinstance(food_item_for_portions, MyFood):
+                                my_food_id = food_item_for_portions.id
+                            elif isinstance(food_item_for_portions, Recipe):
+                                recipe_id = food_item_for_portions.id
+                        elif usda_fdc_ids:
+                            # Fallback to any USDA food if no MyFoods/Recipes with portions
                             fdc_id = random.choice(usda_fdc_ids)
-                        elif user_my_foods:
-                            my_food_id = random.choice(user_my_foods).id
-                        elif user_recipes:
-                            recipe_id = random.choice(user_recipes).id
+                            food_item_for_portions = db.session.get(Food, fdc_id)
                         else:
                             continue  # Skip if no food items can be linked
+
+                    # Select a random portion for the DailyLog entry
+                    portion_id_fk = None
+                    serving_type = 'g'
+                    amount_grams = random.uniform(50, 500) # Default to random grams
+
+                    if food_item_for_portions:
+                        available_portions = []
+                        if isinstance(food_item_for_portions, Food):
+                            # For USDA Food, query UnifiedPortion directly
+                            available_portions = db.session.query(UnifiedPortion).filter_by(fdc_id=food_item_for_portions.fdc_id).all()
+                        elif hasattr(food_item_for_portions, 'portions'):
+                            # For MyFood and Recipe, use the relationship
+                            available_portions = food_item_for_portions.portions
+                        
+                        if available_portions:
+                            selected_portion = random.choice(available_portions)
+                            portion_id_fk = selected_portion.id
+                            serving_type = selected_portion.full_description_str
+                            amount_grams = random.uniform(0.5, 2.0) * selected_portion.gram_weight # Random quantity of the selected portion
+                        else:
+                            # If no specific portions, default to grams
+                            amount_grams = random.uniform(50, 500)
+                            serving_type = 'g'
+                            portion_id_fk = None
 
                     # Only create a single log_entry if not a my_meal type that was expanded
                     if choice != 'my_meal' or not user_my_meals:
@@ -426,10 +467,14 @@ def create_app(config_class=Config):
                             amount_grams=amount_grams,
                             fdc_id=fdc_id,
                             my_food_id=my_food_id,
-                            recipe_id=recipe_id
+                            recipe_id=recipe_id,
+                            serving_type=serving_type,
+                            portion_id_fk=portion_id_fk
                         )
                         db.session.add(log_entry)
                         daily_logs_created += 1
+
+                users_created += 1
 
                 users_created += 1
 
