@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: b3ce282b86ac
+Revision ID: 00d3f29bba26
 Revises: 
-Create Date: 2025-07-06 21:14:37.888539
+Create Date: 2025-07-07 19:33:00.389000
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'b3ce282b86ac'
+revision = '00d3f29bba26'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,6 +30,7 @@ def upgrade():
     sa.Column('password_hash', sa.String(length=128), nullable=True),
     sa.Column('age', sa.Integer(), nullable=True),
     sa.Column('gender', sa.String(length=10), nullable=True),
+    sa.Column('measurement_system', sa.String(length=10), nullable=False),
     sa.Column('height_cm', sa.Float(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('username')
@@ -104,6 +105,9 @@ def upgrade():
     sa.Column('protein', sa.Float(), nullable=True),
     sa.Column('carbs', sa.Float(), nullable=True),
     sa.Column('fat', sa.Float(), nullable=True),
+    sa.Column('calories_burned_goal_weekly', sa.Integer(), nullable=True),
+    sa.Column('exercises_per_week_goal', sa.Integer(), nullable=True),
+    sa.Column('minutes_per_exercise_goal', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )

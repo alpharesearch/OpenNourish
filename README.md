@@ -39,6 +39,13 @@ OpenNourish is a free and open source food tracker.
    - Typst is an external dependency required for generating nutrition labels. Follow the installation instructions on the official Typst website: [https://typst.app/docs/getting-started/](https://typst.app/docs/getting-started/)
    - **Note:** The snapd version of Typst may have limitations. Refer to the "Typst PDF Generation Issues" in the Troubleshooting section for more details.
 
+6. **Install Liberation Sans Font:**
+   - Ensure the Liberation Sans font is installed on your system. This font is used for generating nutrition labels. On Debian/Ubuntu-based systems, you can install it using:
+     ```bash
+     sudo apt-get update && sudo apt-get install -y fonts-liberation
+     ```
+     For other operating systems, please refer to your system's documentation for font installation.
+
 6. **Create and populate the database:**
    - Run the import script to build the `usda_data.db` file from the USDA data. This may take a few minutes.
      ```bash

@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Stage 2: Final Stage
 FROM python:3.9-slim
 
+# Install font dependencies for Typst
+RUN apt-get update && apt-get install -y     fontconfig     fonts-liberation     --no-install-recommends &&     rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy virtual environment from build stage
