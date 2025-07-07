@@ -81,7 +81,9 @@ def log_exercise():
                            forms=forms,
                            title='Exercise Log',
                            user_goal=user_goal,
-                           weekly_progress=weekly_progress)
+                           weekly_progress=weekly_progress,
+                           start_of_week=start_of_week,
+                           end_of_week=end_of_week)
 
 @exercise_bp.route('/<int:log_id>/edit', methods=['POST'])
 @login_required
