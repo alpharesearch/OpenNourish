@@ -6,9 +6,6 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - ./user_data.db:/app/user_data.db
-      - ./usda_data.db:/app/usda_data.db
+      - .:/app
     env_file:
       - ./.env
-    # Command to run the application (overrides Dockerfile CMD if specified)
-    # command: ["python", "-u", "serve.py"]

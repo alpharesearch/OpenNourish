@@ -63,61 +63,37 @@ OpenNourish is a free and open source food tracker.
 
 ## Docker Setup
 
-OpenNourish can be easily containerized using Docker for consistent development and deployment environments.
+OpenNourish is designed for a fully automated setup using Docker. The container handles everything from downloading data to initializing databases on the first run.
 
 ### Prerequisites
 
 1.  **Docker and Docker Compose:** Ensure Docker and Docker Compose (v2.x, using `docker compose` command) are installed on your system.
-2.  **`.env` file:** Create a `.env` file in the project root with your `SECRET_KEY` (as described in step 4 of the "Installation" section).
-3.  **USDA Data:** Ensure you have the `usda_data/` directory populated with USDA CSV files (as described in step 2 of the "Installation" section).
-4.  **Initial Database Setup:** Before running Docker, ensure your `user_data.db` and `usda_data.db` files are generated and migrated on your host machine. This is crucial as Docker volumes will mount these files into the container.
-    *   Generate `usda_data.db`: `python import_usda_data.py`
-    *   Initialize and migrate `user_data.db`:
-        ```bash
-        export FLASK_APP=app.py # or $env:FLASK_APP="app.py" for PowerShell
-        flask db init # Only run this once for a new project
-        flask db upgrade
-        ```
-5.  **Typst Binary:** Ensure the `typst/` directory (containing the `typst` executable and any necessary libraries) is present in the project root. This directory will be copied into the Docker image.
-
-### Building the Docker Image
-
-Navigate to the project root directory and build the Docker image:
-
-```bash
-docker compose build --no-cache
-```
-The `--no-cache` flag ensures a fresh build, which is useful after making changes to the `Dockerfile` or dependencies.
+2.  **`.env` file:** In the project root, create a file named `.env` and add your `SECRET_KEY`.
+    ```
+    SECRET_KEY='a_very_strong_and_random_secret_key'
+    ```
 
 ### Running the Application
 
-Start the application services using Docker Compose in detached mode:
+1.  **Clone the repository.**
+2.  **Navigate to the project root directory.**
+3.  **Start the application:**
+    ```bash
+    docker compose up
+    ```
 
-```bash
-docker compose up -d
-```
+**Note:** The first time you run the container, it will automatically download and process the entire USDA dataset, which may take several minutes depending on your system. Subsequent startups will be instant.
 
 ### Accessing the Application
 
 The application will be accessible in your web browser at `http://localhost:8081`.
 
-*   **Note on `localhost` vs. Internal IP:** If `http://localhost:8081` does not work, but you can access the application via an internal Docker IP (e.g., `http://172.18.0.2:8081`), it indicates a host-specific networking issue (e.g., firewall, `localhost` resolution). The Docker setup itself is likely correct in such cases.
-
 ### Stopping the Application
 
-To stop the running containers:
-
+To stop the running containers, press `Ctrl+C` in the terminal where compose is running, or run:
 ```bash
 docker compose down
 ```
-
-### Rebuilding and Restarting (Troubleshooting)
-
-If you encounter issues or need to apply changes to your code/dependencies:
-
-1.  Stop and remove existing containers: `docker compose down`
-2.  Rebuild the image: `docker compose build --no-cache`
-3.  Start the application: `docker compose up -d`
 
 ## Troubleshooting
 

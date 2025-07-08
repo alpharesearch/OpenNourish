@@ -120,3 +120,68 @@ For a fully automated, non-destructive seeding process, you can use the `seed_db
     ```
 
 This script executes `flask db upgrade` to apply any pending migrations and then `flask seed-dev-data` to populate the database. It's a convenient way to refresh your development data without manually running multiple commands.
+
+## For Project Maintainers: Creating the Pre-built Database
+
+To update the static USDA data, the maintainer must:
+
+1.  Run `python import_usda_data.py` locally to generate a new `usda_data.db`.
+2.  Create a new Release on the project's GitHub page.
+3.  Upload the newly generated `usda_data.db` file as a binary asset to that release.
+4.  Update the download URL in the `entrypoint.sh` script to point to this new release asset.
+
+## 4. Docker for Developers
+
+This section outlines how to use Docker for local development. The setup uses volumes to persist database files. Note that live code reloading is not configured, but the image can be rebuilt quickly to incorporate changes.
+
+### Prerequisites
+
+1.  **Docker and Docker Compose:** Ensure Docker and Docker Compose are installed on your system.
+2.  **`.env` file:** Create a `.env` file in the project root with your `SECRET_KEY`.
+3.  ```bash
+    echo "SECRET_KEY='dev1'" > .env
+    ```
+4.  **Typst Binary:** Ensure the `typst/` directory (containing the `typst` executable) is present in the project root. This directory is copied into the Docker image during the build process.
+
+### Building and Running the Container
+
+1.  **Build the image:**
+    To build the Docker image, run the following command from the project root:
+    ```bash
+    docker compose build --no-cache
+    ```
+    Using the `--no-cache` flag is recommended when you have made changes to the `Dockerfile` or project dependencies.
+
+2.  **Start the services:**
+    To start the application, run:
+    ```bash
+    docker compose up
+    ```
+    Running the container in the foreground (without the `-d` flag) is useful for viewing logs directly in your terminal.
+
+### How It Works
+
+*   **Automated First-Time Setup:** The first time you run `docker compose up`, the `entrypoint.sh` script will automatically:
+    *   Download the required USDA dataset.
+    *   Build the `usda_data.db` from the downloaded CSV files.
+    *   Run database migrations to create or update the `user_data.db`.
+    *   Seed the database with essential portion data.
+    This initial setup process can take several minutes.
+
+*   **Persistent Data via Volumes:** The `docker-compose.yml` file is configured to use Docker volumes for the database files (`usda_data.db` and `user_data.db`). This means that once the databases are created, they will persist on your host machine between container restarts. Subsequent runs of `docker compose up` will be much faster as they will detect the existing databases and skip the build process.
+
+### Development Workflow
+
+Since the project files are copied into the image at build time, you need to rebuild the image to see your changes.
+
+1.  **Make code changes** to the project files on your local machine.
+2.  **Stop the container** if it is running (`Ctrl+C` or `docker compose down`).
+3.  **Rebuild the image** to include your changes:
+    ```bash
+    docker compose build
+    ```
+    (You typically do not need `--no-cache` for simple code changes, which makes the rebuild faster).
+4.  **Restart the container** to run the new code:
+    ```bash
+    docker compose up
+    ```
