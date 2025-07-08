@@ -185,3 +185,82 @@ Since the project files are copied into the image at build time, you need to reb
     ```bash
     docker compose up
     ```
+
+## 5. Deploying to TrueNAS SCALE
+
+This guide outlines how to deploy the OpenNourish Docker image to TrueNAS SCALE using a private, on-premises Docker registry. This avoids the need to upload your image to a public registry like Docker Hub.
+
+### Step 1: Install a Private Docker Registry on TrueNAS
+
+First, you need a place to push your images on your local network. TrueNAS makes this easy.
+
+1.  In the TrueNAS UI, navigate to **Apps > Available Applications**.
+2.  Search for `registry` and locate the official **Docker Registry** application.
+3.  Click **Install**.
+4.  Give the application a name (e.g., `docker-registry`).
+5.  In the **Registry Port Configuration** section, set the **Node Port** to an unused port, for example, `5000`.
+6.  Deploy the app.
+
+### Step 2: Configure Your Development PC to Trust the Registry
+
+Your new registry is not secured with SSL (it's on your private network), so you must configure your local Docker daemon to allow connections to it.
+
+1.  Open your Docker Desktop settings and navigate to the **Docker Engine** section.
+2.  In the JSON configuration editor, add the `insecure-registries` key, pointing to your TrueNAS server's IP and the port you configured.
+
+    ```json
+    {
+      "builder": {
+        "gc": {
+          "defaultKeepStorage": "20GB",
+          "enabled": true
+        }
+      },
+      "experimental": false,
+      "insecure-registries": [
+        "YOUR_TRUENAS_IP:5000"
+      ]
+    }
+    ```
+    Replace `YOUR_TRUENAS_IP` with the actual IP address of your TrueNAS server.
+
+3.  **Apply & Restart** Docker for the changes to take effect.
+
+### Step 3: Tag and Push the Image
+
+Now you can push the locally built image to your new private registry.
+
+1.  **Build the image** (if you haven't already):
+    ```bash
+    docker compose build
+    ```
+
+2.  **Tag the image** with the address of your private registry:
+    ```bash
+    docker tag opennourish-app:latest YOUR_TRUENAS_IP:5000/opennourish-app:latest
+    ```
+
+3.  **Push the image** to the registry on your TrueNAS server:
+    ```bash
+    docker push YOUR_TRUENAS_IP:5000/opennourish-app:latest
+    ```
+
+### Step 4: Deploy the Custom App on TrueNAS
+
+Finally, create a "Custom App" in TrueNAS to run your image.
+
+1.  In the TrueNAS UI, go to **Apps > Installed Applications** and click **Add App**.
+2.  Select **Custom App**.
+3.  Configure the application settings:
+    *   **Application Name:** `opennourish`
+    *   **Image Repository:** `YOUR_TRUENAS_IP:5000/opennourish-app`
+    *   **Image Tag:** `latest`
+4.  Under **Port Forwarding**, add a new entry:
+    *   **Container Port:** `8081`
+    *   **Node Port:** Choose a port to access the app from your network (e.g., `8081`).
+5.  Under **Storage**, configure the persistent storage for the application:
+    *   Click **Add** under **Host Path Volumes**.
+    *   **Host Path:** Select the path on your TrueNAS server where you want to store the OpenNourish data (e.g., `/mnt/your-pool/apps/opennourish`).
+    *   **Mount Path:** `/app`
+6.  Deploy the application. TrueNAS will pull the image from your private registry and start the container with its data persisted in the host path you specified.
+
