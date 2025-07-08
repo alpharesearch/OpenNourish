@@ -9,8 +9,10 @@ my_foods_bp = Blueprint('my_foods', __name__, template_folder='templates')
 @my_foods_bp.route('/')
 @login_required
 def my_foods():
-    user_my_foods = MyFood.query.filter_by(user_id=current_user.id).all()
-    return render_template('my_foods/my_foods.html', my_foods=user_my_foods)
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Or get from config
+    my_foods_pagination = MyFood.query.filter_by(user_id=current_user.id).paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('my_foods/my_foods.html', my_foods=my_foods_pagination)
 
 @my_foods_bp.route('/new', methods=['GET', 'POST'])
 @login_required

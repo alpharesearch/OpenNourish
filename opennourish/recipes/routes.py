@@ -16,10 +16,12 @@ recipes_bp = Blueprint('recipes', __name__, template_folder='templates')
 @recipes_bp.route("/recipes")
 @login_required
 def recipes():
-    user_recipes = Recipe.query.filter_by(user_id=current_user.id).all()
-    for recipe in user_recipes:
+    page = request.args.get('page', 1, type=int)
+    per_page = 8  # Or get from config
+    recipes_pagination = Recipe.query.filter_by(user_id=current_user.id).paginate(page=page, per_page=per_page, error_out=False)
+    for recipe in recipes_pagination.items:
         recipe.nutrition_per_100g = calculate_recipe_nutrition_per_100g(recipe)
-    return render_template("recipes/recipes.html", recipes=user_recipes)
+    return render_template("recipes/recipes.html", recipes=recipes_pagination)
 
 @recipes_bp.route("/recipe/new", methods=['GET', 'POST'])
 @login_required

@@ -247,13 +247,15 @@ def save_meal():
 @diary_bp.route('/my_meals')
 @login_required
 def my_meals():
-    meals = MyMeal.query.filter_by(user_id=current_user.id).options(
+    page = request.args.get('page', 1, type=int)
+    per_page = 5  # Or get from config
+    meals_pagination = MyMeal.query.filter_by(user_id=current_user.id).options(
         joinedload(MyMeal.items).joinedload(MyMealItem.my_food),
         joinedload(MyMeal.items).joinedload(MyMealItem.recipe)
-    ).all()
+    ).paginate(page=page, per_page=per_page, error_out=False)
 
     # Collect all unique fdc_ids from all meal items across all meals
-    all_usda_food_ids = {item.fdc_id for meal in meals for item in meal.items if item.fdc_id}
+    all_usda_food_ids = {item.fdc_id for meal in meals_pagination.items for item in meal.items if item.fdc_id}
 
     # Fetch all relevant USDA Food objects in one query, eagerly loading portions and measure units
     usda_foods_map = {}
@@ -261,7 +263,7 @@ def my_meals():
         usda_foods = Food.query.filter(Food.fdc_id.in_(all_usda_food_ids)).all()
         usda_foods_map = {food.fdc_id: food for food in usda_foods}
 
-    for meal in meals:
+    for meal in meals_pagination.items:
         for item in meal.items:
             if item.fdc_id:
                 # Attach the pre-loaded USDA food object to the meal item
@@ -269,7 +271,7 @@ def my_meals():
         # Calculate total nutrition for the meal
         meal.totals = calculate_nutrition_for_items(meal.items)
 
-    return render_template('diary/my_meals.html', meals=meals)
+    return render_template('diary/my_meals.html', meals=meals_pagination)
 
 @diary_bp.route('/my_meals/update_item/<int:item_id>', methods=['POST'])
 @login_required
