@@ -13,6 +13,7 @@ find . -type f \
     -not -path "./migrations/*" \
     -not -path "./usda_data/*" \
     -not -path "./.pytest_cache/*" \
+    -not -path "./typst/*" \
     -not -name "*.db" \
     -not -name "*.db-journal" \
     -not -name "*.pyc" \
