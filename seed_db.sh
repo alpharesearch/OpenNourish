@@ -26,6 +26,6 @@ flask db upgrade
 # 2. Seed development data
 echo "Seeding development data..."
 flask seed-usda-portions
-flask seed-dev-data
+#flask seed-dev-data
 
 echo "--- Database update and seeding complete! ---"

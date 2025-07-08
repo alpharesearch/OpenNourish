@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: 60d83901793f
+Revision ID: 18b42296ab13
 Revises: 
-Create Date: 2025-07-07 20:29:53.170836
+Create Date: 2025-07-08 18:40:51.892218
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '60d83901793f'
+revision = '18b42296ab13'
 down_revision = None
 branch_labels = None
 depends_on = None

@@ -75,14 +75,14 @@ def create_app(config_class=Config):
             db.session.commit()
         print("Initialized the user database.")
 
-    @app.cli.command("seed-dev-data")
-    @click.argument('count', default=3, type=int)
-    def seed_dev_data_command(count):
-        """Populates the user database with realistic test data."""
+    @app.cli.command("seed-exercise-activities")
+    def seed_exercise_activities_command():
+        """Seeds the database with default exercise activities."""
         with app.app_context():
-            print("Skipping clearing existing user data as it's handled by seed_db.sh script.")
+            if ExerciseActivity.query.first():
+                print("Exercise activities already exist. Skipping.")
+                return
 
-            # Add default exercise activities
             print("Adding default exercise activities...")
             activities = [
                 ExerciseActivity(name='Walking', met_value=3.5),
@@ -95,6 +95,13 @@ def create_app(config_class=Config):
             db.session.add_all(activities)
             db.session.commit()
             print("Default exercise activities added.")
+
+    @app.cli.command("seed-dev-data")
+    @click.argument('count', default=3, type=int)
+    def seed_dev_data_command(count):
+        """Populates the user database with realistic test data."""
+        with app.app_context():
+            print("Skipping clearing existing user data as it's handled by seed_db.sh script.")
 
             print("Creating main test user...")
             test_user = User(username='markus')

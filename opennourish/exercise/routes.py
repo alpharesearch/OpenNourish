@@ -59,6 +59,7 @@ def log_exercise():
         'exercises': 0,
         'minutes': 0
     }
+    start_of_week, end_of_week = None, None
     if user_goal:
         today = date.today()
         start_of_week = today - timedelta(days=today.weekday())

@@ -34,5 +34,5 @@ flask db upgrade
 # Step 5: Seed USDA portions into the user database
 echo "\n--- Seeding USDA portions into user_data.db ---"
 flask seed-usda-portions
-flask seed-dev-data
+#flask seed-dev-data
 echo "\n--- USDA Data and Portions Seeding Process Complete! ---"

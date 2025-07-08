@@ -9,11 +9,10 @@
 
     
 
-    {% if my_foods.items %}
-    <div class="card">
-        <ul class="list-group list-group-flush">
+    <div class="list-group">
+        {% if my_foods.items %}
             {% for food in my_foods.items %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
                     <h5>{{ food.description }}</h5>
                     <small class="text-muted">
@@ -29,11 +28,18 @@
                         <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                     </form>
                 </div>
-            </li>
+            </div>
             {% endfor %}
-        </ul>
+        {% else %}
+            <div class="list-group-item text-center py-5">
+                <h4>No Custom Foods Found</h4>
+                <p class="text-muted">Get started by creating your first custom food.</p>
+                <a href="{{ url_for('my_foods.new_my_food') }}" class="btn btn-outline-primary mt-3">Add New Food</a>
+            </div>
+        {% endif %}
     </div>
 
+    {% if my_foods.items %}
     <nav aria-label="Page navigation" class="mt-4">
         <ul class="pagination">
             {% if my_foods.has_prev %}
@@ -53,8 +59,6 @@
             {% endif %}
         </ul>
     </nav>
-    {% else %}
-    <p>No custom foods added yet. <a href="{{ url_for('my_foods.new_my_food') }}">Add one now!</a></p>
     {% endif %}
 </div>
 {% endblock %}
