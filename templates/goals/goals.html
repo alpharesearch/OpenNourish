@@ -25,14 +25,14 @@
             <div class="col-md-4 mb-3">
                 <label class="form-label">Height</label>
                 <div class="input-group">
-                    {{ form.height_ft(class="form-control", placeholder="ft") }}
-                    {{ form.height_in(class="form-control", placeholder="in") }}
+                    {{ form.height_ft(class="form-control", placeholder="ft", value=(form.height_ft.data | round(2)) if form.height_ft.data else '') }}
+                    {{ form.height_in(class="form-control", placeholder="in", value=(form.height_in.data | round(2)) if form.height_in.data else '') }}
                 </div>
             </div>
             {% else %}
             <div class="col-md-4 mb-3">
                 {{ form.height_cm.label(class="form-label") }}
-                {{ form.height_cm(class="form-control") }}
+                {{ form.height_cm(class="form-control", value=(form.height_cm.data | round(2)) if form.height_cm.data else '') }}
             </div>
             {% endif %}
         </div>
@@ -41,15 +41,15 @@
             <div class="col-md-6 mb-3">
                 {% if current_user.measurement_system == 'us' %}
                     {{ form.weight_lbs.label(class="form-label") }}
-                    {{ form.weight_lbs(class="form-control") }}
+                    {{ form.weight_lbs(class="form-control", value=(form.weight_lbs.data | round(2)) if form.weight_lbs.data else '') }}
                 {% else %}
                     {{ form.weight_kg.label(class="form-label") }}
-                    {{ form.weight_kg(class="form-control") }}
+                    {{ form.weight_kg(class="form-control", value=(form.weight_kg.data | round(2)) if form.weight_kg.data else '') }}
                 {% endif %}
             </div>
             <div class="col-md-6 mb-3">
                 {{ form.body_fat_percentage.label(class="form-label") }}
-                {{ form.body_fat_percentage(class="form-control") }}
+                {{ form.body_fat_percentage(class="form-control", value=(form.body_fat_percentage.data | round(2)) if form.body_fat_percentage.data else '') }}
             </div>
         </div>
 
