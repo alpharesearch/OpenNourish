@@ -11,6 +11,7 @@ from opennourish.utils import calculate_recipe_nutrition_per_100g
 @login_required
 def search():
     search_term = request.form.get('search_term') or request.args.get('search_term', '')
+    include_friends = request.form.get('include_friends') == 'true' or request.args.get('include_friends') == 'true'
     results = {
         "usda_foods": [],
         "my_foods": [],
@@ -47,29 +48,39 @@ def search():
             })
 
         if search_mode != 'usda_only':
+            friend_ids = [friend.id for friend in current_user.friends]
+            
             # Search MyFoods
-            my_foods_query = MyFood.query.options(
-                selectinload(MyFood.portions)
-            ).filter(MyFood.description.ilike(f'%{search_term}%'), MyFood.user_id == current_user.id).limit(10).all()
+            my_foods_query_builder = MyFood.query.options(selectinload(MyFood.portions), joinedload(MyFood.user))
+            my_foods_filter = [MyFood.description.ilike(f'%{search_term}%')]
+            if include_friends and friend_ids:
+                my_foods_filter.append(or_(MyFood.user_id == current_user.id, MyFood.user_id.in_(friend_ids)))
+            else:
+                my_foods_filter.append(MyFood.user_id == current_user.id)
+            
+            my_foods_query = my_foods_query_builder.filter(*my_foods_filter).limit(10).all()
             current_app.logger.debug(f"Debug: MyFoods found: {len(my_foods_query)}")
             
             for food in my_foods_query:
                 results["my_foods"].append({
                     'id': food.id,
                     'description': food.description,
+                    'user_id': food.user_id,
+                    'user': food.user,
                     'has_portions': bool(food.portions),
                     'portions': food.portions,
-                    'has_ingredients': bool(food.ingredients) # MyFood has an ingredients string
+                    'has_ingredients': bool(food.ingredients)
                 })
 
             # Search Recipes
-            recipes_query = Recipe.query.options(
-                selectinload(Recipe.ingredients),
-                selectinload(Recipe.portions)
-            ).filter(
-                Recipe.name.ilike(f'%{search_term}%'),
-                or_(Recipe.user_id == current_user.id, Recipe.is_public == True)
-            ).limit(10).all()
+            recipes_query_builder = Recipe.query.options(selectinload(Recipe.ingredients), selectinload(Recipe.portions), joinedload(Recipe.user))
+            recipes_filter = [Recipe.name.ilike(f'%{search_term}%')]
+            if include_friends and friend_ids:
+                recipes_filter.append(or_(Recipe.user_id == current_user.id, Recipe.user_id.in_(friend_ids)))
+            else:
+                recipes_filter.append(or_(Recipe.user_id == current_user.id, Recipe.is_public == True))
+
+            recipes_query = recipes_query_builder.filter(*recipes_filter).limit(10).all()
             current_app.logger.debug(f"Debug: Recipes found: {len(recipes_query)}")
             
             for recipe in recipes_query:
@@ -77,6 +88,8 @@ def search():
                 results["recipes"].append({
                     'id': recipe.id,
                     'name': recipe.name,
+                    'user_id': recipe.user_id,
+                    'user': recipe.user,
                     'has_ingredients': bool(recipe.instructions),
                     'has_portions': bool(recipe.portions),
                     'portions': recipe.portions,
@@ -86,20 +99,20 @@ def search():
                     'fat_per_100g': nutrition_per_100g['fat']
                 })
 
-            # Search MyMeals
+            # Search MyMeals (Friends content not applicable)
             my_meals_query = MyMeal.query.options(
                 selectinload(MyMeal.items)
             ).filter(MyMeal.name.ilike(f'%{search_term}%'), MyMeal.user_id == current_user.id).limit(10).all()
             current_app.logger.debug(f"Debug: MyMeals found: {len(my_meals_query)}")
             
             for meal in my_meals_query:
-                # For MyMeals, we can indicate if they have items (ingredients)
                 results["my_meals"].append({
                     'id': meal.id,
                     'name': meal.name,
                     'has_items': bool(meal.items)
                 })
     elif request.method == 'GET' and not search_term and target == 'diary':
+        # ... (rest of the function remains the same)
         # Get top 10 most used USDA Foods
         top_usda_foods_ids = db.session.query(DailyLog.fdc_id, db.func.count(DailyLog.fdc_id)).\
                             filter(DailyLog.user_id == current_user.id, DailyLog.fdc_id.isnot(None)).\
@@ -192,7 +205,8 @@ def search():
                            recipe_id=recipe_id,
                            log_date=log_date,
                            meal_name=meal_name,
-                           search_mode=search_mode)
+                           search_mode=search_mode,
+                           include_friends=include_friends)
 
 @search_bp.route('/add_item', methods=['POST'])
 @login_required

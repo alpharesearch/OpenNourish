@@ -144,6 +144,7 @@ class MyFood(db.Model):
     iron_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     potassium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     portions = db.relationship('UnifiedPortion', foreign_keys=[UnifiedPortion.my_food_id], backref='my_food', cascade='all, delete-orphan')
+    user = db.relationship('User')
 
 
 class DailyLog(db.Model):
@@ -169,6 +170,7 @@ class Recipe(db.Model):
     servings = db.Column(db.Float, default=1)
     ingredients = db.relationship('RecipeIngredient', backref='recipe', cascade="all, delete-orphan", foreign_keys='RecipeIngredient.recipe_id')
     portions = db.relationship('UnifiedPortion', foreign_keys=[UnifiedPortion.recipe_id], backref='recipe', cascade='all, delete-orphan')
+    user = db.relationship('User')
 
 class RecipeIngredient(db.Model):
     __tablename__ = 'recipe_ingredients'

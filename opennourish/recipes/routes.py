@@ -1,11 +1,8 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, UnifiedPortion
+from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, UnifiedPortion, User
 from opennourish.recipes.forms import RecipeForm
 from opennourish.diary.forms import AddToLogForm
-from opennourish.recipes.forms import RecipeForm
-from opennourish.recipes.forms import RecipeForm
-from opennourish.recipes.forms import RecipeForm
 from opennourish.my_foods.forms import PortionForm
 from sqlalchemy.orm import joinedload, selectinload
 from datetime import date
@@ -17,20 +14,27 @@ recipes_bp = Blueprint('recipes', __name__, template_folder='templates')
 @login_required
 def recipes():
     page = request.args.get('page', 1, type=int)
-    per_page = 8  # Or get from config
-    show_public = request.args.get('show') == 'public'
+    view_mode = request.args.get('view', 'user') # 'user', 'friends', or 'public'
+    per_page = 8
 
-    if show_public:
-        query = Recipe.query.filter_by(is_public=True)
-    else:
-        query = Recipe.query.filter_by(user_id=current_user.id)
+    query = Recipe.query.options(joinedload(Recipe.user))
+    if view_mode == 'friends':
+        friend_ids = [friend.id for friend in current_user.friends]
+        if not friend_ids:
+            query = query.filter(db.false()) # No friends, so no results
+        else:
+            query = query.filter(Recipe.user_id.in_(friend_ids))
+    elif view_mode == 'public':
+        query = query.filter(Recipe.is_public == True)
+    else: # Default to user's recipes
+        query = query.filter_by(user_id=current_user.id)
 
     recipes_pagination = query.order_by(Recipe.name).paginate(page=page, per_page=per_page, error_out=False)
     
     for recipe in recipes_pagination.items:
         recipe.nutrition_per_100g = calculate_recipe_nutrition_per_100g(recipe)
         
-    return render_template("recipes/recipes.html", recipes=recipes_pagination, show_public=show_public)
+    return render_template("recipes/recipes.html", recipes=recipes_pagination, view_mode=view_mode)
 
 @recipes_bp.route("/recipe/new", methods=['GET', 'POST'])
 @login_required
@@ -362,3 +366,58 @@ def delete_recipe_portion(portion_id):
     else:
         flash('Portion not found or you do not have permission to delete it.', 'danger')
         return redirect(url_for('recipes.recipes'))
+
+
+@recipes_bp.route('/<int:recipe_id>/copy', methods=['POST'])
+@login_required
+def copy_recipe(recipe_id):
+    original_recipe = Recipe.query.options(
+        selectinload(Recipe.ingredients),
+        selectinload(Recipe.portions)
+    ).get_or_404(recipe_id)
+
+    # Verify user is friends with the owner
+    friend_ids = [friend.id for friend in current_user.friends]
+    if original_recipe.user_id not in friend_ids:
+        # Allow copying public recipes even if not friends
+        if not original_recipe.is_public:
+            flash("You can only copy recipes from your friends or public recipes.", "danger")
+            return redirect(request.referrer or url_for('recipes.recipes'))
+
+    # Create a new recipe for the current user
+    new_recipe = Recipe(
+        user_id=current_user.id,
+        name=original_recipe.name,
+        instructions=original_recipe.instructions,
+        servings=original_recipe.servings,
+        is_public=False  # Copied recipes are private by default
+    )
+    db.session.add(new_recipe)
+    db.session.flush() # Flush to get the new_recipe.id for ingredients
+
+    # Copy ingredients
+    for orig_ing in original_recipe.ingredients:
+        new_ing = RecipeIngredient(
+            recipe_id=new_recipe.id,
+            fdc_id=orig_ing.fdc_id,
+            my_food_id=orig_ing.my_food_id,
+            recipe_id_link=orig_ing.recipe_id_link,
+            amount_grams=orig_ing.amount_grams
+        )
+        db.session.add(new_ing)
+
+    # Copy portions
+    for orig_portion in original_recipe.portions:
+        new_portion = UnifiedPortion(
+            recipe_id=new_recipe.id,
+            amount=orig_portion.amount,
+            measure_unit_description=orig_portion.measure_unit_description,
+            portion_description=orig_portion.portion_description,
+            modifier=orig_portion.modifier,
+            gram_weight=orig_portion.gram_weight
+        )
+        db.session.add(new_portion)
+
+    db.session.commit()
+    flash(f"Successfully copied '{original_recipe.name}' to your recipes.", "success")
+    return redirect(url_for('recipes.edit_recipe', recipe_id=new_recipe.id))
