@@ -20,7 +20,7 @@ def _get_friend_user_or_404(username):
 
     if not is_friend:
         flash(f'You are not friends with {username}.', 'danger')
-        abort(403) # Forbidden
+        return None
 
     return friend_user
 
@@ -29,6 +29,8 @@ def _get_friend_user_or_404(username):
 @login_required
 def dashboard(username, log_date_str=None):
     friend_user = _get_friend_user_or_404(username)
+    if friend_user is None:
+        return redirect(url_for('friends.friends_page'))
 
     time_range = request.args.get('time_range', '3_month') # Default to 3 months
 
@@ -118,6 +120,8 @@ def dashboard(username, log_date_str=None):
 @login_required
 def diary(username, log_date_str=None):
     friend_user = _get_friend_user_or_404(username)
+    if friend_user is None:
+        return redirect(url_for('friends.friends_page'))
 
     if log_date_str:
         log_date = date.fromisoformat(log_date_str)
