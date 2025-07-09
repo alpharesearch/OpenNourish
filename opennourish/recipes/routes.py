@@ -13,7 +13,7 @@ from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nu
 
 recipes_bp = Blueprint('recipes', __name__, template_folder='templates')
 
-@recipes_bp.route("/recipes")
+@recipes_bp.route("/")
 @login_required
 def recipes():
     page = request.args.get('page', 1, type=int)

@@ -32,30 +32,40 @@ def auth_client_user_two(app_with_db, two_users):
 
 def test_recipe_creation_and_editing(auth_client_with_user):
     """
-    Tests creating and editing a recipe.
+    Tests creating and editing a recipe, including the is_public flag.
     """
     client, user = auth_client_with_user
-    # 1. Create Recipe
+    # 1. Create Recipe (as public)
     new_recipe_data = {
             'name': 'My Awesome Recipe',
             'instructions': 'Step 1: Do something. Step 2: Do something else.',
-            'servings': 1.0
+            'servings': 1.0,
+            'is_public': 'y'
         }
     response = client.post('/recipes/recipe/new', data=new_recipe_data)
     assert response.status_code == 302 # Expect a redirect
+    
     # Extract recipe_id from the Location header
     location = response.headers['Location']
     created_recipe_id = int(location.split('/')[-2]) # Assumes /recipes/<id>/edit
     assert f'/recipes/{created_recipe_id}/edit' in location
 
+    with client.application.app_context():
+        created_recipe = db.session.get(Recipe, created_recipe_id)
+        assert created_recipe is not None
+        assert created_recipe.name == 'My Awesome Recipe'
+        assert created_recipe.is_public is True
+
     # Follow the redirect and check for the flash message
     response = client.get(location)
     assert b'Recipe created successfully. Now add ingredients.' in response.data
 
-    # 2. Edit Recipe
+    # 2. Edit Recipe (and make it private)
     edited_recipe_data = {
         'name': 'My Super Awesome Recipe',
-        'instructions': 'Step 1: Do something new. Step 2: Do something else new.'
+        'instructions': 'Step 1: Do something new. Step 2: Do something else new.',
+        'servings': 2.0
+        # is_public is not included, so it should be treated as False
     }
     response = client.post(f'/recipes/{created_recipe_id}/edit', data=edited_recipe_data, follow_redirects=True)
     assert response.status_code == 200
@@ -65,6 +75,7 @@ def test_recipe_creation_and_editing(auth_client_with_user):
         updated_recipe = db.session.get(Recipe, created_recipe_id)
         assert updated_recipe.name == 'My Super Awesome Recipe'
         assert updated_recipe.instructions == 'Step 1: Do something new. Step 2: Do something else new.'
+        assert updated_recipe.is_public is False
 
 def test_recipe_nutrition_calculation(auth_client_with_user):
     """
@@ -291,3 +302,44 @@ def test_user_cannot_delete_other_users_recipe(auth_client_user_two):
     with client.application.app_context():
         # Assert that the recipe still exists
         assert db.session.get(Recipe, recipe_id) is not None
+
+def test_recipes_list_view(auth_client_user_two):
+    """
+    Tests the recipes list view for a user's own recipes and public recipes.
+    """
+    client, user_one, user_two = auth_client_user_two
+
+    with client.application.app_context():
+        # User one has a public and a private recipe
+        recipe_one_public = Recipe(user_id=user_one.id, name="User One Public Recipe", instructions='Public', is_public=True)
+        recipe_one_private = Recipe(user_id=user_one.id, name="User One Private Recipe", instructions='Private', is_public=False)
+        
+        # User two has a private recipe
+        recipe_two_private = Recipe(user_id=user_two.id, name="User Two Private Recipe", instructions='My own', is_public=False)
+        
+        db.session.add_all([recipe_one_public, recipe_one_private, recipe_two_private])
+        db.session.commit()
+        recipe_one_public_id = recipe_one_public.id
+        recipe_two_private_id = recipe_two_private.id
+
+    # As user_two, view "My Recipes"
+    response = client.get('/recipes/')
+    assert response.status_code == 200
+    assert b"User Two Private Recipe" in response.data
+    assert b"User One Public Recipe" not in response.data
+    assert b"User One Private Recipe" not in response.data
+    # Check for edit/delete buttons for own recipe
+    assert f'href="/recipes/{recipe_two_private_id}/edit"'.encode() in response.data
+    assert f'action="/recipes/{recipe_two_private_id}/delete"'.encode() in response.data
+
+    # As user_two, view "Public Recipes"
+    response = client.get('/recipes/?show=public')
+    assert response.status_code == 200
+    assert b"User One Public Recipe" in response.data
+    assert b"User Two Private Recipe" not in response.data
+    assert b"User One Private Recipe" not in response.data
+    # Check that there are NO edit/delete buttons for other user's public recipe
+    assert f'href="/recipes/{recipe_one_public_id}/edit"'.encode() not in response.data
+    assert f'action="/recipes/{recipe_one_public_id}/delete"'.encode() not in response.data
+    # Check that the view button is there
+    assert f'href="/recipes/{recipe_one_public_id}"'.encode() in response.data
