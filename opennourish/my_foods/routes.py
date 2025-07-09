@@ -4,7 +4,7 @@ from models import db, MyFood, Food, Nutrient, FoodNutrient, UnifiedPortion
 from opennourish.my_foods.forms import MyFoodForm, PortionForm
 from sqlalchemy.orm import joinedload
 
-my_foods_bp = Blueprint('my_foods', __name__, template_folder='templates')
+my_foods_bp = Blueprint('my_foods', __name__)
 
 @my_foods_bp.route('/')
 @login_required
