@@ -10,11 +10,14 @@
         </button>
         <div class="collapse navbar-collapse" id="primaryNavbar">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                {% set viewing_friend_username = request.view_args.get('username') if request.blueprint == 'profile' else none %}
                 <li class="nav-item">
-                    <a class="nav-link {% if request.blueprint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard.index') }}">Dashboard</a>
+                    <a class="nav-link {% if request.blueprint == 'dashboard' or (request.blueprint == 'profile' and 'dashboard' in request.endpoint) %}active{% endif %}"
+                       href="{% if viewing_friend_username %}{{ url_for('profile.dashboard', username=viewing_friend_username) }}{% else %}{{ url_for('dashboard.index') }}{% endif %}">Dashboard</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.blueprint in ['diary', 'database', 'recipes'] %}active{% endif %}" href="{{ url_for('diary.diary') }}">Food</a>
+                    <a class="nav-link {% if request.blueprint in ['diary', 'database', 'recipes'] or (request.blueprint == 'profile' and 'diary' in request.endpoint) %}active{% endif %}"
+                       href="{% if viewing_friend_username %}{{ url_for('profile.diary', username=viewing_friend_username) }}{% else %}{{ url_for('diary.diary') }}{% endif %}">Food</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.blueprint == 'exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise</a>
@@ -22,10 +25,6 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.blueprint == 'tracking' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Progress</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.blueprint == 'friends' %}active{% endif %}" href="{{ url_for('friends.friends_page') }}">Friends</a>
-                </li>
-            </ul>
                 <li class="nav-item">
                     <a class="nav-link {% if request.blueprint == 'friends' %}active{% endif %}" href="{{ url_for('friends.friends_page') }}">Friends</a>
                 </li>

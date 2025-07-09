@@ -34,6 +34,8 @@
                         {% for friend in friends %}
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 {{ friend.username }}
+                                <a href="{{ url_for('profile.dashboard', username=friend.username) }}" class="btn btn-outline-info btn-sm ms-2">View Dashboard</a>
+                                <a href="{{ url_for('profile.diary', username=friend.username) }}" class="btn btn-outline-info btn-sm ms-2">View Diary</a>
                                 <form action="{{ url_for('friends.remove_friend', friend_id=friend.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this friend?');">
                                     <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
                                 </form>

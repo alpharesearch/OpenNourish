@@ -4,7 +4,7 @@
 <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
         <a href="{{ url_for('diary.diary', log_date_str=prev_date.isoformat()) }}" class="btn btn-outline-secondary">&laquo; Previous Day</a>
-        <h1 class="mb-0">Food Diary - {{ date.strftime('%A, %B %d, %Y') }}</h1>
+        <h1 class="mb-0">{% if is_read_only %}{{ username }}'s {% endif %}Food Diary - {{ date.strftime('%A, %B %d, %Y') }}</h1>
         <a href="{{ url_for('diary.diary', log_date_str=next_date.isoformat()) }}" class="btn btn-outline-secondary">Next Day &raquo;</a>
     </div>
 
@@ -58,6 +58,7 @@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4>{{ meal_name }}</h4>
+            {% if not is_read_only %}
             <div class="d-flex align-items-center">
                 <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex me-2">
                     <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
@@ -67,6 +68,7 @@
                 </form>
                 <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}" class="btn btn-outline-primary btn-sm">Add Food</a>
             </div>
+            {% endif %}
         </div>
         <ul class="list-group list-group-flush">
             {% for item in items %}
@@ -84,6 +86,7 @@
                             </small>
                         </div>
                         <div class="col-md-7">
+                            {% if not is_read_only %}
                             <div class="d-flex justify-content-end align-items-center">
                                 <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}" class="d-flex align-items-center">
                                     <input type="number" name="amount" value="{{ item.amount|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
@@ -101,6 +104,7 @@
                                     <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                                 </form>
                             </div>
+                            {% endif %}
             </li>
             {% else %}
             <li class="list-group-item">No items logged for this meal.</li>
