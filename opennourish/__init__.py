@@ -1,6 +1,6 @@
 from flask import Flask, current_app
 import os
-from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, UnifiedPortion, RecipeIngredient, MyMeal, MyMealItem, ExerciseActivity, ExerciseLog
+from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, UnifiedPortion, RecipeIngredient, MyMeal, MyMealItem, ExerciseActivity, ExerciseLog, Friendship
 from sqlalchemy.orm import joinedload
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -141,6 +141,15 @@ def create_app(config_class=Config):
                 db.session.add(user)
                 db.session.flush()  # To get user.id
                 print(f"Created test user{i}: {user.username}")
+
+                # Make the main test_user friends with this new user
+                friendship = Friendship(
+                    requester_id=test_user.id,
+                    receiver_id=user.id,
+                    status='accepted'
+                )
+                db.session.add(friendship)
+                print(f"Created friendship between {test_user.username} and {user.username}")
 
                 # UserGoal
                 current_app.logger.debug(f"UserGoal columns: {[c.name for c in UserGoal.__table__.columns]}")

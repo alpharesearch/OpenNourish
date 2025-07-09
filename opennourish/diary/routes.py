@@ -112,6 +112,39 @@ def delete_meal(meal_id):
     flash('Meal not found or you do not have permission to delete it.', 'danger')
     return redirect(url_for('diary.my_meals'))
 
+
+@diary_bp.route('/my_meals/<int:meal_id>/copy', methods=['POST'])
+@login_required
+def copy_meal(meal_id):
+    original_meal = MyMeal.query.options(selectinload(MyMeal.items)).get_or_404(meal_id)
+
+    friend_ids = [friend.id for friend in current_user.friends]
+    if original_meal.user_id not in friend_ids:
+        flash("You can only copy meals from your friends.", "danger")
+        return redirect(request.referrer or url_for('diary.my_meals'))
+
+    new_meal = MyMeal(
+        user_id=current_user.id,
+        name=original_meal.name
+    )
+    db.session.add(new_meal)
+    db.session.flush()
+
+    for orig_item in original_meal.items:
+        new_item = MyMealItem(
+            my_meal_id=new_meal.id,
+            fdc_id=orig_item.fdc_id,
+            my_food_id=orig_item.my_food_id,
+            recipe_id=orig_item.recipe_id,
+            amount_grams=orig_item.amount_grams
+        )
+        db.session.add(new_item)
+
+    db.session.commit()
+    flash(f"Successfully copied '{original_meal.name}' to your meals.", "success")
+    return redirect(url_for('diary.my_meals'))
+
+
 @diary_bp.route('/diary/update_entry/<int:log_id>', methods=['POST'])
 @login_required
 def update_entry(log_id):
@@ -248,8 +281,21 @@ def save_meal():
 @login_required
 def my_meals():
     page = request.args.get('page', 1, type=int)
-    per_page = 5  # Or get from config
-    meals_pagination = MyMeal.query.filter_by(user_id=current_user.id).options(
+    view_mode = request.args.get('view', 'user') # 'user' or 'friends'
+    per_page = 5
+
+    query = MyMeal.query
+    if view_mode == 'friends':
+        friend_ids = [friend.id for friend in current_user.friends]
+        query = query.options(joinedload(MyMeal.user))
+        if not friend_ids:
+            query = query.filter(db.false())
+        else:
+            query = query.filter(MyMeal.user_id.in_(friend_ids))
+    else: # Default to user's meals
+        query = query.filter_by(user_id=current_user.id)
+
+    meals_pagination = query.options(
         joinedload(MyMeal.items).joinedload(MyMealItem.my_food),
         joinedload(MyMeal.items).joinedload(MyMealItem.recipe)
     ).paginate(page=page, per_page=per_page, error_out=False)
@@ -271,7 +317,7 @@ def my_meals():
         # Calculate total nutrition for the meal
         meal.totals = calculate_nutrition_for_items(meal.items)
 
-    return render_template('diary/my_meals.html', meals=meals_pagination)
+    return render_template('diary/my_meals.html', meals=meals_pagination, view_mode=view_mode)
 
 @diary_bp.route('/my_meals/update_item/<int:item_id>', methods=['POST'])
 @login_required
