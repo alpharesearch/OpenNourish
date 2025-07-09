@@ -9,11 +9,9 @@
                 <input class="form-check-input" type="checkbox" id="publicRecipesSwitch" {% if show_public %}checked{% endif %}>
                 <label class="form-check-label" for="publicRecipesSwitch">Show Public Recipes</label>
             </div>
-            {% if not show_public %}
             <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-outline-primary">
                 <i class="bi bi-plus-circle"></i> Create New Recipe
             </a>
-            {% endif %}
         </div>
     </div>
 
@@ -44,11 +42,11 @@
             {% endfor %}
         {% else %}
             <div class="list-group-item text-center py-5">
-                <h4>No Recipes Found</h4>
+                <h4>{% if show_public %}No Public Recipes Found{% else %}No Recipes Found{% endif %}</h4>
                 {% if not show_public %}
                 <p class="text-muted">Get started by creating your first recipe.</p>
-                <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-outline-primary mt-3">Create a Recipe</a>
                 {% endif %}
+                <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-outline-primary mt-3">Create a Recipe</a>
             </div>
         {% endif %}
     </div>
