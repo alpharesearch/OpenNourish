@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Friends</h1>
+
+    <!-- Add Friend Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            Add a Friend
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('friends.add_friend') }}" method="POST" class="row g-3">
+                <div class="col-auto">
+                    <input type="text" class="form-control" name="username" placeholder="Enter username" required>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-outline-primary">Send Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Friend Lists -->
+    <div class="row">
+        <!-- Your Friends -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Your Friends
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% if friends %}
+                        {% for friend in friends %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ friend.username }}
+                                <form action="{{ url_for('friends.remove_friend', friend_id=friend.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this friend?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="list-group-item">You have no friends yet.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Pending Requests -->
+        <div class="col-md-6">
+            <!-- Received Requests -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    Received Requests
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% if pending_received %}
+                        {% for req in pending_received %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>From: <strong>{{ req.requester.username }}</strong></span>
+                                <div>
+                                    <form action="{{ url_for('friends.accept_request', request_id=req.id) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-success btn-sm">Accept</button>
+                                    </form>
+                                    <form action="{{ url_for('friends.decline_request', request_id=req.id) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm">Decline</button>
+                                    </form>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="list-group-item">You have no pending received requests.</li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <!-- Sent Requests -->
+            <div class="card">
+                <div class="card-header">
+                    Sent Requests
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% if pending_sent %}
+                        {% for req in pending_sent %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>To: <strong>{{ req.receiver.username }}</strong></span>
+                                <span class="badge bg-secondary">Pending</span>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="list-group-item">You have no pending sent requests.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

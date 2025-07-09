@@ -18,12 +18,53 @@ class User(UserMixin, db.Model):
     measurement_system = db.Column(db.String(10), default='metric', nullable=False) # 'metric' or 'us'
     height_cm = db.Column(db.Float, nullable=True)
     goal = db.relationship('UserGoal', backref='user', uselist=False)
+    sent_friend_requests = db.relationship(
+        'Friendship',
+        foreign_keys='Friendship.requester_id',
+        backref='requester',
+        lazy='dynamic'
+    )
+    received_friend_requests = db.relationship(
+        'Friendship',
+        foreign_keys='Friendship.receiver_id',
+        backref='receiver',
+        lazy='dynamic'
+    )
+
+    @property
+    def friends(self):
+        sent_requests = db.session.query(Friendship).filter_by(
+            requester_id=self.id, status='accepted'
+        ).all()
+        received_requests = db.session.query(Friendship).filter_by(
+            receiver_id=self.id, status='accepted'
+        ).all()
+        friend_ids = [fr.receiver_id for fr in sent_requests] + [fr.requester_id for fr in received_requests]
+        return User.query.filter(User.id.in_(friend_ids)).all()
+
+    @property
+    def pending_requests_sent(self):
+        return self.sent_friend_requests.filter_by(status='pending').all()
+
+    @property
+    def pending_requests_received(self):
+        return self.received_friend_requests.filter_by(status='pending').all()
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+class Friendship(db.Model):
+    __tablename__ = 'friendships'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    requester_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    status = db.Column(db.String, default='pending', nullable=False) # 'pending', 'accepted'
+    timestamp = db.Column(db.DateTime, default=db.func.now())
+
+    __table_args__ = (db.UniqueConstraint('requester_id', 'receiver_id', name='uq_friendship'),)
 
 class UserGoal(db.Model):
     __tablename__ = 'user_goals'

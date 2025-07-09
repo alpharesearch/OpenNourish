@@ -59,6 +59,9 @@ def create_app(config_class=Config):
     from opennourish.search import search_bp
     app.register_blueprint(search_bp, url_prefix='/search')
 
+    from opennourish.friends import friends_bp
+    app.register_blueprint(friends_bp, url_prefix='/friends')
+
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(User, int(user_id))

@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: 18b42296ab13
+Revision ID: 77e2a0d8edeb
 Revises: 
-Create Date: 2025-07-08 18:40:51.892218
+Create Date: 2025-07-09 18:22:16.438198
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '18b42296ab13'
+revision = '77e2a0d8edeb'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -57,6 +57,17 @@ def upgrade():
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('friendships',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('requester_id', sa.Integer(), nullable=False),
+    sa.Column('receiver_id', sa.Integer(), nullable=False),
+    sa.Column('status', sa.String(), nullable=False),
+    sa.Column('timestamp', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['receiver_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['requester_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('requester_id', 'receiver_id', name='uq_friendship')
+    )
     op.create_table('my_foods',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -93,11 +104,15 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=True),
+    sa.Column('is_public', sa.Boolean(), nullable=False),
     sa.Column('instructions', sa.Text(), nullable=True),
     sa.Column('servings', sa.Float(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    with op.batch_alter_table('recipes', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_recipes_is_public'), ['is_public'], unique=False)
+
     op.create_table('user_goals',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -183,9 +198,13 @@ def downgrade():
     op.drop_table('portions')
     op.drop_table('my_meal_items')
     op.drop_table('user_goals')
+    with op.batch_alter_table('recipes', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_recipes_is_public'))
+
     op.drop_table('recipes')
     op.drop_table('my_meals')
     op.drop_table('my_foods')
+    op.drop_table('friendships')
     op.drop_table('exercise_logs')
     op.drop_table('check_ins')
     op.drop_table('users')

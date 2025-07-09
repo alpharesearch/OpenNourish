@@ -22,6 +22,13 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.blueprint == 'tracking' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Progress</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.blueprint == 'friends' %}active{% endif %}" href="{{ url_for('friends.friends_page') }}">Friends</a>
+                </li>
+            </ul>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.blueprint == 'friends' %}active{% endif %}" href="{{ url_for('friends.friends_page') }}">Friends</a>
+                </li>
             </ul>
             <ul class="navbar-nav">
                 {% if current_user.is_authenticated %}
