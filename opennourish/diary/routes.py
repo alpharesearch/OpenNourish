@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, current_app
 from flask_login import current_user, login_required
 from . import diary_bp
-from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog, UnifiedPortion
+from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog, UnifiedPortion, User, Friendship
 from datetime import date, timedelta
 from opennourish.utils import calculate_nutrition_for_items, get_available_portions
 from .forms import MealForm, DailyLogForm, MealItemForm
@@ -349,3 +349,62 @@ def update_meal_item(item_id):
         flash('Invalid data.', 'danger')
 
     return redirect(url_for('diary.edit_meal', meal_id=item.my_meal_id))
+
+
+@diary_bp.route('/diary/copy_meal_from_friend', methods=['POST'])
+@login_required
+def copy_meal_from_friend():
+    friend_username = request.form.get('friend_username')
+    log_date_str = request.form.get('log_date')
+    meal_name = request.form.get('meal_name')
+
+    if not all([friend_username, log_date_str, meal_name]):
+        flash("Missing data to copy the meal.", "danger")
+        return redirect(url_for('dashboard.dashboard'))
+
+    friend_user = User.query.filter_by(username=friend_username).first()
+    if not friend_user:
+        flash("Friend not found.", "danger")
+        return redirect(url_for('dashboard.dashboard'))
+
+    # Verify friendship
+    is_friend = Friendship.query.filter(
+        ((Friendship.requester_id == current_user.id) & (Friendship.receiver_id == friend_user.id) & (Friendship.status == 'accepted')) |
+        ((Friendship.requester_id == friend_user.id) & (Friendship.receiver_id == current_user.id) & (Friendship.status == 'accepted'))
+    ).first()
+
+    if not is_friend:
+        flash(f"You are not friends with {friend_username}.", "danger")
+        return redirect(url_for('dashboard.dashboard'))
+
+    log_date = date.fromisoformat(log_date_str)
+
+    # Get the friend's log entries for that meal
+    friend_logs = DailyLog.query.filter_by(
+        user_id=friend_user.id,
+        log_date=log_date,
+        meal_name=meal_name
+    ).all()
+
+    if not friend_logs:
+        flash(f"No items found in {friend_username}'s {meal_name} to copy.", "warning")
+        return redirect(url_for('profile.diary', username=friend_username, log_date_str=log_date_str))
+
+    # Copy each log entry to the current user
+    for friend_log in friend_logs:
+        new_log = DailyLog(
+            user_id=current_user.id,
+            log_date=friend_log.log_date,
+            meal_name=friend_log.meal_name,
+            fdc_id=friend_log.fdc_id,
+            my_food_id=friend_log.my_food_id,
+            recipe_id=friend_log.recipe_id,
+            amount_grams=friend_log.amount_grams,
+            serving_type=friend_log.serving_type,
+            portion_id_fk=friend_log.portion_id_fk
+        )
+        db.session.add(new_log)
+
+    db.session.commit()
+    flash(f"Successfully copied {meal_name} from {friend_username}'s diary.", "success")
+    return redirect(url_for('diary.diary', log_date_str=log_date_str))

@@ -58,7 +58,14 @@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4>{{ meal_name }}</h4>
-            {% if not is_read_only %}
+            {% if is_read_only and items %}
+                <form action="{{ url_for('diary.copy_meal_from_friend') }}" method="post">
+                    <input type="hidden" name="friend_username" value="{{ username }}">
+                    <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
+                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                    <button type="submit" class="btn btn-outline-success btn-sm">Copy to My Diary</button>
+                </form>
+            {% elif not is_read_only %}
             <div class="d-flex align-items-center">
                 <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex me-2">
                     <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
