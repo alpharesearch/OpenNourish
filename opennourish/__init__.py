@@ -289,7 +289,8 @@ def create_app(config_class=Config):
                         user_id=user.id,
                         name=fake.word().capitalize() + ' ' + fake.word() + ' My Recipe',
                         instructions=fake.paragraph(nb_sentences=5),
-                        servings=random.randint(1, 6)
+                        servings=random.randint(1, 6),
+                        is_public=random.choice([True, False])
                     )
                     db.session.add(recipe)
                     user_recipes.append(recipe)

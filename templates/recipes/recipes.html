@@ -3,10 +3,18 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>My Recipes</h1>
-        <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-outline-primary">
-            <i class="bi bi-plus-circle"></i> Create New Recipe
-        </a>
+        <h1>{% if show_public %}Public Recipes{% else %}My Recipes{% endif %}</h1>
+        <div class="d-flex align-items-center">
+            <div class="form-check form-switch me-3">
+                <input class="form-check-input" type="checkbox" id="publicRecipesSwitch" {% if show_public %}checked{% endif %}>
+                <label class="form-check-label" for="publicRecipesSwitch">Show Public Recipes</label>
+            </div>
+            {% if not show_public %}
+            <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-outline-primary">
+                <i class="bi bi-plus-circle"></i> Create New Recipe
+            </a>
+            {% endif %}
+        </div>
     </div>
 
     <div class="list-group">
@@ -25,40 +33,60 @@
                     </div>
                     <div class="btn-group" role="group" aria-label="Recipe Actions">
                         <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info btn-sm">View</a>
+                        {% if recipe.user_id == current_user.id %}
                         <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                         <form action="{{ url_for('recipes.delete_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline">
                             <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                         </form>
+                        {% endif %}
                     </div>
                 </div>
             {% endfor %}
         {% else %}
             <div class="list-group-item text-center py-5">
                 <h4>No Recipes Found</h4>
+                {% if not show_public %}
                 <p class="text-muted">Get started by creating your first recipe.</p>
                 <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-outline-primary mt-3">Create a Recipe</a>
+                {% endif %}
             </div>
         {% endif %}
     </div>
 
     <nav aria-label="Page navigation" class="mt-4">
         <ul class="pagination">
+            {% set url_args = {'page': recipes.prev_num} %}
+            {% if show_public %}{% set _ = url_args.update({'show': 'public'}) %}{% endif %}
             {% if recipes.has_prev %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('recipes.recipes', page=recipes.prev_num) }}">Previous</a></li>
+            <li class="page-item"><a class="page-link" href="{{ url_for('recipes.recipes', **url_args) }}">Previous</a></li>
             {% endif %}
             {% for page_num in recipes.iter_pages() %}
             {% if page_num %}
+            {% set url_args = {'page': page_num} %}
+            {% if show_public %}{% set _ = url_args.update({'show': 'public'}) %}{% endif %}
             <li class="page-item {% if page_num == recipes.page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('recipes.recipes', page=page_num) }}">{{ page_num }}</a>
+                <a class="page-link" href="{{ url_for('recipes.recipes', **url_args) }}">{{ page_num }}</a>
             </li>
             {% else %}
             <li class="page-item disabled"><span class="page-link">...</span></li>
             {% endif %}
             {% endfor %}
+            {% set url_args = {'page': recipes.next_num} %}
+            {% if show_public %}{% set _ = url_args.update({'show': 'public'}) %}{% endif %}
             {% if recipes.has_next %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('recipes.recipes', page=recipes.next_num) }}">Next</a></li>
+            <li class="page-item"><a class="page-link" href="{{ url_for('recipes.recipes', **url_args) }}">Next</a></li>
             {% endif %}
         </ul>
     </nav>
 </div>
+
+<script>
+document.getElementById('publicRecipesSwitch').addEventListener('change', function() {
+    if (this.checked) {
+        window.location.href = "{{ url_for('recipes.recipes', show='public') }}";
+    } else {
+        window.location.href = "{{ url_for('recipes.recipes') }}";
+    }
+});
+</script>
 {% endblock %}
