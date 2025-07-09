@@ -123,6 +123,7 @@ class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String)
+    is_public = db.Column(db.Boolean, default=False, nullable=False, index=True)
     instructions = db.Column(db.Text)
     servings = db.Column(db.Float, default=1)
     ingredients = db.relationship('RecipeIngredient', backref='recipe', cascade="all, delete-orphan", foreign_keys='RecipeIngredient.recipe_id')

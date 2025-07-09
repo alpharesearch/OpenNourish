@@ -3,8 +3,7 @@ from . import search_bp
 from models import db, Food, MyFood, Recipe, MyMeal, DailyLog, RecipeIngredient, MyMealItem, UnifiedPortion, FoodNutrient
 from flask_login import login_required, current_user
 from datetime import date
-from sqlalchemy.orm import joinedload, selectinload
-from opennourish.utils import calculate_recipe_nutrition_per_100g
+from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, selectinload
 from opennourish.utils import calculate_recipe_nutrition_per_100g
 
@@ -67,7 +66,10 @@ def search():
             recipes_query = Recipe.query.options(
                 selectinload(Recipe.ingredients),
                 selectinload(Recipe.portions)
-            ).filter(Recipe.name.ilike(f'%{search_term}%'), Recipe.user_id == current_user.id).limit(10).all()
+            ).filter(
+                Recipe.name.ilike(f'%{search_term}%'),
+                or_(Recipe.user_id == current_user.id, Recipe.is_public == True)
+            ).limit(10).all()
             current_app.logger.debug(f"Debug: Recipes found: {len(recipes_query)}")
             
             for recipe in recipes_query:
@@ -264,7 +266,7 @@ def add_item():
                     flash('My Food not found or not authorized.', 'danger')
             elif food_type == 'recipe':
                 recipe = db.session.get(Recipe, food_id)
-                if recipe and recipe.user_id == current_user.id:
+                if recipe and (recipe.user_id == current_user.id or recipe.is_public):
                     daily_log = DailyLog(
                         user_id=current_user.id,
                         log_date=log_date,
@@ -340,7 +342,7 @@ def add_item():
                     flash('My Food not found or not authorized.', 'danger')
             elif food_type == 'recipe':
                 sub_recipe = db.session.get(Recipe, food_id)
-                if sub_recipe and sub_recipe.user_id == current_user.id:
+                if sub_recipe and (sub_recipe.user_id == current_user.id or sub_recipe.is_public):
                     ingredient = RecipeIngredient(
                         recipe_id=target_recipe.id,
                         recipe_id_link=sub_recipe.id,

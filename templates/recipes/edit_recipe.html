@@ -33,6 +33,11 @@
                             {{ form.instructions.label(class="form-label") }}
                             {{ form.instructions(class="form-control", rows=5) }}
                         </div>
+
+                        <div class="form-check mb-3">
+                            {{ form.is_public(class="form-check-input") }}
+                            {{ form.is_public.label(class="form-check-label") }}
+                        </div>
                         
                         <!-- Action Buttons -->
                         <div class="d-flex gap-2">

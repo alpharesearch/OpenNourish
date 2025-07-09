@@ -32,7 +32,8 @@ def new_recipe():
             user_id=current_user.id,
             name=form.name.data,
             instructions=form.instructions.data,
-            servings=form.servings.data
+            servings=form.servings.data,
+            is_public=form.is_public.data
         )
         db.session.add(new_recipe)
         db.session.commit()
@@ -87,6 +88,7 @@ def edit_recipe(recipe_id):
 
     if form.validate_on_submit():
         form.populate_obj(recipe)
+        recipe.is_public = form.is_public.data
         db.session.commit()
         flash('Recipe updated successfully.', 'success')
         return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
@@ -187,7 +189,12 @@ def update_ingredient(ingredient_id):
 def view_recipe(recipe_id):
     recipe = Recipe.query.options(
         selectinload(Recipe.ingredients).joinedload(RecipeIngredient.my_food)
-    ).filter_by(id=recipe_id, user_id=current_user.id).first_or_404()
+    ).get_or_404(recipe_id)
+
+    if not recipe.is_public and recipe.user_id != current_user.id:
+        flash('You are not authorized to view this recipe.', 'danger')
+        return redirect(url_for('recipes.recipes'))
+
     usda_food_ids = {ing.fdc_id for ing in recipe.ingredients if ing.fdc_id}
 
     # If there are any USDA foods, run ONE query against the 'usda' bind to get them all.
