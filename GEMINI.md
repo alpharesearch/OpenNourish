@@ -94,7 +94,6 @@ To maintain a consistent and professional look and feel, all generated HTML temp
   - **Class:** `table table-striped`
 - **Charts:** All charts should be generated using Chart.js. They should be responsive and include clear labels and titles.
 
----
 ### 7.1. Unified Search and Add System
 
 **Directive:** To prevent code duplication and ensure a consistent user experience, the project uses a single, unified system for all "search and add food" operations. Any new feature or modification requiring the user to search for an item (from USDA, My Foods, Recipes, or Meals) and add it to a destination (like the daily diary, a recipe, or a meal) **MUST** integrate with this system. **Do not create new, separate search routes or templates.**
@@ -130,10 +129,12 @@ To maintain a consistent and professional look and feel, all generated HTML temp
 - **Running Tests:**
 - - To run only the fast application tests: `pytest -m "not integration"` (use this!)
   - To run all tests: `pytest` (very slow!)
+- - To run a single test with verbose output (useful for debugging): `pytest <path_to_test_file>::<test_function_name> -vvv`
 - **Database Safety:**
   - Standard application tests (`not integration`) **must** use an in-memory SQLite database to ensure they are fast and do not touch the real database files.
   - The `integration` test verifies the full USDA data import process. It is slow and should be run intentionally.
 - **Test Creation:** When generating new application tests, ensure they use a fixture that configures the app for testing and provides a test client.
+- **HTML Encoding in Assertions:** When asserting against HTML content in test responses, be mindful of HTML encoding. Characters like single quotes (`'`) are often encoded as `&#39;`. Therefore, assertions should check for the HTML-encoded version of the string (e.g., `assert b"Friend&#39;s Meal"` instead of `assert b"Friend's Meal"`).
 
 ### 8.1. Cross-Database Queries
 - **Challenge:** A common challenge in this project is querying relationships between the user database (`user_data.db`) and the static USDA database (`usda_data.db`). Standard SQLAlchemy eager loading strategies like `joinedload` or `selectinload` can fail, as they may attempt to join tables across different database files, resulting in `sqlite3.OperationalError: no such table`.

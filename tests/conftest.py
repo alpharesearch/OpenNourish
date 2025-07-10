@@ -74,3 +74,32 @@ def auth_client_with_user(app_with_db):
             sess['_user_id'] = user_id
             sess['_fresh'] = True
         yield client, user
+
+@pytest.fixture(scope='function')
+def auth_client_with_friendship(app_with_db):
+    """A test client authenticated as test_user, with an accepted friendship to friend_user."""
+    with app_with_db.app_context():
+        test_user = User(username='testuser_friendship')
+        test_user.set_password('password')
+        db.session.add(test_user)
+
+        friend_user = User(username='frienduser_friendship')
+        friend_user.set_password('password')
+        db.session.add(friend_user)
+        db.session.commit()
+
+        # Establish accepted friendship
+        from models import Friendship # Import here to avoid circular dependency
+        friendship = Friendship(requester_id=test_user.id, receiver_id=friend_user.id, status='accepted')
+        db.session.add(friendship)
+        db.session.commit()
+
+        # Re-fetch users to ensure relationships are loaded
+        db.session.refresh(test_user)
+        db.session.refresh(friend_user)
+
+    with app_with_db.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['_user_id'] = test_user.id
+            sess['_fresh'] = True
+        yield client, test_user, friend_user

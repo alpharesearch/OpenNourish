@@ -76,7 +76,7 @@ def search():
             recipes_query_builder = Recipe.query.options(selectinload(Recipe.ingredients), selectinload(Recipe.portions), joinedload(Recipe.user))
             recipes_filter = [Recipe.name.ilike(f'%{search_term}%')]
             if include_friends and friend_ids:
-                recipes_filter.append(or_(Recipe.user_id == current_user.id, Recipe.user_id.in_(friend_ids)))
+                recipes_filter.append(or_(Recipe.user_id == current_user.id, Recipe.user_id.in_(friend_ids), Recipe.is_public == True))
             else:
                 recipes_filter.append(or_(Recipe.user_id == current_user.id, Recipe.is_public == True))
 
