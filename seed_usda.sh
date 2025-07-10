@@ -34,5 +34,14 @@ flask db upgrade
 # Step 5: Seed USDA portions into the user database
 echo "\n--- Seeding USDA portions into user_data.db ---"
 flask seed-usda-portions
-flask seed-dev-data
+
+# Step 6: Conditionally seed development data
+if [ "${SEED_DEV_DATA}" = "true" ] && [ ! -f ".dev_data_seeded" ]; then
+    echo "--- Seeding development data (first time only)... ---"
+    flask seed-dev-data
+    touch .dev_data_seeded
+    echo "--- Development data seeded. A .dev_data_seeded file has been created to prevent re-seeding. ---"
+elif [ "${SEED_DEV_DATA}" = "true" ]; then
+    echo "--- Development data already seeded. Skipping. ---"
+fi
 echo "\n--- USDA Data and Portions Seeding Process Complete! ---"
