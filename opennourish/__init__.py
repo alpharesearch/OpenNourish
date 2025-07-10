@@ -186,7 +186,7 @@ def create_app(config_class=Config):
                         if usda_food:
                             my_food = MyFood(
                                 user_id=user.id,
-                                description=usda_food.description,
+                                description=usda_food.description + ' My Custom USDA Food',
                                 ingredients=usda_food.ingredients,
                                 fdc_id=usda_food.fdc_id,
                                 upc=usda_food.upc,
@@ -228,7 +228,7 @@ def create_app(config_class=Config):
                     else: # Create a purely custom MyFood
                         my_food = MyFood(
                             user_id=user.id,
-                            description=fake.word().capitalize() + ' ' + fake.word()+ ' Custom Food',
+                            description=fake.word().capitalize() + ' ' + fake.word()+ ' My Custom Food',
                             ingredients=fake.sentence(nb_words=6),
                             calories_per_100g=random.uniform(50, 500),
                             protein_per_100g=random.uniform(1, 50),

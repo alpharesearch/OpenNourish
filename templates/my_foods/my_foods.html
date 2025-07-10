@@ -5,9 +5,9 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>
             {% if view_mode == 'friends' %}
-                Friends' Custom Foods
+                Friends' Foods
             {% else %}
-                My Custom Foods
+                My Foods
             {% endif %}
         </h1>
         <a href="{{ url_for('my_foods.new_my_food') }}" class="btn btn-outline-primary">Add New Food</a>

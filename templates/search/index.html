@@ -11,11 +11,11 @@
         </div>
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="checkbox" id="search_my_foods" name="search_my_foods" value="true" {% if search_my_foods %}checked{% endif %}>
-            <label class="form-check-label" for="search_my_foods">My Foods</label>
+            <label class="form-check-label" for="search_my_foods">Foods</label>
         </div>
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="checkbox" id="search_my_meals" name="search_my_meals" value="true" {% if search_my_meals %}checked{% endif %}>
-            <label class="form-check-label" for="search_my_meals">My Meals</label>
+            <label class="form-check-label" for="search_my_meals">Meals</label>
         </div>
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="checkbox" id="search_recipes" name="search_recipes" value="true" {% if search_recipes %}checked{% endif %}>
@@ -56,7 +56,7 @@
 
         {% if results.my_foods %}
             <div class="card mb-3">
-                <div class="card-header">My Foods</div>
+                <div class="card-header">Foods</div>
                 <ul class="list-group list-group-flush">
                     {% for food in results.my_foods %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -105,7 +105,7 @@
 
         {% if results.my_meals %}
             <div class="card mb-3">
-                <div class="card-header">My Meals</div>
+                <div class="card-header">Meals</div>
                 <ul class="list-group list-group-flush">
                     {% for searched_meal in results.my_meals %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -219,7 +219,7 @@
                                 </select>
                                 <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
                             </form>
-                            <form method="post" action="{{ url_for('my_foods.copy_my_food') }}" class="d-inline">
+                            <form method="post" action="{{ url_for('my_foods.copy_my_food', food_id=food.fdc_id) }}" class="d-inline">
                                 <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
                                 <button type="submit" class="btn btn-sm btn-outline-primary">Add to My Foods</button>
                             </form>
