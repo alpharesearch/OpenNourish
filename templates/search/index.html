@@ -4,6 +4,10 @@
     <h1>Unified Search</h1>
 
     <form method="get" action="{{ url_for('search.search') }}" class="mb-4">
+        <input type="hidden" name="target" value="{{ target or '' }}">
+        <input type="hidden" name="log_date" value="{{ log_date or '' }}">
+        <input type="hidden" name="meal_name" value="{{ meal_name or '' }}">
+        <input type="hidden" name="recipe_id" value="{{ recipe_id or '' }}">
         <div class="input-group">
             <input type="text" name="search_term" class="form-control" placeholder="Search for a food..." value="{{ search_term or '' }}">
             <button class="btn btn-outline-primary" type="submit">Search</button>
@@ -203,27 +207,30 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center">
-                            <form method="post" action="{{ url_for('search.add_item') }}" class="d-inline-flex align-items-center me-2">
-                                <input type="hidden" name="target" value="{{ target }}">
-                                <input type="hidden" name="log_date" value="{{ log_date }}">
-                                <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                                <input type="hidden" name="food_type" value="usda">
-                                <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
-                                <input type="number" name="amount" class="form-control form-control-sm" value="100" style="width: 70px;">
-                                <select name="portion_id" class="form-select form-select-sm" style="width: auto;">
-                                    <option value="g">g</option>
-                                    {% for portion in food.portions %}
-                                        <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
-                                    {% endfor %}
-                                </select>
-                                <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
-                            </form>
-                            <form method="post" action="{{ url_for('my_foods.copy_my_food', food_id=food.fdc_id) }}" class="d-inline">
-                                <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-primary">Add to My Foods</button>
-                            </form>
-                            <a href="{{ food.detail_url }}" class="btn btn-sm btn-outline-info">View Details</a>
+                            {% if target %}
+                                <form method="post" action="{{ url_for('search.add_item') }}" class="d-inline-flex align-items-center me-2">
+                                    <input type="hidden" name="target" value="{{ target }}">
+                                    <input type="hidden" name="log_date" value="{{ log_date }}">
+                                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                                    <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+                                    <input type="hidden" name="food_type" value="usda">
+                                    <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
+                                    <input type="number" name="amount" class="form-control form-control-sm" value="100" style="width: 70px;">
+                                    <select name="portion_id" class="form-select form-select-sm" style="width: auto;">
+                                        <option value="g">g</option>
+                                        {% for portion in food.portions %}
+                                            <option value="{{ portion.id }}">{{ portion.description }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{{ url_for('my_foods.copy_my_food', food_id=food.fdc_id) }}" class="d-inline">
+                                    <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Copy</button>
+                                </form>
+                            {% endif %}
+                            <a href="{{ food.detail_url }}" class="btn btn-sm btn-outline-info">View</a>
                         </div>
                     </li>
                 {% endfor %}
