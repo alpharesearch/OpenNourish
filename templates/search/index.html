@@ -1,63 +1,82 @@
 {% extends "base.html" %}
+
 {% block content %}
     <h1>Unified Search</h1>
-    <form method="POST" action="{{ url_for('search.search') }}">
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" placeholder="Search for food, recipes, or meals..." name="search_term" value="{{ search_term or '' }}">
-            <button class="btn btn-primary" type="submit">Search</button>
+
+    <form method="get" action="{{ url_for('search.search') }}" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="search_term" class="form-control" placeholder="Search for a food..." value="{{ search_term or '' }}">
+            <button class="btn btn-outline-primary" type="submit">Search</button>
+            <button class="btn btn-outline-secondary" type="button" id="scan-barcode-btn">Scan Barcode</button>
         </div>
-        <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" name="include_friends" value="true" id="includeFriendsCheck" {% if include_friends %}checked{% endif %}>
-            <label class="form-check-label" for="includeFriendsCheck">
-                Include friends' content?
-            </label>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="search_my_foods" name="search_my_foods" value="true" {% if search_my_foods %}checked{% endif %}>
+            <label class="form-check-label" for="search_my_foods">My Foods</label>
         </div>
-        {% if target %}
-            <input type="hidden" name="target" value="{{ target }}">
-        {% endif %}
-        {% if recipe_id %}
-            <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-        {% endif %}
-        {% if log_date %}
-            <input type="hidden" name="log_date" value="{{ log_date }}">
-        {% endif %}
-        {% if meal_name %}
-            <input type="hidden" name="meal_name" value="{{ meal_name }}">
-        {% endif %}
-        <input type="hidden" name="search_mode" value="{{ search_mode }}">
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="search_my_meals" name="search_my_meals" value="true" {% if search_my_meals %}checked{% endif %}>
+            <label class="form-check-label" for="search_my_meals">My Meals</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="search_recipes" name="search_recipes" value="true" {% if search_recipes %}checked{% endif %}>
+            <label class="form-check-label" for="search_recipes">Recipes</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="search_usda" name="search_usda" value="true" {% if search_usda %}checked{% endif %}>
+            <label class="form-check-label" for="search_usda">USDA</label>
+        </div>
     </form>
 
-    {% if results %}
+    <!-- Barcode Scanner Modal -->
+    <div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-labelledby="barcodeScannerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="barcodeScannerModalLabel">Scan Barcode</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="reader" style="width: 100%;"></div>
+                    <div id="scanner-message" class="mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    {% if search_term %}
         <h2>Search Results</h2>
-        {% if search_mode != 'usda_only' %}
-            {% if results.my_foods %}
-                <h3>My Foods</h3>
-                <ul class="list-group mb-3">
+
+        {% if results.my_foods %}
+            <div class="card mb-3">
+                <div class="card-header">My Foods</div>
+                <ul class="list-group list-group-flush">
                     {% for food in results.my_foods %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
-                                {{ food.description }}
-                                {% if food.user_id != current_user.id %}
+                                <strong>{{ food.description }}</strong>
+                                {% if food.user.username != current_user.username %}
                                     <span class="badge bg-secondary">by {{ food.user.username }}</span>
                                 {% endif %}
-                                {% if food.has_portions %}
-                                    <span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>
-                                {% endif %}
-                                {% if food.has_ingredients %}
-                                    <span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>
-                                {% endif %}
+                                <small class="d-block text-muted">
+                                    {% if food.portions %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>{% endif %}
+                                    {% if food.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
+                                </small>
                             </div>
-                            <div>
-                                {% if food.user_id == current_user.id %}
-                                    <form method="POST" action="{{ url_for('search.add_item') }}" class="d-inline">
-                                        <input type="hidden" name="food_id" value="{{ food.id }}">
-                                        <input type="hidden" name="food_type" value="my_food">
+                            <div class="d-flex align-items-center">
+                                {% if target %}
+                                    <form method="post" action="{{ url_for('search.add_item') }}" class="d-inline-flex align-items-center me-2">
                                         <input type="hidden" name="target" value="{{ target }}">
-                                        <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
                                         <input type="hidden" name="log_date" value="{{ log_date }}">
                                         <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                        <input type="number" name="quantity" value="1" min="0.01" step="0.01" class="form-control form-control-sm d-inline-block w-auto">
-                                        <select name="portion_id" class="form-select form-select-sm ms-2 d-inline-block w-auto">
+                                        <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+                                        <input type="hidden" name="food_type" value="my_food">
+                                        <input type="hidden" name="food_id" value="{{ food.id }}">
+                                        <input type="number" name="amount" class="form-control form-control-sm" value="100" style="width: 70px;">
+                                        <select name="portion_id" class="form-select form-select-sm" style="width: auto;">
                                             <option value="g">g</option>
                                             {% for portion in food.portions %}
                                                 <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
@@ -65,9 +84,11 @@
                                         </select>
                                         <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
                                     </form>
+                                {% endif %}
+                                {% if food.user_id == current_user.id %}
                                     <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
                                 {% else %}
-                                    <form action="{{ url_for('my_foods.copy_my_food', food_id=food.id) }}" method="POST" class="d-inline">
+                                    <form method="post" action="{{ url_for('my_foods.copy_my_food', food_id=food.id) }}" class="d-inline">
                                         <button type="submit" class="btn btn-sm btn-outline-success">Copy</button>
                                     </form>
                                 {% endif %}
@@ -75,72 +96,70 @@
                         </li>
                     {% endfor %}
                 </ul>
-            {% endif %}
+            </div>
+        {% endif %}
 
-            {% if results.my_meals %}
-                <h3>My Meals</h3>
-                <ul class="list-group mb-3">
+        {% if results.my_meals %}
+            <div class="card mb-3">
+                <div class="card-header">My Meals</div>
+                <ul class="list-group list-group-flush">
                     {% for searched_meal in results.my_meals %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
-                                {{ searched_meal.name }}
-                                {% if searched_meal.has_items %}
+                                <strong>{{ searched_meal.name }}</strong>
+                                <small class="d-block text-muted">
                                     <span class="me-2 fw-bold text-info" title="Contains items">M</span>
-                                {% endif %}
+                                </small>
                             </div>
-                            <div>
-                                <form method="POST" action="{{ url_for('search.add_item') }}" class="d-inline">
-                                    <input type="hidden" name="food_id" value="{{ searched_meal.id }}">
-                                    <input type="hidden" name="food_type" value="my_meal">
+                            <div class="d-flex align-items-center">
+                                {% if target %}
+                                <form method="post" action="{{ url_for('search.add_item') }}" class="d-inline-flex align-items-center me-2">
                                     <input type="hidden" name="target" value="{{ target }}">
-                                    <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
                                     <input type="hidden" name="log_date" value="{{ log_date }}">
                                     <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                    <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm d-inline-block w-auto"> servings
+                                    <input type="hidden" name="food_type" value="my_meal">
+                                    <input type="hidden" name="food_id" value="{{ searched_meal.id }}">
                                     <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
                                 </form>
+                                {% endif %}
                                 <a href="{{ url_for('diary.edit_meal', meal_id=searched_meal.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
                             </div>
                         </li>
                     {% endfor %}
                 </ul>
-            {% endif %}
+            </div>
+        {% endif %}
 
-            {% if results.recipes %}
-                <h3>Recipes</h3>
-                <ul class="list-group mb-3">
+        {% if results.recipes %}
+            <div class="card mb-3">
+                <div class="card-header">Recipes</div>
+                <ul class="list-group list-group-flush">
                     {% for recipe in results.recipes %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
-                                {{ recipe.name }}
-                                {% if recipe.user_id != current_user.id %}
+                                <strong>{{ recipe.name }}</strong>
+                                {% if recipe.user.username != current_user.username %}
                                     <span class="badge bg-secondary">by {{ recipe.user.username }}</span>
-                                {% elif recipe.is_public %}
+                                {% endif %}
+                                {% if recipe.is_public %}
                                     <span class="badge bg-info text-dark">Public</span>
                                 {% endif %}
-                                {% if recipe.has_portions %}
-                                    <span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>
-                                {% endif %}
-                                {% if recipe.has_ingredients %}
-                                    <span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>
-                                {% endif %}
-                                <small class="text-muted">
-                                    ({{ recipe.calories_per_100g|round(0) }} kcal,
-                                    {{ recipe.protein_per_100g|round(1) }}g P,
-                                    {{ recipe.carbs_per_100g|round(1) }}g C,
-                                    {{ recipe.fat_per_100g|round(1) }}g F per 100g)
+                                <small class="d-block text-muted">
+                                    {% if recipe.portions %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>{% endif %}
+                                    {% if recipe.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
                                 </small>
                             </div>
-                            <div>
-                                <form method="POST" action="{{ url_for('search.add_item') }}" class="d-inline">
-                                    <input type="hidden" name="food_id" value="{{ recipe.id }}">
-                                    <input type="hidden" name="food_type" value="recipe">
+                            <div class="d-flex align-items-center">
+                                {% if target %}
+                                <form method="post" action="{{ url_for('search.add_item') }}" class="d-inline-flex align-items-center me-2">
                                     <input type="hidden" name="target" value="{{ target }}">
-                                    <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
                                     <input type="hidden" name="log_date" value="{{ log_date }}">
                                     <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                    <input type="number" name="quantity" value="1" min="0.01" step="0.01" class="form-control form-control-sm d-inline-block w-auto">
-                                    <select name="portion_id" class="form-select form-select-sm ms-2 d-inline-block w-auto">
+                                    <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+                                    <input type="hidden" name="food_type" value="recipe">
+                                    <input type="hidden" name="food_id" value="{{ recipe.id }}">
+                                    <input type="number" name="amount" class="form-control form-control-sm" value="1" style="width: 70px;">
+                                    <select name="portion_id" class="form-select form-select-sm" style="width: auto;">
                                         <option value="g">g</option>
                                         {% for portion in recipe.portions %}
                                             <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
@@ -148,11 +167,13 @@
                                     </select>
                                     <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
                                 </form>
+                                {% endif %}
                                 {% if recipe.user_id == current_user.id %}
                                     <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                {% else %}
-                                    <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-info">View</a>
-                                    <form action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline">
+                                {% endif %}
+                                <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                                {% if recipe.user_id != current_user.id %}
+                                    <form method="post" action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" class="d-inline">
                                         <button type="submit" class="btn btn-sm btn-outline-success">Copy</button>
                                     </form>
                                 {% endif %}
@@ -160,57 +181,120 @@
                         </li>
                     {% endfor %}
                 </ul>
-            {% endif %}
+            </div>
         {% endif %}
 
         {% if results.usda_foods %}
+            <div class="card mb-3">
             <h3>USDA Foods</h3>
-            <ul class="list-group mb-3">
+            <ul class="list-group list-group-flush">
                 {% for food in results.usda_foods %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
-                            {{ food.description }}
-                            {% if food.has_portions %}
-                                <span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>
-                            {% endif %}
-                            {% if food.has_ingredients %}
-                                <span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>
-                            {% endif %}
-                            {% if food.has_rich_nutrients %}
-                                <span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>
-                            {% endif %}
+                            <strong>{{ food.description }}</strong>
+                            <div class="text-muted small">
+                                {% if food.portions %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>{% endif %}
+                                {% if food.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
+                                {% if food.nutrients %}<span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>{% endif %}
+                            </div>
                         </div>
-                        <div>
-                            <form method="POST" action="{{ url_for('search.add_item') }}" class="d-inline">
-                                <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
-                                <input type="hidden" name="food_type" value="usda">
+                        <div class="d-flex align-items-center">
+                            <form method="post" action="{{ url_for('search.add_item') }}" class="d-inline-flex align-items-center me-2">
                                 <input type="hidden" name="target" value="{{ target }}">
-                                <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
                                 <input type="hidden" name="log_date" value="{{ log_date }}">
                                 <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                {% if target %}
-                                    <input type="number" name="quantity" value="1" min="0.01" step="0.01" class="form-control form-control-sm d-inline-block w-auto">
-                                    <select name="portion_id" class="form-select form-select-sm ms-2 d-inline-block w-auto">
-                                        <option value="g">g</option>
-                                        {% for portion in food.portions %}
-                                            <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
-                                {% else %}
-                                    <input type="hidden" name="quantity" value="100"> {# Default quantity for my_foods #}
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">Add to My Foods</button>
-                                {% endif %}
+                                <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+                                <input type="hidden" name="food_type" value="usda">
+                                <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
+                                <input type="number" name="amount" class="form-control form-control-sm" value="100" style="width: 70px;">
+                                <select name="portion_id" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="g">g</option>
+                                    {% for portion in food.portions %}
+                                        <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
+                            </form>
+                            <form method="post" action="{{ url_for('my_foods.copy_my_food') }}" class="d-inline">
+                                <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Add to My Foods</button>
                             </form>
                             <a href="{{ food.detail_url }}" class="btn btn-sm btn-outline-info">View Details</a>
                         </div>
                     </li>
                 {% endfor %}
             </ul>
+            </div>
         {% endif %}
 
-        {% if not results.usda_foods and not results.my_foods and not results.recipes and not results.my_meals %}
+        {% if not results.my_foods and not results.recipes and not results.usda_foods and not results.my_meals %}
             <p>No results found for "{{ search_term }}".</p>
         {% endif %}
     {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='html5-qrcode.min.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const scanButton = document.getElementById('scan-barcode-btn');
+    const scannerModalElement = document.getElementById('barcodeScannerModal');
+    const scannerMessage = document.getElementById('scanner-message');
+    const scannerModal = new bootstrap.Modal(scannerModalElement);
+    let html5QrCode;
+
+    scanButton.addEventListener('click', function () {
+        scannerModal.show();
+    });
+
+    scannerModalElement.addEventListener('shown.bs.modal', function () {
+        scannerMessage.innerHTML = 'Starting camera...';
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText, decodedResult) => {
+                // success
+                html5QrCode.stop();
+                scannerModal.hide();
+                scannerMessage.innerHTML = `Scanned: ${decodedText}`;
+                
+                fetch(`/upc/${decodedText}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('UPC not found');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.status === 'found') {
+                            window.location.href = data.detail_url;
+                        } else {
+                            scannerMessage.innerHTML = `<div class="alert alert-danger">UPC not found.</div>`;
+                            scannerModal.show(); // Re-show modal to display error
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        scannerMessage.innerHTML = `<div class="alert alert-danger">Error finding UPC. Please try again.</div>`;
+                        scannerModal.show(); // Re-show modal to display error
+                    });
+            },
+            (errorMessage) => {
+                // parse error, ignore.
+            })
+            .catch((err) => {
+                scannerMessage.innerHTML = `<div class="alert alert-danger">Error starting scanner: ${err}</div>`;
+            });
+    });
+
+    scannerModalElement.addEventListener('hidden.bs.modal', function () {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop();
+        }
+    });
+});
+</script>
 {% endblock %}

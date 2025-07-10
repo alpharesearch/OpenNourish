@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, send_file, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, send_file, current_app, jsonify
 from flask_login import current_user
 from models import db, Food, UnifiedPortion
 from sqlalchemy.orm import sessionmaker
@@ -36,14 +36,20 @@ def food_detail(fdc_id):
 
 @main_bp.route('/upc/<barcode>')
 def upc_search(barcode):
-    q = request.args.get('q')
     food = db.session.execute(
         db.select(Food).filter_by(upc=barcode)
     ).first()
     if food:
-        return redirect(url_for('main.food_detail', fdc_id=food[0].fdc_id, q=q))
+        # The 'food' object here is a RowProxy, so we access the Food object with food[0]
+        food_obj = food[0]
+        return jsonify({
+            'status': 'found',
+            'fdc_id': food_obj.fdc_id,
+            'description': food_obj.description,
+            'detail_url': url_for('main.food_detail', fdc_id=food_obj.fdc_id)
+        })
     else:
-        return "UPC not found", 404
+        return jsonify({'status': 'not_found'}), 404
 
 from opennourish.utils import generate_nutrition_label_pdf, generate_nutrition_label_svg
 
