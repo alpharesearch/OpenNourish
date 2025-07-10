@@ -15,6 +15,8 @@ login_manager.login_view = 'auth.login'
 
 def create_app(config_class=Config):
     app = Flask(__name__,
+                instance_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'instance'),
+                instance_relative_config=True,
                 template_folder=os.path.join(os.path.dirname(__file__), '..', 'templates'),
                 static_folder=os.path.join(os.path.dirname(__file__), '..', 'static'))
     if isinstance(config_class, dict):

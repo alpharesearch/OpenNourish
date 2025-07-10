@@ -4,6 +4,7 @@ from urllib.parse import urlsplit
 from . import auth_bp
 from .forms import LoginForm, RegistrationForm
 from models import db, User, UserGoal
+from opennourish.utils import get_allow_registration_status
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -29,7 +30,8 @@ def logout():
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    if not current_app.config['ALLOW_REGISTRATION']:
+    if not get_allow_registration_status():
+        current_app.logger.debug(f"ALLOW_REGISTRATION is {get_allow_registration_status()}. Redirecting to login.")
         flash('New user registration is currently disabled.', 'danger')
         return redirect(url_for('auth.login'))
     if current_user.is_authenticated:

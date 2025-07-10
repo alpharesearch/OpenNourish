@@ -12,6 +12,7 @@ import os
 def settings():
     form = AdminSettingsForm()
     settings_file = os.path.join(current_app.instance_path, 'settings.json')
+    os.makedirs(current_app.instance_path, exist_ok=True)
 
     if form.validate_on_submit():
         # Handle POST request to save settings
@@ -33,6 +34,7 @@ def settings():
         # Write updated settings back to the file
         with open(settings_file, 'w') as f:
             json.dump(settings_data, f, indent=4)
+        
         
         flash('Settings saved!', 'success')
         return redirect(url_for('admin.settings'))

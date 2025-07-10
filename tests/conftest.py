@@ -1,12 +1,15 @@
 import pytest
 import os
 import sys
+import tempfile
+import shutil
 
 # Add project root to path to allow importing 'app'
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from opennourish import create_app
 from models import db, User
+from config import Config
 
 @pytest.fixture(scope='function')
 def app_with_db():
@@ -33,11 +36,18 @@ def app_with_db():
 
     app = create_app(test_config)
 
+    # Create a temporary instance folder for each test
+    instance_path = tempfile.mkdtemp()
+    app.instance_path = instance_path
+
     with app.app_context():
         db.create_all()
         yield app
         db.session.remove()
         db.drop_all()
+
+    # Clean up the temporary instance folder
+    shutil.rmtree(instance_path)
 
 @pytest.fixture(scope='function')
 def client(app_with_db):
