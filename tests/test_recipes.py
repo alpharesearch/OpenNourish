@@ -333,7 +333,7 @@ def test_recipes_list_view(auth_client_user_two):
     assert f'action="/recipes/{recipe_two_private_id}/delete"'.encode() in response.data
 
     # As user_two, view "Public Recipes"
-    response = client.get('/recipes/?show=public')
+    response = client.get('/recipes/?view=public')
     assert response.status_code == 200
     assert b"User One Public Recipe" in response.data
     assert b"User Two Private Recipe" not in response.data
