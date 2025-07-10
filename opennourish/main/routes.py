@@ -36,17 +36,27 @@ def food_detail(fdc_id):
 
 @main_bp.route('/upc/<barcode>')
 def upc_search(barcode):
-    food = db.session.execute(
+    food_row = db.session.execute(
         db.select(Food).filter_by(upc=barcode)
     ).first()
-    if food:
-        # The 'food' object here is a RowProxy, so we access the Food object with food[0]
-        food_obj = food[0]
+
+    if food_row:
+        food_obj = food_row[0]
+        
+        # Query for portions related to this fdc_id
+        portions = UnifiedPortion.query.filter_by(fdc_id=food_obj.fdc_id).all()
+        portions_data = [
+            {'id': p.id, 'description': p.full_description_str} 
+            for p in portions
+        ]
+
         return jsonify({
             'status': 'found',
             'fdc_id': food_obj.fdc_id,
             'description': food_obj.description,
-            'detail_url': url_for('main.food_detail', fdc_id=food_obj.fdc_id)
+            'detail_url': url_for('main.food_detail', fdc_id=food_obj.fdc_id),
+            'portions': portions_data,
+            'nutrition_label_svg_url': url_for('main.nutrition_label_svg', fdc_id=food_obj.fdc_id)
         })
     else:
         return jsonify({'status': 'not_found'}), 404

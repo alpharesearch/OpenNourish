@@ -35,9 +35,13 @@
                     <h5 class="modal-title" id="barcodeScannerModalLabel">Scan Barcode</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body"
+                     data-target="{{ target or '' }}"
+                     data-log-date="{{ log_date or '' }}"
+                     data-meal-name="{{ meal_name or '' }}"
+                     data-recipe-id="{{ recipe_id or '' }}">
                     <div id="reader" style="width: 100%;"></div>
-                    <div id="scanner-message" class="mt-2"></div>
+                    <div id="scanner-result-display" class="mt-2"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -239,62 +243,128 @@
 document.addEventListener('DOMContentLoaded', function () {
     const scanButton = document.getElementById('scan-barcode-btn');
     const scannerModalElement = document.getElementById('barcodeScannerModal');
-    const scannerMessage = document.getElementById('scanner-message');
+    const resultDisplay = document.getElementById('scanner-result-display');
+    const modalBody = scannerModalElement.querySelector('.modal-body');
     const scannerModal = new bootstrap.Modal(scannerModalElement);
     let html5QrCode;
 
+    function onScanSuccess(decodedText, decodedResult) {
+        console.log(`Scan result: ${decodedText}`, decodedResult);
+        
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(ignore => {
+                lookupBarcode(decodedText);
+            }).catch(err => {
+                console.error("Error stopping scanner:", err);
+                lookupBarcode(decodedText); // Proceed anyway
+            });
+        } else {
+            lookupBarcode(decodedText);
+        }
+    }
+
+    function lookupBarcode(barcode) {
+        resultDisplay.innerHTML = `<div class="alert alert-info">Found barcode: ${barcode}. Looking up...</div>`;
+
+        fetch(`/upc/${barcode}`)
+            .then(response => {
+                if (!response.ok) { throw new Error('UPC not found'); }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'found') {
+                    const target = modalBody.dataset.target;
+                    if (target) {
+                        // If there's a target, show the 'Add' form
+                        displayFoodForAdding(data);
+                    } else {
+                        // Otherwise, redirect to the detail page
+                        window.location.href = data.detail_url;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultDisplay.innerHTML = `<div class="alert alert-danger">Could not find a product with UPC ${barcode}.</div>`;
+            });
+    }
+
+    function displayFoodForAdding(foodData) {
+        let portionsOptions = '<option value="g">g</option>';
+        foodData.portions.forEach(p => {
+            portionsOptions += `<option value="${p.id}">${p.description}</option>`;
+        });
+
+        const target = modalBody.dataset.target;
+        const logDate = modalBody.dataset.logDate;
+        const mealName = modalBody.dataset.mealName;
+        const recipeId = modalBody.dataset.recipeId;
+
+        const formHtml = `
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">${foodData.description}</h5>
+                    <form method="post" action="{{ url_for('search.add_item') }}" class="d-flex align-items-center">
+                        <input type="hidden" name="target" value="${target}">
+                        <input type="hidden" name="log_date" value="${logDate}">
+                        <input type="hidden" name="meal_name" value="${mealName}">
+                        <input type="hidden" name="recipe_id" value="${recipeId}">
+                        <input type="hidden" name="food_type" value="usda">
+                        <input type="hidden" name="food_id" value="${foodData.fdc_id}">
+                        
+                        <input type="number" name="amount" class="form-control form-control-sm" value="100" style="width: 80px;">
+                        <select name="portion_id" class="form-select form-select-sm mx-2">
+                            ${portionsOptions}
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
+                    </form>
+                </div>
+                <img src="${foodData.nutrition_label_svg_url}" alt="Nutrition Label" class="img-fluid mt-2">
+            </div>
+        `;
+        resultDisplay.innerHTML = formHtml;
+    }
+
+    function onScanFailure(error) {
+        // This callback is called frequently, ignore it.
+    }
+
     scanButton.addEventListener('click', function () {
+        resultDisplay.innerHTML = ''; // Clear previous results
         scannerModal.show();
     });
 
     scannerModalElement.addEventListener('shown.bs.modal', function () {
-        scannerMessage.innerHTML = 'Starting camera...';
-        html5QrCode = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        resultDisplay.innerHTML = '<div class="alert alert-info">Starting camera...</div>';
+        
+        const formatsToSupport = [
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.CODE_128,
+        ];
+        
+        html5QrCode = new Html5Qrcode("reader", { formatsToSupport: formatsToSupport, verbose: false });
 
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            (decodedText, decodedResult) => {
-                // success
-                html5QrCode.stop();
-                scannerModal.hide();
-                scannerMessage.innerHTML = `Scanned: ${decodedText}`;
-                
-                fetch(`/upc/${decodedText}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('UPC not found');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.status === 'found') {
-                            window.location.href = data.detail_url;
-                        } else {
-                            scannerMessage.innerHTML = `<div class="alert alert-danger">UPC not found.</div>`;
-                            scannerModal.show(); // Re-show modal to display error
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        scannerMessage.innerHTML = `<div class="alert alert-danger">Error finding UPC. Please try again.</div>`;
-                        scannerModal.show(); // Re-show modal to display error
-                    });
-            },
-            (errorMessage) => {
-                // parse error, ignore.
-            })
+        const config = { 
+            fps: 10, 
+            qrbox: { width: 250, height: 150 } 
+        };
+
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
             .catch((err) => {
-                scannerMessage.innerHTML = `<div class="alert alert-danger">Error starting scanner: ${err}</div>`;
+                resultDisplay.innerHTML = `<div class="alert alert-danger">Error starting scanner: ${err}</div>`;
+                console.error("Error starting scanner:", err);
             });
     });
 
     scannerModalElement.addEventListener('hidden.bs.modal', function () {
         if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop();
+            html5QrCode.stop().catch(err => console.log("Ignoring error on stop: ", err));
         }
     });
 });
 </script>
 {% endblock %}
+
