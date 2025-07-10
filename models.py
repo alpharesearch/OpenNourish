@@ -50,6 +50,10 @@ class User(UserMixin, db.Model):
     def pending_requests_received(self):
         return self.received_friend_requests.filter_by(status='pending').all()
 
+    @property
+    def is_admin(self):
+        return self.id == 1
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 

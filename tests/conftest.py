@@ -21,6 +21,7 @@ def app_with_db():
         'SQLALCHEMY_TRACK_MODIFICATIONS': False,
         'SECRET_KEY': 'test_secret_key',
         'WTF_CSRF_ENABLED': False, # Disable CSRF for testing forms
+        'ALLOW_REGISTRATION': True,
     }
 
     # --- SAFEGUARD ---

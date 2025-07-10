@@ -38,6 +38,9 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                         <li><a class="dropdown-item" href="{{ url_for('goals.goals') }}">Goals</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('settings.settings') }}">Settings</a></li>
+                        {% if current_user.is_admin %}
+                        <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">Admin Settings</a></li>
+                        {% endif %}
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
                     </ul>

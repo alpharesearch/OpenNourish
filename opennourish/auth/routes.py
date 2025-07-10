@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, current_user
 from urllib.parse import urlsplit
 from . import auth_bp
@@ -29,6 +29,9 @@ def logout():
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
+    if not current_app.config['ALLOW_REGISTRATION']:
+        flash('New user registration is currently disabled.', 'danger')
+        return redirect(url_for('auth.login'))
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = RegistrationForm()

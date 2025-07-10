@@ -65,6 +65,9 @@ def create_app(config_class=Config):
     from opennourish.profile import profile_bp
     app.register_blueprint(profile_bp, url_prefix='/user')
 
+    from opennourish.admin import admin_bp
+    app.register_blueprint(admin_bp)
+
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(User, int(user_id))
