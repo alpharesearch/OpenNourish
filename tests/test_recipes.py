@@ -181,12 +181,12 @@ def test_add_ingredient_to_recipe(auth_client_with_user):
         db.session.commit()
 
     response =     client.post(f'/search/add_item', data={
-        'food_id': 30001,
-        'food_type': 'usda',
-        'target': 'recipe',
-        'recipe_id': recipe_id,
-        'quantity': 150
-    }, follow_redirects=True)
+            'food_id': 30001,
+            'food_type': 'usda',
+            'target': 'recipe',
+            'recipe_id': recipe_id,
+            'amount': 150
+        }, follow_redirects=True)
     assert response.status_code == 200
     assert b'USDA Ingredient added to recipe Test Add Ingredient.' in response.data
 

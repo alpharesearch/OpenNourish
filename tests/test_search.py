@@ -97,7 +97,7 @@ def test_add_item_to_diary(auth_client_with_data):
         'target': 'diary',
         'log_date': log_date_str,
         'meal_name': 'Breakfast',
-        'quantity': 150
+        'amount': 150
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Test USDA Food added to your diary.' in response.data
@@ -120,7 +120,7 @@ def test_add_item_to_recipe(auth_client_with_data):
         'food_type': 'my_food',
         'target': 'recipe',
         'recipe_id': target_recipe.id,
-        'quantity': 75
+        'amount': 75
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Test My Food added to recipe Target Recipe.' in response.data
@@ -143,7 +143,7 @@ def test_add_item_to_meal(auth_client_with_data):
         'food_type': 'recipe',
         'target': 'meal',
         'recipe_id': target_meal.id, # Using recipe_id for my_meal_id in this context
-        'quantity': 2 # servings
+        'amount': 2 # servings
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Test Recipe added to meal Target Meal.' in response.data
@@ -169,7 +169,7 @@ def test_add_meal_expands_correctly(auth_client_with_data):
         'target': 'diary',
         'log_date': log_date_str,
         'meal_name': 'Lunch',
-        'quantity': 200 # This quantity should scale the meal items
+        'amount': 200 # This quantity should scale the meal items
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Test My Meal (expanded) added to your diary.' in response.data

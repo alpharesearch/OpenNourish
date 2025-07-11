@@ -19,7 +19,7 @@ def test_add_usda_food_to_diary(auth_client):
     diary_data = {
         'log_date': date.today().strftime('%Y-%m-%d'),
         'meal_name': 'Breakfast',
-        'quantity': 200,
+        'amount': 200,
         'portion_id': 'g',
         'fdc_id': 10001
     }
@@ -29,7 +29,7 @@ def test_add_usda_food_to_diary(auth_client):
         'target': 'diary',
         'log_date': diary_data['log_date'],
         'meal_name': diary_data['meal_name'],
-        'quantity': diary_data['quantity']
+        'amount': diary_data['amount']
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'USDA Apple added to your diary.' in response.data
@@ -62,7 +62,7 @@ def test_add_my_food_to_diary(auth_client):
     diary_data = {
         'log_date': date.today().strftime('%Y-%m-%d'),
         'meal_name': 'Lunch',
-        'quantity': 150,
+        'amount': 150,
         'portion_id': 'g',
         'my_food_id': my_food_id
     }
@@ -72,7 +72,7 @@ def test_add_my_food_to_diary(auth_client):
         'target': 'diary',
         'log_date': diary_data['log_date'],
         'meal_name': diary_data['meal_name'],
-        'quantity': diary_data['quantity']
+        'amount': diary_data['amount']
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'My Custom Bread added to your diary.' in response.data
@@ -126,7 +126,7 @@ def test_add_usda_food_with_portion(auth_client):
         'target': 'diary',
         'log_date': date.today().strftime('%Y-%m-%d'),
         'meal_name': 'Snack',
-        'quantity': 56
+        'amount': 56
     })
 
     with auth_client.application.app_context():
@@ -155,7 +155,7 @@ def test_add_my_food_with_portion(auth_client):
         'target': 'diary',
         'log_date': date.today().strftime('%Y-%m-%d'),
         'meal_name': 'Snack',
-        'quantity': 120
+        'amount': 120
     })
 
     with auth_client.application.app_context():
