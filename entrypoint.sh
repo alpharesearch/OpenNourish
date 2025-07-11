@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+# Step 0: Generate self-signed certificates if not found
+CERT_DIR="/app/certs"
+if [ ! -f "$CERT_DIR/fullchain.pem" ] || [ ! -f "$CERT_DIR/privkey.pem" ]; then
+  echo "--- Generating self-signed certificates... ---"
+  mkdir -p "$CERT_DIR"
+  openssl req -x509 -newkey rsa:4096 -nodes -out "$CERT_DIR/fullchain.pem" -keyout "$CERT_DIR/privkey.pem" -days 365 -subj "/CN=localhost"
+  echo "--- Certificates generated. ---"
+else
+  echo "--- Certificates found. Skipping generation. ---"
+fi
+
 # All paths are relative to the container's working directory, /app
 USDA_DB_PATH="usda_data.db"
 USDA_CSV_DIR="usda_data"

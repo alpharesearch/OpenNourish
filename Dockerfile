@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation \
     xz-utils \
     dos2unix \
+    openssl \
     --no-install-recommends && \
     wget https://github.com/typst/typst/releases/download/v0.13.1/typst-x86_64-unknown-linux-musl.tar.xz && \
     tar -xf typst-x86_64-unknown-linux-musl.tar.xz && \
