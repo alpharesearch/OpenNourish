@@ -51,15 +51,8 @@ flask seed-usda-portions
 echo "--- Seeding default exercise activities... ---"
 flask seed-exercise-activities
 
-# Step 3a: Conditionally seed development data
-if [ "${SEED_DEV_DATA}" = "true" ] && [ ! -f ".dev_data_seeded" ]; then
-    echo "--- Seeding development data (first time only)... ---"
-    flask seed-dev-data
-    touch .dev_data_seeded
-    echo "--- Development data seeded. A .dev_data_seeded file has been created to prevent re-seeding. ---"
-elif [ "${SEED_DEV_DATA}" = "true" ]; then
-    echo "--- Development data already seeded. Skipping. ---"
-fi
+echo "--- Seeding development data (first time only)... ---"
+flask seed-dev-data
 
 # Step 4: Execute the main command
 echo "--- Starting application... ---"

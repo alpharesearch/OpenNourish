@@ -112,13 +112,24 @@ def create_app(config_class=Config):
     def seed_dev_data_command(count):
         """Populates the user database with realistic test data."""
         with app.app_context():
-            print("Skipping clearing existing user data as it's handled by seed_db.sh script.")
+            # Check if seeding is enabled and if the database is empty
+            if os.getenv('SEED_DEV_DATA') != 'true':
+                print("SEED_DEV_DATA environment variable not set to 'true'. Skipping dev data seeding.")
+                return
+
+            if User.query.first() is not None:
+                print("Database already contains users. Skipping dev data seeding.")
+                return
+            
+            print("Starting to seed development data...")
 
             print("Creating main test user...")
             test_user = User(username='markus')
             test_user.set_password('1')
             db.session.add(test_user)
+            db.session.commit() # Commit here to get test_user.id
             print(f"Created main test user: {test_user.username}")
+
 
             fake = Faker()
 

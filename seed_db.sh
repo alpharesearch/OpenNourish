@@ -23,21 +23,14 @@ echo "--- user_data.db reset complete! ---"
 echo "Applying any pending database migrations..."
 flask db upgrade
 
-# 2. Seed development data
-echo "Seeding development data..."
+
+echo "Seeding usda portion data..."
 flask seed-usda-portions
 
 echo "--- Seeding default exercise activities... ---"
 flask seed-exercise-activities
 
-# Step 3: Conditionally seed development data
-if [ "${SEED_DEV_DATA}" = "true" ] && [ ! -f ".dev_data_seeded" ]; then
-    echo "--- Seeding development data (first time only)... ---"
-    flask seed-dev-data
-    touch .dev_data_seeded
-    echo "--- Development data seeded. A .dev_data_seeded file has been created to prevent re-seeding. ---"
-elif [ "${SEED_DEV_DATA}" = "true" ]; then
-    echo "--- Development data already seeded. Skipping. ---"
-fi
+echo "--- Seeding development data ---"
+flask seed-dev-data
 
 echo "--- Database update and seeding complete! ---"

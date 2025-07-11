@@ -34,6 +34,7 @@ test.pdf
 project_snapshot.txt
 .vscode/
 typst/
+.dev_data_seeded
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
