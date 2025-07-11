@@ -3,17 +3,18 @@ from flask_login import login_required, current_user
 from . import exercise_bp
 from .forms import ExerciseLogForm
 from .utils import get_user_weight_kg, calculate_calories_burned
-from models import db, ExerciseLog, UserGoal
+from models import db, ExerciseLog, UserGoal, ExerciseActivity
 from datetime import date, timedelta
 
 @exercise_bp.route('/log', methods=['GET', 'POST'])
 @login_required
 def log_exercise():
     form = ExerciseLogForm()
+    form.activity.query = ExerciseActivity.query.order_by(ExerciseActivity.name).all()
+
     if form.validate_on_submit():
         user_weight_kg = get_user_weight_kg()
         if user_weight_kg is None:
-            # This case is handled by get_user_weight_kg, which flashes a message
             return redirect(url_for('tracking.progress'))
 
         calories_burned = 0
@@ -50,6 +51,7 @@ def log_exercise():
     forms = {}
     for item in logs.items:
         edit_form = ExerciseLogForm(obj=item, prefix=f"form-{item.id}")
+        edit_form.activity.query = ExerciseActivity.query.order_by(ExerciseActivity.name).all()
         forms[item.id] = edit_form
 
     # --- Weekly Exercise Goal Progress ---
@@ -95,6 +97,8 @@ def edit_exercise(log_id):
         return redirect(url_for('.log_exercise'))
 
     form = ExerciseLogForm(prefix=f"form-{exercise_log.id}")
+    form.activity.query = ExerciseActivity.query.order_by(ExerciseActivity.name).all()
+    
     if form.validate_on_submit():
         user_weight_kg = get_user_weight_kg()
         if user_weight_kg is None:

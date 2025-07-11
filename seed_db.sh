@@ -27,6 +27,9 @@ flask db upgrade
 echo "Seeding development data..."
 flask seed-usda-portions
 
+echo "--- Seeding default exercise activities... ---"
+flask seed-exercise-activities
+
 # Step 3: Conditionally seed development data
 if [ "${SEED_DEV_DATA}" = "true" ] && [ ! -f ".dev_data_seeded" ]; then
     echo "--- Seeding development data (first time only)... ---"
