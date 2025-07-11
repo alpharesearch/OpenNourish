@@ -103,9 +103,11 @@ def search():
         friend_ids = [friend.id for friend in current_user.friends]
 
         if search_usda:
-            usda_foods_pagination = Food.query.options(
-                selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
-            ).filter(Food.description.ilike(f'%{search_term}%')).paginate(page=usda_page, per_page=per_page, error_out=False)
+            usda_query = Food.query.filter(Food.description.ilike(f'%{search_term}%'))
+            usda_foods_pagination = usda_query.paginate(page=usda_page, per_page=per_page, error_out=False)
+            # Manually add the detail_url to each item
+            for food in usda_foods_pagination.items:
+                food.detail_url = url_for('main.food_detail', fdc_id=food.fdc_id)
             
             for food in usda_foods_pagination.items:
                 food.portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
