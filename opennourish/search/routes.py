@@ -1,4 +1,4 @@
-from flask import render_template, request, flash, redirect, url_for, current_app
+from flask import render_template, request, flash, redirect, url_for, current_app, jsonify
 from . import search_bp
 from models import db, Food, MyFood, Recipe, MyMeal, DailyLog, RecipeIngredient, MyMealItem, UnifiedPortion, FoodNutrient
 from flask_login import login_required, current_user
@@ -6,6 +6,56 @@ from datetime import date
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, selectinload
 from opennourish.utils import calculate_recipe_nutrition_per_100g
+
+@search_bp.route('/by_upc', methods=['GET'])
+@login_required
+def search_by_upc():
+    upc = request.args.get('upc', '')
+    if not upc:
+        return jsonify({'error': 'UPC code is required'}), 400
+
+    # 1. Search in current user's MyFood
+    user_food = MyFood.query.filter_by(user_id=current_user.id, upc=upc).first()
+    if user_food:
+        return jsonify({
+            'status': 'found',
+            'source': 'my_food',
+            'food': {
+                'id': user_food.id,
+                'description': user_food.description,
+                'type': 'my_food'
+            }
+        })
+
+    # 2. Search in friends' MyFood
+    friend_ids = [friend.id for friend in current_user.friends]
+    if friend_ids:
+        friends_food = MyFood.query.filter(MyFood.user_id.in_(friend_ids), MyFood.upc==upc).first()
+        if friends_food:
+            return jsonify({
+                'status': 'found',
+                'source': 'friend_food',
+                'food': {
+                    'id': friends_food.id,
+                    'description': friends_food.description,
+                    'type': 'my_food'
+                }
+            })
+
+    # 3. Search in USDA database
+    usda_food = Food.query.filter_by(upc=upc).first()
+    if usda_food:
+        return jsonify({
+            'status': 'found',
+            'source': 'usda',
+            'food': {
+                'fdc_id': usda_food.fdc_id,
+                'description': usda_food.description,
+                'type': 'usda'
+            }
+        })
+
+    return jsonify({'status': 'not_found'}), 404
 
 @search_bp.route('/', methods=['GET', 'POST'])
 @login_required
@@ -37,9 +87,17 @@ def search():
         friend_ids = [friend.id for friend in current_user.friends]
 
         if search_usda:
+            # Prioritize results that start with the search term
             usda_foods_query = Food.query.options(
                 selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
-            ).filter(Food.description.ilike(f'%{search_term}%')).limit(10).all()
+            ).filter(Food.description.ilike(f'{search_term}%')).limit(10).all()
+
+            # If not enough results, add results that contain the search term
+            if len(usda_foods_query) < 10:
+                usda_foods_query.extend(Food.query.options(
+                    selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
+                ).filter(Food.description.ilike(f'%{search_term}%'), Food.description.notilike(f'{search_term}%')).limit(10 - len(usda_foods_query)).all())
+
             for food in usda_foods_query:
                 usda_portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
                 results["usda_foods"].append({
