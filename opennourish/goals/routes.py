@@ -5,7 +5,7 @@ from .forms import GoalForm
 from models import db, UserGoal, CheckIn, User
 from opennourish.utils import (
     calculate_bmr, calculate_goals_from_preset,
-    ft_in_to_cm, cm_to_ft_in, lbs_to_kg, kg_to_lbs
+    ft_in_to_cm, cm_to_ft_in, lbs_to_kg, kg_to_lbs, cm_to_in, in_to_cm
 )
 from config import Config
 from datetime import date
@@ -145,6 +145,15 @@ def goals():
         user_goal.calories_burned_goal_weekly = form.calories_burned_goal_weekly.data
         user_goal.exercises_per_week_goal = form.exercises_per_week_goal.data
         user_goal.minutes_per_exercise_goal = form.minutes_per_exercise_goal.data
+
+        # Update Body Composition Goals
+        if current_user.measurement_system == 'us':
+            user_goal.weight_goal_kg = lbs_to_kg(form.weight_goal_lbs.data)
+            user_goal.waist_cm_goal = in_to_cm(form.waist_in_goal.data)
+        else:
+            user_goal.weight_goal_kg = form.weight_goal_kg.data
+            user_goal.waist_cm_goal = form.waist_cm_goal.data
+        user_goal.body_fat_percentage_goal = form.body_fat_percentage_goal.data
         
         db.session.commit()
         flash('Goals and personal info updated!', 'success')
@@ -167,6 +176,15 @@ def goals():
         
         if latest_checkin:
             form.body_fat_percentage.data = latest_checkin.body_fat_percentage
+
+        if user_goal:
+            if current_user.measurement_system == 'us':
+                form.weight_goal_lbs.data = kg_to_lbs(user_goal.weight_goal_kg)
+                form.waist_in_goal.data = cm_to_in(user_goal.waist_cm_goal)
+            else:
+                form.weight_goal_kg.data = user_goal.weight_goal_kg
+                form.waist_cm_goal.data = user_goal.waist_cm_goal
+            form.body_fat_percentage_goal.data = user_goal.body_fat_percentage_goal
 
     # Calculate BMR for display
     bmr, formula_name = None, None

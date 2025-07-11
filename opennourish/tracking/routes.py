@@ -2,7 +2,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from . import tracking_bp
 from .forms import CheckInForm
-from models import db, CheckIn
+from models import db, CheckIn, UserGoal
 from opennourish.utils import lbs_to_kg, in_to_cm, kg_to_lbs, cm_to_in
 from datetime import date
 
@@ -54,11 +54,27 @@ def progress():
         
         forms[item.id] = edit_form
 
+    # --- Progress Chart Data ---
+    user_goal = UserGoal.query.filter_by(user_id=current_user.id).first()
+    all_check_ins = CheckIn.query.filter_by(user_id=current_user.id).order_by(CheckIn.checkin_date.asc()).all()
+    
+    chart_labels = [ci.checkin_date.strftime('%Y-%m-%d') for ci in all_check_ins]
+    weight_data = [ci.weight_kg for ci in all_check_ins]
+    
+    start_weight = weight_data[0] if weight_data else 0
+    current_weight = weight_data[-1] if weight_data else 0
+    goal_weight = user_goal.weight_goal_kg if user_goal and user_goal.weight_goal_kg else 0
+
     return render_template('tracking/progress.html', 
                            form=form, 
                            check_ins=check_ins_pagination, 
                            forms=forms,
-                           title='Your Progress')
+                           title='Your Progress',
+                           chart_labels=chart_labels,
+                           weight_data=weight_data,
+                           start_weight=start_weight,
+                           current_weight=current_weight,
+                           goal_weight=goal_weight)
 
 @tracking_bp.route('/check-in/<int:check_in_id>/update', methods=['POST'])
 @login_required

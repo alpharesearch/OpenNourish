@@ -165,6 +165,87 @@ def test_exercise_goals_update(auth_client):
         assert user_goal.exercises_per_week_goal == 5
         assert user_goal.minutes_per_exercise_goal == 45
 
+def test_body_composition_goals_update(auth_client):
+    """
+    GIVEN a logged-in user with existing goals
+    WHEN the user submits the goals form with new body composition goal data
+    THEN the UserGoal object should be updated with the new body composition goal values.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        initial_goal = UserGoal(
+            user_id=user.id,
+            calories=2000,
+            protein=120,
+            carbs=250,
+            fat=70,
+            weight_goal_kg=70,
+            body_fat_percentage_goal=15,
+            waist_cm_goal=80
+        )
+        db.session.add(initial_goal)
+        db.session.commit()
+        initial_goal_id = initial_goal.id
+
+    data = {
+        'age': 30,
+        'gender': 'Male',
+        'height_cm': 180,
+        'weight_kg': 80,
+        'calories': 2000,
+        'protein': 120,
+        'carbs': 250,
+        'fat': 70,
+        'weight_goal_kg': 75,
+        'body_fat_percentage_goal': 12,
+        'waist_cm_goal': 75
+    }
+
+    response = auth_client.post('/goals/', data=data, follow_redirects=True)
+    assert response.status_code == 200
+
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        user_goal = UserGoal.query.filter_by(user_id=user.id).first()
+        assert user_goal is not None
+        assert user_goal.id == initial_goal_id
+        assert user_goal.weight_goal_kg == 75
+        assert user_goal.body_fat_percentage_goal == 12
+        assert user_goal.waist_cm_goal == 75
+
+    # Test with US measurements
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        user.measurement_system = 'us'
+        db.session.commit()
+
+    data_us = {
+        'age': 30,
+        'gender': 'Male',
+        'height_ft': 5,
+        'height_in': 11,
+        'weight_lbs': 180,
+        'calories': 2000,
+        'protein': 120,
+        'carbs': 250,
+        'fat': 70,
+        'weight_goal_lbs': 170,
+        'body_fat_percentage_goal': 10,
+        'waist_in_goal': 30
+    }
+
+    response_us = auth_client.post('/goals/', data=data_us, follow_redirects=True)
+    assert response_us.status_code == 200
+
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        # Reload user_goal to ensure we get the latest data after the form submission
+        user_goal = UserGoal.query.filter_by(user_id=user.id).first()
+        assert user_goal is not None
+        assert user_goal.weight_goal_kg == pytest.approx(77.11, abs=0.01) # 170 lbs to kg
+        assert user_goal.body_fat_percentage_goal == 10
+        assert user_goal.waist_cm_goal == pytest.approx(76.2, abs=0.01) # 30 inches to cm
+
 def test_calculate_bmr_api(auth_client):
     """
     GIVEN a logged-in user

@@ -29,6 +29,15 @@ class GoalForm(FlaskForm):
     exercises_per_week_goal = IntegerField('Weekly Exercise Frequency Goal', validators=[Optional(), NumberRange(min=0)])
     minutes_per_exercise_goal = IntegerField('Minutes Per Exercise Goal', validators=[Optional(), NumberRange(min=0)])
 
+    # Body Composition Goals
+    weight_goal_kg = FloatField('Target Weight (kg)', validators=[Optional(), NumberRange(min=1, max=300)])
+    body_fat_percentage_goal = FloatField('Target Body Fat %', validators=[Optional(), NumberRange(min=0, max=100)])
+    waist_cm_goal = FloatField('Target Waist Circumference (cm)', validators=[Optional(), NumberRange(min=1, max=200)])
+
+    # US Body Composition Fields
+    weight_goal_lbs = FloatField('Target Weight (lbs)', validators=[Optional(), NumberRange(min=1, max=700)])
+    waist_in_goal = FloatField('Target Waist Circumference (in)', validators=[Optional(), NumberRange(min=1, max=100)])
+
     submit = SubmitField('Save Goals')
 
     def __init__(self, *args, **kwargs):
@@ -37,7 +46,11 @@ class GoalForm(FlaskForm):
             if current_user.measurement_system == 'us':
                 del self.height_cm
                 del self.weight_kg
+                del self.weight_goal_kg
+                del self.waist_cm_goal
             else: # metric
                 del self.height_ft
                 del self.height_in
                 del self.weight_lbs
+                del self.weight_goal_lbs
+                del self.waist_in_goal

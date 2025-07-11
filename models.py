@@ -81,6 +81,9 @@ class UserGoal(db.Model):
     calories_burned_goal_weekly = db.Column(db.Integer, default=0)
     exercises_per_week_goal = db.Column(db.Integer, default=0)
     minutes_per_exercise_goal = db.Column(db.Integer, default=0)
+    weight_goal_kg = db.Column(db.Float, nullable=True)
+    body_fat_percentage_goal = db.Column(db.Float, nullable=True)
+    waist_cm_goal = db.Column(db.Float, nullable=True)
 
 class CheckIn(db.Model):
     __tablename__ = 'check_ins'

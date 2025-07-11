@@ -98,6 +98,36 @@
             </div>
         </div>
 
+        <h2 class="mt-4 mb-3">Body Composition Goals</h2>
+        <div class="row">
+            {% if current_user.measurement_system == 'us' %}
+            <div class="col-md-4 mb-3">
+                {{ form.weight_goal_lbs.label(class="form-label") }}
+                {{ form.weight_goal_lbs(class="form-control", value=(form.weight_goal_lbs.data | round(2)) if form.weight_goal_lbs.data else '') }}
+            </div>
+            {% else %}
+            <div class="col-md-4 mb-3">
+                {{ form.weight_goal_kg.label(class="form-label") }}
+                {{ form.weight_goal_kg(class="form-control", value=(form.weight_goal_kg.data | round(2)) if form.weight_goal_kg.data else '') }}
+            </div>
+            {% endif %}
+            <div class="col-md-4 mb-3">
+                {{ form.body_fat_percentage_goal.label(class="form-label") }}
+                {{ form.body_fat_percentage_goal(class="form-control", value=(form.body_fat_percentage_goal.data | round(2)) if form.body_fat_percentage_goal.data else '') }}
+            </div>
+            {% if current_user.measurement_system == 'us' %}
+            <div class="col-md-4 mb-3">
+                {{ form.waist_in_goal.label(class="form-label") }}
+                {{ form.waist_in_goal(class="form-control", value=(form.waist_in_goal.data | round(2)) if form.waist_in_goal.data else '') }}
+            </div>
+            {% else %}
+            <div class="col-md-4 mb-3">
+                {{ form.waist_cm_goal.label(class="form-label") }}
+                {{ form.waist_cm_goal(class="form-control", value=(form.waist_cm_goal.data | round(2)) if form.waist_cm_goal.data else '') }}
+            </div>
+            {% endif %}
+        </div>
+
         <button type="submit" class="btn btn-outline-success">Save Goals</button>
     </form>
 </div>
