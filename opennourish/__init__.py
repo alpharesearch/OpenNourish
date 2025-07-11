@@ -336,24 +336,47 @@ def create_app(config_class=Config):
                     # Add some ingredients
                     num_ingredients = random.randint(3, 8)
                     for _ in range(num_ingredients):
-                        if random.random() < 0.7 and usda_fdc_ids:  # 70% chance for USDA food
+                        ingredient_food_item = None
+                        fdc_id = None
+                        my_food_id = None
+                        recipe_id_link = None
+                        amount_grams = 0.0
+
+                        choice = random.choice(['usda', 'my_food', 'recipe_link'])
+                        
+                        if choice == 'usda' and usda_fdc_ids:
                             fdc_id = random.choice(usda_fdc_ids)
+                            ingredient_food_item = db.session.get(Food, fdc_id)
+                        elif choice == 'my_food' and user_my_foods:
+                            ingredient_food_item = random.choice(user_my_foods)
+                            my_food_id = ingredient_food_item.id
+                        elif choice == 'recipe_link' and user_recipes:
+                            ingredient_food_item = random.choice(user_recipes)
+                            recipe_id_link = ingredient_food_item.id
+                        else:
+                            continue # Skip if no suitable item found
+
+                        if ingredient_food_item:
+                            available_portions = []
+                            if isinstance(ingredient_food_item, Food):
+                                available_portions = db.session.query(UnifiedPortion).filter_by(fdc_id=ingredient_food_item.fdc_id).all()
+                            elif hasattr(ingredient_food_item, 'portions'):
+                                available_portions = ingredient_food_item.portions
+                            
+                            if available_portions:
+                                selected_portion = random.choice(available_portions)
+                                amount_grams = random.uniform(0.5, 3.0) * selected_portion.gram_weight # Random quantity of the selected portion
+                            else:
+                                amount_grams = random.uniform(10, 300) # Fallback to random grams if no portions
+
                             ingredient = RecipeIngredient(
                                 recipe_id=r.id,
                                 fdc_id=fdc_id,
-                                amount_grams=random.uniform(10, 300)
+                                my_food_id=my_food_id,
+                                recipe_id_link=recipe_id_link,
+                                amount_grams=amount_grams
                             )
-                        else:  # Otherwise, use a MyFood
-                            if user_my_foods:
-                                my_food = random.choice(user_my_foods)
-                                ingredient = RecipeIngredient(
-                                    recipe_id=r.id,
-                                    my_food_id=my_food.id,
-                                    amount_grams=random.uniform(10, 300)
-                                )
-                            else:
-                                continue  # Skip if no MyFoods available
-                        db.session.add(ingredient)
+                            db.session.add(ingredient)
                 db.session.flush() # Ensure ingredients are in the session to be calculated
 
                 # Seed Recipe Portions
