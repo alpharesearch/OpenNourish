@@ -304,17 +304,24 @@ def add_item():
                     flash('My Food not found or not authorized.', 'danger')
             elif food_type == 'recipe':
                 sub_recipe = db.session.get(Recipe, food_id)
-                if sub_recipe and (sub_recipe.user_id == current_user.id or sub_recipe.is_public):
-                    ingredient = RecipeIngredient(
-                        recipe_id=target_recipe.id,
-                        recipe_id_link=sub_recipe.id,
-                        amount_grams=amount_grams
-                    )
-                    db.session.add(ingredient)
-                    db.session.commit()
-                    flash(f'{sub_recipe.name} added as ingredient to recipe {target_recipe.name}.', 'success')
-                else:
+                if not sub_recipe or (sub_recipe.user_id != current_user.id and not sub_recipe.is_public):
                     flash('Sub-recipe not found or not authorized.', 'danger')
+                    return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
+                
+                if sub_recipe.id == target_recipe.id:
+                    flash('A recipe cannot be an ingredient of itself.', 'danger')
+                    return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
+                
+                # If we reach here, it's a valid sub-recipe and not self-nesting
+                ingredient = RecipeIngredient(
+                    recipe_id=target_recipe.id,
+                    recipe_id_link=sub_recipe.id,
+                    amount_grams=amount_grams
+                )
+                db.session.add(ingredient)
+                db.session.commit()
+                flash(f'{sub_recipe.name} added as ingredient to recipe {target_recipe.name}.', 'success')
+                return redirect(url_for('recipes.edit_recipe', recipe_id=recipe_id))
             elif food_type == 'my_meal':
                 my_meal = db.session.get(MyMeal, food_id)
                 if my_meal and my_meal.user_id == current_user.id:

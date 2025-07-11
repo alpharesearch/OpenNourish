@@ -114,7 +114,7 @@ def test_recipe_nutrition_calculation(auth_client_with_user):
         'food_type': 'usda',
         'target': 'recipe',
         'recipe_id': recipe_id,
-        'quantity': 150
+        'amount': 150
     }, follow_redirects=True)
 
     # Add 50g of My Mock Food
@@ -123,7 +123,7 @@ def test_recipe_nutrition_calculation(auth_client_with_user):
             'food_type': 'my_food',
             'target': 'recipe',
             'recipe_id': recipe_id,
-            'quantity': 50
+            'amount': 50
         }, follow_redirects=True)
 
     response = client.get(f'/recipes/{recipe_id}')
@@ -251,7 +251,7 @@ def test_add_meal_to_recipe_as_ingredient(auth_client_with_user):
             'food_type': 'my_meal',
             'target': 'recipe',
             'recipe_id': recipe_id,
-            'quantity': 1 # Assuming 1 serving of the meal
+            'amount': 1 # Assuming 1 serving of the meal
         }, follow_redirects=True)
     assert response.status_code == 200
     with client.application.app_context():
@@ -343,3 +343,45 @@ def test_recipes_list_view(auth_client_user_two):
     assert f'action="/recipes/{recipe_one_public_id}/delete"'.encode() not in response.data
     # Check that the view button is there
     assert f'href="/recipes/{recipe_one_public_id}"'.encode() in response.data
+
+def test_add_recipe_as_ingredient_and_prevent_self_nesting(auth_client_with_user):
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        # Create two recipes
+        recipe_main = Recipe(user_id=user.id, name='Main Recipe', instructions='Main instructions')
+        recipe_sub = Recipe(user_id=user.id, name='Sub Recipe', instructions='Sub instructions')
+        db.session.add_all([recipe_main, recipe_sub])
+        db.session.commit()
+
+        # Add Sub Recipe as an ingredient to Main Recipe
+        response = client.post(f'/search/add_item', data={
+            'food_id': recipe_sub.id,
+            'food_type': 'recipe',
+            'target': 'recipe',
+            'recipe_id': recipe_main.id,
+            'amount': 100 # grams
+        }, follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Sub Recipe added as ingredient to recipe Main Recipe.' in response.data
+
+        # Verify Sub Recipe is an ingredient of Main Recipe
+        main_recipe_ingredients = RecipeIngredient.query.filter_by(recipe_id=recipe_main.id).all()
+        assert len(main_recipe_ingredients) == 1
+        assert main_recipe_ingredients[0].recipe_id_link == recipe_sub.id
+        assert main_recipe_ingredients[0].amount_grams == 100
+
+        # Attempt to add Main Recipe as an ingredient to itself
+        response = client.post(f'/search/add_item', data={
+            'food_id': recipe_main.id,
+            'food_type': 'recipe',
+            'target': 'recipe',
+            'recipe_id': recipe_main.id,
+            'amount': 50 # grams
+        }, follow_redirects=True)
+        assert response.status_code == 200
+        assert b'A recipe cannot be an ingredient of itself.' in response.data # This is the expected flash message for self-nesting prevention
+
+        # Verify Main Recipe does not have itself as an ingredient
+        main_recipe_ingredients_after_attempt = RecipeIngredient.query.filter_by(recipe_id=recipe_main.id).all()
+        assert len(main_recipe_ingredients_after_attempt) == 1 # Should still be only the Sub Recipe
+        assert main_recipe_ingredients_after_attempt[0].recipe_id_link != recipe_main.id

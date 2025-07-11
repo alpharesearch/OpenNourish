@@ -135,10 +135,14 @@ def get_allow_registration_status():
     current_app.logger.debug("get_allow_registration_status: File not found or no setting, defaulting to True")
     return True
 
-def calculate_nutrition_for_items(items):
+def calculate_nutrition_for_items(items, processed_recipes=None):
     """
     Calculates total nutrition for a list of items (DailyLog or RecipeIngredient).
+    `processed_recipes` is a set used to prevent infinite recursion for nested recipes.
     """
+    if processed_recipes is None:
+        processed_recipes = set()
+
     totals = {
         'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0,
         'saturated_fat': 0, 'trans_fat': 0, 'cholesterol': 0, 'sodium': 0,
@@ -196,19 +200,21 @@ def calculate_nutrition_for_items(items):
             from models import Recipe # Import here to avoid circular dependency
             nested_recipe = db.session.query(Recipe).options(selectinload(Recipe.ingredients)).get(item.recipe_id)
             if nested_recipe:
-                # Calculate nutrition for the nested recipe's ingredients
-                nested_nutrition = calculate_nutrition_for_items(nested_recipe.ingredients)
+                # Prevent infinite recursion for circular recipe dependencies
+                if nested_recipe.id in processed_recipes:
+                    current_app.logger.warning(f"Circular recipe dependency detected for recipe ID {nested_recipe.id}. Skipping nutrition calculation for this instance.")
+                    continue
+                
+                processed_recipes.add(nested_recipe.id)
+                nested_nutrition = calculate_nutrition_for_items(nested_recipe.ingredients, processed_recipes)
+                processed_recipes.remove(nested_recipe.id)
                 
                 # Determine the scaling factor for the nested recipe
-                # item.amount_grams is the total grams of the nested recipe as an ingredient
-                # We need to find the total grams of the nested recipe itself.
                 total_nested_recipe_grams = sum(ing.amount_grams for ing in nested_recipe.ingredients)
 
                 if total_nested_recipe_grams > 0:
-                    # Scale based on the actual grams of the nested recipe used as an ingredient
                     scaling_factor = item.amount_grams / total_nested_recipe_grams
                 else:
-                    # If nested recipe has no grams, or is 0, then it contributes no nutrition
                     scaling_factor = 0
 
                 for key, value in nested_nutrition.items():

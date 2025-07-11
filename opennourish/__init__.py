@@ -351,8 +351,13 @@ def create_app(config_class=Config):
                             ingredient_food_item = random.choice(user_my_foods)
                             my_food_id = ingredient_food_item.id
                         elif choice == 'recipe_link' and user_recipes:
-                            ingredient_food_item = random.choice(user_recipes)
-                            recipe_id_link = ingredient_food_item.id
+                            # Ensure not to nest the same recipe inside itself
+                            possible_linked_recipes = [rec for rec in user_recipes if rec.id != r.id]
+                            if possible_linked_recipes:
+                                ingredient_food_item = random.choice(possible_linked_recipes)
+                                recipe_id_link = ingredient_food_item.id
+                            else:
+                                continue # Skip if no other recipes are available to link
                         else:
                             continue # Skip if no suitable item found
 
