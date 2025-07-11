@@ -84,7 +84,29 @@ def auth_client_with_user(app_with_db):
         with client.session_transaction() as sess:
             sess['_user_id'] = user_id
             sess['_fresh'] = True
-        yield client, user
+        return client, user
+
+@pytest.fixture
+def auth_client_two_users(app_with_db):
+    """Fixture for providing two authenticated users."""
+    with app_with_db.app_context():
+        user_one = User(username='user_one')
+        user_one.set_password('password_one')
+        db.session.add(user_one)
+
+        user_two = User(username='user_two')
+        user_two.set_password('password_two')
+        db.session.add(user_two)
+        db.session.commit()
+
+        # It's often better to return the objects themselves
+        # and let the test function handle logging in.
+        # However, to keep it simple, we'll log in as user_one by default.
+        with app_with_db.test_client() as client:
+            with client.session_transaction() as sess:
+                sess['_user_id'] = user_one.id
+                sess['_fresh'] = True
+            yield client, user_one, user_two
 
 @pytest.fixture(scope='function')
 def auth_client_with_friendship(app_with_db):
