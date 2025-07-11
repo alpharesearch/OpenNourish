@@ -184,6 +184,8 @@ class RecipeIngredient(db.Model):
     my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
     recipe_id_link = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True) # For nested recipes
     amount_grams = db.Column(db.Float)
+    serving_type = db.Column(db.String(50), default='g')
+    portion_id_fk = db.Column(db.Integer, db.ForeignKey('portions.id'), nullable=True)
 
     @property
     def food(self):

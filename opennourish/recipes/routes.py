@@ -6,7 +6,7 @@ from opennourish.diary.forms import AddToLogForm
 from opennourish.my_foods.forms import PortionForm
 from sqlalchemy.orm import joinedload, selectinload
 from datetime import date
-from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g, get_available_portions
+from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g, get_available_portions, remove_leading_one
 
 recipes_bp = Blueprint('recipes', __name__, template_folder='templates')
 
@@ -191,30 +191,32 @@ def update_ingredient(ingredient_id):
         flash('You are not authorized to modify this recipe.', 'danger')
         return redirect(url_for('recipes.recipes'))
 
-    quantity = request.form.get('quantity', type=float)
-    portion_id = request.form.get('portion_id', type=int)
+    amount = request.form.get('amount', type=float)
+    portion_id = request.form.get('portion_id')
 
-    if quantity is None or quantity <= 0:
-        flash('Quantity must be a positive number.', 'danger')
+    if amount is None or amount <= 0:
+        flash('Amount must be a positive number.', 'danger')
         return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
     gram_weight = 0
-    if portion_id:
-        if ingredient.fdc_id:
-            portion = UnifiedPortion.query.filter_by(id=portion_id, fdc_id=ingredient.fdc_id).first()
-        elif ingredient.my_food_id:
-            portion = UnifiedPortion.query.filter_by(id=portion_id, my_food_id=ingredient.my_food_id).first()
-        
-        if portion:
-            gram_weight = portion.gram_weight
+    portion_obj = None
+    if portion_id == 'g':
+        gram_weight = 1 # 1 unit = 1 gram
+        serving_type = 'g'
+        portion_id_fk = None
+    else:
+        portion_obj = db.session.get(UnifiedPortion, int(portion_id))
+        if portion_obj:
+            gram_weight = portion_obj.gram_weight
+            serving_type = portion_obj.full_description_str
+            portion_id_fk = portion_obj.id
         else:
             flash('Selected portion not found.', 'danger')
             return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
-    else:
-        # If no portion selected, assume quantity is in grams
-        gram_weight = 1 # 1 unit = 1 gram
 
-    ingredient.amount_grams = quantity * gram_weight
+    ingredient.amount_grams = amount * gram_weight
+    ingredient.serving_type = serving_type
+    ingredient.portion_id_fk = portion_id_fk
     db.session.commit()
     flash('Ingredient updated successfully.', 'success')
     return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
@@ -269,7 +271,7 @@ def view_recipe(recipe_id):
                 if p.gram_weight > 0.1:
                     if abs(ingredient.amount_grams % p.gram_weight) < 0.01 or abs(p.gram_weight - (ingredient.amount_grams % p.gram_weight)) < 0.01:
                         quantity = round(ingredient.amount_grams / p.gram_weight, 2)
-                        portion_description = p.full_description_str
+                        portion_description = remove_leading_one(p.full_description_str)
                         break
         
         ingredient_details.append({

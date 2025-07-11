@@ -117,6 +117,16 @@ def get_available_portions(food_item):
                 
     return available_portions
 
+def remove_leading_one(input_string):
+    """
+    If a string starts with '1', returns the rest of the string.
+    Otherwise, returns the original string.
+    """
+    if input_string.startswith('1'):
+        return input_string[1:]
+    else:
+        return input_string
+
 def get_allow_registration_status():
     """Reads the ALLOW_REGISTRATION setting from instance/settings.json or defaults to True.
     This function is used to get the current state of the setting without relying on app context.

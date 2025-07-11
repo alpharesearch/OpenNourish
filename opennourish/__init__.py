@@ -386,21 +386,55 @@ def create_app(config_class=Config):
 
                 # Seed Recipe Portions
                 for r in user_recipes:
-                    # Create a few random portions for the recipe
-                    portion_types = [
-                        ("serving", random.uniform(100, 300)),
-                        ("bowl", random.uniform(200, 500)),
-                        ("plate", random.uniform(300, 700))
-                    ]
-                    for desc, weight in portion_types:
-                        new_portion = UnifiedPortion(
+                    # Calculate total weight to create realistic portions
+                    total_gram_weight = sum(ing.amount_grams for ing in r.ingredients)
+
+                    # Create a portion based on the recipe's servings
+                    if r.servings and r.servings > 0 and total_gram_weight > 0:
+                        gram_weight_per_serving = total_gram_weight / r.servings
+                        serving_portion = UnifiedPortion(
                             recipe_id=r.id,
                             amount=1.0,
-                            measure_unit_description=desc,
-                            portion_description=desc,
-                            gram_weight=weight
+                            measure_unit_description="serving",
+                            portion_description=f"1 of {r.servings}",
+                            modifier=None,
+                            gram_weight=gram_weight_per_serving
                         )
-                        db.session.add(new_portion)
+                        db.session.add(serving_portion)
+
+                    # Add a standard 100g portion for easy logging
+                    if total_gram_weight > 0:
+                        g100_portion = UnifiedPortion(
+                            recipe_id=r.id,
+                            amount=100.0,
+                            measure_unit_description="g",
+                            portion_description=None,
+                            modifier=None,
+                            gram_weight=100.0
+                        )
+                        db.session.add(g100_portion)
+
+                    # Create one or two other random, descriptive portions
+                    if total_gram_weight > 10: # Only add random portions if recipe is substantial
+                        portion_ideas = [
+                            ("slice", total_gram_weight / (r.servings * 2 if r.servings else 2)),
+                            ("bowl", random.uniform(200, 400)),
+                        ]
+                        
+                        # Ensure we don't pick more samples than available
+                        num_samples = min(random.randint(1, 2), len(portion_ideas))
+                        
+                        for desc, weight in random.sample(portion_ideas, num_samples):
+                             if weight > 1: # Ensure weight is sensible
+                                random_portion = UnifiedPortion(
+                                    recipe_id=r.id,
+                                    amount=1.0,
+                                    measure_unit_description=desc,
+                                    portion_description=None,
+                                    modifier=None,
+                                    gram_weight=weight
+                                )
+                                db.session.add(random_portion)
 
                 # MyMeals
                 num_my_meals = random.randint(5, 10)

@@ -28,8 +28,8 @@ class MyFoodForm(FlaskForm):
 
 class PortionForm(FlaskForm):
     amount = FloatField('Amount', validators=[Optional(), NumberRange(min=0)])
-    measure_unit_description = StringField('Unit', validators=[Optional()])
-    portion_description = StringField('Description', validators=[DataRequired()])
+    measure_unit_description = StringField('Unit', validators=[DataRequired()])
+    portion_description = StringField('Description', validators=[Optional()])
     modifier = StringField('Modifier', validators=[Optional()])
     gram_weight = FloatField('Gram Weight', validators=[DataRequired(), NumberRange(min=0.01)])
     submit = SubmitField('Add Portion')

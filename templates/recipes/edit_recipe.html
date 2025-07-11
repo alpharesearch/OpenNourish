@@ -152,8 +152,16 @@
                     <div class="d-flex gap-2">
                         <div>
                             <form action="{{ url_for('recipes.update_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-flex align-items-center gap-2">
-                                <input type="number" step="any" name="quantity" class="form-control form-control-sm" style="width: 100px;" value="{{ '%.2f'|format(ingredient.quantity) }}">
-                                <span class="input-group-text">{{ ingredient.portion_description }}</span>
+                                <input type="number" step="any" name="amount" class="form-control form-control-sm" style="width: 80px;" value="{{ '%.2f'|format(ingredient.quantity) }}">
+                                <select name="portion_id" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="g" {% if ingredient.portion_description == 'g' %}selected{% endif %}>g</option>
+                                    {% set food_item = ingredient.usda_food or ingredient.my_food or ingredient.linked_recipe %}
+                                    {% if food_item %}
+                                        {% for portion in get_available_portions(food_item) %}
+                                            <option value="{{ portion.id }}" {% if ingredient.portion_id_fk == portion.id %}selected{% endif %}>{{ portion.full_description_str }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
                                 <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
                             </form>
                         </div>

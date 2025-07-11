@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from datetime import date
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, selectinload
-from opennourish.utils import calculate_recipe_nutrition_per_100g
+from opennourish.utils import calculate_recipe_nutrition_per_100g, remove_leading_one
 
 @search_bp.route('/by_upc', methods=['GET'])
 @login_required
@@ -282,7 +282,9 @@ def add_item():
                     ingredient = RecipeIngredient(
                         recipe_id=target_recipe.id,
                         fdc_id=food.fdc_id,
-                        amount_grams=amount_grams
+                        amount_grams=amount_grams,
+                        serving_type=serving_type,
+                        portion_id_fk=int(portion_id) if portion_id != 'g' else None
                     )
                     db.session.add(ingredient)
                     db.session.commit()
@@ -291,11 +293,13 @@ def add_item():
                     flash('USDA Food not found.', 'danger')
             elif food_type == 'my_food':
                 food = db.session.get(MyFood, food_id)
-                if food and food.user_id == current_user.id:
+                if food: # Authorization check happens below for friends' foods
                     ingredient = RecipeIngredient(
                         recipe_id=target_recipe.id,
                         my_food_id=food.id,
-                        amount_grams=amount_grams
+                        amount_grams=amount_grams,
+                        serving_type=serving_type,
+                        portion_id_fk=int(portion_id) if portion_id != 'g' else None
                     )
                     db.session.add(ingredient)
                     db.session.commit()
@@ -316,7 +320,9 @@ def add_item():
                 ingredient = RecipeIngredient(
                     recipe_id=target_recipe.id,
                     recipe_id_link=sub_recipe.id,
-                    amount_grams=amount_grams
+                    amount_grams=amount_grams,
+                    serving_type=serving_type,
+                    portion_id_fk=int(portion_id) if portion_id != 'g' else None
                 )
                 db.session.add(ingredient)
                 db.session.commit()
@@ -330,7 +336,9 @@ def add_item():
                             recipe_id=target_recipe.id,
                             fdc_id=item.fdc_id,
                             my_food_id=item.my_food_id,
-                            amount_grams=item.amount_grams
+                            amount_grams=item.amount_grams,
+                            serving_type='g', # My meal items are stored in grams
+                            portion_id_fk=None
                         )
                         db.session.add(ingredient)
                     db.session.commit()
