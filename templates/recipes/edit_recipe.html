@@ -152,7 +152,8 @@
                     <div class="d-flex gap-2">
                         <div>
                             <form action="{{ url_for('recipes.update_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-flex align-items-center gap-2">
-                                <input type="number" step="any" name="quantity" class="form-control form-control-sm" style="width: 100px;" value="{{ '%.2f'|format(ingredient.amount_grams) }}">
+                                <input type="number" step="any" name="quantity" class="form-control form-control-sm" style="width: 100px;" value="{{ '%.2f'|format(ingredient.quantity) }}">
+                                <span class="input-group-text">{{ ingredient.portion_description }}</span>
                                 <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
                             </form>
                         </div>

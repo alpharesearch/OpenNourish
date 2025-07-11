@@ -33,6 +33,7 @@ def recipes():
     
     for recipe in recipes_pagination.items:
         recipe.nutrition_per_100g = calculate_recipe_nutrition_per_100g(recipe)
+        recipe.total_grams = sum(ing.amount_grams for ing in recipe.ingredients)
         
     return render_template("recipes/recipes.html", recipes=recipes_pagination, view_mode=view_mode)
 
@@ -74,12 +75,34 @@ def edit_recipe(recipe_id):
             ing.usda_food = usda_foods_map.get(ing.fdc_id)
         
         # Calculate nutrition for each individual ingredient
-        # calculate_nutrition_for_items expects a list of items, so wrap the single ingredient
         ingredient_nutrition = calculate_nutrition_for_items([ing])
         ing.calories = ingredient_nutrition['calories']
         ing.protein = ingredient_nutrition['protein']
         ing.carbs = ingredient_nutrition['carbs']
         ing.fat = ingredient_nutrition['fat']
+
+        # Calculate quantity and portion description
+        food_object = None
+        if hasattr(ing, 'usda_food') and ing.usda_food:
+            food_object = ing.usda_food
+        elif ing.my_food:
+            food_object = ing.my_food
+        elif ing.linked_recipe:
+            food_object = ing.linked_recipe
+
+        ing.quantity = ing.amount_grams
+        ing.portion_description = "g"
+
+        if food_object:
+            available_portions = get_available_portions(food_object)
+            available_portions.sort(key=lambda p: p.gram_weight, reverse=True)
+            
+            for p in available_portions:
+                if p.gram_weight > 0.1:
+                    if abs(ing.amount_grams % p.gram_weight) < 0.01 or abs(p.gram_weight - (ing.amount_grams % p.gram_weight)) < 0.01:
+                        ing.quantity = round(ing.amount_grams / p.gram_weight, 2)
+                        ing.portion_description = p.full_description_str
+                        break
 
     if recipe.user_id != current_user.id:
         flash('You are not authorized to edit this recipe.', 'danger')
@@ -201,7 +224,8 @@ def update_ingredient(ingredient_id):
 @login_required
 def view_recipe(recipe_id):
     recipe = Recipe.query.options(
-        selectinload(Recipe.ingredients).joinedload(RecipeIngredient.my_food)
+        selectinload(Recipe.ingredients).joinedload(RecipeIngredient.my_food).selectinload(MyFood.portions),
+        selectinload(Recipe.ingredients).joinedload(RecipeIngredient.linked_recipe),
     ).get_or_404(recipe_id)
 
     if not recipe.is_public and recipe.user_id != current_user.id:
@@ -209,35 +233,49 @@ def view_recipe(recipe_id):
         return redirect(url_for('recipes.recipes'))
 
     usda_food_ids = {ing.fdc_id for ing in recipe.ingredients if ing.fdc_id}
-
-    # If there are any USDA foods, run ONE query against the 'usda' bind to get them all.
+    usda_foods_map = {}
     if usda_food_ids:
-        # This query correctly targets the 'usda' database via the Food model's bind key.
         usda_foods = Food.query.filter(Food.fdc_id.in_(usda_food_ids)).all()
-        # Create a dictionary for fast lookups: {fdc_id: FoodObject}
         usda_foods_map = {food.fdc_id: food for food in usda_foods}
-    else:
-        usda_foods_map = {}
 
-    # Step 3: Attach the pre-loaded data to each ingredient in Python.
-    # This avoids any further database queries inside the loop.
     for ingredient in recipe.ingredients:
         if ingredient.fdc_id:
             ingredient.usda_food = usda_foods_map.get(ingredient.fdc_id)
 
-    # The rest of the logic can now proceed as before.
     total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
 
     ingredient_details = []
     for ingredient in recipe.ingredients:
         description = "Unknown Food"
+        food_object = None
         if hasattr(ingredient, 'usda_food') and ingredient.usda_food:
             description = ingredient.usda_food.description
+            food_object = ingredient.usda_food
         elif ingredient.my_food:
             description = ingredient.my_food.description
+            food_object = ingredient.my_food
+        elif ingredient.linked_recipe:
+            description = ingredient.linked_recipe.name
+            food_object = ingredient.linked_recipe
 
+        quantity = ingredient.amount_grams
+        portion_description = "g"
+
+        if food_object:
+            available_portions = get_available_portions(food_object)
+            available_portions.sort(key=lambda p: p.gram_weight, reverse=True)
+            
+            for p in available_portions:
+                if p.gram_weight > 0.1:
+                    if abs(ingredient.amount_grams % p.gram_weight) < 0.01 or abs(p.gram_weight - (ingredient.amount_grams % p.gram_weight)) < 0.01:
+                        quantity = round(ingredient.amount_grams / p.gram_weight, 2)
+                        portion_description = p.full_description_str
+                        break
+        
         ingredient_details.append({
             'description': description,
+            'quantity': quantity,
+            'portion_description': portion_description,
             'amount_grams': ingredient.amount_grams
         })
 

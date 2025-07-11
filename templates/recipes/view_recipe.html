@@ -33,7 +33,11 @@
                 </div>
                 <ul class="list-group list-group-flush">
                     {% for ingredient in ingredients %}
-                        <li class="list-group-item">{{ ingredient.description }} - {{ '%.2f'|format(ingredient.amount_grams) }}g</li>
+                        <li class="list-group-item d-flex align-items-center">
+                            <span class="d-inline-block text-end me-2" style="width: 60px;">{{ '%.2f'|format(ingredient.quantity) }}</span>
+                            <span class="d-inline-block me-2" style="width: 120px;">{{ ingredient.portion_description }}</span>
+                            <span class="flex-grow-1">{{ ingredient.description }}</span>
+                        </li>
                     {% else %}
                         <li class="list-group-item">No ingredients have been added to this recipe yet.</li>
                     {% endfor %}

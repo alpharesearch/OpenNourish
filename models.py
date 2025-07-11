@@ -120,7 +120,7 @@ class UnifiedPortion(db.Model):
         if self.portion_description:
             parts.append(self.portion_description)
         if self.modifier:
-            parts.append(f"({self.modifier})")
+            parts.append(f"{self.modifier}")
         
         return " ".join(parts).strip() or "g"
 
