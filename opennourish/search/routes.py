@@ -336,6 +336,7 @@ def add_item():
                             recipe_id=target_recipe.id,
                             fdc_id=item.fdc_id,
                             my_food_id=item.my_food_id,
+                            recipe_id_link=item.recipe_id,
                             amount_grams=item.amount_grams,
                             serving_type='g', # My meal items are stored in grams
                             portion_id_fk=None

@@ -252,12 +252,25 @@ def test_add_meal_to_recipe_as_ingredient(auth_client_with_user):
             'target': 'recipe',
             'recipe_id': recipe_id,
             'amount': 1 # Assuming 1 serving of the meal
-        }, follow_redirects=True)
-    assert response.status_code == 200
-    with client.application.app_context():
-        from flask import get_flashed_messages
-        flashed_messages = [str(message) for message in get_flashed_messages()]
-        assert 'My Meal for Recipe (expanded) added to recipe Recipe with Meal Ingredient.' in flashed_messages
+        })
+        assert response.status_code == 302 # Check for redirect
+
+        # Manually follow the redirect
+        response = client.get(response.headers['Location'])
+        assert response.status_code == 200
+        assert b'My Meal for Recipe (expanded) added to recipe Recipe with Meal Ingredient.' in response.data
+
+        # Verify that the meal's items were added as ingredients in the database
+        ingredients = RecipeIngredient.query.filter_by(recipe_id=recipe_id).order_by(RecipeIngredient.amount_grams).all()
+        assert len(ingredients) == 2
+        
+        # Check the smaller ingredient (MyFood) first
+        assert ingredients[0].my_food_id == my_food_item.id
+        assert ingredients[0].amount_grams == 50
+        
+        # Check the larger ingredient (USDA Food)
+        assert ingredients[1].fdc_id == 60001
+        assert ingredients[1].amount_grams == 100
 
 def test_user_cannot_edit_other_users_recipe(auth_client_user_two):
     """
