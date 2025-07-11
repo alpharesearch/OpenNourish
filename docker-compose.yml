@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    mem_limit: 1024m
+    mem_limit: 8192m
     volumes:
       - .:/app
     env_file:
