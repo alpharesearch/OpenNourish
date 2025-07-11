@@ -141,51 +141,57 @@ def delete_my_food_portion(portion_id):
         return redirect(url_for('my_foods.my_foods'))
 
 
+@my_foods_bp.route('/copy_usda', methods=['POST'])
+@login_required
+def copy_usda_food():
+    fdc_id = request.form.get('fdc_id')
+    if not fdc_id:
+        flash('No USDA Food ID provided for copying.', 'danger')
+        return redirect(request.referrer or url_for('my_foods.my_foods'))
+
+    usda_food = Food.query.options(
+        joinedload(Food.nutrients).joinedload(FoodNutrient.nutrient)
+    ).filter_by(fdc_id=fdc_id).first_or_404()
+
+    new_food = MyFood(user_id=current_user.id, description=usda_food.description)
+    # Populate nutrients from the USDA food
+    for nutrient_link in usda_food.nutrients:
+        nutrient_name = nutrient_link.nutrient.name.lower()
+        # This is a simplified mapping. You might need a more robust one.
+        if 'protein' in nutrient_name:
+            new_food.protein_per_100g = nutrient_link.amount
+        elif 'total lipid (fat)' in nutrient_name:
+            new_food.fat_per_100g = nutrient_link.amount
+        elif 'carbohydrate' in nutrient_name:
+            new_food.carbs_per_100g = nutrient_link.amount
+        elif 'energy' in nutrient_name and 'kcal' in nutrient_link.nutrient.unit_name.lower():
+            new_food.calories_per_100g = nutrient_link.amount
+    
+    db.session.add(new_food)
+    db.session.flush() # Flush to get the new_food.id
+
+    # Deep copy portions from the original USDA food
+    original_portions = UnifiedPortion.query.filter_by(fdc_id=usda_food.fdc_id).all()
+    for orig_portion in original_portions:
+        new_portion = UnifiedPortion(
+            my_food_id=new_food.id,
+            amount=orig_portion.amount,
+            measure_unit_description=orig_portion.measure_unit_description,
+            portion_description=orig_portion.portion_description,
+            modifier=orig_portion.modifier,
+            gram_weight=orig_portion.gram_weight
+        )
+        db.session.add(new_portion)
+
+    db.session.commit()
+    flash(f"Successfully created '{new_food.description}' from USDA data.", "success")
+    return redirect(url_for('my_foods.edit_my_food', food_id=new_food.id))
+
+
 @my_foods_bp.route('/<int:food_id>/copy', methods=['POST'])
 @login_required
 def copy_my_food(food_id):
-    # Case 1: Copying a USDA Food to create a new MyFood
-    fdc_id = request.form.get('fdc_id')
-    if fdc_id:
-        usda_food = Food.query.options(
-            joinedload(Food.nutrients).joinedload(FoodNutrient.nutrient)
-        ).filter_by(fdc_id=fdc_id).first_or_404()
-
-        new_food = MyFood(user_id=current_user.id, description=usda_food.description)
-        # Populate nutrients from the USDA food
-        for nutrient_link in usda_food.nutrients:
-            nutrient_name = nutrient_link.nutrient.name.lower()
-            # This is a simplified mapping. You might need a more robust one.
-            if 'protein' in nutrient_name:
-                new_food.protein_per_100g = nutrient_link.amount
-            elif 'total lipid (fat)' in nutrient_name:
-                new_food.fat_per_100g = nutrient_link.amount
-            elif 'carbohydrate' in nutrient_name:
-                new_food.carbs_per_100g = nutrient_link.amount
-            elif 'energy' in nutrient_name and 'kcal' in nutrient_link.nutrient.unit_name.lower():
-                new_food.calories_per_100g = nutrient_link.amount
-        
-        db.session.add(new_food)
-        db.session.flush() # Flush to get the new_food.id
-
-        # Deep copy portions from the original USDA food
-        original_portions = UnifiedPortion.query.filter_by(fdc_id=usda_food.fdc_id).all()
-        for orig_portion in original_portions:
-            new_portion = UnifiedPortion(
-                my_food_id=new_food.id,
-                amount=orig_portion.amount,
-                measure_unit_description=orig_portion.measure_unit_description,
-                portion_description=orig_portion.portion_description,
-                modifier=orig_portion.modifier,
-                gram_weight=orig_portion.gram_weight
-            )
-            db.session.add(new_portion)
-
-        db.session.commit()
-        flash(f"Successfully created '{new_food.description}' from USDA data.", "success")
-        return redirect(url_for('my_foods.edit_my_food', food_id=new_food.id))
-
-    # Case 2: Copying a MyFood from another user (existing logic)
+    # This route now exclusively handles copying an existing MyFood
     original_food = MyFood.query.options(joinedload(MyFood.portions)).get_or_404(food_id)
     friend_ids = [friend.id for friend in current_user.friends]
     if original_food.user_id not in friend_ids and original_food.user_id != current_user.id:

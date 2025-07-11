@@ -17,41 +17,51 @@ def search_by_upc():
     # 1. Search in current user's MyFood
     user_food = MyFood.query.filter_by(user_id=current_user.id, upc=upc).first()
     if user_food:
+        user_food_portions = UnifiedPortion.query.filter_by(my_food_id=user_food.id).all()
+        portions_data = [{'id': p.id, 'description': p.full_description_str, 'gram_weight': p.gram_weight} for p in user_food_portions]
         return jsonify({
             'status': 'found',
             'source': 'my_food',
             'food': {
                 'id': user_food.id,
                 'description': user_food.description,
-                'type': 'my_food'
+                'type': 'my_food',
+                'portions': portions_data
             }
         })
 
     # 2. Search in friends' MyFood
     friend_ids = [friend.id for friend in current_user.friends]
-    if friend_ids:
+    if friend_ids: # Only search if the user has friends
         friends_food = MyFood.query.filter(MyFood.user_id.in_(friend_ids), MyFood.upc==upc).first()
         if friends_food:
+            friends_food_portions = UnifiedPortion.query.filter_by(my_food_id=friends_food.id).all()
+            portions_data = [{'id': p.id, 'description': p.full_description_str, 'gram_weight': p.gram_weight} for p in friends_food_portions]
             return jsonify({
                 'status': 'found',
                 'source': 'friend_food',
                 'food': {
                     'id': friends_food.id,
                     'description': friends_food.description,
-                    'type': 'my_food'
+                    'type': 'my_food',
+                    'portions': portions_data
                 }
             })
 
     # 3. Search in USDA database
     usda_food = Food.query.filter_by(upc=upc).first()
     if usda_food:
+        usda_food_portions = UnifiedPortion.query.filter_by(fdc_id=usda_food.fdc_id).all()
+        portions_data = [{'id': p.id, 'description': p.full_description_str, 'gram_weight': p.gram_weight} for p in usda_food_portions]
         return jsonify({
             'status': 'found',
             'source': 'usda',
             'food': {
                 'fdc_id': usda_food.fdc_id,
                 'description': usda_food.description,
-                'type': 'usda'
+                'type': 'usda',
+                'portions': portions_data,
+                'nutrition_label_svg_url': url_for('main.nutrition_label_svg', fdc_id=usda_food.fdc_id)
             }
         })
 

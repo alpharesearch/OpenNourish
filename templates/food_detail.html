@@ -39,6 +39,9 @@
     </div>
 
     <a href="{{ url_for('search.search', search_term=search_term) }}" class="btn btn-outline-secondary">Back to search</a>
-    <a href="{{ url_for('search.search', target='my_foods', food_id=food.fdc_id, food_type='usda') }}" class="btn btn-outline-primary">Add to My Foods</a>
+    <form method="post" action="{{ url_for('my_foods.copy_usda_food') }}" class="d-inline">
+        <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
+        <button type="submit" class="btn btn-outline-primary">Add to My Foods</button>
+    </form>
     <a href="{{ url_for('main.generate_nutrition_label', fdc_id=food.fdc_id) }}" class="btn btn-outline-info" target="_blank">Download Nutrition Label (PDF)</a>
 {% endblock %}

@@ -225,7 +225,7 @@
                                     <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
                                 </form>
                             {% else %}
-                                <form method="post" action="{{ url_for('my_foods.copy_my_food', food_id=food.fdc_id) }}" class="d-inline">
+                                <form method="post" action="{{ url_for('my_foods.copy_usda_food') }}" class="d-inline">
                                     <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
                                     <button type="submit" class="btn btn-sm btn-outline-primary">Copy</button>
                                 </form>
@@ -273,34 +273,46 @@ document.addEventListener('DOMContentLoaded', function () {
     function lookupBarcode(barcode) {
         resultDisplay.innerHTML = `<div class="alert alert-info">Found barcode: ${barcode}. Looking up...</div>`;
 
-        fetch(`/upc/${barcode}`)
+        fetch(`/search/by_upc?upc=${barcode}`)
             .then(response => {
-                if (!response.ok) { throw new Error('UPC not found'); }
+                if (response.status === 404) {
+                    throw new Error(`Could not find a product with UPC ${barcode}.`);
+                }
+                if (!response.ok) { 
+                    throw new Error('An error occurred during lookup.'); 
+                }
                 return response.json();
             })
             .then(data => {
                 if (data.status === 'found') {
                     const target = modalBody.dataset.target;
                     if (target) {
-                        // If there's a target, show the 'Add' form
-                        displayFoodForAdding(data);
+                        displayFoodForAdding(data.food, data.source);
                     } else {
-                        // Otherwise, redirect to the detail page
-                        window.location.href = data.detail_url;
+                        // If no target, redirect to a relevant page
+                        if (data.source === 'usda') {
+                            window.location.href = `/food/${data.food.fdc_id}`;
+                        } else { // my_food or friend_food
+                            window.location.href = `/my_foods/${data.food.id}/edit`;
+                        }
                     }
+                } else { // status === 'not_found'
+                     resultDisplay.innerHTML = `<div class="alert alert-warning">Could not find a product with UPC ${barcode}.</div>`;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                resultDisplay.innerHTML = `<div class="alert alert-danger">Could not find a product with UPC ${barcode}.</div>`;
+                resultDisplay.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
             });
     }
 
-    function displayFoodForAdding(foodData) {
+    function displayFoodForAdding(food, source) {
         let portionsOptions = '<option value="g">g</option>';
-        foodData.portions.forEach(p => {
-            portionsOptions += `<option value="${p.id}">${p.description}</option>`;
-        });
+        if (food.portions && Array.isArray(food.portions)) {
+            food.portions.forEach(p => {
+                portionsOptions += `<option value="${p.id}">${p.description}</option>`;
+            });
+        }
 
         const target = modalBody.dataset.target;
         const logDate = modalBody.dataset.logDate;
@@ -310,14 +322,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const formHtml = `
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">${foodData.description}</h5>
+                    <h5 class="card-title">${food.description}</h5>
                     <form method="post" action="{{ url_for('search.add_item') }}" class="d-flex align-items-center">
                         <input type="hidden" name="target" value="${target}">
                         <input type="hidden" name="log_date" value="${logDate}">
                         <input type="hidden" name="meal_name" value="${mealName}">
                         <input type="hidden" name="recipe_id" value="${recipeId}">
-                        <input type="hidden" name="food_type" value="usda">
-                        <input type="hidden" name="food_id" value="${foodData.fdc_id}">
+                        <input type="hidden" name="food_type" value="${food.type}">
+                        <input type="hidden" name="food_id" value="${food.type === 'usda' ? food.fdc_id : food.id}">
                         
                         <input type="number" name="amount" class="form-control form-control-sm" value="100" style="width: 80px;">
                         <select name="portion_id" class="form-select form-select-sm mx-2">
@@ -326,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
                     </form>
                 </div>
-                <img src="${foodData.nutrition_label_svg_url}" alt="Nutrition Label" class="img-fluid mt-2">
+                ${food.nutrition_label_svg_url ? `<img src="${food.nutrition_label_svg_url}" alt="Nutrition Label" class="img-fluid mt-2">` : ''}
             </div>
         `;
         resultDisplay.innerHTML = formHtml;
