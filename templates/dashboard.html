@@ -67,27 +67,46 @@
         </div>
     </div>
 
+    {% if goals and (goals.calories_burned_goal_weekly or goals.exercises_per_week_goal or goals.minutes_per_exercise_goal) %}
     <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h2 class="card-title mb-0">Weight Progress</h2>
-            <div class="btn-group" role="group" aria-label="Time Range">
-                <a href="{{ url_for('dashboard.index', time_range='1_month') }}" class="btn btn-sm {% if time_range == '1_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">1 Month</a>
-                <a href="{{ url_for('dashboard.index', time_range='3_month') }}" class="btn btn-sm {% if time_range == '3_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">3 Months</a>
-                <a href="{{ url_for('dashboard.index', time_range='6_month') }}" class="btn btn-sm {% if time_range == '6_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">6 Months</a>
-                <a href="{{ url_for('dashboard.index', time_range='1_year') }}" class="btn btn-sm {% if time_range == '1_year' %}btn-primary{% else %}btn-outline-primary{% endif %}">1 Year</a>
-                <a href="{{ url_for('dashboard.index', time_range='all_time') }}" class="btn btn-sm {% if time_range == 'all_time' %}btn-primary{% else %}btn-outline-primary{% endif %}">All Time</a>
-            </div>
+        <div class="card-header">
+            <h2 class="card-title mb-0">Weekly Exercise Goals</h2>
+            <small class="text-muted">{{ start_of_week.strftime('%b %d, %Y') }} - {{ end_of_week.strftime('%b %d, %Y') }}</small>
         </div>
         <div class="card-body">
-            {% if chart_labels and (weight_data or body_fat_data or waist_data) %}
-                <div style="height: 600px;">
-                    <canvas id="weightChart"></canvas>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <h5>Calories Burned</h5>
+                    <small class="text-muted d-block mb-1">Goal: {{ goals.calories_burned_goal_weekly }} kcal</small>
+                    <p class="mb-2">Progress: {{ weekly_progress.calories_burned|round|int }} kcal</p>
+                    <div class="progress" style="height: 15px;">
+                        {% set percentage = (weekly_progress.calories_burned / goals.calories_burned_goal_weekly) * 100 if goals.calories_burned_goal_weekly > 0 else 0 %}
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.calories_burned }}" aria-valuemin="0" aria-valuemax="{{ goals.calories_burned_goal_weekly }}">{{ "%.0f" % percentage }}%</div>
+                    </div>
                 </div>
-            {% else %}
-                <p>Log a check-in to see your progress chart!</p>
-            {% endif %}
+                <div class="col-md-4 mb-3">
+                    <h5>Workouts</h5>
+                    <small class="text-muted d-block mb-1">Goal: {{ goals.exercises_per_week_goal }}</small>
+                    <p class="mb-2">Progress: {{ weekly_progress.exercises }}</p>
+                    <div class="progress" style="height: 15px;">
+                        {% set percentage = (weekly_progress.exercises / goals.exercises_per_week_goal) * 100 if goals.exercises_per_week_goal > 0 else 0 %}
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.exercises }}" aria-valuemin="0" aria-valuemax="{{ goals.exercises_per_week_goal }}">{{ "%.0f" % percentage }}%</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h5>Exercise Minutes</h5>
+                    {% set total_minutes_goal = goals.minutes_per_exercise_goal * goals.exercises_per_week_goal %}
+                    <small class="text-muted d-block mb-1">Goal: {{ total_minutes_goal }} min</small>
+                    <p class="mb-2">Progress: {{ weekly_progress.minutes }} min</p>
+                    <div class="progress" style="height: 15px;">
+                        {% set percentage = (weekly_progress.minutes / total_minutes_goal) * 100 if total_minutes_goal > 0 else 0 %}
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.minutes }}" aria-valuemin="0" aria-valuemax="{{ total_minutes_goal }}">{{ "%.0f" % percentage }}%</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+    {% endif %}
 
     {% if goals and (goals.calories_burned_goal_weekly or goals.exercises_per_week_goal or goals.minutes_per_exercise_goal) %}
     <div class="card mb-4">
@@ -130,6 +149,142 @@
     </div>
     {% endif %}
 
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="card-title mb-0">Body Composition Progress</h2>
+            <div class="btn-group" role="group" aria-label="Time Range">
+                <a href="{{ url_for('dashboard.index', time_range='1_month') }}" class="btn btn-sm {% if time_range == '1_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">1 Month</a>
+                <a href="{{ url_for('dashboard.index', time_range='3_month') }}" class="btn btn-sm {% if time_range == '3_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">3 Months</a>
+                <a href="{{ url_for('dashboard.index', time_range='6_month') }}" class="btn btn-sm {% if time_range == '6_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">6 Months</a>
+                <a href="{{ url_for('dashboard.index', time_range='1_year') }}" class="btn btn-sm {% if time_range == '1_year' %}btn-primary{% else %}btn-outline-primary{% endif %}">1 Year</a>
+                <a href="{{ url_for('dashboard.index', time_range='all_time') }}" class="btn btn-sm {% if time_range == 'all_time' %}btn-primary{% else %}btn-outline-primary{% endif %}">All Time</a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if goals and (goals.weight_goal_kg or goals.body_fat_percentage_goal or goals.waist_cm_goal) and latest_checkin %}
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <h5>Target Weight</h5>
+                    <small class="text-muted d-block mb-1">
+                        Goal: 
+                        {% if current_user_measurement_system == 'us' %}
+                            {{ "%.1f" % (goals.weight_goal_kg * 2.20462) }} lbs
+                        {% else %}
+                            {{ "%.1f" % goals.weight_goal_kg }} kg
+                        {% endif %}
+                        | Current: 
+                        {% if current_user_measurement_system == 'us' %}
+                            {{ "%.1f" % (latest_checkin.weight_kg * 2.20462) }} lbs
+                        {% else %}
+                            {{ "%.1f" % latest_checkin.weight_kg }} kg
+                        {% endif %}
+                    </small>
+                    <div class="progress" style="height: 15px;">
+                        {% set weight_progress = (latest_checkin.weight_kg / goals.weight_goal_kg) * 100 if goals.weight_goal_kg > 0 else 0 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ weight_progress }}%;" aria-valuenow="{{ latest_checkin.weight_kg }}" aria-valuemin="0" aria-valuemax="{{ goals.weight_goal_kg }}">{{ "%.0f" % weight_progress }}%</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h5>Target Body Fat %</h5>
+                    <small class="text-muted d-block mb-1">
+                        Goal: {{ "%.1f" % goals.body_fat_percentage_goal }}% | Current: {{ "%.1f" % latest_checkin.body_fat_percentage }}%
+                    </small>
+                    <div class="progress" style="height: 15px;">
+                        {% set body_fat_progress = (latest_checkin.body_fat_percentage / goals.body_fat_percentage_goal) * 100 if goals.body_fat_percentage_goal > 0 else 0 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ body_fat_progress }}%;" aria-valuenow="{{ latest_checkin.body_fat_percentage }}" aria-valuemin="0" aria-valuemax="{{ goals.body_fat_percentage_goal }}">{{ "%.0f" % body_fat_progress }}%</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h5>Target Waist</h5>
+                    <small class="text-muted d-block mb-1">
+                        Goal: 
+                        {% if current_user_measurement_system == 'us' %}
+                            {{ "%.1f" % (goals.waist_cm_goal * 0.393701) }} in
+                        {% else %}
+                            {{ "%.1f" % goals.waist_cm_goal }} cm
+                        {% endif %}
+                        | Current: 
+                        {% if current_user_measurement_system == 'us' %}
+                            {{ "%.1f" % (latest_checkin.waist_cm * 0.393701) }} in
+                        {% else %}
+                            {{ "%.1f" % latest_checkin.waist_cm }} cm
+                        {% endif %}
+                    </small>
+                    <div class="progress" style="height: 15px;">
+                        {% set waist_progress = (latest_checkin.waist_cm / goals.waist_cm_goal) * 100 if goals.waist_cm_goal > 0 else 0 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ waist_progress }}%;" aria-valuenow="{{ latest_checkin.waist_cm }}" aria-valuemin="0" aria-valuemax="{{ goals.waist_cm_goal }}">{{ "%.0f" % waist_progress }}%</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if goals and (goals.weight_goal_kg or goals.body_fat_percentage_goal or goals.waist_cm_goal) and latest_checkin %}
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <h5>Target Weight</h5>
+                    <small class="text-muted d-block mb-1">
+                        Goal: 
+                        {% if current_user_measurement_system == 'us' %}
+                            {{ "%.1f" % (goals.weight_goal_kg * 2.20462) }} lbs
+                        {% else %}
+                            {{ "%.1f" % goals.weight_goal_kg }} kg
+                        {% endif %}
+                        | Current: 
+                        {% if current_user_measurement_system == 'us' %}
+                            {{ "%.1f" % (latest_checkin.weight_kg * 2.20462) }} lbs
+                        {% else %}
+                            {{ "%.1f" % latest_checkin.weight_kg }} kg
+                        {% endif %}
+                    </small>
+                    <div class="progress" style="height: 15px;">
+                        {% set weight_progress = (latest_checkin.weight_kg / goals.weight_goal_kg) * 100 if goals.weight_goal_kg > 0 else 0 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ weight_progress }}%;" aria-valuenow="{{ latest_checkin.weight_kg }}" aria-valuemin="0" aria-valuemax="{{ goals.weight_goal_kg }}">{{ "%.0f" % weight_progress }}%</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h5>Target Body Fat %</h5>
+                    <small class="text-muted d-block mb-1">
+                        Goal: {{ "%.1f" % goals.body_fat_percentage_goal }}% | Current: {{ "%.1f" % latest_checkin.body_fat_percentage }}%
+                    </small>
+                    <div class="progress" style="height: 15px;">
+                        {% set body_fat_progress = (latest_checkin.body_fat_percentage / goals.body_fat_percentage_goal) * 100 if goals.body_fat_percentage_goal > 0 else 0 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ body_fat_progress }}%;" aria-valuenow="{{ latest_checkin.body_fat_percentage }}" aria-valuemin="0" aria-valuemax="{{ goals.body_fat_percentage_goal }}">{{ "%.0f" % body_fat_progress }}%</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h5>Target Waist</h5>
+                    <small class="text-muted d-block mb-1">
+                        Goal: 
+                        {% if current_user_measurement_system == 'us' %}
+                            {{ "%.1f" % (goals.waist_cm_goal * 0.393701) }} in
+                        {% else %}
+                            {{ "%.1f" % goals.waist_cm_goal }} cm
+                        {% endif %}
+                        | Current: 
+                        {% if current_user_measurement_system == 'us' %}
+                            {{ "%.1f" % (latest_checkin.waist_cm * 0.393701) }} in
+                        {% else %}
+                            {{ "%.1f" % latest_checkin.waist_cm }} cm
+                        {% endif %}
+                    </small>
+                    <div class="progress" style="height: 15px;">
+                        {% set waist_progress = (latest_checkin.waist_cm / goals.waist_cm_goal) * 100 if goals.waist_cm_goal > 0 else 0 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ waist_progress }}%;" aria-valuenow="{{ latest_checkin.waist_cm }}" aria-valuemin="0" aria-valuemax="{{ goals.waist_cm_goal }}">{{ "%.0f" % waist_progress }}%</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if chart_labels and (weight_data or body_fat_data or waist_data) %}
+                <div style="height: 600px;">
+                    <canvas id="weightChart"></canvas>
+                </div>
+            {% else %}
+                <p>Log a check-in to see your progress chart!</p>
+            {% endif %}
+        </div>
+    </div>
+
     <h2 class="mt-4">Exercise History</h2>
     <ul class="list-group">
         {% for log in exercise_logs %}
@@ -159,6 +314,11 @@
     const bodyFatData = {{ body_fat_data|tojson }};
     const waistData = {{ waist_data|tojson }};
 
+    // Goal data - create arrays of the same length as labels
+    const weightGoalData = Array(labels.length).fill({{ goals.weight_goal_kg|tojson }});
+    const bodyFatGoalData = Array(labels.length).fill({{ goals.body_fat_percentage_goal|tojson }});
+    const waistGoalData = Array(labels.length).fill({{ goals.waist_cm_goal|tojson }});
+
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -172,6 +332,14 @@
                     fill: false
                 },
                 {
+                    label: 'Weight Goal (kg)',
+                    data: weightGoalData,
+                    borderColor: 'rgb(150, 192, 192)',
+                    borderDash: [5, 5],
+                    yAxisID: 'y',
+                    fill: false
+                },
+                {
                     label: 'Body Fat (%)',
                     data: bodyFatData,
                     borderColor: 'rgb(255, 99, 132)',
@@ -179,9 +347,25 @@
                     fill: false
                 },
                 {
+                    label: 'Body Fat Goal (%)',
+                    data: bodyFatGoalData,
+                    borderColor: 'rgb(180, 160, 170)',
+                    borderDash: [5, 5],
+                    yAxisID: 'y1',
+                    fill: false
+                },
+                {
                     label: 'Waist (cm)',
                     data: waistData,
                     borderColor: 'rgb(54, 162, 235)',
+                    yAxisID: 'y1',
+                    fill: false
+                },
+                {
+                    label: 'Waist Goal (cm)',
+                    data: waistGoalData,
+                    borderColor: 'rgb(120, 142, 158)',
+                    borderDash: [5, 5],
                     yAxisID: 'y1',
                     fill: false
                 }
