@@ -37,9 +37,10 @@
             </div>
             <div class="col-md-3">
                 {{ form.activity.label(class="form-label") }}
-                <select id="activity" name="activity" class="form-select">
-                    {% for value, label, selected in form.activity.iter_choices() %}
-                        <option value="{{ value }}" {% if selected %}selected{% endif %}>{{ label }}</option>
+                <select name="{{ form.activity.name }}" id="activity" class="form-select">
+                    <option value="__None">-- Manual Entry --</option>
+                    {% for activity_choice in form.activity.query %}
+                        <option value="{{ activity_choice.id }}">{{ activity_choice.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -83,9 +84,14 @@
                         <td>{{ forms[item.id].log_date(class="form-control") }}</td>
                         <td>
                             {% if item.activity %}
-                                <select name="activity" class="form-select">
-                                    {% for val, label, selected in forms[item.id].activity.iter_choices() %}
-                                    <option value="{{ val }}" {% if selected %}selected{% endif %}>{{ label }}</option>
+                                <select name="{{ forms[item.id].activity.name }}" class="form-select">
+                                    {# Manually add the blank option for switching to manual #}
+                                    <option value="__None">-- Manual Entry --</option>
+                                    {# Iterate over all possible activities from the query #}
+                                    {% for activity_choice in forms[item.id].activity.query %}
+                                        <option value="{{ activity_choice.id }}" {% if item.activity_id == activity_choice.id %}selected{% endif %}>
+                                            {{ activity_choice.name }}
+                                        </option>
                                     {% endfor %}
                                 </select>
                             {% else %}
@@ -95,7 +101,7 @@
                         <td>{{ forms[item.id].duration_minutes(class="form-control") }}</td>
                         <td>
                             {% if item.activity %}
-                                {{ item.calories_burned|round|int }}
+                                <span id="calories-burned-{{ item.id }}">{{ item.calories_burned|round|int }}</span>
                             {% else %}
                                 {{ forms[item.id].calories_burned(class="form-control") }}
                             {% endif %}
@@ -136,6 +142,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // --- Script for the 'New Exercise Log' form ---
     const activityField = document.getElementById('activity');
     const manualCaloriesDiv = document.getElementById('manual-calories-burned-new');
     const manualDescriptionDiv = document.getElementById('manual-description-new');
@@ -159,6 +166,38 @@ document.addEventListener('DOMContentLoaded', function() {
     if(activityField) {
         activityField.addEventListener('change', toggleManualEntry);
         toggleManualEntry();
+    }
+
+    // --- Script for the 'History' table ---
+    const userWeightKg = {{ user_weight_kg|tojson }};
+    const metValues = {{ activity_met_values|tojson }};
+
+    if (userWeightKg && metValues) {
+        document.querySelectorAll('form[action*="/exercise/edit/"]').forEach(form => {
+            const logId = form.action.split('/').slice(-2)[0];
+            const activitySelect = form.querySelector('select[name*="-activity"]');
+            const durationInput = form.querySelector('input[name*="duration_minutes"]');
+            const caloriesDisplay = document.getElementById(`calories-burned-${logId}`);
+
+            function updateCalories() {
+                if (!activitySelect || !durationInput || !caloriesDisplay) return;
+
+                const activityId = activitySelect.value;
+                const duration = parseFloat(durationInput.value);
+                const met = metValues[activityId];
+
+                if (activityId && duration > 0 && met) {
+                    const calories = Math.round((met * 3.5 * userWeightKg / 200) * duration);
+                    caloriesDisplay.textContent = calories;
+                } else if (caloriesDisplay) {
+                    // If duration is invalid or activity not found, clear the display or show 0
+                    caloriesDisplay.textContent = '0';
+                }
+            }
+
+            if (activitySelect) activitySelect.addEventListener('change', updateCalories);
+            if (durationInput) durationInput.addEventListener('input', updateCalories);
+        });
     }
 });
 </script>

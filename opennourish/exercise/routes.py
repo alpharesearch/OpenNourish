@@ -26,8 +26,9 @@ def log_exercise():
             calories_burned = calculate_calories_burned(activity, form.duration_minutes.data, user_weight_kg)
             activity_id = activity.id
         else:
-            calories_burned = form.calories_burned.data
+            calories_burned = form.calories_burned.data if form.calories_burned.data is not None else 0
             manual_description = form.manual_description.data
+            activity_id = None # Explicitly set to None for manual entries
 
         exercise_log = ExerciseLog(
             user_id=current_user.id,
@@ -78,6 +79,11 @@ def log_exercise():
             weekly_progress['exercises'] = len(weekly_logs)
             weekly_progress['minutes'] = sum(log.duration_minutes for log in weekly_logs)
 
+    # Prepare data for dynamic calorie calculation on the frontend
+    user_weight_kg = get_user_weight_kg(user_id=current_user.id)
+    activities = ExerciseActivity.query.all()
+    activity_met_values = {activity.id: activity.met_value for activity in activities}
+
     return render_template('exercise/log_exercise.html', 
                            form=form, 
                            logs=logs, 
@@ -86,7 +92,9 @@ def log_exercise():
                            user_goal=user_goal,
                            weekly_progress=weekly_progress,
                            start_of_week=start_of_week,
-                           end_of_week=end_of_week)
+                           end_of_week=end_of_week,
+                           user_weight_kg=user_weight_kg,
+                           activity_met_values=activity_met_values)
 
 @exercise_bp.route('/<int:log_id>/edit', methods=['POST'])
 @login_required
