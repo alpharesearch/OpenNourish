@@ -1,5 +1,5 @@
 import pytest
-from models import db, User, Recipe, RecipeIngredient, Food, FoodNutrient, Nutrient, MyFood, MyMeal, MyMealItem, DailyLog
+from models import db, User, Recipe, RecipeIngredient, Food, FoodNutrient, Nutrient, MyFood, MyMeal, MyMealItem, DailyLog, UnifiedPortion
 from datetime import date
 
 @pytest.fixture
@@ -385,3 +385,43 @@ def test_add_recipe_as_ingredient_and_prevent_self_nesting(auth_client_with_user
         main_recipe_ingredients_after_attempt = RecipeIngredient.query.filter_by(recipe_id=recipe_main.id).all()
         assert len(main_recipe_ingredients_after_attempt) == 1 # Should still be only the Sub Recipe
         assert main_recipe_ingredients_after_attempt[0].recipe_id_link != recipe_main.id
+
+def test_auto_add_recipe_portion_from_servings(auth_client_with_user):
+    """
+    Tests the 'Create Portion from Servings' functionality.
+    """
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        # 1. Create a recipe with ingredients to have a total weight
+        recipe = Recipe(user_id=user.id, name='Servings Test Recipe', servings=4.0)
+        db.session.add(recipe)
+        db.session.commit()
+        recipe_id = recipe.id
+
+        # Add ingredients with a total weight of 400g
+        ing1 = RecipeIngredient(recipe_id=recipe_id, amount_grams=150)
+        ing2 = RecipeIngredient(recipe_id=recipe_id, amount_grams=250)
+        db.session.add_all([ing1, ing2])
+        db.session.commit()
+
+    # 2. Simulate the POST request from the "Create Portion from Servings" button
+    response = client.post(
+        f'/recipes/recipe/portion/auto_add/{recipe_id}',
+        data={'servings': '4.0'},
+        follow_redirects=True
+    )
+
+    assert response.status_code == 200
+    # The endpoint doesn't flash a message on success, it just redirects.
+    # We will verify the result in the database.
+
+    # 3. Verify the new portion was created correctly
+    with client.application.app_context():
+        portions = UnifiedPortion.query.filter_by(recipe_id=recipe_id).all()
+        assert len(portions) == 1
+
+        new_portion = portions[0]
+        # Expected weight = 400g total / 4 servings = 100g per serving
+        assert new_portion.gram_weight == pytest.approx(100.0)
+        assert new_portion.measure_unit_description == "serving"
+        assert new_portion.amount == 1.0
