@@ -163,7 +163,7 @@ def add_item():
     recipe_id = request.form.get('recipe_id')
     log_date_str = request.form.get('log_date')
     meal_name = request.form.get('meal_name')
-    quantity = float(request.form.get('quantity', 1))
+    amount = float(request.form.get('amount', 1))
     portion_id = request.form.get('portion_id')
     if portion_id is None:
         portion_id = 'g'
@@ -171,11 +171,11 @@ def add_item():
     amount_grams = 0
     serving_type = 'g'
     if portion_id == 'g':
-        amount_grams = quantity
+        amount_grams = amount
     else:
         portion = db.session.get(UnifiedPortion, int(portion_id))
         if portion:
-            amount_grams = quantity * portion.gram_weight
+            amount_grams = amount * portion.gram_weight
             serving_type = portion.full_description_str
         else:
             flash('Invalid portion selected.', 'danger')
@@ -251,7 +251,7 @@ def add_item():
                             fdc_id=item.fdc_id,
                             my_food_id=item.my_food_id,
                             recipe_id=item.recipe_id,
-                            amount_grams=item.amount_grams * (quantity / 100)
+                            amount_grams=item.amount_grams * (amount / 100)
                         )
                         db.session.add(daily_log)
                     db.session.commit()
