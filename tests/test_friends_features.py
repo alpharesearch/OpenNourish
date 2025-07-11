@@ -103,7 +103,7 @@ def test_search_friends_content(auth_client_with_friendship):
     assert b"Friend&#39;s Food" not in response.data
 
     # Search including friends
-    response = client.post('/search/', data={'search_term': 'Friend', 'include_friends': 'true'}, follow_redirects=True)
+    response = client.post('/search/', data={'search_term': 'Friend', 'search_friends': 'true'}, follow_redirects=True)
     assert response.status_code == 200
     assert b"Friend&#39;s Recipe" in response.data
     assert b"Friend&#39;s Food" in response.data

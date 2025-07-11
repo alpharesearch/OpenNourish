@@ -45,7 +45,7 @@
         <input type="hidden" name="log_date" value="{{ log_date or '' }}">
         <input type="hidden" name="meal_name" value="{{ meal_name or '' }}">
         <input type="hidden" name="recipe_id" value="{{ recipe_id or '' }}">
-        <input type="hidden" name="per_page" value="{{ request.args.get('per_page', config.SEARCH_RESULTS_PER_PAGE) }}">
+        <input type="hidden" name="per_page" value="{{ request.args.get('per_page', 10) }}">
         <input type="hidden" name="section" value="{{ request.args.get('section', '') }}">
         <input type="hidden" name="usda_page" value="{{ request.args.get('usda_page', 1) }}">
         <input type="hidden" name="my_foods_page" value="{{ request.args.get('my_foods_page', 1) }}">
@@ -71,6 +71,10 @@
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="checkbox" id="search_usda" name="search_usda" value="true" {% if search_usda %}checked{% endif %}>
             <label class="form-check-label" for="search_usda">USDA</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="search_friends" name="search_friends" value="true" {% if search_friends %}checked{% endif %}>
+            <label class="form-check-label" for="search_friends">Friends</label>
         </div>
     </form>
 

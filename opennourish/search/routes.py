@@ -70,22 +70,24 @@ def search_by_upc():
 @search_bp.route('/', methods=['GET', 'POST'])
 @login_required
 def search():
-    search_term = request.args.get('search_term', '')
-    per_page = request.args.get('per_page', current_app.config['SEARCH_RESULTS_PER_PAGE'], type=int)
+    search_term = request.values.get('search_term', '')
+    per_page = request.values.get('per_page', 10, type=int)
 
     # Separate page parameters for each category
-    usda_page = request.args.get('usda_page', 1, type=int)
-    my_foods_page = request.args.get('my_foods_page', 1, type=int)
-    recipes_page = request.args.get('recipes_page', 1, type=int)
-    my_meals_page = request.args.get('my_meals_page', 1, type=int)
+    usda_page = request.values.get('usda_page', 1, type=int)
+    my_foods_page = request.values.get('my_foods_page', 1, type=int)
+    recipes_page = request.values.get('recipes_page', 1, type=int)
+    my_meals_page = request.values.get('my_meals_page', 1, type=int)
     
     # Determine which categories to search
-    search_my_foods = request.args.get('search_my_foods', 'false') == 'true'
-    search_my_meals = request.args.get('search_my_meals', 'false') == 'true'
-    search_recipes = request.args.get('search_recipes', 'false') == 'true'
-    search_usda = request.args.get('search_usda', 'false') == 'true'
+    search_my_foods = request.values.get('search_my_foods', 'false') == 'true'
+    search_my_meals = request.values.get('search_my_meals', 'false') == 'true'
+    search_recipes = request.values.get('search_recipes', 'false') == 'true'
+    search_usda = request.values.get('search_usda', 'false') == 'true'
+    search_friends = request.values.get('search_friends', 'false') == 'true'
 
-    # If no boxes are checked, default to checking them all
+    # If no category boxes are checked, default to checking them all.
+    # The 'friends' checkbox is treated as a separate modifier and is not defaulted to True.
     if not any([search_my_foods, search_my_meals, search_recipes, search_usda]):
         search_my_foods = search_my_meals = search_recipes = search_usda = True
 
@@ -94,13 +96,17 @@ def search():
     recipes_pagination = None
     my_meals_pagination = None
 
-    target = request.args.get('target')
-    recipe_id = request.args.get('recipe_id')
-    log_date = request.args.get('log_date')
-    meal_name = request.args.get('meal_name')
+    target = request.values.get('target')
+    recipe_id = request.values.get('recipe_id')
+    log_date = request.values.get('log_date')
+    meal_name = request.values.get('meal_name')
 
     if search_term:
-        friend_ids = [friend.id for friend in current_user.friends]
+        user_ids_to_search = [current_user.id]
+        if search_friends:
+            friend_ids = [friend.id for friend in current_user.friends]
+            if friend_ids:
+                user_ids_to_search.extend(friend_ids)
 
         if search_usda:
             usda_query = Food.query.filter(Food.description.ilike(f'%{search_term}%'))
@@ -115,13 +121,13 @@ def search():
         if search_my_foods:
             my_foods_pagination = MyFood.query.filter(
                 MyFood.description.ilike(f'%{search_term}%'),
-                MyFood.user_id.in_(friend_ids + [current_user.id])
+                MyFood.user_id.in_(user_ids_to_search)
             ).paginate(page=my_foods_page, per_page=per_page, error_out=False)
 
         if search_recipes:
             recipes_pagination = Recipe.query.filter(
                 Recipe.name.ilike(f'%{search_term}%'),
-                or_(Recipe.user_id.in_(friend_ids + [current_user.id]), Recipe.is_public == True)
+                or_(Recipe.user_id.in_(user_ids_to_search), Recipe.is_public == True)
             ).paginate(page=recipes_page, per_page=per_page, error_out=False)
 
         if search_my_meals:
@@ -144,6 +150,7 @@ def search():
                            search_my_meals=search_my_meals,
                            search_recipes=search_recipes,
                            search_usda=search_usda,
+                           search_friends=search_friends,
                            usda_page=usda_page,
                            my_foods_page=my_foods_page,
                            recipes_page=recipes_page,
