@@ -213,10 +213,29 @@ def test_body_composition_goals_update(auth_client):
         assert user_goal.body_fat_percentage_goal == 12
         assert user_goal.waist_cm_goal == 75
 
-    # Test with US measurements
+def test_body_composition_goals_update_us_measurements(auth_client):
+    """
+    GIVEN a logged-in user with US measurement system
+    WHEN the user submits the goals form with new body composition goal data in US units
+    THEN the UserGoal object should be updated with the correct converted values.
+    """
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
         user.measurement_system = 'us'
+        db.session.commit()
+
+        # Ensure a UserGoal exists for this user
+        initial_goal = UserGoal(
+            user_id=user.id,
+            calories=2000,
+            protein=120,
+            carbs=250,
+            fat=70,
+            weight_goal_kg=70,
+            body_fat_percentage_goal=15,
+            waist_cm_goal=80
+        )
+        db.session.add(initial_goal)
         db.session.commit()
 
     data_us = {
@@ -239,7 +258,6 @@ def test_body_composition_goals_update(auth_client):
 
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
-        # Reload user_goal to ensure we get the latest data after the form submission
         user_goal = UserGoal.query.filter_by(user_id=user.id).first()
         assert user_goal is not None
         assert user_goal.weight_goal_kg == pytest.approx(77.11, abs=0.01) # 170 lbs to kg

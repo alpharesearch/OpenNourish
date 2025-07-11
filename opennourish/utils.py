@@ -28,7 +28,7 @@ def ft_in_to_cm(feet, inches):
 def kg_to_lbs(kg):
     if kg is None:
         return None
-    return round(kg * 2.20462, 1)
+    return round(kg * 2.20462, 2)
 
 def lbs_to_kg(lbs):
     if lbs is None:
