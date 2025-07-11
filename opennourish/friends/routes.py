@@ -1,16 +1,53 @@
 from flask import render_template, request, flash, redirect, url_for
 from flask_login import current_user, login_required
-from models import db, User, Friendship
+from models import db, User, Friendship, DailyLog, ExerciseLog
 from . import friends_bp
+from datetime import datetime, timedelta
+from sqlalchemy import func
 
 @friends_bp.route('/', methods=['GET'])
 @login_required
 def friends_page():
+    today = datetime.now().date()
+    # Calculate the start of the current week (Monday)
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
+
+    # Get all accepted friends, including the current user for the scoreboard
+    all_users_for_scoreboard = [current_user] + list(current_user.friends)
+
+    scoreboard_data = []
+    for user in all_users_for_scoreboard:
+        diary_logs_count = DailyLog.query.filter(
+            DailyLog.user_id == user.id,
+            DailyLog.log_date >= start_of_week,
+            DailyLog.log_date <= end_of_week
+        ).count()
+
+        exercise_logs_count = ExerciseLog.query.filter(
+            ExerciseLog.user_id == user.id,
+            ExerciseLog.log_date >= start_of_week,
+            ExerciseLog.log_date <= end_of_week
+        ).count()
+
+        scoreboard_data.append({
+            'username': user.username,
+            'diary_logs': diary_logs_count,
+            'exercise_logs': exercise_logs_count,
+            'total_activity': diary_logs_count + exercise_logs_count
+        })
+
+    # Sort the scoreboard data by total activity in descending order
+    scoreboard_data.sort(key=lambda x: x['total_activity'], reverse=True)
+
     return render_template(
         'friends/friends.html',
         friends=current_user.friends,
         pending_sent=current_user.pending_requests_sent,
-        pending_received=current_user.pending_requests_received
+        pending_received=current_user.pending_requests_received,
+        scoreboard=scoreboard_data,
+        start_of_week=start_of_week,
+        end_of_week=end_of_week
     )
 
 @friends_bp.route('/add', methods=['POST'])

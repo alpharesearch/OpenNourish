@@ -21,6 +21,29 @@
         </div>
     </div>
 
+    <!-- Activity Scoreboard -->
+    <div class="card mb-4">
+        <div class="card-header">
+            Weekly Activity Scoreboard ({{ start_of_week.strftime('%b %d') }} - {{ end_of_week.strftime('%b %d') }})
+        </div>
+        <ul class="list-group list-group-flush">
+            {% if scoreboard %}
+                {% for entry in scoreboard %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            <strong>{{ loop.index }}. {{ entry.username }}</strong>
+                            <small class="text-muted ms-2">
+                                Diary Logs: {{ entry.diary_logs }}, Exercise Logs: {{ entry.exercise_logs }}
+                            </small>
+                        </span>
+                    </li>
+                {% endfor %}
+            {% else %}
+                <li class="list-group-item">No activity to display for this week.</li>
+            {% endif %}
+        </ul>
+    </div>
+
     <!-- Friend Lists -->
     <div class="row">
         <!-- Your Friends -->

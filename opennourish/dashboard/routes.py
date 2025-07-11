@@ -94,4 +94,4 @@ def index(log_date_str=None):
         'minutes': sum(log.duration_minutes for log in weekly_logs)
     }
 
-    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, time_range=time_range, weekly_progress=weekly_progress, exercise_logs=exercise_logs, start_of_week=start_of_week, end_of_week=end_of_week)
+    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, time_range=time_range, weekly_progress=weekly_progress, exercise_logs=exercise_logs, start_of_week=start_of_week, end_of_week=end_of_week, pending_received=current_user.pending_requests_received)
