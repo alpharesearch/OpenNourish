@@ -10,11 +10,13 @@ def import_usda_data(db_file=None, keep_newest_upc_only=False):
     """
     Creates and populates the SQLite database from USDA CSV files.
     This script is idempotent: it deletes the old database on every run.
+    This version is optimized to reduce memory usage.
     """
     if db_file is None:
         db_file = 'usda_data.db'
     usda_data_dir = 'usda_data'
     schema_file = 'schema_usda.sql'
+    CHUNK_SIZE = 50000
 
     if os.path.exists(db_file):
         print(f"Removing existing database: {db_file}")
@@ -40,21 +42,35 @@ def import_usda_data(db_file=None, keep_newest_upc_only=False):
                 cursor.executescript(f.read())
             print("Schema created successfully.")
 
+            print("Creating index for faster inserts...")
+            cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_food_nutrients_unique ON food_nutrients (fdc_id, nutrient_id)")
+            print("Index created.")
+
             # --- DATA POPULATION ---
 
             print("\nPopulating 'nutrients' table...")
             with open(os.path.join(usda_data_dir, 'nutrient.csv'), 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
-                next(reader)
-                data = [(row[0], row[1], row[2]) for row in reader]
-                cursor.executemany("INSERT INTO nutrients (id, name, unit_name) VALUES (?, ?, ?)", data)
-                print(f"-> Imported {len(data)} nutrients.")
+                next(reader) # Skip header
+                chunk = []
+                count = 0
+                for row in reader:
+                    chunk.append((row[0], row[1], row[2]))
+                    if len(chunk) >= CHUNK_SIZE:
+                        cursor.executemany("INSERT INTO nutrients (id, name, unit_name) VALUES (?, ?, ?)", chunk)
+                        count += len(chunk)
+                        chunk = []
+                if chunk:
+                    cursor.executemany("INSERT INTO nutrients (id, name, unit_name) VALUES (?, ?, ?)", chunk)
+                    count += len(chunk)
+                print(f"-> Imported {count} nutrients.")
 
-            print("\nPopulating 'foods' table...")
+            print("\nPreparing 'foods' data (this may take a while)...")
             foods_with_energy = set()
             energy_nutrient_ids = {'1008', '2047'} # Energy (KCAL) and Energy (Atwater General Factors) (KCAL)
 
             # First pass: Identify foods with non-zero energy values
+            print("-> Identifying foods with energy values...")
             with open(os.path.join(usda_data_dir, 'food_nutrient.csv'), 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 next(reader) # Skip header
@@ -64,66 +80,66 @@ def import_usda_data(db_file=None, keep_newest_upc_only=False):
                     amount = float(row[3])
                     if nutrient_id in energy_nutrient_ids and amount > 0:
                         foods_with_energy.add(fdc_id)
+            print(f"-> Found {len(foods_with_energy)} foods with energy.")
 
-            food_descriptions = {}
+            print("-> Processing branded foods data...")
+            branded_foods_data = {}
+            if keep_newest_upc_only:
+                upc_to_best_fdc_info = {} # Stores gtin_upc -> (fdc_id, ingredients, available_date)
+                duplicate_upcs = 0
+                with open(os.path.join(usda_data_dir, 'branded_food.csv'), 'r', encoding='utf-8') as f:
+                    reader = csv.reader(f)
+                    next(reader)
+                    for row in reader:
+                        fdc_id, gtin_upc, ingredients, available_date = row[0], row[4] or None, row[5] or None, row[14] or '1900-01-01'
+                        if gtin_upc:
+                            if gtin_upc in upc_to_best_fdc_info:
+                                duplicate_upcs += 1
+                                if available_date > upc_to_best_fdc_info[gtin_upc][2]:
+                                    upc_to_best_fdc_info[gtin_upc] = (fdc_id, ingredients, available_date)
+                            else:
+                                upc_to_best_fdc_info[gtin_upc] = (fdc_id, ingredients, available_date)
+                        else:
+                            branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+                
+                for gtin_upc, (fdc_id, ingredients, date) in upc_to_best_fdc_info.items():
+                    branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+                print(f"-> Found {duplicate_upcs} duplicate UPCs. Keeping the most recent for each.")
+            else:
+                with open(os.path.join(usda_data_dir, 'branded_food.csv'), 'r', encoding='utf-8') as f:
+                    reader = csv.reader(f)
+                    next(reader)
+                    for row in reader:
+                        fdc_id, gtin_upc, ingredients = row[0], row[4] or None, row[5] or None
+                        branded_foods_data[fdc_id] = (gtin_upc, ingredients)
+                print("-> Including all branded foods.")
+
+            print("\nPopulating 'foods' table...")
+            foods_to_insert_chunk = []
+            count = 0
             with open(os.path.join(usda_data_dir, 'food.csv'), 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 next(reader) # Skip header
                 for row in reader:
-                    food_descriptions[row[0]] = row[2] # fdc_id, description
-
-            branded_foods_raw = []
-            with open(os.path.join(usda_data_dir, 'branded_food.csv'), 'r', encoding='utf-8') as f:
-                reader = csv.reader(f)
-                next(reader)  # Skip header
-                for row in reader:
-                    fdc_id = row[0]
-                    gtin_upc = row[4] if row[4] else None
-                    ingredients = row[5] if row[5] else None
-                    available_date = row[14] if row[14] else '1900-01-01'
-                    branded_foods_raw.append((fdc_id, gtin_upc, ingredients, available_date))
-
-            branded_foods_data = {}
-            upc_to_best_fdc_info = {} # Stores gtin_upc -> (fdc_id, ingredients, available_date)
-            duplicate_upcs = 0
-
-            for fdc_id, gtin_upc, ingredients, available_date in branded_foods_raw:
-                if gtin_upc:
-                    if gtin_upc in upc_to_best_fdc_info:
-                        duplicate_upcs += 1
-                        old_fdc_id, old_ingredients, old_available_date = upc_to_best_fdc_info[gtin_upc]
-                        if available_date > old_available_date:
-                            upc_to_best_fdc_info[gtin_upc] = (fdc_id, ingredients, available_date)
-                    else:
-                        upc_to_best_fdc_info[gtin_upc] = (fdc_id, ingredients, available_date)
-                else:
-                    # Foods without UPCs are always included
-                    branded_foods_data[fdc_id] = (gtin_upc, ingredients)
-            
-            if keep_newest_upc_only:
-                for gtin_upc, (fdc_id, ingredients, date) in upc_to_best_fdc_info.items():
-                    branded_foods_data[fdc_id] = (gtin_upc, ingredients)
-            else:
-                # If not keeping newest, add all branded foods (including those with duplicate UPCs)
-                for fdc_id, gtin_upc, ingredients, available_date in branded_foods_raw:
-                    if gtin_upc: # Only add if it has a UPC, as non-UPC ones are already added
-                        branded_foods_data[fdc_id] = (gtin_upc, ingredients)
-            
-            print(f"-> Found {duplicate_upcs} duplicate UPCs. {'Keeping the most recent for each.' if keep_newest_upc_only else 'Including all.'}")
-
-            foods_to_insert = []
-            for fdc_id, description in food_descriptions.items():
-                if fdc_id in foods_with_energy: # Only import foods with energy values
-                    upc, ingredients = branded_foods_data.get(fdc_id, (None, None))
-                    foods_to_insert.append((fdc_id, description, upc, ingredients))
-
-            cursor.executemany("INSERT INTO foods (fdc_id, description, upc, ingredients) VALUES (?, ?, ?, ?)", foods_to_insert)
-            print(f"-> Imported {len(foods_to_insert)} foods.")
+                    fdc_id, description = row[0], row[2]
+                    if fdc_id in foods_with_energy:
+                        upc, ingredients = branded_foods_data.get(fdc_id, (None, None))
+                        foods_to_insert_chunk.append((fdc_id, description, upc, ingredients))
+                        if len(foods_to_insert_chunk) >= CHUNK_SIZE:
+                            cursor.executemany("INSERT INTO foods (fdc_id, description, upc, ingredients) VALUES (?, ?, ?, ?)", foods_to_insert_chunk)
+                            count += len(foods_to_insert_chunk)
+                            foods_to_insert_chunk = []
+            if foods_to_insert_chunk:
+                cursor.executemany("INSERT INTO foods (fdc_id, description, upc, ingredients) VALUES (?, ?, ?, ?)", foods_to_insert_chunk)
+                count += len(foods_to_insert_chunk)
+            print(f"-> Imported {count} foods.")
 
             print("\nPopulating 'food_nutrients' table...")
-            seen = set()
-            to_insert = []
-            skipped = 0
+            to_insert_chunk = []
+            processed_count = 0
+            cursor.execute("SELECT COUNT(*) FROM food_nutrients")
+            initial_count = cursor.fetchone()[0]
+
             with open(os.path.join(usda_data_dir, 'food_nutrient.csv'), 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 next(reader)
@@ -132,17 +148,22 @@ def import_usda_data(db_file=None, keep_newest_upc_only=False):
                     nutrient_id = row[2]
                     amount = float(row[3])
 
-                    # Only insert if food has energy and amount is greater than 0
                     if fdc_id in foods_with_energy and amount > 0:
-                        key = (fdc_id, nutrient_id)
-                        if key not in seen:
-                            seen.add(key)
-                            to_insert.append((fdc_id, nutrient_id, amount))
-                        else:
-                            skipped += 1
-            cursor.executemany("INSERT INTO food_nutrients (fdc_id, nutrient_id, amount) VALUES (?, ?, ?)", to_insert)
-            print(f"-> Imported {len(to_insert)} unique food nutrients.")
-            print(f"-> Skipped {skipped} duplicate entries.")
+                        processed_count += 1
+                        to_insert_chunk.append((fdc_id, nutrient_id, amount))
+                        if len(to_insert_chunk) >= CHUNK_SIZE:
+                            cursor.executemany("INSERT OR IGNORE INTO food_nutrients (fdc_id, nutrient_id, amount) VALUES (?, ?, ?)", to_insert_chunk)
+                            to_insert_chunk = []
+            if to_insert_chunk:
+                cursor.executemany("INSERT OR IGNORE INTO food_nutrients (fdc_id, nutrient_id, amount) VALUES (?, ?, ?)", to_insert_chunk)
+
+            cursor.execute("SELECT COUNT(*) FROM food_nutrients")
+            final_count = cursor.fetchone()[0]
+            inserted_count = final_count - initial_count
+            skipped_count = processed_count - inserted_count
+
+            print(f"-> Imported {inserted_count} unique food nutrients.")
+            print(f"-> Skipped {skipped_count} duplicate entries.")
 
             
 
