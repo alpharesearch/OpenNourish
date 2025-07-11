@@ -28,6 +28,9 @@ def create_app(config_class=Config):
     Migrate(app, db)
     login_manager.init_app(app)
 
+    # Enable the Jinja2 'do' extension
+    app.jinja_env.add_extension('jinja2.ext.do')
+
     from opennourish.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 

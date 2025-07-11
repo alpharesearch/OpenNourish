@@ -1,5 +1,42 @@
 {% extends "base.html" %}
 
+{% macro render_pagination(pagination, endpoint, section_id, page_param_name) %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                {% set nav_args = {} %}
+                {% for key, value in request.args.items() %}
+                    {% set _ = nav_args.update({key: value}) %}
+                {% endfor %}
+                {% set _ = nav_args.update({page_param_name: pagination.prev_num, 'section': section_id}) %}
+                <a class="page-link" href="{{ url_for(endpoint, **nav_args) }}">Previous</a>
+            </li>
+            {% for page in pagination.iter_pages() %}
+                {% if page %}
+                    <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                        {% set nav_args = {} %}
+                        {% for key, value in request.args.items() %}
+                            {% set _ = nav_args.update({key: value}) %}
+                        {% endfor %}
+                        {% set _ = nav_args.update({page_param_name: page, 'section': section_id}) %}
+                        <a class="page-link" href="{{ url_for(endpoint, **nav_args) }}">{{ page }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                {% set nav_args = {} %}
+                {% for key, value in request.args.items() %}
+                    {% set _ = nav_args.update({key: value}) %}
+                {% endfor %}
+                {% set _ = nav_args.update({page_param_name: pagination.next_num, 'section': section_id}) %}
+                <a class="page-link" href="{{ url_for(endpoint, **nav_args) }}">Next</a>
+            </li>
+        </ul>
+    </nav>
+{% endmacro %}
+
 {% block content %}
     <h1>Unified Search</h1>
 
@@ -8,6 +45,12 @@
         <input type="hidden" name="log_date" value="{{ log_date or '' }}">
         <input type="hidden" name="meal_name" value="{{ meal_name or '' }}">
         <input type="hidden" name="recipe_id" value="{{ recipe_id or '' }}">
+        <input type="hidden" name="per_page" value="{{ request.args.get('per_page', config.SEARCH_RESULTS_PER_PAGE) }}">
+        <input type="hidden" name="section" value="{{ request.args.get('section', '') }}">
+        <input type="hidden" name="usda_page" value="{{ request.args.get('usda_page', 1) }}">
+        <input type="hidden" name="my_foods_page" value="{{ request.args.get('my_foods_page', 1) }}">
+        <input type="hidden" name="recipes_page" value="{{ request.args.get('recipes_page', 1) }}">
+        <input type="hidden" name="my_meals_page" value="{{ request.args.get('my_meals_page', 1) }}">
         <div class="input-group">
             <input type="text" name="search_term" class="form-control" placeholder="Search for a food..." value="{{ search_term or '' }}">
             <button class="btn btn-outline-primary" type="submit">Search</button>
@@ -58,11 +101,11 @@
     {% if search_term %}
         <h2>Search Results</h2>
 
-        {% if results.my_foods %}
-            <div class="card mb-3">
+        {% if my_foods_pagination and my_foods_pagination.items %}
+            <div class="card mb-3" id="my_foods_section">
                 <div class="card-header">Foods</div>
                 <ul class="list-group list-group-flush">
-                    {% for food in results.my_foods %}
+                    {% for food in my_foods_pagination.items %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
                                 <strong>{{ food.description }}</strong>
@@ -104,14 +147,15 @@
                         </li>
                     {% endfor %}
                 </ul>
+                {{ render_pagination(my_foods_pagination, 'search.search', 'my_foods_section', 'my_foods_page') }}
             </div>
         {% endif %}
 
-        {% if results.my_meals %}
-            <div class="card mb-3">
+        {% if my_meals_pagination and my_meals_pagination.items %}
+            <div class="card mb-3" id="my_meals_section">
                 <div class="card-header">Meals</div>
                 <ul class="list-group list-group-flush">
-                    {% for searched_meal in results.my_meals %}
+                    {% for searched_meal in my_meals_pagination.items %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
                                 <strong>{{ searched_meal.name }}</strong>
@@ -135,14 +179,15 @@
                         </li>
                     {% endfor %}
                 </ul>
+                {{ render_pagination(my_meals_pagination, 'search.search', 'my_meals_section', 'my_meals_page') }}
             </div>
         {% endif %}
 
-        {% if results.recipes %}
-            <div class="card mb-3">
+        {% if recipes_pagination and recipes_pagination.items %}
+            <div class="card mb-3" id="recipes_section">
                 <div class="card-header">Recipes</div>
                 <ul class="list-group list-group-flush">
-                    {% for recipe in results.recipes %}
+                    {% for recipe in recipes_pagination.items %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
                                 <strong>{{ recipe.name }}</strong>
@@ -189,14 +234,15 @@
                         </li>
                     {% endfor %}
                 </ul>
+                {{ render_pagination(recipes_pagination, 'search.search', 'recipes_section', 'recipes_page') }}
             </div>
         {% endif %}
 
-        {% if results.usda_foods %}
-            <div class="card mb-3">
+        {% if usda_foods_pagination and usda_foods_pagination.items %}
+            <div class="card mb-3" id="usda_foods_section">
             <h3>USDA Foods</h3>
             <ul class="list-group list-group-flush">
-                {% for food in results.usda_foods %}
+                {% for food in usda_foods_pagination.items %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
                             <strong>{{ food.description }}</strong>
@@ -235,10 +281,11 @@
                     </li>
                 {% endfor %}
             </ul>
+            {{ render_pagination(usda_foods_pagination, 'search.search', 'usda_foods_section', 'usda_page') }}
             </div>
         {% endif %}
 
-        {% if not results.my_foods and not results.recipes and not results.usda_foods and not results.my_meals %}
+        {% if not my_foods_pagination.items and not recipes_pagination.items and not usda_foods_pagination.items and not my_meals_pagination.items %}
             <p>No results found for "{{ search_term }}".</p>
         {% endif %}
     {% endif %}
@@ -383,6 +430,16 @@ document.addEventListener('DOMContentLoaded', function () {
             html5QrCode.stop().catch(err => console.log("Ignoring error on stop: ", err));
         }
     });
+
+    // Scroll to section if 'section' parameter is present in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const sectionId = urlParams.get('section');
+    if (sectionId) {
+        const targetElement = document.getElementById(sectionId);
+        if (targetElement) {
+            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
 });
 </script>
 {% endblock %}

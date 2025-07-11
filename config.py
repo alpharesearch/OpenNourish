@@ -42,3 +42,4 @@ class Config:
         'iron': 1089,
         'potassium': 1092
     }
+    SEARCH_RESULTS_PER_PAGE = 10

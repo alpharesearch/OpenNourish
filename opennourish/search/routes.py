@@ -71,6 +71,13 @@ def search_by_upc():
 @login_required
 def search():
     search_term = request.args.get('search_term', '')
+    per_page = request.args.get('per_page', current_app.config['SEARCH_RESULTS_PER_PAGE'], type=int)
+
+    # Separate page parameters for each category
+    usda_page = request.args.get('usda_page', 1, type=int)
+    my_foods_page = request.args.get('my_foods_page', 1, type=int)
+    recipes_page = request.args.get('recipes_page', 1, type=int)
+    my_meals_page = request.args.get('my_meals_page', 1, type=int)
     
     # Determine which categories to search
     search_my_foods = request.args.get('search_my_foods', 'false') == 'true'
@@ -82,12 +89,11 @@ def search():
     if not any([search_my_foods, search_my_meals, search_recipes, search_usda]):
         search_my_foods = search_my_meals = search_recipes = search_usda = True
 
-    results = {
-        "usda_foods": [],
-        "my_foods": [],
-        "recipes": [],
-        "my_meals": []
-    }
+    usda_foods_pagination = None
+    my_foods_pagination = None
+    recipes_pagination = None
+    my_meals_pagination = None
+
     target = request.args.get('target')
     recipe_id = request.args.get('recipe_id')
     log_date = request.args.get('log_date')
@@ -97,52 +103,37 @@ def search():
         friend_ids = [friend.id for friend in current_user.friends]
 
         if search_usda:
-            # Prioritize results that start with the search term
-            usda_foods_query = Food.query.options(
+            usda_foods_pagination = Food.query.options(
                 selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
-            ).filter(Food.description.ilike(f'{search_term}%')).limit(10).all()
-
-            # If not enough results, add results that contain the search term
-            if len(usda_foods_query) < 10:
-                usda_foods_query.extend(Food.query.options(
-                    selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)
-                ).filter(Food.description.ilike(f'%{search_term}%'), Food.description.notilike(f'{search_term}%')).limit(10 - len(usda_foods_query)).all())
-
-            for food in usda_foods_query:
-                usda_portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
-                results["usda_foods"].append({
-                    'fdc_id': food.fdc_id,
-                    'description': food.description,
-                    'portions': usda_portions,
-                    'ingredients': food.ingredients,
-                    'nutrients': food.nutrients,
-                    'detail_url': url_for('main.food_detail', fdc_id=food.fdc_id, q=search_term)
-                })
+            ).filter(Food.description.ilike(f'%{search_term}%')).paginate(page=usda_page, per_page=per_page, error_out=False)
+            
+            for food in usda_foods_pagination.items:
+                food.portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
 
         if search_my_foods:
-            my_foods_query = MyFood.query.filter(
+            my_foods_pagination = MyFood.query.filter(
                 MyFood.description.ilike(f'%{search_term}%'),
                 MyFood.user_id.in_(friend_ids + [current_user.id])
-            ).limit(10).all()
-            results["my_foods"] = my_foods_query
+            ).paginate(page=my_foods_page, per_page=per_page, error_out=False)
 
         if search_recipes:
-            recipes_query = Recipe.query.filter(
+            recipes_pagination = Recipe.query.filter(
                 Recipe.name.ilike(f'%{search_term}%'),
                 or_(Recipe.user_id.in_(friend_ids + [current_user.id]), Recipe.is_public == True)
-            ).limit(10).all()
-            results["recipes"] = recipes_query
+            ).paginate(page=recipes_page, per_page=per_page, error_out=False)
 
         if search_my_meals:
-            my_meals_query = MyMeal.query.filter(
+            my_meals_pagination = MyMeal.query.filter(
                 MyMeal.name.ilike(f'%{search_term}%'),
                 MyMeal.user_id == current_user.id
-            ).limit(10).all()
-            results["my_meals"] = my_meals_query
+            ).paginate(page=my_meals_page, per_page=per_page, error_out=False)
 
     return render_template('search/index.html',
                            search_term=search_term,
-                           results=results,
+                           usda_foods_pagination=usda_foods_pagination,
+                           my_foods_pagination=my_foods_pagination,
+                           recipes_pagination=recipes_pagination,
+                           my_meals_pagination=my_meals_pagination,
                            target=target,
                            recipe_id=recipe_id,
                            log_date=log_date,
@@ -150,7 +141,11 @@ def search():
                            search_my_foods=search_my_foods,
                            search_my_meals=search_my_meals,
                            search_recipes=search_recipes,
-                           search_usda=search_usda)
+                           search_usda=search_usda,
+                           usda_page=usda_page,
+                           my_foods_page=my_foods_page,
+                           recipes_page=recipes_page,
+                           my_meals_page=my_meals_page)
 
 @search_bp.route('/add_item', methods=['POST'])
 @login_required
