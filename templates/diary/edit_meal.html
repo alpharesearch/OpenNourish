@@ -38,11 +38,11 @@
                 </div>
                 <div class="col-md-7">
                     <div class="d-flex justify-content-end align-items-center">
-                        <input type="number" name="quantity" value="{{ item.amount_grams|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
+                        <input type="number" name="quantity" value="{{ item.display_amount|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
                         <select name="portion_id" class="form-select form-select-sm ms-2" style="width: 180px;">
                             {% for portion in item.available_portions %}
                                 <option value="{{ portion.id }}" {% if item.selected_portion_id == portion.id %}selected{% endif %}>
-                                    {{ portion.display_text }}
+                                    {{ portion.full_description_str }}
                                 </option>
                             {% endfor %}
                         </select>

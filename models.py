@@ -113,6 +113,7 @@ class UnifiedPortion(db.Model):
 
     @property
     def full_description_str(self):
+        from opennourish.utils import remove_leading_one
         parts = []
         if self.amount:
             # Format amount to avoid trailing .0 if it's a whole number
@@ -124,8 +125,9 @@ class UnifiedPortion(db.Model):
             parts.append(self.portion_description)
         if self.modifier:
             parts.append(f"{self.modifier}")
-        
-        return " ".join(parts).strip() or "g"
+        ret = remove_leading_one(" ".join(parts).strip() or "g")
+
+        return ret
 
 
 class MyFood(db.Model):
@@ -213,6 +215,8 @@ class MyMealItem(db.Model):
     my_food_id = db.Column(db.Integer, db.ForeignKey('my_foods.id'), nullable=True)
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
     amount_grams = db.Column(db.Float)
+    serving_type = db.Column(db.String(50), default='g')
+    portion_id_fk = db.Column(db.Integer, db.ForeignKey('portions.id'), nullable=True)
 
     @property
     def food(self):

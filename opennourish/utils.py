@@ -107,13 +107,36 @@ def calculate_goals_from_preset(bmr, preset_name):
 
 def get_available_portions(food_item):
     """
-    Returns a list of available portions for a given food item.
+    Returns a list of available portions for a given food item,
+    always including a default 'gram' option.
     """
     available_portions = []
 
+    # Always add a default 'gram' portion
+    # Use a SimpleNamespace to create a lightweight object that mimics UnifiedPortion
+    # for the purpose of template rendering.
+    gram_portion = SimpleNamespace(
+        id='g', # Use a string ID for the gram portion
+        amount=1.0,
+        measure_unit_description='g',
+        portion_description='',
+        modifier='',
+        gram_weight=1.0,
+        full_description_str='g' # Explicitly set for display
+    )
+    available_portions.append(gram_portion)
+
     if food_item:
         if hasattr(food_item, 'portions'):
-            available_portions.extend(food_item.portions)
+            # Filter out any existing 'g' or 'gram' portions from the database
+            # to avoid duplicates, as we added our custom one.
+            for p in food_item.portions:
+                # Safely check for 'g' or 'gram' in portion descriptions, handling None values
+                measure_unit_desc = p.measure_unit_description.lower() if p.measure_unit_description else ''
+                portion_desc = p.portion_description.lower() if p.portion_description else ''
+                
+                if measure_unit_desc != 'g' and portion_desc != 'gram':
+                    available_portions.append(p)
                 
     return available_portions
 

@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 from . import diary_bp
 from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog, UnifiedPortion, User, Friendship
 from datetime import date, timedelta
-from opennourish.utils import calculate_nutrition_for_items, get_available_portions
+from opennourish.utils import calculate_nutrition_for_items, get_available_portions, remove_leading_one
 from .forms import MealForm, DailyLogForm, MealItemForm
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -200,8 +200,24 @@ def edit_meal(meal_id):
 
     for item in meal.items:
         item.available_portions = get_available_portions(item.food or item.my_food or item.recipe)
-        item.selected_portion_id = 'g' # Default to grams
+
+        # Determine display_amount and selected_portion_id based on saved portion
         item.display_amount = item.amount_grams # Default to grams for display
+        item.selected_portion_id = 'g' # Default to grams
+
+        current_app.logger.debug(f"DEBUG: edit_meal - Processing item {item.id} - amount_grams: {item.amount_grams}, portion_id_fk: {item.portion_id_fk}")
+        if item.portion_id_fk:
+            selected_portion = db.session.get(UnifiedPortion, item.portion_id_fk)
+            if selected_portion:
+                current_app.logger.debug(f"DEBUG: edit_meal - Found selected_portion: {selected_portion.full_description_str} (gram_weight: {selected_portion.gram_weight})")
+                if selected_portion.gram_weight > 0:
+                    item.display_amount = item.amount_grams / selected_portion.gram_weight
+                    item.selected_portion_id = selected_portion.id
+                else:
+                    current_app.logger.warning(f"WARNING: edit_meal - Portion {selected_portion.id} has gram_weight 0. Cannot calculate display_amount.")
+            else:
+                current_app.logger.warning(f"WARNING: edit_meal - UnifiedPortion with ID {item.portion_id_fk} not found.")
+        current_app.logger.debug(f"DEBUG: edit_meal - Final display_amount: {item.display_amount}, selected_portion_id: {item.selected_portion_id}")
     return render_template('diary/edit_meal.html', meal=meal, form=form)
 
 @diary_bp.route('/my_meals/<int:meal_id>/edit_item/<int:item_id>', methods=['GET', 'POST'])
@@ -330,23 +346,30 @@ def update_meal_item(item_id):
     quantity = request.form.get('quantity', type=float)
     portion_id = request.form.get('portion_id')
 
-    if quantity and portion_id:
-        amount_grams = 0
+    if quantity is not None and portion_id is not None:
+        current_app.logger.debug(f"DEBUG: update_meal_item - quantity: {quantity}, portion_id: {portion_id}")
         if portion_id == 'g':
-            amount_grams = quantity
+            item.amount_grams = quantity
+            item.serving_type = 'g'
+            item.portion_id_fk = None
+            current_app.logger.debug(f"DEBUG: update_meal_item - Saved as grams. amount_grams: {item.amount_grams}")
         else:
             portion = db.session.get(UnifiedPortion, int(portion_id))
             if portion:
-                amount_grams = portion.gram_weight * quantity
+                item.amount_grams = quantity * portion.gram_weight
+                item.serving_type = portion.full_description_str
+                item.portion_id_fk = portion.id
+                current_app.logger.debug(f"DEBUG: update_meal_item - Saved with portion. gram_weight: {portion.gram_weight}, calculated amount_grams: {item.amount_grams}")
+            else:
+                flash('Invalid portion selected.', 'danger')
+                current_app.logger.warning(f"WARNING: update_meal_item - UnifiedPortion with ID {portion_id} not found.")
+                return redirect(url_for('diary.edit_meal', meal_id=item.my_meal_id))
         
-        if amount_grams > 0:
-            item.amount_grams = amount_grams
-            db.session.commit()
-            flash('Meal item updated.', 'success')
-        else:
-            flash('Invalid portion selected.', 'danger')
+        db.session.commit()
+        flash('Meal item updated.', 'success')
     else:
         flash('Invalid data.', 'danger')
+        current_app.logger.warning(f"WARNING: update_meal_item - Invalid data submitted. quantity: {quantity}, portion_id: {portion_id}")
 
     return redirect(url_for('diary.edit_meal', meal_id=item.my_meal_id))
 
