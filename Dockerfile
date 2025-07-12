@@ -46,7 +46,6 @@ COPY config.py .
 COPY app.py .
 COPY serve.py .
 COPY alembic.ini .
-COPY migrations/ migrations/
 COPY schema_usda.sql .
 COPY import_usda_data.py .
 COPY pytest.ini .
