@@ -76,6 +76,10 @@
             <input class="form-check-input" type="checkbox" id="search_friends" name="search_friends" value="true" {% if search_friends %}checked{% endif %}>
             <label class="form-check-label" for="search_friends">Friends</label>
         </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="search_public" name="search_public" value="true" {% if search_public %}checked{% endif %}>
+            <label class="form-check-label" for="search_public">Public</label>
+        </div>
     </form>
 
     <!-- Barcode Scanner Modal -->
@@ -104,7 +108,11 @@
 
     {% if search_term %}
         <h2>Search Results</h2>
+    {% else %}
+        <h2>Frequently Used Items</h2>
+    {% endif %}
 
+    {% if my_foods_pagination.items or recipes_pagination.items or usda_foods_pagination.items or my_meals_pagination.items %}
         {% if my_foods_pagination and my_foods_pagination.items %}
             <div class="card mb-3" id="my_foods_section">
                 <div class="card-header">Foods</div>

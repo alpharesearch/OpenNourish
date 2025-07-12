@@ -3,9 +3,51 @@ from . import search_bp
 from models import db, Food, MyFood, Recipe, MyMeal, DailyLog, RecipeIngredient, MyMealItem, UnifiedPortion, FoodNutrient
 from flask_login import login_required, current_user
 from datetime import date
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload, selectinload
+import math
 from opennourish.utils import calculate_recipe_nutrition_per_100g, remove_leading_one
+
+class ManualPagination:
+    """A duck-typed pagination object for manual pagination."""
+    def __init__(self, page, per_page, total, items):
+        self.page = page
+        self.per_page = per_page
+        self.total = total
+        self.items = items
+        if self.per_page > 0:
+            self.pages = math.ceil(total / per_page)
+        else:
+            self.pages = 0
+
+    @property
+    def has_next(self):
+        return self.page < self.pages
+
+    @property
+    def has_prev(self):
+        return self.page > 1
+
+    @property
+    def next_num(self):
+        return self.page + 1 if self.has_next else None
+
+    @property
+    def prev_num(self):
+        return self.page - 1 if self.has_prev else None
+
+    def iter_pages(self, left_edge=1, left_current=1, right_current=2, right_edge=1):
+        last = 0
+        for num in range(1, self.pages + 1):
+            if (
+                num <= left_edge
+                or (self.page - left_current - 1 < num < self.page + right_current)
+                or num > self.pages - right_edge
+            ):
+                if last + 1 != num:
+                    yield None
+                yield num
+                last = num
 
 @search_bp.route('/by_upc', methods=['GET'])
 @login_required
@@ -85,6 +127,7 @@ def search():
     search_recipes = request.values.get('search_recipes', 'false') == 'true'
     search_usda = request.values.get('search_usda', 'false') == 'true'
     search_friends = request.values.get('search_friends', 'false') == 'true'
+    search_public = request.values.get('search_public', 'false') == 'true'
 
     # If no category boxes are checked, default to checking them all.
     # The 'friends' checkbox is treated as a separate modifier and is not defaulted to True.
@@ -125,9 +168,18 @@ def search():
             ).paginate(page=my_foods_page, per_page=per_page, error_out=False)
 
         if search_recipes:
+            recipe_query_filter = [Recipe.name.ilike(f'%{search_term}%')]
+            
+            # Construct the part of the query that handles ownership and public status
+            user_and_public_filter = []
+            user_and_public_filter.append(Recipe.user_id.in_(user_ids_to_search))
+            if search_public:
+                user_and_public_filter.append(Recipe.is_public == True)
+            
+            recipe_query_filter.append(or_(*user_and_public_filter))
+
             recipes_pagination = Recipe.query.filter(
-                Recipe.name.ilike(f'%{search_term}%'),
-                or_(Recipe.user_id.in_(user_ids_to_search), Recipe.is_public == True)
+                *recipe_query_filter
             ).paginate(page=recipes_page, per_page=per_page, error_out=False)
 
         if search_my_meals:
@@ -135,6 +187,98 @@ def search():
                 MyMeal.name.ilike(f'%{search_term}%'),
                 MyMeal.user_id == current_user.id
             ).paginate(page=my_meals_page, per_page=per_page, error_out=False)
+    else:
+        # No search term, so show frequently used items
+        if search_my_foods:
+            frequent_my_foods_subquery = db.session.query(
+                DailyLog.my_food_id,
+                func.count(DailyLog.my_food_id).label('count')
+            ).filter(
+                DailyLog.user_id == current_user.id,
+                DailyLog.my_food_id.isnot(None)
+            ).group_by(DailyLog.my_food_id).order_by(func.count(DailyLog.my_food_id).desc()).subquery()
+
+            my_foods_pagination = MyFood.query.join(
+                frequent_my_foods_subquery, MyFood.id == frequent_my_foods_subquery.c.my_food_id
+            ).order_by(
+                frequent_my_foods_subquery.c.count.desc()
+            ).paginate(page=my_foods_page, per_page=per_page, error_out=False)
+
+        if search_recipes:
+            if search_public and not search_term:
+                # If public is checked without a search term, find popular public recipes
+                # by counting their occurrences in the DailyLog across all users.
+                popular_recipes_subquery = db.session.query(
+                    DailyLog.recipe_id,
+                    func.count(DailyLog.recipe_id).label('count')
+                ).filter(
+                    DailyLog.recipe_id.isnot(None)
+                ).group_by(DailyLog.recipe_id).order_by(func.count(DailyLog.recipe_id).desc()).subquery()
+
+                recipes_pagination = Recipe.query.join(
+                    popular_recipes_subquery, Recipe.id == popular_recipes_subquery.c.recipe_id
+                ).filter(
+                    Recipe.is_public == True
+                ).order_by(
+                    popular_recipes_subquery.c.count.desc()
+                ).paginate(page=recipes_page, per_page=per_page, error_out=False)
+            else:
+                # Original behavior: frequently used from user's own log
+                frequent_recipes_subquery = db.session.query(
+                    DailyLog.recipe_id,
+                    func.count(DailyLog.recipe_id).label('count')
+                ).filter(
+                    DailyLog.user_id == current_user.id,
+                    DailyLog.recipe_id.isnot(None)
+                ).group_by(DailyLog.recipe_id).order_by(func.count(DailyLog.recipe_id).desc()).subquery()
+
+                recipes_pagination = Recipe.query.join(
+                    frequent_recipes_subquery, Recipe.id == frequent_recipes_subquery.c.recipe_id
+                ).order_by(
+                    frequent_recipes_subquery.c.count.desc()
+                ).paginate(page=recipes_page, per_page=per_page, error_out=False)
+
+        if search_usda:
+            # Step 1: Get paginated, ordered fdc_ids from the user database
+            frequent_usda_ids_paginated = db.session.query(
+                DailyLog.fdc_id
+            ).filter(
+                DailyLog.user_id == current_user.id,
+                DailyLog.fdc_id.isnot(None)
+            ).group_by(DailyLog.fdc_id).order_by(
+                func.count(DailyLog.fdc_id).desc()
+            ).paginate(page=usda_page, per_page=per_page, error_out=False)
+
+            fdc_ids = [item.fdc_id for item in frequent_usda_ids_paginated.items]
+
+            # Step 2: Fetch the actual Food objects from the USDA database
+            if fdc_ids:
+                usda_foods = Food.query.filter(Food.fdc_id.in_(fdc_ids)).all()
+                # Preserve the order from the frequency query
+                foods_map = {food.fdc_id: food for food in usda_foods}
+                ordered_foods = [foods_map.get(fdc_id) for fdc_id in fdc_ids if foods_map.get(fdc_id)]
+            else:
+                ordered_foods = []
+
+            # Step 3: Manually create a pagination object for the template
+            usda_foods_pagination = ManualPagination(
+                page=usda_page,
+                per_page=per_page,
+                total=frequent_usda_ids_paginated.total,
+                items=ordered_foods
+            )
+
+            # Attach extra info needed by the template
+            if usda_foods_pagination:
+                for food in usda_foods_pagination.items:
+                    food.detail_url = url_for('main.food_detail', fdc_id=food.fdc_id)
+                    food.portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
+        
+        if search_my_meals:
+            my_meals_pagination = MyMeal.query.filter(
+                MyMeal.user_id == current_user.id,
+                MyMeal.usage_count > 0
+            ).order_by(MyMeal.usage_count.desc()).paginate(page=my_meals_page, per_page=per_page, error_out=False)
 
     return render_template('search/index.html',
                            search_term=search_term,
@@ -151,6 +295,7 @@ def search():
                            search_recipes=search_recipes,
                            search_usda=search_usda,
                            search_friends=search_friends,
+                           search_public=search_public,
                            usda_page=usda_page,
                            my_foods_page=my_foods_page,
                            recipes_page=recipes_page,
