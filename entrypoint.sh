@@ -1,8 +1,12 @@
 #!/bin/bash
 set -e
 
+# Define a single root for all persistent data
+PERSISTENT_DIR="/app/persistent"
+mkdir -p "$PERSISTENT_DIR"
+
 # Step 0: Generate self-signed certificates if not found
-CERT_DIR="/app/certs"
+CERT_DIR="$PERSISTENT_DIR/certs"
 if [ ! -f "$CERT_DIR/fullchain.pem" ] || [ ! -f "$CERT_DIR/privkey.pem" ]; then
   echo "--- Generating self-signed certificates... ---"
   mkdir -p "$CERT_DIR"
@@ -12,9 +16,9 @@ else
   echo "--- Certificates found. Skipping generation. ---"
 fi
 
-# All paths are relative to the container's working directory, /app
-USDA_DB_PATH="usda_data.db"
-USDA_CSV_DIR="usda_data"
+# Paths for data now live within the persistent directory
+USDA_DB_PATH="$PERSISTENT_DIR/usda_data.db"
+USDA_CSV_DIR="$PERSISTENT_DIR/usda_data"
 MEASURE_UNIT_CSV_PATH="$USDA_CSV_DIR/measure_unit.csv"
 
 # Step 1: Ensure USDA CSV directory exists and download if files are missing
@@ -46,7 +50,7 @@ fi
 # Step 2: Build the USDA database from the CSVs only if it doesn't exist
 if [ ! -f "$USDA_DB_PATH" ]; then
     echo "--- USDA database not found. Building from CSV files... ---"
-    python import_usda_data.py
+    python import_usda_data.py --db_file "$USDA_DB_PATH" # Pass the correct path
     echo "--- USDA database build complete. ---"
 else
     echo "--- USDA database found. Skipping build. ---"

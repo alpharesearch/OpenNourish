@@ -39,18 +39,8 @@ WORKDIR /app
 COPY --from=build /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy application code
-COPY opennourish/ opennourish/
-COPY models.py .
-COPY config.py .
-COPY app.py .
-COPY serve.py .
-COPY alembic.ini .
-COPY schema_usda.sql .
-COPY import_usda_data.py .
-COPY pytest.ini .
-COPY templates/ templates/
-COPY static/ static/
+# Copy the entire application context, respecting .dockerignore
+COPY . .
 
 # Set the FLASK_APP environment variable
 ENV FLASK_APP=app.py

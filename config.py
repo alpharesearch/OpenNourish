@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 import json
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+# Define the path for data that needs to persist across container restarts
+persistent_dir = os.path.join(basedir, 'persistent')
 load_dotenv(os.path.join(basedir, '.env'))
 
 class Config:
@@ -13,11 +15,10 @@ class Config:
         from opennourish.utils import get_allow_registration_status
         return get_allow_registration_status()
 
-    
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or         'sqlite:///' + os.path.join(basedir, 'user_data.db')
+    # Point the database URIs to the persistent directory
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///' + os.path.join(persistent_dir, 'user_data.db')
     SQLALCHEMY_BINDS = {
-        'usda': os.environ.get('USDA_DATABASE_URL') or
-                'sqlite:///' + os.path.join(basedir, 'usda_data.db')
+        'usda': os.environ.get('USDA_DATABASE_URL') or 'sqlite:///' + os.path.join(persistent_dir, 'usda_data.db')
     }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DIET_PRESETS = {

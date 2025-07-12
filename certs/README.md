@@ -1,1 +1,0 @@
-# For Docker deplyment create certs here.

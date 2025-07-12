@@ -1,6 +1,7 @@
 # Ignore Git
 .git
 .gitignore
+.vscode
 
 # Ignore Python artifacts
 __pycache__/
@@ -15,6 +16,7 @@ venv/
 *.db
 *.db-journal
 usda_data/ # The raw USDA data and generated DB should not be in the image
+typst/
 
 # Ignore environment variables
 .env
@@ -34,3 +36,9 @@ build/
 # Ignore project-specific files not needed in the image
 GEMINI.md
 proj_snap.sh
+seed_db.sh
+seed_usda.py
+
+
+# Ignore test data
+persistent/

@@ -13,8 +13,8 @@ def import_usda_data(db_file=None, keep_newest_upc_only=False):
     This version is optimized to reduce memory usage.
     """
     if db_file is None:
-        db_file = 'usda_data.db'
-    usda_data_dir = 'usda_data'
+        db_file = 'persistent/usda_data.db'
+    usda_data_dir = 'persistent/usda_data'
     schema_file = 'schema_usda.sql'
     CHUNK_SIZE = 50000
 
