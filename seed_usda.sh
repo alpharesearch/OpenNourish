@@ -7,7 +7,7 @@ echo "--- Starting USDA Data and Portions Seeding Process ---"
 
 # Clean up previous database and migrations for a fresh start
 echo "\n--- Cleaning up previous database and migrations ---"
-rm -f user_data.db
+rm -f persistent/user_data.db
 rm -f .dev_data_seeded
 rm -rf migrations/
 rm -rf instance/

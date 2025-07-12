@@ -182,7 +182,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--db_file', 
         type=str, 
-        default='usda_data.db', 
+        default='persistent/usda_data.db', 
         help='Path to the SQLite database file.'
     )
     parser.add_argument(

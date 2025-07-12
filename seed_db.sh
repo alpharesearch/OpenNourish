@@ -7,17 +7,17 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
-echo "--- Starting user_data.db reset procedure (preserving migrations) ---"
+echo "--- Starting persistent/user_data.db reset procedure (preserving migrations) ---"
 
 # 1. Delete existing user_data.db
 if [ -f user_data.db ]; then
-    echo "Deleting existing user_data.db..."
-    rm user_data.db
+    echo "Deleting existing persistent/user_data.db..."
+    rm persistent/user_data.db
 else
-    echo "user_data.db not found, skipping deletion."
+    echo "persistent/user_data.db not found, skipping deletion."
 fi
 
-echo "--- user_data.db reset complete! ---"
+echo "--- persistent/user_data.db reset complete! ---"
 
 # 1. Apply any pending migrations
 echo "Applying any pending database migrations..."

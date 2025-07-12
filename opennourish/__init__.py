@@ -607,8 +607,8 @@ def create_app(config_class=Config):
             db.session.commit()
             print(f"Deleted {deleted_count} existing USDA-linked portions from user_data.db.")
 
-            usda_data_dir = 'usda_data'
-            usda_db_file = os.path.join(os.getcwd(), 'usda_data.db')
+            usda_data_dir = 'persistent/usda_data'
+            usda_db_file = os.path.join(os.getcwd(), 'persistent/usda_data.db')
 
             if not os.path.exists(usda_db_file):
                 print(f"Error: USDA database not found at {usda_db_file}. Please run 'python import_usda_data.py' first.")
