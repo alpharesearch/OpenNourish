@@ -29,27 +29,43 @@
                         Carbs: {{ meal.totals.carbs|round(1) }}g |
                         Fat: {{ meal.totals.fat|round(1) }}g
                     </small>
-                    <ul class="list-unstyled mb-0 mt-2">
-                        {% for item in meal.items %}
-                            <li class="d-flex justify-content-between">
-                                <span>
-                                    {% if item.fdc_id %}
-                                        {{ item.usda_food.description }}
-                                    {% elif item.my_food_id %}
-                                        {{ item.my_food.description }}
-                                    {% elif item.recipe_id %}
-                                        {{ item.recipe.name }}
-                                    {% endif %}
-                                    - 
-                                </span>
-                                <small class="text-muted">
-                                    Cal: {{ item.nutrition_summary.calories|round(0) }} | P: {{ item.nutrition_summary.protein|round(1) }} | C: {{ item.nutrition_summary.carbs|round(1) }} | F: {{ item.nutrition_summary.fat|round(1) }}
-                                </small>
-                                - 
-                                <strong>{{ item.display_amount|round(1) }} {{ item.display_serving_type }}</strong>
-                            </li>
-                        {% endfor %}
-                    </ul>
+                    <table class="table table-sm table-striped mt-2" style="table-layout: fixed;">
+                        <colgroup>
+                            <col style="width: 70%;">
+                            <col style="width: 20%;">
+                            <col style="width: 10%;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th scope="col">Item</th>
+                                <th scope="col">Nutrition (Cal/P/C/F)</th>
+                                <th scope="col" class="text-end">Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in meal.items %}
+                                <tr>
+                                    <td class="text-truncate">
+                                        {% if item.fdc_id %}
+                                            {{ item.usda_food.description }}
+                                        {% elif item.my_food_id %}
+                                            {{ item.my_food.description }}
+                                        {% elif item.recipe_id %}
+                                            {{ item.recipe.name }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ item.nutrition_summary.calories|round(0) }} / {{ item.nutrition_summary.protein|round(1) }} / {{ item.nutrition_summary.carbs|round(1) }} / {{ item.nutrition_summary.fat|round(1) }}
+                                        </small>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>{{ item.display_amount|round(1) }}</strong> {{ item.display_serving_type }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
                 <div class="btn-group" role="group" aria-label="Meal Actions">
                     {% if meal.user_id == current_user.id %}
