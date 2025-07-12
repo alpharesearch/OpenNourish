@@ -169,18 +169,26 @@ def add_item():
     meal_name = request.form.get('meal_name')
     amount = float(request.form.get('amount', 1))
     portion_id = request.form.get('portion_id')
-    if portion_id is None:
+    if portion_id is None or portion_id == '': # Handle None or empty string
         portion_id = 'g'
 
-    amount_grams = 0
-    serving_type = 'g'
+    portion_id_fk_value = None
     if portion_id == 'g':
         amount_grams = amount
+        serving_type = 'g'
     else:
-        portion = db.session.get(UnifiedPortion, int(portion_id))
+        # Ensure portion_id is an integer before fetching
+        try:
+            portion_id_int = int(portion_id)
+        except ValueError:
+            flash('Invalid portion ID.', 'danger')
+            return redirect(request.referrer)
+
+        portion = db.session.get(UnifiedPortion, portion_id_int)
         if portion:
             amount_grams = amount * portion.gram_weight
             serving_type = portion.full_description_str
+            portion_id_fk_value = portion.id
         else:
             flash('Invalid portion selected.', 'danger')
             return redirect(request.referrer)
@@ -284,7 +292,7 @@ def add_item():
                         fdc_id=food.fdc_id,
                         amount_grams=amount_grams,
                         serving_type=serving_type,
-                        portion_id_fk=int(portion_id) if portion_id != 'g' else None
+                        portion_id_fk=portion_id_fk_value
                     )
                     db.session.add(ingredient)
                     db.session.commit()
@@ -299,7 +307,7 @@ def add_item():
                         my_food_id=food.id,
                         amount_grams=amount_grams,
                         serving_type=serving_type,
-                        portion_id_fk=int(portion_id) if portion_id != 'g' else None
+                        portion_id_fk=portion_id_fk_value
                     )
                     db.session.add(ingredient)
                     db.session.commit()
@@ -322,7 +330,7 @@ def add_item():
                     recipe_id_link=sub_recipe.id,
                     amount_grams=amount_grams,
                     serving_type=serving_type,
-                    portion_id_fk=int(portion_id) if portion_id != 'g' else None
+                    portion_id_fk=portion_id_fk_value
                 )
                 db.session.add(ingredient)
                 db.session.commit()
@@ -367,7 +375,9 @@ def add_item():
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         fdc_id=food.fdc_id,
-                        amount_grams=amount_grams
+                        amount_grams=amount_grams,
+                        serving_type=serving_type,
+                        portion_id_fk=portion_id_fk_value
                     )
                     db.session.add(meal_item)
                     db.session.commit()
@@ -380,7 +390,9 @@ def add_item():
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         my_food_id=food.id,
-                        amount_grams=amount_grams
+                        amount_grams=amount_grams,
+                        serving_type=serving_type,
+                        portion_id_fk=portion_id_fk_value
                     )
                     db.session.add(meal_item)
                     db.session.commit()
@@ -393,7 +405,9 @@ def add_item():
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         recipe_id=recipe.id,
-                        amount_grams=amount_grams
+                        amount_grams=amount_grams,
+                        serving_type=serving_type,
+                        portion_id_fk=portion_id_fk_value
                     )
                     db.session.add(meal_item)
                     db.session.commit()

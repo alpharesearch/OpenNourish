@@ -204,20 +204,30 @@ def edit_meal(meal_id):
         # Determine display_amount and selected_portion_id based on saved portion
         item.display_amount = item.amount_grams # Default to grams for display
         item.selected_portion_id = 'g' # Default to grams
+        item.display_serving_type = 'g' # Default display type
 
-        current_app.logger.debug(f"DEBUG: edit_meal - Processing item {item.id} - amount_grams: {item.amount_grams}, portion_id_fk: {item.portion_id_fk}")
         if item.portion_id_fk:
             selected_portion = db.session.get(UnifiedPortion, item.portion_id_fk)
             if selected_portion:
-                current_app.logger.debug(f"DEBUG: edit_meal - Found selected_portion: {selected_portion.full_description_str} (gram_weight: {selected_portion.gram_weight})")
                 if selected_portion.gram_weight > 0:
                     item.display_amount = item.amount_grams / selected_portion.gram_weight
                     item.selected_portion_id = selected_portion.id
+                    item.display_serving_type = selected_portion.full_description_str
                 else:
                     current_app.logger.warning(f"WARNING: edit_meal - Portion {selected_portion.id} has gram_weight 0. Cannot calculate display_amount.")
             else:
                 current_app.logger.warning(f"WARNING: edit_meal - UnifiedPortion with ID {item.portion_id_fk} not found.")
-        current_app.logger.debug(f"DEBUG: edit_meal - Final display_amount: {item.display_amount}, selected_portion_id: {item.selected_portion_id}")
+        
+        # Calculate nutrition for display
+        # Create a temporary SimpleNamespace object to pass to calculate_nutrition_for_items
+        # This mimics the structure of DailyLog or RecipeIngredient for calculation
+        temp_item_for_nutrition = SimpleNamespace(
+            fdc_id=item.fdc_id,
+            my_food_id=item.my_food_id,
+            recipe_id=item.recipe_id,
+            amount_grams=item.amount_grams
+        )
+        item.nutrition_summary = calculate_nutrition_for_items([temp_item_for_nutrition])
     return render_template('diary/edit_meal.html', meal=meal, form=form)
 
 @diary_bp.route('/my_meals/<int:meal_id>/edit_item/<int:item_id>', methods=['GET', 'POST'])
@@ -312,24 +322,45 @@ def my_meals():
         query = query.filter_by(user_id=current_user.id)
 
     meals_pagination = query.options(
-        joinedload(MyMeal.items).joinedload(MyMealItem.my_food),
-        joinedload(MyMeal.items).joinedload(MyMealItem.recipe)
+        selectinload(MyMeal.items).selectinload(MyMealItem.my_food).selectinload(MyFood.portions),
+        selectinload(MyMeal.items).selectinload(MyMealItem.recipe)
     ).paginate(page=page, per_page=per_page, error_out=False)
 
     # Collect all unique fdc_ids from all meal items across all meals
     all_usda_food_ids = {item.fdc_id for meal in meals_pagination.items for item in meal.items if item.fdc_id}
 
-    # Fetch all relevant USDA Food objects in one query, eagerly loading portions and measure units
+    # Fetch all relevant USDA Food objects in one query
     usda_foods_map = {}
     if all_usda_food_ids:
         usda_foods = Food.query.filter(Food.fdc_id.in_(all_usda_food_ids)).all()
         usda_foods_map = {food.fdc_id: food for food in usda_foods}
 
+    # Process each meal to calculate display values and nutrition
     for meal in meals_pagination.items:
         for item in meal.items:
             if item.fdc_id:
                 # Attach the pre-loaded USDA food object to the meal item
                 item.usda_food = usda_foods_map.get(item.fdc_id)
+
+            # Determine display_amount and display_serving_type based on saved portion
+            item.display_amount = item.amount_grams  # Default to grams
+            item.display_serving_type = 'g'  # Default display type
+
+            if item.portion_id_fk:
+                selected_portion = db.session.get(UnifiedPortion, item.portion_id_fk)
+                if selected_portion and selected_portion.gram_weight > 0:
+                    item.display_amount = item.amount_grams / selected_portion.gram_weight
+                    item.display_serving_type = selected_portion.full_description_str
+            
+            # Calculate nutrition for display for each item
+            temp_item_for_nutrition = SimpleNamespace(
+                fdc_id=item.fdc_id,
+                my_food_id=item.my_food_id,
+                recipe_id=item.recipe_id,
+                amount_grams=item.amount_grams
+            )
+            item.nutrition_summary = calculate_nutrition_for_items([temp_item_for_nutrition])
+
         # Calculate total nutrition for the meal
         meal.totals = calculate_nutrition_for_items(meal.items)
 

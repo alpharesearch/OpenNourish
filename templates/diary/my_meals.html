@@ -29,17 +29,24 @@
                         Carbs: {{ meal.totals.carbs|round(1) }}g |
                         Fat: {{ meal.totals.fat|round(1) }}g
                     </small>
-                    <ul class="list-unstyled mb-0">
+                    <ul class="list-unstyled mb-0 mt-2">
                         {% for item in meal.items %}
-                            <li>
-                                {% if item.fdc_id %}
-                                    {{ item.usda_food.description }}
-                                {% elif item.my_food_id %}
-                                    {{ item.my_food.description }}
-                                {% elif item.recipe_id %}
-                                    {{ item.recipe.name }}
-                                {% endif %}
-                                - {{ item.amount_grams }}g
+                            <li class="d-flex justify-content-between">
+                                <span>
+                                    {% if item.fdc_id %}
+                                        {{ item.usda_food.description }}
+                                    {% elif item.my_food_id %}
+                                        {{ item.my_food.description }}
+                                    {% elif item.recipe_id %}
+                                        {{ item.recipe.name }}
+                                    {% endif %}
+                                    - 
+                                </span>
+                                <small class="text-muted">
+                                    Cal: {{ item.nutrition_summary.calories|round(0) }} | P: {{ item.nutrition_summary.protein|round(1) }} | C: {{ item.nutrition_summary.carbs|round(1) }} | F: {{ item.nutrition_summary.fat|round(1) }}
+                                </small>
+                                - 
+                                <strong>{{ item.display_amount|round(1) }} {{ item.display_serving_type }}</strong>
                             </li>
                         {% endfor %}
                     </ul>
