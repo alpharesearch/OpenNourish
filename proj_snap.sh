@@ -16,6 +16,7 @@ find . -type f \
     -not -path "./certs/*" \
     -not -path "./.vscode/*" \
     -not -path "./persistent/*" \
+    -not -path "./static/*" \
     -not -name "*.db" \
     -not -name "*.db-journal" \
     -not -name "*.pyc" \

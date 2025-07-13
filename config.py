@@ -8,7 +8,9 @@ persistent_dir = os.path.join(basedir, 'persistent')
 load_dotenv(os.path.join(basedir, '.env'))
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise ValueError("No SECRET_KEY set for Flask application. Please set it in your .env file or environment variables.")
 
     @property
     def ALLOW_REGISTRATION(self):
