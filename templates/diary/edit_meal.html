@@ -44,9 +44,9 @@
             <div class="col-md-7">
                 <div class="d-flex justify-content-end align-items-center">
                     <form method="POST" action="{{ url_for('diary.update_meal_item', item_id=item.id) }}" class="d-flex align-items-center">
-                        <input type="number" name="quantity" value="{{ item.display_amount|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
+                        <input type="number" name="quantity" value="{{ item.display_amount|round(2) }}" class="form-control form-control-sm" step="any" required>
                         <span class="ms-2 me-2">{{ item.display_serving_type }}</span>
-                        <select name="portion_id" class="form-select form-select-sm" style="width: 180px;">
+                        <select name="portion_id" class="form-select form-select-sm">
                             {% for portion in item.available_portions %}
                                 <option value="{{ portion.id }}" {% if item.selected_portion_id == portion.id %}selected{% endif %}>
                                     {{ portion.full_description_str }}

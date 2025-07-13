@@ -138,8 +138,8 @@
                                         <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
                                         <input type="hidden" name="food_type" value="my_food">
                                         <input type="hidden" name="food_id" value="{{ food.id }}">
-                                        <input type="number" name="amount" class="form-control form-control-sm" value="1" style="width: 70px;">
-                                    <select name="portion_id" class="form-select form-select-sm" style="width: 70px;">
+                                        <input type="number" name="amount" class="form-control form-control-sm" value="1">
+                                    <select name="portion_id" class="form-select form-select-sm">
                                         {% for portion in food.portions %}
                                             <option value="{{ portion.id }}">{{ portion.full_description_str}}</option>
                                         {% endfor %}
@@ -222,8 +222,8 @@
                                     <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
                                     <input type="hidden" name="food_type" value="recipe">
                                     <input type="hidden" name="food_id" value="{{ recipe.id }}">
-                                    <input type="number" name="amount" class="form-control form-control-sm" value="1" style="width: 70px;">
-                                    <select name="portion_id" class="form-select form-select-sm" style="width: 70px;">
+                                    <input type="number" name="amount" class="form-control form-control-sm" value="1">
+                                    <select name="portion_id" class="form-select form-select-sm">
                                         {% for portion in recipe.portions %}
                                             <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
                                         {% endfor %}
@@ -271,8 +271,8 @@
                                     <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
                                     <input type="hidden" name="food_type" value="usda">
                                     <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
-                                    <input type="number" name="amount" class="form-control form-control-sm" value="1" style="width: 70px;">
-                                    <select name="portion_id" class="form-select form-select-sm" style="width: 70px;">
+                                    <input type="number" name="amount" class="form-control form-control-sm" value="1">
+                                    <select name="portion_id" class="form-select form-select-sm">
                                             {% for portion in food.portions %}
                                                 <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
                                             {% endfor %}
@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <input type="hidden" name="food_type" value="${food.type}">
                         <input type="hidden" name="food_id" value="${food.type === 'usda' ? food.fdc_id : food.id}">
                         
-                        <input type="number" name="amount" class="form-control form-control-sm" value="100" style="width: 80px;">
+                        <input type="number" name="amount" class="form-control form-control-sm" value="100">
                         <select name="portion_id" class="form-select form-select-sm mx-2">
                             ${portionsOptions}
                         </select>

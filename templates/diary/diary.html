@@ -103,8 +103,8 @@
                         {% if not is_read_only %}
                         <div class="d-flex justify-content-end align-items-center">
                             <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}" class="d-flex align-items-center">
-                                <input type="number" name="amount" value="{{ item.amount|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
-                                <select name="portion_id" class="form-select form-select-sm ms-2" style="width: auto; max-width: 200px;">
+                                <input type="number" name="amount" value="{{ item.amount|round(2) }}" class="form-control form-control-sm" step="any" required>
+                                <select name="portion_id" class="form-select form-select-sm ms-2">
                                         {% for portion in item.portions %}
                                             <option value="{{ portion.id }}" {% if item.selected_portion_id == portion.id %}selected{% endif %}>
                                                 {{ portion.full_description_str }}

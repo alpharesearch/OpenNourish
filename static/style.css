@@ -27,3 +27,12 @@ a {
     flex: 1; /* Allows each form container to grow and shrink */
     min-width: 300px; /* Ensures forms don't get too small */
 }
+
+input[name="amount"],
+input[name="quantity"] {
+  width: 60px;
+}
+
+select[name="portion_id"] {
+  width: 80px;
+}

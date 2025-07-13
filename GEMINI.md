@@ -43,22 +43,7 @@ To avoid code duplication, the application uses a **single, unified model (`Unif
 - **Data Seeding:** The static USDA portions are seeded into this table using the `flask seed-usda-portions` command. All user-created portions (for MyFoods and Recipes) are added directly by the application logic.
 - **Directive:** Any new feature that requires portion data **must** use and interact with this single, centralized model.
 
-## 6. Code Style and Project Structure
-- **Python:** Follow **PEP 8** for all Python code.
-- **Application Factory:** The project uses the application factory pattern (`create_app` function). Blueprints are registered within this factory.
-- **Blueprints:** All features are organized into Flask Blueprints within the `opennourish/` directory (e.g., `opennourish/auth`, `opennourish/tracking`).
-- **Configuration:** Store application configuration (like `SECRET_KEY`) in a `config.py` file.
-- **Templates & Static Files:** Templates are in `templates/`, and static files (CSS, JS) are in `static/`.
 
-## 7. Design Directives & UI Conventions
-To maintain a consistent and professional look and feel, all generated HTML templates should adhere to these Bootstrap 5 conventions.
-- **Primary Actions (Submit, Save, Create):** Buttons for primary actions should always use the main theme color.
-  - **Class:** `btn btn-primary`
-- **Secondary Actions (Cancel, Go Back):** Buttons for secondary or less important actions.
-  - **Class:** `btn btn-secondary`
-- **Destructive Actions (Delete, Remove):** Buttons that trigger a deletion or other irreversible action must be clearly marked in red.
-  - **Class:** `btn btn-danger`
-- **Flash Messages:** User feedback and notifications must be handled using Flask's flashing system with categories (`'success'`, `'danger'`, `'warning'`, `'info'`). All flashed messages should be rendered in `base.html` using the standard Bootstrap Alert component structure.
 
 ## 6. Code Style and Project Structure
 - **Python:** Follow **PEP 8** for all Python code.
@@ -89,6 +74,11 @@ To maintain a consistent and professional look and feel, all generated HTML temp
 - **Informational Links/Buttons:** Use `btn btn-outline-info` for non-critical actions like "View Details". Use `btn btn-outline-primary` for "Edit" actions that lead to a primary editing page.
   - **Class:** `btn btn-outline-info` or `btn btn-outline-primary`
 - **Forms:** All forms should be rendered cleanly. Each form field should have a proper `<label>` and be wrapped in a `div class="mb-3"` for correct spacing. Validation errors should be displayed prominently.
+  - **Standardized Input Field Widths:** To ensure a consistent and clean layout in forms, especially where multiple inputs appear on a single line, specific input fields should have a standardized width. These are defined in `static/style.css`.
+      - **Amount/Quantity Fields:** All numeric input fields for amounts or quantities should have a width of `60px`.
+      - **CSS Selector:** `input[name="amount"], input[name="quantity"]`
+    - **Portion Select Dropdowns:** All dropdowns for selecting a portion or serving size should have a width of `80px`. The dropdown will expand to show the full text when opened.
+      - **CSS Selector:** `select[name="portion_id"]`
   - **Separate Forms for Actions:** For clarity and to prevent unintended side effects, each distinct action (e.g., saving data, deleting a record) should be handled by its own `<form>` element. Do not nest forms or use a single form for multiple, unrelated actions. This ensures that submitting one action does not inadvertently trigger another, and simplifies backend processing.
 - **Tables:** All tables should use Bootstrap's `table-striped` class for improved readability.
   - **Class:** `table table-striped`
