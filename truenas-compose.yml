@@ -26,8 +26,16 @@ services:
     ports:
       - "18080:80"
       - "18443:443"
+    environment:
+      # These variables tell the entrypoint script where to find the real certs.
+      # Users can change these values if their certs are named differently.
+      # Leave these blank or unset them to use the self-signed fallback.
+      REAL_CERT_PATH: /etc/certificates/LEProduction.crt
+      REAL_KEY_PATH: /etc/certificates/LEProduction.key
     volumes:
-      # Nginx still needs access to the persistent data to get the SSL certificates
-      - /mnt/data-pool/opennourish:/data:ro
+      # 1. Mount the TrueNAS certificates directory so the container can see it.
+      - /etc/certificates:/etc/certificates:ro
+      # 2. Mount a persistent directory for Nginx to store its fallback certs.
+      - /mnt/data-pool/opennourish/nginx_certs:/etc/nginx/certs
     depends_on:
       - opennourish-app

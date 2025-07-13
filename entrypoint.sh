@@ -5,17 +5,6 @@ set -e
 PERSISTENT_DIR="/app/persistent"
 mkdir -p "$PERSISTENT_DIR"
 
-# Step 0: Generate self-signed certificates if not found
-CERT_DIR="$PERSISTENT_DIR/certs"
-if [ ! -f "$CERT_DIR/fullchain.pem" ] || [ ! -f "$CERT_DIR/privkey.pem" ]; then
-  echo "--- Generating self-signed certificates... ---"
-  mkdir -p "$CERT_DIR"
-  openssl req -x509 -newkey rsa:4096 -nodes -out "$CERT_DIR/fullchain.pem" -keyout "$CERT_DIR/privkey.pem" -days 365 -subj "/CN=localhost"
-  echo "--- Certificates generated. ---"
-else
-  echo "--- Certificates found. Skipping generation. ---"
-fi
-
 # Paths for data now live within the persistent directory
 USDA_DB_PATH="$PERSISTENT_DIR/usda_data.db"
 USDA_CSV_DIR="$PERSISTENT_DIR/usda_data"

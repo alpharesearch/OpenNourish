@@ -10,12 +10,13 @@ services:
 
   nginx:
     build:
-      context: ./nginx # <-- Build the image from the nginx directory
+      context: ./nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      # The config volume is GONE, but the data volume for certs REMAINS
-      - ./persistent:/data:ro
+      # This now correctly maps a sub-directory for the self-signed certs,
+      # matching the volume mount in the TrueNAS compose file.
+      - ./persistent/nginx_certs:/etc/nginx/certs
     depends_on:
       - opennourish-app
