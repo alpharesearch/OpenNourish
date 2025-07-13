@@ -371,6 +371,14 @@ def create_app(config_class=Config):
                             continue # Skip if no suitable item found
 
                         if ingredient_food_item:
+                            # Ensure a 1-gram portion exists for USDA foods
+                            if isinstance(ingredient_food_item, Food):
+                                gram_portion = UnifiedPortion.query.filter_by(fdc_id=ingredient_food_item.fdc_id, gram_weight=1.0).first()
+                                if not gram_portion:
+                                    gram_portion = UnifiedPortion(fdc_id=ingredient_food_item.fdc_id, amount=1.0, measure_unit_description="g", gram_weight=1.0)
+                                    db.session.add(gram_portion)
+                                    db.session.flush() # Ensure it gets an ID
+
                             available_portions = []
                             if isinstance(ingredient_food_item, Food):
                                 available_portions = db.session.query(UnifiedPortion).filter_by(fdc_id=ingredient_food_item.fdc_id).all()
@@ -381,7 +389,7 @@ def create_app(config_class=Config):
                                 selected_portion = random.choice(available_portions)
                                 amount_grams = random.uniform(0.5, 3.0) * selected_portion.gram_weight # Random quantity of the selected portion
                             else:
-                                amount_grams = random.uniform(10, 300) # Fallback to random grams if no portions
+                                amount_grams = random.uniform(10, 300) # Fallback to random grams if no portions""
 
                             ingredient = RecipeIngredient(
                                 recipe_id=r.id,
@@ -555,6 +563,14 @@ def create_app(config_class=Config):
                     amount_grams = random.uniform(50, 500) # Default to random grams
 
                     if food_item_for_portions:
+                        # Ensure a 1-gram portion exists for USDA foods
+                        if isinstance(food_item_for_portions, Food):
+                            gram_portion = UnifiedPortion.query.filter_by(fdc_id=food_item_for_portions.fdc_id, gram_weight=1.0).first()
+                            if not gram_portion:
+                                gram_portion = UnifiedPortion(fdc_id=food_item_for_portions.fdc_id, amount=1.0, measure_unit_description="g", gram_weight=1.0)
+                                db.session.add(gram_portion)
+                                db.session.flush() # Ensure it gets an ID
+
                         available_portions = []
                         if isinstance(food_item_for_portions, Food):
                             # For USDA Food, query UnifiedPortion directly
@@ -601,11 +617,10 @@ def create_app(config_class=Config):
     def seed_usda_portions_command():
         """
         Seeds USDA food portions from food_portion.csv into the unified portions table.
-        Also ensures every USDA food item has a default 1-gram portion for weight-based logging.
+        This command only seeds the portions explicitly defined in the USDA data.
         """
         import csv
         import os
-        import sqlite3
 
         with app.app_context():
             print("Seeding USDA portions...")
@@ -616,18 +631,15 @@ def create_app(config_class=Config):
             print(f"Deleted {deleted_count} existing USDA-linked portions from user_data.db.")
 
             usda_data_dir = 'persistent/usda_data'
-            usda_db_file = os.path.join(os.getcwd(), 'persistent/usda_data.db')
+            measure_unit_csv_path = os.path.join(usda_data_dir, 'measure_unit.csv')
+            food_portion_csv_path = os.path.join(usda_data_dir, 'food_portion.csv')
 
-            if not os.path.exists(usda_db_file):
-                print(f"Error: USDA database not found at {usda_db_file}. Please run 'python import_usda_data.py' first.")
+            if not os.path.exists(measure_unit_csv_path) or not os.path.exists(food_portion_csv_path):
+                print(f"Error: USDA data files (measure_unit.csv, food_portion.csv) not found in {usda_data_dir}.")
                 return
 
             # 2. Load measure units from CSV for efficient lookup.
             measure_units = {}
-            measure_unit_csv_path = os.path.join(usda_data_dir, 'measure_unit.csv')
-            if not os.path.exists(measure_unit_csv_path):
-                print(f"Error: measure_unit.csv not found at {measure_unit_csv_path}.")
-                return
             with open(measure_unit_csv_path, 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 next(reader)  # Skip header
@@ -637,66 +649,23 @@ def create_app(config_class=Config):
 
             # 3. Load all portions from the USDA's food_portion.csv.
             portions_to_add = []
-            fdcs_with_gram_portion = set()
-            food_portion_csv_path = os.path.join(usda_data_dir, 'food_portion.csv')
-
-            if not os.path.exists(food_portion_csv_path):
-                print(f"Error: food_portion.csv not found at {food_portion_csv_path}.")
-                return
-
             with open(food_portion_csv_path, 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 next(reader)  # Skip header
                 for row in reader:
-                    fdc_id = int(row[1])
-                    gram_weight = float(row[7])
-                    measure_unit_id = row[4]
-                    
-                    # Check if this portion is a 1-gram portion.
-                    unit_name = measure_units.get(measure_unit_id, "").lower()
-                    if gram_weight == 1.0 and (unit_name == 'g' or unit_name == 'gram'):
-                        fdcs_with_gram_portion.add(fdc_id)
-
                     portion = UnifiedPortion(
-                        fdc_id=fdc_id,
+                        fdc_id=int(row[1]),
                         seq_num=int(row[2]) if row[2] else None,
                         amount=float(row[3]) if row[3] else None,
-                        measure_unit_description=measure_units.get(measure_unit_id, "") if measure_unit_id != '9999' else "",
+                        measure_unit_description=measure_units.get(row[4], "") if row[4] != '9999' else "",
                         portion_description=row[5],
                         modifier=row[6],
-                        gram_weight=gram_weight
+                        gram_weight=float(row[7])
                     )
                     portions_to_add.append(portion)
             print(f"Loaded {len(portions_to_add)} portions from food_portion.csv.")
 
-            # 4. Get all FDC IDs from the main food table in usda_data.db.
-            print("Connecting to usda_data.db to find all food items...")
-            # Use the SQLAlchemy engine for the 'usda' bind
-            usda_engine = db.get_engine(bind='usda')
-            with usda_engine.connect() as connection:
-                result = connection.execute(text("SELECT fdc_id FROM foods"))
-                all_usda_fdc_ids = {row[0] for row in result}
-            print(f"Found {len(all_usda_fdc_ids)} unique food items in the USDA database.")
-
-            # 5. Ensure every USDA food has a 1-gram portion.
-            new_gram_portions_added = 0
-            for fdc_id in all_usda_fdc_ids:
-                if fdc_id not in fdcs_with_gram_portion:
-                    gram_portion = UnifiedPortion(
-                        fdc_id=fdc_id,
-                        amount=1.0,
-                        measure_unit_description="g",
-                        portion_description="",
-                        modifier="",
-                        gram_weight=1.0
-                    )
-                    portions_to_add.append(gram_portion)
-                    new_gram_portions_added += 1
-            
-            if new_gram_portions_added > 0:
-                print(f"Adding {new_gram_portions_added} default 1-gram portions for foods that were missing one.")
-
-            # 6. Add all collected portions to the database.
+            # 4. Add all collected portions to the database.
             if portions_to_add:
                 db.session.add_all(portions_to_add)
                 db.session.commit()

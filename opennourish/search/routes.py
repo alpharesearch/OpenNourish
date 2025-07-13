@@ -313,19 +313,37 @@ def add_item():
     log_date_str = request.form.get('log_date')
     meal_name = request.form.get('meal_name')
     amount = float(request.form.get('amount', 1))
-    portion_id = request.form.get('portion_id')
+    portion_id_str = request.form.get('portion_id')
 
-    if not portion_id:
+    if not portion_id_str:
         flash('Portion ID is required.', 'danger')
         return redirect(request.referrer)
 
-    try:
-        portion_id_int = int(portion_id)
-    except (ValueError, TypeError):
-        flash('Invalid portion ID.', 'danger')
-        return redirect(request.referrer)
+    portion = None
+    # Handle the special 'g' portion for USDA foods
+    if food_type == 'usda' and portion_id_str == 'g':
+        # Check if a 1-gram portion already exists
+        portion = UnifiedPortion.query.filter_by(fdc_id=food_id, gram_weight=1.0).first()
+        if not portion:
+            # Create it if it doesn't exist
+            portion = UnifiedPortion(
+                fdc_id=food_id,
+                amount=1.0,
+                measure_unit_description="g",
+                portion_description="",
+                modifier="",
+                gram_weight=1.0
+            )
+            db.session.add(portion)
+            db.session.commit()
+    else:
+        try:
+            portion_id_int = int(portion_id_str)
+            portion = db.session.get(UnifiedPortion, portion_id_int)
+        except (ValueError, TypeError):
+            flash('Invalid portion ID.', 'danger')
+            return redirect(request.referrer)
 
-    portion = db.session.get(UnifiedPortion, portion_id_int)
     if not portion:
         flash('Invalid portion selected.', 'danger')
         return redirect(request.referrer)

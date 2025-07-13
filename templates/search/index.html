@@ -273,6 +273,7 @@
                                     <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
                                     <input type="number" name="amount" class="form-control form-control-sm" value="1" style="width: 70px;">
                                     <select name="portion_id" class="form-select form-select-sm" style="width: 70px;">
+                                        <option value="g">g</option>
                                         {% for portion in food.portions %}
                                             <option value="{{ portion.id }}">{{ portion.full_description_str}}</option>
                                         {% endfor %}
