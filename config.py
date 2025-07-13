@@ -1,4 +1,5 @@
 import os
+import secrets
 from dotenv import load_dotenv
 import json
 
@@ -7,8 +8,37 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 persistent_dir = os.path.join(basedir, 'persistent')
 load_dotenv(os.path.join(basedir, '.env'))
 
+def get_or_create_secret_key(persistent_path):
+    """
+    Checks for a secret key in the environment, then a file.
+    If neither exists, generates and saves a new one.
+    """
+    # 1. Check environment variable first (highest priority)
+    env_key = os.environ.get('SECRET_KEY')
+    if env_key:
+        print("INFO: Loading SECRET_KEY from environment variable.")
+        return env_key
+    
+    # Ensure the persistent directory exists
+    os.makedirs(persistent_path, exist_ok=True)
+    key_file_path = os.path.join(persistent_path, 'secret_key.txt')
+
+    # 2. Check for the key file
+    if os.path.exists(key_file_path):
+        print(f"INFO: Loading SECRET_KEY from {key_file_path}")
+        with open(key_file_path, 'r') as f:
+            return f.read().strip()
+            
+    # 3. If no key found, generate, save, and return a new one
+    else:
+        print(f"INFO: No SECRET_KEY found. Generating and saving a new one to {key_file_path}")
+        new_key = secrets.token_hex(24) # 48-character hex string
+        with open(key_file_path, 'w') as f:
+            f.write(new_key)
+        return new_key
+
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY')
+    SECRET_KEY = get_or_create_secret_key(persistent_dir)
     if not SECRET_KEY:
         raise ValueError("No SECRET_KEY set for Flask application. Please set it in your .env file or environment variables.")
 

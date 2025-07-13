@@ -12,8 +12,8 @@
 #    - SECRET_KEY (REQUIRED: your Flask application secret key)
 #    - TRUENAS_APP_PATH (REQUIRED: The base path on your TrueNAS server for app data, e.g., /mnt/data-pool/opennourish)
 #    - SEED_DEV_DATA (OPTIONAL: true/false, defaults to false if not set)
-#    - REAL_CERT_PATH (OPTIONAL: for Nginx SSL, e.g., /etc/certificates/LEProduction.crt)
-#    - REAL_KEY_PATH (OPTIONAL: for Nginx SSL, e.g., /etc/certificates/LEProduction.key)
+#    - TRUENAS_REAL_CERT_PATH (OPTIONAL: for Nginx SSL, e.g., /etc/certificates/LEProduction.crt)
+#    - TRUENAS_REAL_KEY_PATH (OPTIONAL: for Nginx SSL, e.g., /etc/certificates/LEProduction.key)
 
 # Load environment variables from .env file if it exists
 if [ -f .env ]; then
@@ -43,9 +43,9 @@ if [ -z "$TRUENAS_APP_PATH_VAR" ]; then
     exit 1
 fi
 
-# Use provided cert paths or default to empty strings if not set
-REAL_CERT_PATH_VAR=${REAL_CERT_PATH:-}
-REAL_KEY_PATH_VAR=${REAL_KEY_PATH:-}
+# Use provided cert paths or default to empty strings if not set, in this case private certificates will be generated.
+REAL_CERT_PATH_VAR=${TRUENAS_REAL_CERT_PATH:-}
+REAL_KEY_PATH_VAR=${TRUENAS_REAL_KEY_PATH:-}
 
 # Use provided SEED_DEV_DATA or default to false if not set
 SEED_DEV_DATA_VAR=${SEED_DEV_DATA:-false}
