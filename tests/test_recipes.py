@@ -175,17 +175,21 @@ def test_add_ingredient_to_recipe(auth_client_with_user):
         db.session.commit()
         recipe_id = recipe.id
 
-        # Create mock USDA food
+        # Create mock USDA food and its 1-gram portion
         usda_food = Food(fdc_id=30001, description='USDA Ingredient')
         db.session.add(usda_food)
+        gram_portion = UnifiedPortion(fdc_id=30001, portion_description='gram', gram_weight=1.0)
+        db.session.add(gram_portion)
         db.session.commit()
+        gram_portion_id = gram_portion.id
 
-    response =     client.post(f'/search/add_item', data={
+    response = client.post(f'/search/add_item', data={
             'food_id': 30001,
             'food_type': 'usda',
             'target': 'recipe',
             'recipe_id': recipe_id,
-            'amount': 150
+            'amount': 150,
+            'portion_id': gram_portion_id
         }, follow_redirects=True)
     assert response.status_code == 200
     assert b'USDA Ingredient added to recipe Test Add Ingredient.' in response.data
@@ -235,6 +239,12 @@ def test_add_meal_to_recipe_as_ingredient(auth_client_with_user):
         db.session.commit()
         meal_id = meal.id
 
+        # Create a dummy portion for the meal, as the form requires it, even though it's not used for expansion
+        gram_portion = UnifiedPortion(my_food_id=None, portion_description='gram', gram_weight=1.0)
+        db.session.add(gram_portion)
+        db.session.commit()
+        gram_portion_id = gram_portion.id
+
         meal_item_usda = MyMealItem(my_meal_id=meal.id, fdc_id=60001, amount_grams=100)
 
         # Create a MyFood object for the test
@@ -251,7 +261,8 @@ def test_add_meal_to_recipe_as_ingredient(auth_client_with_user):
             'food_type': 'my_meal',
             'target': 'recipe',
             'recipe_id': recipe_id,
-            'amount': 1 # Assuming 1 serving of the meal
+            'amount': 1, # Assuming 1 serving of the meal
+            'portion_id': gram_portion_id # Provide a valid portion ID
         })
         assert response.status_code == 302 # Check for redirect
 
@@ -366,13 +377,20 @@ def test_add_recipe_as_ingredient_and_prevent_self_nesting(auth_client_with_user
         db.session.add_all([recipe_main, recipe_sub])
         db.session.commit()
 
+        # Add the mandatory 1-gram portion for the sub-recipe
+        gram_portion = UnifiedPortion(recipe_id=recipe_sub.id, portion_description='gram', gram_weight=1.0)
+        db.session.add(gram_portion)
+        db.session.commit()
+        gram_portion_id = gram_portion.id
+
         # Add Sub Recipe as an ingredient to Main Recipe
         response = client.post(f'/search/add_item', data={
             'food_id': recipe_sub.id,
             'food_type': 'recipe',
             'target': 'recipe',
             'recipe_id': recipe_main.id,
-            'amount': 100 # grams
+            'amount': 100, # grams
+            'portion_id': gram_portion_id
         }, follow_redirects=True)
         assert response.status_code == 200
         assert b'Sub Recipe added as ingredient to recipe Main Recipe.' in response.data
@@ -389,7 +407,8 @@ def test_add_recipe_as_ingredient_and_prevent_self_nesting(auth_client_with_user
             'food_type': 'recipe',
             'target': 'recipe',
             'recipe_id': recipe_main.id,
-            'amount': 50 # grams
+            'amount': 50, # grams
+            'portion_id': gram_portion_id # Re-use the portion, it doesn't matter for this test
         }, follow_redirects=True)
         assert response.status_code == 200
         assert b'A recipe cannot be an ingredient of itself.' in response.data # This is the expected flash message for self-nesting prevention

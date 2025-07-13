@@ -194,6 +194,7 @@ def create_app(config_class=Config):
                 num_my_foods = random.randint(20, 30)
                 user_my_foods = []
                 for _ in range(num_my_foods):
+                    my_food = None
                     if random.random() < 0.5 and usda_fdc_ids: # 50% chance to create a USDA-sourced MyFood
                         fdc_id = random.choice(usda_fdc_ids)
                         usda_food = db.session.query(Food).options(
@@ -222,26 +223,6 @@ def create_app(config_class=Config):
                                 iron_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1089), 0.0),
                                 potassium_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1092), 0.0)
                             )
-                            db.session.add(my_food)
-                            user_my_foods.append(my_food)
-                            my_foods_created += 1
-                            db.session.flush() # To get my_food.id for portions
-
-                            # Add diverse portions for USDA-sourced MyFood
-                            portion_types = [
-                                ("cup", random.uniform(100, 250)),
-                                ("serving", random.uniform(50, 150)),
-                                ("piece", random.uniform(10, 50))
-                            ]
-                            for desc, weight in portion_types:
-                                my_portion = UnifiedPortion(
-                                    my_food_id=my_food.id,
-                                    portion_description=desc,
-                                    gram_weight=weight,
-                                    amount=1.0,
-                                    measure_unit_description=desc,
-                                )
-                                db.session.add(my_portion)
                     else: # Create a purely custom MyFood
                         my_food = MyFood(
                             user_id=user.id,
@@ -252,12 +233,25 @@ def create_app(config_class=Config):
                             carbs_per_100g=random.uniform(1, 80),
                             fat_per_100g=random.uniform(1, 50)
                         )
+                    
+                    if my_food:
                         db.session.add(my_food)
                         user_my_foods.append(my_food)
                         my_foods_created += 1
                         db.session.flush()  # To get my_food.id for portions
 
-                        # Add diverse portions for custom MyFood
+                        # Add the mandatory 1-gram portion
+                        gram_portion = UnifiedPortion(
+                            my_food_id=my_food.id,
+                            amount=1.0,
+                            measure_unit_description="g",
+                            portion_description="gram",
+                            modifier="g",
+                            gram_weight=1.0
+                        )
+                        db.session.add(gram_portion)
+
+                        # Add other diverse portions
                         portion_types = [
                             ("slice", random.uniform(15, 40)),
                             ("bowl", random.uniform(150, 300)),
@@ -331,8 +325,19 @@ def create_app(config_class=Config):
                     )
                     db.session.add(recipe)
                     user_recipes.append(recipe)
-                recipes_created += num_recipes
-                db.session.flush()  # To get recipe.id for ingredients and portions
+                    recipes_created += 1
+                    db.session.flush()  # To get recipe.id for ingredients and portions
+
+                    # Add the mandatory 1-gram portion
+                    gram_portion = UnifiedPortion(
+                        recipe_id=recipe.id,
+                        amount=1.0,
+                        measure_unit_description="g",
+                        portion_description="gram",
+                        modifier="g",
+                        gram_weight=1.0
+                    )
+                    db.session.add(gram_portion)
 
                 # RecipeIngredients
                 for r in user_recipes:

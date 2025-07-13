@@ -50,6 +50,19 @@ def new_recipe():
             is_public=form.is_public.data
         )
         db.session.add(new_recipe)
+        db.session.flush()  # Flush to get the new_recipe.id
+
+        # Create the default 1-gram portion
+        gram_portion = UnifiedPortion(
+            recipe_id=new_recipe.id,
+            amount=1.0,
+            measure_unit_description="g",
+            portion_description="gram",
+            modifier="g",
+            gram_weight=1.0
+        )
+        db.session.add(gram_portion)
+
         db.session.commit()
         flash('Recipe created successfully. Now add ingredients.', 'success')
         return redirect(url_for('recipes.edit_recipe', recipe_id=new_recipe.id))
@@ -192,31 +205,24 @@ def update_ingredient(ingredient_id):
         return redirect(url_for('recipes.recipes'))
 
     amount = request.form.get('amount', type=float)
-    portion_id = request.form.get('portion_id')
+    portion_id = request.form.get('portion_id', type=int)
 
     if amount is None or amount <= 0:
         flash('Amount must be a positive number.', 'danger')
         return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
-    gram_weight = 0
-    portion_obj = None
-    if portion_id == 'g':
-        gram_weight = 1 # 1 unit = 1 gram
-        serving_type = 'g'
-        portion_id_fk = None
-    else:
-        portion_obj = db.session.get(UnifiedPortion, int(portion_id))
-        if portion_obj:
-            gram_weight = portion_obj.gram_weight
-            serving_type = portion_obj.full_description_str
-            portion_id_fk = portion_obj.id
-        else:
-            flash('Selected portion not found.', 'danger')
-            return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+    if portion_id is None:
+        flash('Portion is required.', 'danger')
+        return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
 
-    ingredient.amount_grams = amount * gram_weight
-    ingredient.serving_type = serving_type
-    ingredient.portion_id_fk = portion_id_fk
+    portion_obj = db.session.get(UnifiedPortion, portion_id)
+    if not portion_obj:
+        flash('Selected portion not found.', 'danger')
+        return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
+
+    ingredient.amount_grams = amount * portion_obj.gram_weight
+    ingredient.serving_type = portion_obj.full_description_str
+    ingredient.portion_id_fk = portion_obj.id
     db.session.commit()
     flash('Ingredient updated successfully.', 'success')
     return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))

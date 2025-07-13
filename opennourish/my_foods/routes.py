@@ -54,6 +54,19 @@ def new_my_food():
             potassium_mg_per_100g=form.potassium_mg_per_100g.data
         )
         db.session.add(my_food)
+        db.session.flush()  # Flush to get the my_food.id for the portion
+
+        # Create the default 1-gram portion
+        gram_portion = UnifiedPortion(
+            my_food_id=my_food.id,
+            amount=1.0,
+            measure_unit_description="g",
+            portion_description="gram",
+            modifier="g",
+            gram_weight=1.0
+        )
+        db.session.add(gram_portion)
+        
         db.session.commit()
         flash('Custom food added successfully!', 'success')
         return redirect(url_for('my_foods.my_foods'))

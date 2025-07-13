@@ -1,5 +1,5 @@
 import pytest
-from models import db, Food, MyFood, Recipe, MyMeal, User, DailyLog, RecipeIngredient, MyMealItem, Nutrient, FoodNutrient
+from models import db, Food, MyFood, Recipe, MyMeal, User, DailyLog, RecipeIngredient, MyMealItem, Nutrient, FoodNutrient, UnifiedPortion
 from datetime import date
 
 @pytest.fixture
@@ -89,21 +89,29 @@ def test_add_item_to_diary(auth_client_with_data):
         user = User.query.filter_by(username='testuser').first()
         usda_food = Food.query.filter_by(description='Test USDA Food').first()
         log_date_str = date.today().isoformat()
+        # Add the mandatory 1-gram portion for the test
+        gram_portion = UnifiedPortion(fdc_id=usda_food.fdc_id, portion_description='gram', gram_weight=1.0)
+        db.session.add(gram_portion)
+        db.session.commit()
+        gram_portion_id = gram_portion.id
+        usda_food_id = usda_food.fdc_id
+        user_id = user.id
 
     # Add USDA Food to diary
     response = auth_client.post('/search/add_item', data={
-        'food_id': usda_food.fdc_id,
+        'food_id': usda_food_id,
         'food_type': 'usda',
         'target': 'diary',
         'log_date': log_date_str,
         'meal_name': 'Breakfast',
-        'amount': 150
+        'amount': 150,
+        'portion_id': gram_portion_id
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Test USDA Food added to your diary.' in response.data
 
     with auth_client.application.app_context():
-        daily_log = DailyLog.query.filter_by(user_id=user.id, fdc_id=usda_food.fdc_id, log_date=date.today()).first()
+        daily_log = DailyLog.query.filter_by(user_id=user_id, fdc_id=usda_food_id, log_date=date.today()).first()
         assert daily_log is not None
         assert daily_log.amount_grams == 150
 
@@ -113,20 +121,28 @@ def test_add_item_to_recipe(auth_client_with_data):
         user = User.query.filter_by(username='testuser').first()
         my_food = MyFood.query.filter_by(description='Test My Food').first()
         target_recipe = Recipe.query.filter_by(name='Target Recipe').first()
+        # Add the mandatory 1-gram portion for the test
+        gram_portion = UnifiedPortion(my_food_id=my_food.id, portion_description='gram', gram_weight=1.0)
+        db.session.add(gram_portion)
+        db.session.commit()
+        gram_portion_id = gram_portion.id
+        my_food_id = my_food.id
+        target_recipe_id = target_recipe.id
 
     # Add MyFood to recipe
     response = auth_client.post('/search/add_item', data={
-        'food_id': my_food.id,
+        'food_id': my_food_id,
         'food_type': 'my_food',
         'target': 'recipe',
-        'recipe_id': target_recipe.id,
-        'amount': 75
+        'recipe_id': target_recipe_id,
+        'amount': 75,
+        'portion_id': gram_portion_id
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Test My Food added to recipe Target Recipe.' in response.data
 
     with auth_client.application.app_context():
-        recipe_ingredient = RecipeIngredient.query.filter_by(recipe_id=target_recipe.id, my_food_id=my_food.id).first()
+        recipe_ingredient = RecipeIngredient.query.filter_by(recipe_id=target_recipe_id, my_food_id=my_food_id).first()
         assert recipe_ingredient is not None
         assert recipe_ingredient.amount_grams == 75
 
@@ -136,22 +152,30 @@ def test_add_item_to_meal(auth_client_with_data):
         user = User.query.filter_by(username='testuser').first()
         recipe = Recipe.query.filter_by(name='Test Recipe').first()
         target_meal = MyMeal.query.filter_by(name='Target Meal').first()
+        # Add a portion for the recipe
+        portion = UnifiedPortion(recipe_id=recipe.id, portion_description='serving', gram_weight=150.0)
+        db.session.add(portion)
+        db.session.commit()
+        portion_id = portion.id
+        recipe_id = recipe.id
+        target_meal_id = target_meal.id
 
     # Add Recipe to meal
     response = auth_client.post('/search/add_item', data={
-        'food_id': recipe.id,
+        'food_id': recipe_id,
         'food_type': 'recipe',
         'target': 'meal',
-        'recipe_id': target_meal.id, # Using recipe_id for my_meal_id in this context
-        'amount': 2 # servings
+        'recipe_id': target_meal_id, # Using recipe_id for my_meal_id in this context
+        'amount': 2, # servings
+        'portion_id': portion_id
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Test Recipe added to meal Target Meal.' in response.data
 
     with auth_client.application.app_context():
-        my_meal_item = MyMealItem.query.filter_by(my_meal_id=target_meal.id, recipe_id=recipe.id).first()
+        my_meal_item = MyMealItem.query.filter_by(my_meal_id=target_meal_id, recipe_id=recipe_id).first()
         assert my_meal_item is not None
-        assert my_meal_item.amount_grams == 2 # Should be servings for recipe
+        assert my_meal_item.amount_grams == 300 # 2 servings * 150g/serving
 
 def test_add_meal_expands_correctly(auth_client_with_data):
     auth_client = auth_client_with_data
@@ -161,23 +185,33 @@ def test_add_meal_expands_correctly(auth_client_with_data):
         usda_food = Food.query.filter_by(description='Test USDA Food').first()
         my_food = MyFood.query.filter_by(description='Test My Food').first()
         log_date_str = date.today().isoformat()
+        # Add a dummy portion for the meal, as the form requires it
+        gram_portion = UnifiedPortion(my_food_id=my_food.id, portion_description='gram', gram_weight=1.0)
+        db.session.add(gram_portion)
+        db.session.commit()
+        gram_portion_id = gram_portion.id
+        my_meal_id = my_meal.id
+        user_id = user.id
+        usda_food_id = usda_food.fdc_id
+        my_food_id = my_food.id
 
     # Add MyMeal to diary, expecting expansion
     response = auth_client.post('/search/add_item', data={
-        'food_id': my_meal.id,
+        'food_id': my_meal_id,
         'food_type': 'my_meal',
         'target': 'diary',
         'log_date': log_date_str,
         'meal_name': 'Lunch',
-        'amount': 200 # This quantity should scale the meal items
+        'amount': 200, # This quantity should scale the meal items
+        'portion_id': gram_portion_id
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Test My Meal (expanded) added to your diary.' in response.data
 
     with auth_client.application.app_context():
         # Check if individual items from MyMeal were added to DailyLog
-        usda_log_entry = DailyLog.query.filter_by(user_id=user.id, fdc_id=usda_food.fdc_id, log_date=date.today()).first()
-        my_food_log_entry = DailyLog.query.filter_by(user_id=user.id, my_food_id=my_food.id, log_date=date.today()).first()
+        usda_log_entry = DailyLog.query.filter_by(user_id=user_id, fdc_id=usda_food_id, log_date=date.today()).first()
+        my_food_log_entry = DailyLog.query.filter_by(user_id=user_id, my_food_id=my_food_id, log_date=date.today()).first()
 
         assert usda_log_entry is not None
         assert my_food_log_entry is not None

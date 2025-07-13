@@ -1,5 +1,5 @@
 import pytest
-from models import db, User, MyFood, Food, FoodNutrient, Nutrient
+from models import db, User, MyFood, Food, FoodNutrient, Nutrient, UnifiedPortion
 
 def test_create_my_food(auth_client):
     """
@@ -41,20 +41,25 @@ def test_copy_usda_food(auth_client):
         db.session.add(FoodNutrient(fdc_id=12345, nutrient_id=1003, amount=0.3))
         db.session.add(FoodNutrient(fdc_id=12345, nutrient_id=1005, amount=13.8))
         db.session.add(FoodNutrient(fdc_id=12345, nutrient_id=1004, amount=0.2))
+        
+        # Add the mandatory 1-gram portion for the test
+        gram_portion = UnifiedPortion(fdc_id=12345, portion_description='gram', gram_weight=1.0)
+        db.session.add(gram_portion)
         db.session.commit()
         fdc_id = test_food.fdc_id
+        gram_portion_id = gram_portion.id
 
     response = auth_client.post('/search/add_item', data={
         'food_id': fdc_id,
         'food_type': 'usda',
         'target': 'my_foods',
-        'quantity': 100 # Quantity is not directly used for copying, but required by the form
+        'amount': 100, # Amount is required by the form
+        'portion_id': gram_portion_id
     }, follow_redirects=True)
     assert response.status_code == 200
-    with auth_client.application.app_context():
-        from flask import get_flashed_messages
-        flashed_messages = [str(message) for message in get_flashed_messages()]
-        assert 'USDA Test Apple has been added to your foods.' in flashed_messages
+    
+    # Using response.data to check for flash messages is more reliable in tests
+    assert b'USDA Test Apple has been added to your foods.' in response.data
 
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()

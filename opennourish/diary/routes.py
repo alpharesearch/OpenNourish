@@ -165,25 +165,18 @@ def update_entry(log_id):
         return redirect(url_for('diary.diary'))
 
     amount = request.form.get('amount', type=float)
-    portion_id = request.form.get('portion_id')
+    portion_id = request.form.get('portion_id', type=int)
 
     if amount and portion_id:
-        if portion_id == 'g':
-            log_entry.amount_grams = amount
-            log_entry.serving_type = 'g'
-            log_entry.portion_id_fk = None
+        portion = db.session.get(UnifiedPortion, portion_id)
+        if portion:
+            log_entry.amount_grams = amount * portion.gram_weight
+            log_entry.serving_type = portion.full_description_str
+            log_entry.portion_id_fk = portion.id
+            db.session.commit()
+            flash('Entry updated successfully!', 'success')
         else:
-            portion = db.session.get(UnifiedPortion, int(portion_id))
-            if portion:
-                log_entry.amount_grams = amount * portion.gram_weight
-                log_entry.serving_type = portion.full_description_str
-                log_entry.portion_id_fk = portion.id
-            else:
-                flash('Invalid portion selected.', 'danger')
-                return redirect(url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()))
-
-        db.session.commit()
-        flash('Entry updated successfully!', 'success')
+            flash('Invalid portion selected.', 'danger')
     else:
         flash('Invalid data submitted.', 'danger')
 
@@ -386,32 +379,20 @@ def update_meal_item(item_id):
         return redirect(request.referrer or url_for('diary.my_meals'))
 
     quantity = request.form.get('quantity', type=float)
-    portion_id = request.form.get('portion_id')
+    portion_id = request.form.get('portion_id', type=int)
 
     if quantity is not None and portion_id is not None:
-        current_app.logger.debug(f"DEBUG: update_meal_item - quantity: {quantity}, portion_id: {portion_id}")
-        if portion_id == 'g':
-            item.amount_grams = quantity
-            item.serving_type = 'g'
-            item.portion_id_fk = None
-            current_app.logger.debug(f"DEBUG: update_meal_item - Saved as grams. amount_grams: {item.amount_grams}")
+        portion = db.session.get(UnifiedPortion, portion_id)
+        if portion:
+            item.amount_grams = quantity * portion.gram_weight
+            item.serving_type = portion.full_description_str
+            item.portion_id_fk = portion.id
+            db.session.commit()
+            flash('Meal item updated.', 'success')
         else:
-            portion = db.session.get(UnifiedPortion, int(portion_id))
-            if portion:
-                item.amount_grams = quantity * portion.gram_weight
-                item.serving_type = portion.full_description_str
-                item.portion_id_fk = portion.id
-                current_app.logger.debug(f"DEBUG: update_meal_item - Saved with portion. gram_weight: {portion.gram_weight}, calculated amount_grams: {item.amount_grams}")
-            else:
-                flash('Invalid portion selected.', 'danger')
-                current_app.logger.warning(f"WARNING: update_meal_item - UnifiedPortion with ID {portion_id} not found.")
-                return redirect(url_for('diary.edit_meal', meal_id=item.my_meal_id))
-        
-        db.session.commit()
-        flash('Meal item updated.', 'success')
+            flash('Invalid portion selected.', 'danger')
     else:
-        flash('Invalid data.', 'danger')
-        current_app.logger.warning(f"WARNING: update_meal_item - Invalid data submitted. quantity: {quantity}, portion_id: {portion_id}")
+        flash('Invalid data submitted.', 'danger')
 
     return redirect(url_for('diary.edit_meal', meal_id=item.my_meal_id))
 
