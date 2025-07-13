@@ -272,3 +272,33 @@ def test_usda_food_search_results_include_1g_portion(auth_client_with_data):
         assert re_queried_cup_portion is not None, "Cup portion not found after re-query"
         expected_1cup_option_html = f'<option value="{re_queried_cup_portion.id}"> cup</option>'.encode('utf-8')
         assert expected_1cup_option_html in response.data, "' cup' portion option not found in dropdown HTML"
+
+def test_usda_portion_p_icon_logic(auth_client_with_data):
+    auth_client = auth_client_with_data
+    with auth_client.application.app_context():
+        # 1. Create USDA food with NO extra portions (only the auto 1g)
+        usda_food_1_id = 200001
+        usda_food_1 = Food(fdc_id=usda_food_1_id, description='USDA Food No Portions')
+        db.session.add(usda_food_1)
+
+        # 2. Create USDA food with ONE extra portion
+        usda_food_2_id = 200002
+        usda_food_2 = Food(fdc_id=usda_food_2_id, description='USDA Food With One Portion')
+        db.session.add(usda_food_2)
+        db.session.commit() # Commit foods first
+
+        portion = UnifiedPortion(fdc_id=usda_food_2_id, portion_description='slice', gram_weight=28.0)
+        db.session.add(portion)
+        db.session.commit()
+
+    # Search for the first food
+    response1 = auth_client.get(f'/search/?search_term=USDA Food No Portions&search_usda=true')
+    assert response1.status_code == 200
+    # The 'P' icon should NOT be present because there is only 1 portion (the auto-added 1g)
+    assert b'<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>' not in response1.data
+
+    # Search for the second food
+    response2 = auth_client.get(f'/search/?search_term=USDA Food With One Portion&search_usda=true')
+    assert response2.status_code == 200
+    # The 'P' icon SHOULD be present because there are 2 portions (the auto-added 1g + the slice)
+    assert b'<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>' in response2.data

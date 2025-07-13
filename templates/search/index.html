@@ -257,7 +257,7 @@
                         <div>
                             <strong>{{ food.description }}</strong>
                             <div class="text-muted small">
-                                {% if food.portions %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>{% endif %}
+                                {% if food.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>{% endif %}
                                 {% if food.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
                                 {% if food.nutrients %}<span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>{% endif %}
                             </div>
