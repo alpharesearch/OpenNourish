@@ -140,7 +140,6 @@
                                         <input type="hidden" name="food_id" value="{{ food.id }}">
                                         <input type="number" name="amount" class="form-control form-control-sm" value="1" style="width: 70px;">
                                         <select name="portion_id" class="form-select form-select-sm" style="width: 70px;">
-                                            <option value="g">g</option>
                                             {% for portion in food.portions %}
                                                 <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
                                             {% endfor %}
@@ -225,7 +224,6 @@
                                     <input type="hidden" name="food_id" value="{{ recipe.id }}">
                                     <input type="number" name="amount" class="form-control form-control-sm" value="1" style="width: 70px;">
                                     <select name="portion_id" class="form-select form-select-sm" style="width: 70px;">
-                                        <option value="g">g</option>
                                         {% for portion in recipe.portions %}
                                             <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
                                         {% endfor %}
@@ -275,7 +273,6 @@
                                     <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
                                     <input type="number" name="amount" class="form-control form-control-sm" value="1" style="width: 70px;">
                                     <select name="portion_id" class="form-select form-select-sm" style="width: 70px;">
-                                        <option value="g">g</option>
                                         {% for portion in food.portions %}
                                             <option value="{{ portion.id }}">{{ portion.full_description_str}}</option>
                                         {% endfor %}
@@ -366,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function displayFoodForAdding(food, source) {
-        let portionsOptions = '<option value="g">g</option>';
+        let portionsOptions = '';
         if (food.portions && Array.isArray(food.portions)) {
             food.portions.forEach(p => {
                 portionsOptions += `<option value="${p.id}">${p.description}</option>`;

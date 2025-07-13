@@ -59,9 +59,14 @@ def diary(log_date_str=None):
         if food_item:
             available_portions = get_available_portions(food_item)
             
-            display_amount = log.amount_grams
-            selected_portion_id = 'g'
+            # Find the database-backed 1-gram portion to use as a default
+            gram_portion = next((p for p in available_portions if p.gram_weight == 1.0), None)
             
+            display_amount = log.amount_grams
+            # Default to the real gram portion's ID if it exists
+            selected_portion_id = gram_portion.id if gram_portion else None
+
+            # If a specific portion was logged, use that instead
             if log.portion_id_fk:
                 selected_portion = db.session.get(UnifiedPortion, log.portion_id_fk)
                 if selected_portion and selected_portion.gram_weight > 0:

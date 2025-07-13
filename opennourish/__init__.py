@@ -1,4 +1,5 @@
 from flask import Flask, current_app
+from sqlalchemy import text
 import os
 from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, UnifiedPortion, RecipeIngredient, MyMeal, MyMealItem, ExerciseActivity, ExerciseLog, Friendship
 from sqlalchemy.orm import joinedload
@@ -245,8 +246,8 @@ def create_app(config_class=Config):
                             my_food_id=my_food.id,
                             amount=1.0,
                             measure_unit_description="g",
-                            portion_description="gram",
-                            modifier="g",
+                            portion_description="",
+                            modifier="",
                             gram_weight=1.0
                         )
                         db.session.add(gram_portion)
@@ -333,8 +334,8 @@ def create_app(config_class=Config):
                         recipe_id=recipe.id,
                         amount=1.0,
                         measure_unit_description="g",
-                        portion_description="gram",
-                        modifier="g",
+                        portion_description="",
+                        modifier="",
                         gram_weight=1.0
                     )
                     db.session.add(gram_portion)
@@ -598,16 +599,18 @@ def create_app(config_class=Config):
 
     @app.cli.command("seed-usda-portions")
     def seed_usda_portions_command():
-        """Seeds USDA food portions into the unified portions table in the user database."""
+        """
+        Seeds USDA food portions from food_portion.csv into the unified portions table.
+        Also ensures every USDA food item has a default 1-gram portion for weight-based logging.
+        """
         import csv
         import os
-        import sqlite3 # For reading usda_data.db directly
+        import sqlite3
 
         with app.app_context():
             print("Seeding USDA portions...")
 
-            # 1. Delete existing USDA-linked portions from the user database
-            # This ensures idempotency for USDA portions
+            # 1. Delete existing USDA-linked portions to ensure idempotency.
             deleted_count = UnifiedPortion.query.filter(UnifiedPortion.fdc_id.isnot(None)).delete()
             db.session.commit()
             print(f"Deleted {deleted_count} existing USDA-linked portions from user_data.db.")
@@ -619,7 +622,7 @@ def create_app(config_class=Config):
                 print(f"Error: USDA database not found at {usda_db_file}. Please run 'python import_usda_data.py' first.")
                 return
 
-            # Load measure units from CSV for efficient lookup
+            # 2. Load measure units from CSV for efficient lookup.
             measure_units = {}
             measure_unit_csv_path = os.path.join(usda_data_dir, 'measure_unit.csv')
             if not os.path.exists(measure_unit_csv_path):
@@ -627,12 +630,14 @@ def create_app(config_class=Config):
                 return
             with open(measure_unit_csv_path, 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
-                next(reader) # Skip header
+                next(reader)  # Skip header
                 for row in reader:
                     measure_units[row[0]] = row[1]
             print(f"Loaded {len(measure_units)} measure units from CSV.")
 
+            # 3. Load all portions from the USDA's food_portion.csv.
             portions_to_add = []
+            fdcs_with_gram_portion = set()
             food_portion_csv_path = os.path.join(usda_data_dir, 'food_portion.csv')
 
             if not os.path.exists(food_portion_csv_path):
@@ -641,51 +646,62 @@ def create_app(config_class=Config):
 
             with open(food_portion_csv_path, 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
-                next(reader) # Skip header
+                next(reader)  # Skip header
                 for row in reader:
                     fdc_id = int(row[1])
-                    seq_num = int(row[2]) if row[2] else None
-                    amount_str = row[3]
-                    measure_unit_id = row[4]
-                    portion_description = row[5]
-                    modifier = row[6]
                     gram_weight = float(row[7])
+                    measure_unit_id = row[4]
+                    
+                    # Check if this portion is a 1-gram portion.
+                    unit_name = measure_units.get(measure_unit_id, "").lower()
+                    if gram_weight == 1.0 and (unit_name == 'g' or unit_name == 'gram'):
+                        fdcs_with_gram_portion.add(fdc_id)
 
-                    # Construct the full description string
-                    desc_parts = []
-                    if amount_str:
-                        try:
-                            amount_float = float(amount_str)
-                            if amount_float.is_integer():
-                                desc_parts.append(str(int(amount_float)))
-                            else:
-                                desc_parts.append(str(amount_float))
-                        except ValueError:
-                            desc_parts.append(amount_str)
-                    
-                    unit_name = measure_units.get(measure_unit_id)
-                    if unit_name and measure_unit_id != '9999':
-                        desc_parts.append(unit_name)
-
-                    if portion_description:
-                        desc_parts.append(portion_description)
-                    
-                    if modifier:
-                        desc_parts.append(modifier)
-                    
                     portion = UnifiedPortion(
                         fdc_id=fdc_id,
-                        seq_num=seq_num,
-                        amount=float(amount_str) if amount_str else None,
+                        seq_num=int(row[2]) if row[2] else None,
+                        amount=float(row[3]) if row[3] else None,
                         measure_unit_description=measure_units.get(measure_unit_id, "") if measure_unit_id != '9999' else "",
-                        portion_description=portion_description,
-                        modifier=modifier,
+                        portion_description=row[5],
+                        modifier=row[6],
                         gram_weight=gram_weight
                     )
                     portions_to_add.append(portion)
+            print(f"Loaded {len(portions_to_add)} portions from food_portion.csv.")
+
+            # 4. Get all FDC IDs from the main food table in usda_data.db.
+            print("Connecting to usda_data.db to find all food items...")
+            # Use the SQLAlchemy engine for the 'usda' bind
+            usda_engine = db.get_engine(bind='usda')
+            with usda_engine.connect() as connection:
+                result = connection.execute(text("SELECT fdc_id FROM foods"))
+                all_usda_fdc_ids = {row[0] for row in result}
+            print(f"Found {len(all_usda_fdc_ids)} unique food items in the USDA database.")
+
+            # 5. Ensure every USDA food has a 1-gram portion.
+            new_gram_portions_added = 0
+            for fdc_id in all_usda_fdc_ids:
+                if fdc_id not in fdcs_with_gram_portion:
+                    gram_portion = UnifiedPortion(
+                        fdc_id=fdc_id,
+                        amount=1.0,
+                        measure_unit_description="g",
+                        portion_description="",
+                        modifier="",
+                        gram_weight=1.0
+                    )
+                    portions_to_add.append(gram_portion)
+                    new_gram_portions_added += 1
             
-            db.session.add_all(portions_to_add)
-            db.session.commit()
-            print(f"Successfully added {len(portions_to_add)} USDA portions to the user database.")
+            if new_gram_portions_added > 0:
+                print(f"Adding {new_gram_portions_added} default 1-gram portions for foods that were missing one.")
+
+            # 6. Add all collected portions to the database.
+            if portions_to_add:
+                db.session.add_all(portions_to_add)
+                db.session.commit()
+                print(f"Successfully seeded {len(portions_to_add)} total USDA portions to the user database.")
+            else:
+                print("No USDA portions were found or needed to be added.")
 
     return app

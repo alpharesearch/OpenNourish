@@ -61,8 +61,8 @@ def new_my_food():
             my_food_id=my_food.id,
             amount=1.0,
             measure_unit_description="g",
-            portion_description="gram",
-            modifier="g",
+            portion_description="",
+            modifier="",
             gram_weight=1.0
         )
         db.session.add(gram_portion)

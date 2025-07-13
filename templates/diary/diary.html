@@ -105,15 +105,12 @@
                             <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}" class="d-flex align-items-center">
                                 <input type="number" name="amount" value="{{ item.amount|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
                                 <select name="portion_id" class="form-select form-select-sm ms-2" style="width: auto; max-width: 200px;">
-                                    {% for portion in item.portions %}
-                                        {% if portion.id != 'g' %}
-                                        <option value="{{ portion.id }}" {% if item.selected_portion_id == portion.id %}selected{% endif %}>
-                                            {{ portion.full_description_str }}
-                                        </option>
-                                        {% endif %}
-                                    {% endfor %}
-                                    <option value="g" {% if item.selected_portion_id == 'g' %}selected{% endif %}>g</option>
-                                </select>
+                                        {% for portion in item.portions %}
+                                            <option value="{{ portion.id }}" {% if item.selected_portion_id == portion.id %}selected{% endif %}>
+                                                {{ portion.full_description_str }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
                                 <button type="submit" class="btn btn-outline-success btn-sm ms-2">Save</button>
                             </form>
                             <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}" class="ms-2">
