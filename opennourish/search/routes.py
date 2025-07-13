@@ -93,6 +93,21 @@ def search_by_upc():
     # 3. Search in USDA database
     usda_food = Food.query.filter_by(upc=upc).first()
     if usda_food:
+        # Ensure a 1-gram portion exists for this USDA food
+        one_gram_portion = UnifiedPortion.query.filter_by(fdc_id=usda_food.fdc_id, gram_weight=1.0).first()
+        if not one_gram_portion:
+            one_gram_portion = UnifiedPortion(
+                fdc_id=usda_food.fdc_id,
+                amount=1.0,
+                measure_unit_description="g",
+                portion_description="",
+                modifier="",
+                gram_weight=1.0
+            )
+            db.session.add(one_gram_portion)
+            db.session.commit()
+            current_app.logger.debug(f"Created 1-gram portion for USDA food FDC_ID: {usda_food.fdc_id} during UPC scan.")
+
         usda_food_portions = UnifiedPortion.query.filter_by(fdc_id=usda_food.fdc_id).all()
         portions_data = [{'id': p.id, 'description': p.full_description_str, 'gram_weight': p.gram_weight} for p in usda_food_portions]
         return jsonify({

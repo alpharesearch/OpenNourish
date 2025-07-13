@@ -64,7 +64,7 @@ def test_search_finds_all_food_types(auth_client_with_data):
         db.session.commit()
 
     search_term = 'Search'
-    response = auth_client.post('/search/', data={'search_term': search_term})
+    response = auth_client.post('/search/', data={'search_term': search_term, 'search_usda': True})
     assert response.status_code == 200
 
     # Assert that all four items appear in the response
@@ -227,7 +227,7 @@ def test_search_result_includes_details_link_for_usda_food(auth_client_with_data
         db.session.commit()
 
     search_term = 'Details USDA Food'
-    response = auth_client.get(f'/search/?search_term={search_term}')
+    response = auth_client.get(f'/search/?search_term={search_term}&search_usda=true')
     assert response.status_code == 200
     assert f'href="/food/{usda_food_fdc_id}"' in response.data.decode('utf-8')
 
@@ -346,3 +346,25 @@ def test_usda_search_ranking(auth_client_with_data):
     assert idx_milk_whole < idx_milk_chocolate
     assert idx_milk_chocolate < idx_soy_milk
     assert idx_soy_milk < idx_almond_milk
+
+def test_upc_search_creates_1g_portion_for_usda_food(auth_client_with_data):
+    auth_client = auth_client_with_data
+    upc_code = "123456789012"
+    with auth_client.application.app_context():
+        # Create a USDA food with a UPC but no portions
+        usda_food = Food(fdc_id=400001, description='Scannable USDA Food', upc=upc_code)
+        db.session.add(usda_food)
+        db.session.commit()
+
+    # Search by UPC
+    response = auth_client.get(f'/search/by_upc?upc={upc_code}')
+    assert response.status_code == 200
+    json_data = response.get_json()
+
+    assert json_data['status'] == 'found'
+    assert json_data['source'] == 'usda'
+    assert len(json_data['food']['portions']) > 0
+
+    # Check that one of the portions is the 1g portion
+    gram_portion_exists = any(p['description'] == ' g' and p['gram_weight'] == 1.0 for p in json_data['food']['portions'])
+    assert gram_portion_exists, "The 1-gram portion was not created for the UPC-scanned USDA food."
