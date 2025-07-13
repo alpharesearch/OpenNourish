@@ -315,12 +315,77 @@ def add_item():
     amount = float(request.form.get('amount', 1))
     portion_id_str = request.form.get('portion_id')
 
-    if not portion_id_str:
-        flash('Portion ID is required.', 'danger')
-        return redirect(request.referrer)
+    if food_type == 'my_meal':
+        my_meal = db.session.get(MyMeal, food_id)
+        if not my_meal or my_meal.user_id != current_user.id:
+            flash('My Meal not found or not authorized.', 'danger')
+            return redirect(request.referrer or url_for('diary.diary'))
 
+        if target == 'diary':
+            log_date = date.fromisoformat(log_date_str) if log_date_str else date.today()
+            my_meal.usage_count += 1
+            for item in my_meal.items:
+                daily_log = DailyLog(
+                    user_id=current_user.id,
+                    log_date=log_date,
+                    meal_name=meal_name,
+                    fdc_id=item.fdc_id,
+                    my_food_id=item.my_food_id,
+                    recipe_id=item.recipe_id,
+                    amount_grams=item.amount_grams,
+                    serving_type=item.serving_type,
+                    portion_id_fk=item.portion_id_fk
+                )
+                db.session.add(daily_log)
+            db.session.commit()
+            flash(f'"{my_meal.name}" (expanded) added to your diary.', 'success')
+            return redirect(url_for('diary.diary', log_date_str=log_date_str))
+
+        elif target == 'recipe':
+            target_recipe = db.session.get(Recipe, recipe_id)
+            if not target_recipe or target_recipe.user_id != current_user.id:
+                flash('Recipe not found or not authorized.', 'danger')
+                return redirect(url_for('recipes.edit_recipe', recipe_id=recipe_id))
+            
+            for item in my_meal.items:
+                ingredient = RecipeIngredient(
+                    recipe_id=target_recipe.id,
+                    fdc_id=item.fdc_id,
+                    my_food_id=item.my_food_id,
+                    recipe_id_link=item.recipe_id,
+                    amount_grams=item.amount_grams,
+                    serving_type=item.serving_type,
+                    portion_id_fk=item.portion_id_fk
+                )
+                db.session.add(ingredient)
+            db.session.commit()
+            flash(f'"{my_meal.name}" (expanded) added to recipe {target_recipe.name}.', 'success')
+            return redirect(url_for('recipes.edit_recipe', recipe_id=recipe_id))
+        
+        else:
+            flash(f'Cannot add a meal to the selected target: {target}.', 'danger')
+            return redirect(request.referrer or url_for('diary.diary'))
+
+    if not portion_id_str and food_type == 'usda':
+        # For USDA foods, if no portion is selected, default to a 1-gram portion.
+        # This ensures that the food can be added to the diary or a recipe.
+        food_id_int = int(food_id)
+        portion = UnifiedPortion.query.filter_by(fdc_id=food_id_int, gram_weight=1.0).first()
+        if not portion:
+            portion = UnifiedPortion(
+                fdc_id=food_id_int,
+                amount=1.0,
+                measure_unit_description="g",
+                portion_description="",
+                modifier="",
+                gram_weight=1.0
+            )
+            db.session.add(portion)
+            db.session.commit()
+        portion_id_str = str(portion.id)
+
+    # For all other food types, a portion must be selected. The validation happens below.
     portion = None
-    # Handle the special 'g' portion for USDA foods
     if food_type == 'usda' and portion_id_str == 'g':
         # Check if a 1-gram portion already exists
         portion = UnifiedPortion.query.filter_by(fdc_id=food_id, gram_weight=1.0).first()
@@ -410,25 +475,6 @@ def add_item():
                     flash(f'{recipe.name} added to your diary.', 'success')
                 else:
                     flash('Recipe not found or not authorized.', 'danger')
-            elif food_type == 'my_meal':
-                my_meal = db.session.get(MyMeal, food_id)
-                if my_meal and my_meal.user_id == current_user.id:
-                    my_meal.usage_count += 1
-                    for item in my_meal.items:
-                        daily_log = DailyLog(
-                            user_id=current_user.id,
-                            log_date=log_date,
-                            meal_name=meal_name,
-                            fdc_id=item.fdc_id,
-                            my_food_id=item.my_food_id,
-                            recipe_id=item.recipe_id,
-                            amount_grams=item.amount_grams * (amount / 100)
-                        )
-                        db.session.add(daily_log)
-                    db.session.commit()
-                    flash(f'{my_meal.name} (expanded) added to your diary.', 'success')
-                else:
-                    flash('My Meal not found or not authorized.', 'danger')
             else:
                 flash('Invalid food type for diary.', 'danger')
             return redirect(url_for('diary.diary', log_date_str=log_date_str))
@@ -495,24 +541,6 @@ def add_item():
                 db.session.commit()
                 flash(f'{sub_recipe.name} added as ingredient to recipe {target_recipe.name}.', 'success')
                 return redirect(url_for('recipes.edit_recipe', recipe_id=recipe_id))
-            elif food_type == 'my_meal':
-                my_meal = db.session.get(MyMeal, food_id)
-                if my_meal and my_meal.user_id == current_user.id:
-                    for item in my_meal.items:
-                        ingredient = RecipeIngredient(
-                            recipe_id=target_recipe.id,
-                            fdc_id=item.fdc_id,
-                            my_food_id=item.my_food_id,
-                            recipe_id_link=item.recipe_id,
-                            amount_grams=item.amount_grams,
-                            serving_type='g', # My meal items are stored in grams
-                            portion_id_fk=None
-                        )
-                        db.session.add(ingredient)
-                    db.session.commit()
-                    flash(f'{my_meal.name} (expanded) added to recipe {target_recipe.name}.', 'success')
-                else:
-                    flash('My Meal not found or not authorized.', 'danger')
             else:
                 flash('Invalid food type for recipe.', 'danger')
             return redirect(url_for('recipes.edit_recipe', recipe_id=recipe_id))

@@ -79,15 +79,17 @@ def diary(log_date_str=None):
             if not is_own_food_item and hasattr(food_item, 'user') and food_item.user:
                 description_to_display += f" (from {food_item.user.username})"
 
-            meals[log.meal_name].append({
-                'log_id': log.id,
-                'description': description_to_display,
-                'amount': display_amount,
-                'nutrition': nutrition,
-                'portions': available_portions,
-                'serving_type': log.serving_type,
-                'selected_portion_id': selected_portion_id
-            })
+        # Assign to the correct meal category, defaulting to 'Unspecified'
+        meal_key = log.meal_name or 'Unspecified'
+        meals[meal_key].append({
+            'log_id': log.id,
+            'description': description_to_display,
+            'amount': display_amount,
+            'nutrition': nutrition,
+            'portions': available_portions,
+            'serving_type': log.serving_type,
+            'selected_portion_id': selected_portion_id
+        })
 
     prev_date = log_date - timedelta(days=1)
     next_date = log_date + timedelta(days=1)

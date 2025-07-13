@@ -185,42 +185,37 @@ def test_add_meal_expands_correctly(auth_client_with_data):
         usda_food = Food.query.filter_by(description='Test USDA Food').first()
         my_food = MyFood.query.filter_by(description='Test My Food').first()
         log_date_str = date.today().isoformat()
-        # Add a dummy portion for the meal, as the form requires it
-        gram_portion = UnifiedPortion(my_food_id=my_food.id, portion_description='gram', gram_weight=1.0)
-        db.session.add(gram_portion)
-        db.session.commit()
-        gram_portion_id = gram_portion.id
         my_meal_id = my_meal.id
-        user_id = user.id
-        usda_food_id = usda_food.fdc_id
-        my_food_id = my_food.id
+        # Add MyMeal to diary, expecting expansion
+        response = auth_client.post('/search/add_item', data={
+            'food_id': my_meal_id,
+            'food_type': 'my_meal',
+            'target': 'diary',
+            'log_date': log_date_str,
+            'meal_name': 'Lunch'
+        })
+        assert response.status_code == 302 # Check for redirect
 
-    # Add MyMeal to diary, expecting expansion
-    response = auth_client.post('/search/add_item', data={
-        'food_id': my_meal_id,
-        'food_type': 'my_meal',
-        'target': 'diary',
-        'log_date': log_date_str,
-        'meal_name': 'Lunch',
-        'amount': 200, # This quantity should scale the meal items
-        'portion_id': gram_portion_id
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'Test My Meal (expanded) added to your diary.' in response.data
+        # Check for the flash message in the session before following the redirect
+        with auth_client.session_transaction() as session:
+            flashes = session.get('_flashes', [])
+            assert len(flashes) > 0
+            assert flashes[0][1] == '"Test My Meal" (expanded) added to your diary.'
 
-    with auth_client.application.app_context():
-        # Check if individual items from MyMeal were added to DailyLog
-        usda_log_entry = DailyLog.query.filter_by(user_id=user_id, fdc_id=usda_food_id, log_date=date.today()).first()
-        my_food_log_entry = DailyLog.query.filter_by(user_id=user_id, my_food_id=my_food_id, log_date=date.today()).first()
+        # Manually follow the redirect
+        response = auth_client.get(response.headers['Location'])
+        assert response.status_code == 200
+
+    # Check if individual items from MyMeal were added to DailyLog
+        usda_log_entry = DailyLog.query.filter_by(user_id=user.id, fdc_id=usda_food.fdc_id, log_date=date.today()).first()
+        my_food_log_entry = DailyLog.query.filter_by(user_id=user.id, my_food_id=my_food.id, log_date=date.today()).first()
 
         assert usda_log_entry is not None
         assert my_food_log_entry is not None
 
-        # Assert scaled quantities (original amount_grams * (quantity / 100))
-        # Original usda_food in meal: 50g. Scaled by 200/100 = 2. Expected: 100g
-        assert usda_log_entry.amount_grams == 50 * (200 / 100)
-        # Original my_food in meal: 30g. Scaled by 200/100 = 2. Expected: 60g
-        assert my_food_log_entry.amount_grams == 30 * (200 / 100)
+        # Assert that the amounts are NOT scaled, but are the original amounts from the meal definition
+        assert usda_log_entry.amount_grams == 50
+        assert my_food_log_entry.amount_grams == 30
 
 def test_search_result_includes_details_link_for_usda_food(auth_client_with_data):
     auth_client = auth_client_with_data

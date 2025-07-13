@@ -239,12 +239,6 @@ def test_add_meal_to_recipe_as_ingredient(auth_client_with_user):
         db.session.commit()
         meal_id = meal.id
 
-        # Create a dummy portion for the meal, as the form requires it, even though it's not used for expansion
-        gram_portion = UnifiedPortion(my_food_id=None, portion_description='gram', gram_weight=1.0)
-        db.session.add(gram_portion)
-        db.session.commit()
-        gram_portion_id = gram_portion.id
-
         meal_item_usda = MyMealItem(my_meal_id=meal.id, fdc_id=60001, amount_grams=100)
 
         # Create a MyFood object for the test
@@ -260,16 +254,19 @@ def test_add_meal_to_recipe_as_ingredient(auth_client_with_user):
             'food_id': meal_id,
             'food_type': 'my_meal',
             'target': 'recipe',
-            'recipe_id': recipe_id,
-            'amount': 1, # Assuming 1 serving of the meal
-            'portion_id': gram_portion_id # Provide a valid portion ID
+            'recipe_id': recipe_id
         })
         assert response.status_code == 302 # Check for redirect
+
+        # Check for the flash message in the session before following the redirect
+        with client.session_transaction() as session:
+            flashes = session.get('_flashes', [])
+            assert len(flashes) > 0
+            assert flashes[0][1] == '"My Meal for Recipe" (expanded) added to recipe Recipe with Meal Ingredient.'
 
         # Manually follow the redirect
         response = client.get(response.headers['Location'])
         assert response.status_code == 200
-        assert b'My Meal for Recipe (expanded) added to recipe Recipe with Meal Ingredient.' in response.data
 
         # Verify that the meal's items were added as ingredients in the database
         ingredients = RecipeIngredient.query.filter_by(recipe_id=recipe_id).order_by(RecipeIngredient.amount_grams).all()
