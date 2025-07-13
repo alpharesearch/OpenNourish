@@ -52,7 +52,7 @@ SEED_DEV_DATA_VAR=${SEED_DEV_DATA:-false}
 
 REGISTRY_URL="$TRUENAS_REGISTRY_URL"
 
-echo "--- Building Docker images using standard docker-compose.yml ---"
+echo -e "\n--- Building Docker images using standard docker-compose.yml ---"
 docker compose build
 
 if [ $? -ne 0 ]; then
@@ -60,16 +60,16 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "--- Tagging images for private registry: ${REGISTRY_URL} ---"
-docker tag opennourish-app:latest ${REGISTRY_URL}/opennourish-app:latest
+echo -e "\n--- Tagging images for private registry: ${REGISTRY_URL} ---"
+docker tag opennourish-opennourish-app:latest ${REGISTRY_URL}/opennourish-app:latest
 docker tag opennourish-nginx:latest ${REGISTRY_URL}/opennourish-nginx:latest
 
-echo "--- Pushing images to private registry: ${REGISTRY_URL} ---"
+echo -e "\n--- Pushing images to private registry: ${REGISTRY_URL} ---"
 docker push ${REGISTRY_URL}/opennourish-app:latest
 docker push ${REGISTRY_URL}/opennourish-nginx:latest
 
 if [ $? -ne 0 ]; then
-    echo "Docker image push failed. Ensure your registry URL is correct and your Docker daemon trusts the registry."
+    echo -e "\nDocker image push failed. Ensure your registry URL is correct and your Docker daemon trusts the registry."
     exit 1
 fi
 
