@@ -3,193 +3,152 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Add New Custom Food</h2>
+    <p>Create a new food item by defining a serving size and entering the nutrition facts for that serving. The values will be automatically scaled to the standard 100g base.</p>
 
-    
+    <form method="POST" action="{{ url_for('my_foods.new_my_food') }}">
+        {{ form.hidden_tag() }}
+        {{ portion_form.hidden_tag() }}
 
-    <div class="card">
-        <div class="card-header">
-            Food Details
-        </div>
-        <div class="card-body">
-            <form method="POST" action="{{ url_for('my_foods.new_my_food') }}">
-                {{ form.hidden_tag() }}
-                <div class="mb-3">
-                    {{ form.description.label(class="form-label") }}
-                    {{ form.description(class="form-control") }}
-                    {% if form.description.errors %}
-                        <div class="alert alert-danger mt-1" role="alert">
-                            {% for error in form.description.errors %}
-                                {{ error }}
-                            {% endfor %}
+        <div class="row">
+            <!-- Left Column: Food Details & Serving Info -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">Food & Serving Details</div>
+                    <div class="card-body">
+                        <!-- Food Description -->
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control") }}
                         </div>
-                    {% endif %}
-                </div>
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        {{ form.calories_per_100g.label(class="form-label") }}
-                        {{ form.calories_per_100g(class="form-control") }}
-                        {% if form.calories_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.calories_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+
+                        <hr>
+                        <h6>Define a Serving Size</h6>
+                        
+                        <!-- Portion Form Fields -->
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                {{ portion_form.amount.label(class="form-label") }}
+                                {{ portion_form.amount(class="form-control form-control-sm") }}
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.protein_per_100g.label(class="form-label") }}
-                        {{ form.protein_per_100g(class="form-control") }}
-                        {% if form.protein_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.protein_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                            <div class="col-md-4">
+                                {{ portion_form.measure_unit_description.label(class="form-label") }}
+                                {{ portion_form.measure_unit_description(class="form-control form-control-sm") }}
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.carbs_per_100g.label(class="form-label") }}
-                        {{ form.carbs_per_100g(class="form-control") }}
-                        {% if form.carbs_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.carbs_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                            <div class="col-md-5">
+                                {{ portion_form.portion_description.label(class="form-label") }}
+                                {{ portion_form.portion_description(class="form-control form-control-sm") }}
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.fat_per_100g.label(class="form-label") }}
-                        {{ form.fat_per_100g(class="form-control") }}
-                        {% if form.fat_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.fat_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                        </div>
+                        <div class="row g-2 mt-1">
+                            <div class="col-md-8">
+                                {{ portion_form.modifier.label(class="form-label") }}
+                                {{ portion_form.modifier(class="form-control form-control-sm") }}
                             </div>
-                        {% endif %}
+                            <div class="col-md-4">
+                                {{ portion_form.gram_weight.label(class="form-label") }}
+                                {{ portion_form.gram_weight(class="form-control form-control-sm", type="number", step="any") }}
+                                {% if portion_form.gram_weight.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in portion_form.gram_weight.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 mt-3">
+                            {{ form.ingredients.label(class="form-label") }}
+                            {{ form.ingredients(class="form-control", rows="3") }}
+                        </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        {{ form.saturated_fat_per_100g.label(class="form-label") }}
-                        {{ form.saturated_fat_per_100g(class="form-control") }}
-                        {% if form.saturated_fat_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.saturated_fat_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+            </div>
+
+            <!-- Right Column: Nutrition Facts for Serving -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">Nutrition Facts for the Defined Serving</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.calories_per_100g.label(class="form-label") }}
+                                {{ form.calories_per_100g(class="form-control", type="number", step="any") }}
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.trans_fat_per_100g.label(class="form-label") }}
-                        {{ form.trans_fat_per_100g(class="form-control") }}
-                        {% if form.trans_fat_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.trans_fat_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                            <div class="col-md-6 mb-3">
+                                {{ form.protein_per_100g.label(class="form-label") }}
+                                {{ form.protein_per_100g(class="form-control", type="number", step="any") }}
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.cholesterol_mg_per_100g.label(class="form-label") }}
-                        {{ form.cholesterol_mg_per_100g(class="form-control") }}
-                        {% if form.cholesterol_mg_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.cholesterol_mg_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.carbs_per_100g.label(class="form-label") }}
+                                {{ form.carbs_per_100g(class="form-control", type="number", step="any") }}
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.sodium_mg_per_100g.label(class="form-label") }}
-                        {{ form.sodium_mg_per_100g(class="form-control") }}
-                        {% if form.sodium_mg_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.sodium_mg_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                            <div class="col-md-6 mb-3">
+                                {{ form.fat_per_100g.label(class="form-label") }}
+                                {{ form.fat_per_100g(class="form-control", type="number", step="any") }}
                             </div>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        {{ form.fiber_per_100g.label(class="form-label") }}
-                        {{ form.fiber_per_100g(class="form-control") }}
-                        {% if form.fiber_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.fiber_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                        </div>
+                         <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.saturated_fat_per_100g.label(class="form-label") }}
+                                {{ form.saturated_fat_per_100g(class="form-control", type="number", step="any") }}
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.sugars_per_100g.label(class="form-label") }}
-                        {{ form.sugars_per_100g(class="form-control") }}
-                        {% if form.sugars_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.sugars_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                            <div class="col-md-6 mb-3">
+                                {{ form.trans_fat_per_100g.label(class="form-label") }}
+                                {{ form.trans_fat_per_100g(class="form-control", type="number", step="any") }}
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.vitamin_d_mcg_per_100g.label(class="form-label") }}
-                        {{ form.vitamin_d_mcg_per_100g(class="form-control") }}
-                        {% if form.vitamin_d_mcg_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.vitamin_d_mcg_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.cholesterol_mg_per_100g.label(class="form-label") }}
+                                {{ form.cholesterol_mg_per_100g(class="form-control", type="number", step="any") }}
                             </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.calcium_mg_per_100g.label(class="form-label") }}
-                        {{ form.calcium_mg_per_100g(class="form-control") }}
-                        {% if form.calcium_mg_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.calcium_mg_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                            <div class="col-md-6 mb-3">
+                                {{ form.sodium_mg_per_100g.label(class="form-label") }}
+                                {{ form.sodium_mg_per_100g(class="form-control", type="number", step="any") }}
                             </div>
-                        {% endif %}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.fiber_per_100g.label(class="form-label") }}
+                                {{ form.fiber_per_100g(class="form-control", type="number", step="any") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.sugars_per_100g.label(class="form-label") }}
+                                {{ form.sugars_per_100g(class="form-control", type="number", step="any") }}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.vitamin_d_mcg_per_100g.label(class="form-label") }}
+                                {{ form.vitamin_d_mcg_per_100g(class="form-control", type="number", step="any") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.calcium_mg_per_100g.label(class="form-label") }}
+                                {{ form.calcium_mg_per_100g(class="form-control", type="number", step="any") }}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.iron_mg_per_100g.label(class="form-label") }}
+                                {{ form.iron_mg_per_100g(class="form-control", type="number", step="any") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.potassium_mg_per_100g.label(class="form-label") }}
+                                {{ form.potassium_mg_per_100g(class="form-control", type="number", step="any") }}
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        {{ form.iron_mg_per_100g.label(class="form-label") }}
-                        {{ form.iron_mg_per_100g(class="form-control") }}
-                        {% if form.iron_mg_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.iron_mg_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.potassium_mg_per_100g.label(class="form-label") }}
-                        {{ form.potassium_mg_per_100g(class="form-control") }}
-                        {% if form.potassium_mg_per_100g.errors %}
-                            <div class="alert alert-danger mt-1" role="alert">
-                                {% for error in form.potassium_mg_per_100g.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {{ form.submit(class="btn btn-outline-primary") }}
-                <a href="{{ url_for('my_foods.my_foods') }}" class="btn btn-outline-secondary">Cancel</a>
-            </form>
+            </div>
         </div>
-    </div>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-outline-primary">Create Food</button>
+            <a href="{{ url_for('my_foods.my_foods') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
 </div>
 {% endblock %}

@@ -224,15 +224,28 @@ def create_app(config_class=Config):
                                 iron_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1089), 0.0),
                                 potassium_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1092), 0.0)
                             )
-                    else: # Create a purely custom MyFood
+                    else: # Create a purely custom MyFood that mimics the new UI workflow
+                        # 1. Define a realistic serving size in grams
+                        serving_gram_weight = random.uniform(30, 250)
+                        
+                        # 2. Generate nutrition facts for THAT serving size
+                        calories_for_serving = random.uniform(50, 800)
+                        protein_for_serving = random.uniform(1, 70)
+                        carbs_for_serving = random.uniform(1, 100)
+                        fat_for_serving = random.uniform(1, 60)
+
+                        # 3. Calculate the scaling factor to get to 100g
+                        factor = 100.0 / serving_gram_weight
+
+                        # 4. Create the MyFood object with scaled, per-100g values
                         my_food = MyFood(
                             user_id=user.id,
                             description=fake.word().capitalize() + ' ' + fake.word()+ ' My Custom Food',
                             ingredients=fake.sentence(nb_words=6),
-                            calories_per_100g=random.uniform(50, 500),
-                            protein_per_100g=random.uniform(1, 50),
-                            carbs_per_100g=random.uniform(1, 80),
-                            fat_per_100g=random.uniform(1, 50)
+                            calories_per_100g=calories_for_serving * factor,
+                            protein_per_100g=protein_for_serving * factor,
+                            carbs_per_100g=carbs_for_serving * factor,
+                            fat_per_100g=fat_for_serving * factor
                         )
                     
                     if my_food:

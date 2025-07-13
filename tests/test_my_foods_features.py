@@ -3,14 +3,23 @@ from models import db, User, MyFood, Food, FoodNutrient, Nutrient, UnifiedPortio
 
 def test_create_my_food(auth_client):
     """
-    Tests creating a new custom food.
+    Tests creating a new custom food based on a user-defined portion.
+    The user provides nutrition for a serving, and it's scaled to 100g.
     """
+    # User provides nutrition facts for a 50g serving
     food_data = {
         'description': 'Homemade Granola',
-        'calories_per_100g': 450.0,
-        'protein_per_100g': 10.0,
-        'carbs_per_100g': 60.0,
-        'fat_per_100g': 20.0
+        # Nutrition for a 50g serving
+        'calories_per_100g': 225.0,  # In the form, this field is now just 'Calories'
+        'protein_per_100g': 5.0,     # 'Protein (g)'
+        'carbs_per_100g': 30.0,      # 'Carbohydrates (g)'
+        'fat_per_100g': 10.0,        # 'Fat (g)'
+        # Portion form data
+        'amount': 1,
+        'measure_unit_description': 'cup',
+        'portion_description': '',
+        'modifier': '',
+        'gram_weight': 50.0  # The gram weight of the '1 cup' serving
     }
     response = auth_client.post('/my_foods/new', data=food_data, follow_redirects=True)
     assert response.status_code == 200
@@ -20,7 +29,20 @@ def test_create_my_food(auth_client):
         user = User.query.filter_by(username='testuser').first()
         my_food = MyFood.query.filter_by(user_id=user.id, description='Homemade Granola').first()
         assert my_food is not None
+        # Verify that the values have been correctly scaled to 100g (doubled in this case)
         assert my_food.calories_per_100g == 450.0
+        assert my_food.protein_per_100g == 10.0
+        assert my_food.carbs_per_100g == 60.0
+        assert my_food.fat_per_100g == 20.0
+
+        # Verify the user-defined portion was created
+        user_portion = UnifiedPortion.query.filter_by(my_food_id=my_food.id, gram_weight=50.0).first()
+        assert user_portion is not None
+        assert user_portion.measure_unit_description == 'cup'
+
+        # Verify the automatic 1g portion was also created
+        gram_portion = UnifiedPortion.query.filter_by(my_food_id=my_food.id, gram_weight=1.0).first()
+        assert gram_portion is not None
 
 def test_copy_usda_food(auth_client):
     """

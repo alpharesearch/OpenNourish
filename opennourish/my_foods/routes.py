@@ -33,30 +33,56 @@ def my_foods():
 @login_required
 def new_my_food():
     form = MyFoodForm()
-    if form.validate_on_submit():
-        my_food = MyFood(
-            user_id=current_user.id,
-            description=form.description.data,
-            ingredients=form.ingredients.data,
-            calories_per_100g=form.calories_per_100g.data,
-            protein_per_100g=form.protein_per_100g.data,
-            carbs_per_100g=form.carbs_per_100g.data,
-            fat_per_100g=form.fat_per_100g.data,
-            saturated_fat_per_100g=form.saturated_fat_per_100g.data,
-            trans_fat_per_100g=form.trans_fat_per_100g.data,
-            cholesterol_mg_per_100g=form.cholesterol_mg_per_100g.data,
-            sodium_mg_per_100g=form.sodium_mg_per_100g.data,
-            fiber_per_100g=form.fiber_per_100g.data,
-            sugars_per_100g=form.sugars_per_100g.data,
-            vitamin_d_mcg_per_100g=form.vitamin_d_mcg_per_100g.data,
-            calcium_mg_per_100g=form.calcium_mg_per_100g.data,
-            iron_mg_per_100g=form.iron_mg_per_100g.data,
-            potassium_mg_per_100g=form.potassium_mg_per_100g.data
-        )
-        db.session.add(my_food)
-        db.session.flush()  # Flush to get the my_food.id for the portion
+    portion_form = PortionForm()
 
-        # Create the default 1-gram portion
+    # Change form labels for the 'new' page context
+    nutrient_fields = [
+        'calories_per_100g', 'protein_per_100g', 'carbs_per_100g', 'fat_per_100g',
+        'saturated_fat_per_100g', 'trans_fat_per_100g', 'cholesterol_mg_per_100g',
+        'sodium_mg_per_100g', 'fiber_per_100g', 'sugars_per_100g',
+        'vitamin_d_mcg_per_100g', 'calcium_mg_per_100g', 'iron_mg_per_100g',
+        'potassium_mg_per_100g'
+    ]
+    for field_name in nutrient_fields:
+        field = getattr(form, field_name)
+        field.label.text = field.label.text.replace(' per 100g', '')
+
+    if form.validate_on_submit() and portion_form.validate_on_submit():
+        gram_weight = portion_form.gram_weight.data
+        if not gram_weight or gram_weight <= 0:
+            flash('Gram weight of the portion must be greater than zero.', 'danger')
+            return render_template('my_foods/new_my_food.html', form=form, portion_form=portion_form)
+
+        factor = 100.0 / gram_weight
+
+        my_food_data = {
+            'user_id': current_user.id,
+            'description': form.description.data,
+            'ingredients': form.ingredients.data,
+        }
+
+        for field_name in nutrient_fields:
+            field = getattr(form, field_name)
+            if field.data is not None:
+                # The form field name is `calories_per_100g`, so we use it directly
+                my_food_data[field_name] = field.data * factor
+        
+        my_food = MyFood(**my_food_data)
+        db.session.add(my_food)
+        db.session.flush()  # Get the ID for the new food item
+
+        # Create the user-defined portion
+        new_portion = UnifiedPortion(
+            my_food_id=my_food.id,
+            amount=portion_form.amount.data,
+            measure_unit_description=portion_form.measure_unit_description.data,
+            portion_description=portion_form.portion_description.data,
+            modifier=portion_form.modifier.data,
+            gram_weight=portion_form.gram_weight.data
+        )
+        db.session.add(new_portion)
+
+        # Also create the default 1-gram portion for easy scaling
         gram_portion = UnifiedPortion(
             my_food_id=my_food.id,
             amount=1.0,
@@ -66,11 +92,12 @@ def new_my_food():
             gram_weight=1.0
         )
         db.session.add(gram_portion)
-        
+
         db.session.commit()
-        flash('Custom food added successfully!', 'success')
-        return redirect(url_for('my_foods.my_foods'))
-    return render_template('my_foods/new_my_food.html', form=form)
+        flash('Custom food added successfully! Nutritional values have been scaled to 100g.', 'success')
+        return redirect(url_for('my_foods.edit_my_food', food_id=my_food.id))
+
+    return render_template('my_foods/new_my_food.html', form=form, portion_form=portion_form)
 
 @my_foods_bp.route('/<int:food_id>/edit', methods=['GET', 'POST'])
 @login_required
