@@ -177,63 +177,6 @@
             </div>
             {% endif %}
 
-            {% if goals and (goals.weight_goal_kg or goals.body_fat_percentage_goal or goals.waist_cm_goal) and latest_checkin %}
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <h5>Target Weight</h5>
-                    <small class="text-muted d-block mb-1">
-                        Goal: 
-                        {% if current_user_measurement_system == 'us' %}
-                            {{ "%.1f" % (goals.weight_goal_kg * 2.20462) }} lbs
-                        {% else %}
-                            {{ "%.1f" % goals.weight_goal_kg }} kg
-                        {% endif %}
-                        | Current: 
-                        {% if current_user_measurement_system == 'us' %}
-                            {{ "%.1f" % (latest_checkin.weight_kg * 2.20462) }} lbs
-                        {% else %}
-                            {{ "%.1f" % latest_checkin.weight_kg }} kg
-                        {% endif %}
-                    </small>
-                    <div class="progress" style="height: 15px;">
-                        {% set weight_progress = (latest_checkin.weight_kg / goals.weight_goal_kg) * 100 if goals.weight_goal_kg > 0 else 0 %}
-                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ weight_progress }}%;" aria-valuenow="{{ latest_checkin.weight_kg }}" aria-valuemin="0" aria-valuemax="{{ goals.weight_goal_kg }}">{{ "%.0f" % weight_progress }}%</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <h5>Target Body Fat %</h5>
-                    <small class="text-muted d-block mb-1">
-                        Goal: {{ "%.1f" % goals.body_fat_percentage_goal }}% | Current: {{ "%.1f" % latest_checkin.body_fat_percentage }}%
-                    </small>
-                    <div class="progress" style="height: 15px;">
-                        {% set body_fat_progress = (latest_checkin.body_fat_percentage / goals.body_fat_percentage_goal) * 100 if goals.body_fat_percentage_goal > 0 else 0 %}
-                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ body_fat_progress }}%;" aria-valuenow="{{ latest_checkin.body_fat_percentage }}" aria-valuemin="0" aria-valuemax="{{ goals.body_fat_percentage_goal }}">{{ "%.0f" % body_fat_progress }}%</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <h5>Target Waist</h5>
-                    <small class="text-muted d-block mb-1">
-                        Goal: 
-                        {% if current_user_measurement_system == 'us' %}
-                            {{ "%.1f" % (goals.waist_cm_goal * 0.393701) }} in
-                        {% else %}
-                            {{ "%.1f" % goals.waist_cm_goal }} cm
-                        {% endif %}
-                        | Current: 
-                        {% if current_user_measurement_system == 'us' %}
-                            {{ "%.1f" % (latest_checkin.waist_cm * 0.393701) }} in
-                        {% else %}
-                            {{ "%.1f" % latest_checkin.waist_cm }} cm
-                        {% endif %}
-                    </small>
-                    <div class="progress" style="height: 15px;">
-                        {% set waist_progress = (latest_checkin.waist_cm / goals.waist_cm_goal) * 100 if goals.waist_cm_goal > 0 else 0 %}
-                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ waist_progress }}%;" aria-valuenow="{{ latest_checkin.waist_cm }}" aria-valuemin="0" aria-valuemax="{{ goals.waist_cm_goal }}">{{ "%.0f" % waist_progress }}%</div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
             {% if chart_labels and (weight_data or body_fat_data or waist_data) %}
                 <div style="height: 600px;">
                     <canvas id="weightChart"></canvas>
