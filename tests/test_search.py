@@ -230,3 +230,45 @@ def test_search_result_includes_details_link_for_usda_food(auth_client_with_data
     response = auth_client.get(f'/search/?search_term={search_term}')
     assert response.status_code == 200
     assert f'href="/food/{usda_food_fdc_id}"' in response.data.decode('utf-8')
+
+def test_usda_food_search_results_include_1g_portion(auth_client_with_data):
+    auth_client = auth_client_with_data
+    with auth_client.application.app_context():
+        # Create a USDA food with an existing non-gram portion
+        usda_food_fdc_id = 100003
+        usda_food = Food(fdc_id=usda_food_fdc_id, description='USDA Food with Cup Portion')
+        db.session.add(usda_food)
+        db.session.commit()
+
+        # Add a '1 cup' portion
+        cup_portion = UnifiedPortion(
+            fdc_id=usda_food_fdc_id,
+            amount=1.0,
+            measure_unit_description="cup",
+            portion_description="",
+            modifier="",
+            gram_weight=240.0 # Example gram weight for 1 cup
+        )
+        db.session.add(cup_portion)
+        db.session.commit()
+        cup_portion_id = cup_portion.id # Store the ID
+
+    search_term = 'USDA Food with Cup Portion'
+    response = auth_client.get(f'/search/?search_term={search_term}&search_usda=true&target=diary')
+    assert response.status_code == 200
+
+    with auth_client.application.app_context():
+        # Retrieve the 1-gram portion that should have been created by the search route
+        one_gram_portion = UnifiedPortion.query.filter_by(fdc_id=usda_food_fdc_id, gram_weight=1.0).first()
+        assert one_gram_portion is not None, "1-gram portion was not created for USDA food"
+
+        # Construct the expected HTML for the 1g option
+        expected_1g_option_html = f'<option value="{one_gram_portion.id}"> g</option>'.encode('utf-8')
+        assert expected_1g_option_html in response.data, "' g' portion option not found in dropdown HTML"
+
+        # Verify the '1 cup' portion is also still there
+        # Retrieve the cup portion again within this context to avoid DetachedInstanceError
+        re_queried_cup_portion = UnifiedPortion.query.get(cup_portion_id)
+        assert re_queried_cup_portion is not None, "Cup portion not found after re-query"
+        expected_1cup_option_html = f'<option value="{re_queried_cup_portion.id}"> cup</option>'.encode('utf-8')
+        assert expected_1cup_option_html in response.data, "' cup' portion option not found in dropdown HTML"

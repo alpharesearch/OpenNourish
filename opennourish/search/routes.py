@@ -157,8 +157,23 @@ def search():
             # Manually add the detail_url to each item
             for food in usda_foods_pagination.items:
                 food.detail_url = url_for('main.food_detail', fdc_id=food.fdc_id)
-            
-            for food in usda_foods_pagination.items:
+                
+                # Ensure a 1-gram portion exists for this USDA food
+                one_gram_portion = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id, gram_weight=1.0).first()
+                if not one_gram_portion:
+                    one_gram_portion = UnifiedPortion(
+                        fdc_id=food.fdc_id,
+                        amount=1.0,
+                        measure_unit_description="g",
+                        portion_description="",
+                        modifier="",
+                        gram_weight=1.0
+                    )
+                    db.session.add(one_gram_portion)
+                    db.session.commit()
+                    current_app.logger.debug(f"Created 1-gram portion for USDA food FDC_ID: {food.fdc_id} during search display.")
+                
+                # Fetch all portions, including the guaranteed 1-gram portion
                 food.portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
 
         if search_my_foods:
@@ -272,6 +287,23 @@ def search():
             if usda_foods_pagination:
                 for food in usda_foods_pagination.items:
                     food.detail_url = url_for('main.food_detail', fdc_id=food.fdc_id)
+                    
+                    # Ensure a 1-gram portion exists for this USDA food
+                    one_gram_portion = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id, gram_weight=1.0).first()
+                    if not one_gram_portion:
+                        one_gram_portion = UnifiedPortion(
+                            fdc_id=food.fdc_id,
+                            amount=1.0,
+                            measure_unit_description="g",
+                            portion_description="",
+                            modifier="",
+                            gram_weight=1.0
+                        )
+                        db.session.add(one_gram_portion)
+                        db.session.commit()
+                        current_app.logger.debug(f"Created 1-gram portion for USDA food FDC_ID: {food.fdc_id} during search display (frequent). ")
+                    
+                    # Fetch all portions, including the guaranteed 1-gram portion
                     food.portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
         
         if search_my_meals:
