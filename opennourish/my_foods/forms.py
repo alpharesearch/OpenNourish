@@ -3,7 +3,6 @@ from wtforms import StringField, FloatField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Optional, NumberRange
 
 class MyFoodForm(FlaskForm):
-    name = StringField('Name', validators=[Optional()])
     description = StringField('Description', validators=[DataRequired()])
     servings = FloatField('Servings', validators=[Optional(), NumberRange(min=0)], default=1.0)
     instructions = TextAreaField('Instructions', validators=[Optional()])
