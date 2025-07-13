@@ -375,12 +375,11 @@ def create_app(config_class=Config):
                             if isinstance(ingredient_food_item, Food):
                                 gram_portion = UnifiedPortion.query.filter_by(fdc_id=ingredient_food_item.fdc_id, gram_weight=1.0).first()
                                 if not gram_portion:
-                                    gram_portion = UnifiedPortion(fdc_id=ingredient_food_item.fdc_id, amount=1.0, measure_unit_description="g", gram_weight=1.0)
+                                    gram_portion = UnifiedPortion(fdc_id=ingredient_food_item.fdc_id, amount=1.0, measure_unit_description="g", portion_description="", modifier="", gram_weight=1.0)
                                     db.session.add(gram_portion)
                                     db.session.flush() # Ensure it gets an ID
 
-                            available_portions = []
-                            if isinstance(ingredient_food_item, Food):
+                                # Re-query available_portions to include the newly created gram_portion
                                 available_portions = db.session.query(UnifiedPortion).filter_by(fdc_id=ingredient_food_item.fdc_id).all()
                             elif hasattr(ingredient_food_item, 'portions'):
                                 available_portions = ingredient_food_item.portions
@@ -567,13 +566,11 @@ def create_app(config_class=Config):
                         if isinstance(food_item_for_portions, Food):
                             gram_portion = UnifiedPortion.query.filter_by(fdc_id=food_item_for_portions.fdc_id, gram_weight=1.0).first()
                             if not gram_portion:
-                                gram_portion = UnifiedPortion(fdc_id=food_item_for_portions.fdc_id, amount=1.0, measure_unit_description="g", gram_weight=1.0)
+                                gram_portion = UnifiedPortion(fdc_id=food_item_for_portions.fdc_id, amount=1.0, measure_unit_description="g", portion_description="", modifier="", gram_weight=1.0)
                                 db.session.add(gram_portion)
                                 db.session.flush() # Ensure it gets an ID
 
-                        available_portions = []
-                        if isinstance(food_item_for_portions, Food):
-                            # For USDA Food, query UnifiedPortion directly
+                            # Re-query available_portions to include the newly created gram_portion
                             available_portions = db.session.query(UnifiedPortion).filter_by(fdc_id=food_item_for_portions.fdc_id).all()
                         elif hasattr(food_item_for_portions, 'portions'):
                             # For MyFood and Recipe, use the relationship

@@ -139,11 +139,11 @@
                                         <input type="hidden" name="food_type" value="my_food">
                                         <input type="hidden" name="food_id" value="{{ food.id }}">
                                         <input type="number" name="amount" class="form-control form-control-sm" value="1" style="width: 70px;">
-                                        <select name="portion_id" class="form-select form-select-sm" style="width: 70px;">
-                                            {% for portion in food.portions %}
-                                                <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
-                                            {% endfor %}
-                                        </select>
+                                    <select name="portion_id" class="form-select form-select-sm" style="width: 70px;">
+                                        {% for portion in food.portions %}
+                                            <option value="{{ portion.id }}">{{ portion.full_description_str}}</option>
+                                        {% endfor %}
+                                    </select>
                                         <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
                                     </form>
                                 {% endif %}
@@ -273,11 +273,10 @@
                                     <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
                                     <input type="number" name="amount" class="form-control form-control-sm" value="1" style="width: 70px;">
                                     <select name="portion_id" class="form-select form-select-sm" style="width: 70px;">
-                                        <option value="g">g</option>
-                                        {% for portion in food.portions %}
-                                            <option value="{{ portion.id }}">{{ portion.full_description_str}}</option>
-                                        {% endfor %}
-                                    </select>
+                                            {% for portion in food.portions %}
+                                                <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
+                                            {% endfor %}
+                                        </select>
                                     <button type="submit" class="btn btn-sm btn-outline-success ms-2">Add</button>
                                 </form>
                             {% else %}
