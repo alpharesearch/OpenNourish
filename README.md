@@ -24,19 +24,22 @@ OpenNourish is a free and open source food tracker.
      ```
 
 4. **Create a `.env` file:**
-    - In the project root, create a file named `.env`.
-    - Add the following line to this file, replacing the placeholder with a strong, random key:
+    - Copy the `.env.example` file to `.env` in the project root:
+      ```bash
+      cp .env.example .env
       ```
-      SECRET_KEY='a_very_strong_and_random_secret_key'
-      ```
+    - Open the newly created `.env` file and replace the placeholder `SECRET_KEY` with a strong, random key.
     - You can generate a secure key using Python:
       ```python
       import secrets
       secrets.token_hex(16)
       ```
+    - The `SEED_DEV_DATA` variable in `.env` controls whether development data is seeded on the first run. Set it to `true` for development or `false` for a clean production setup.
 
 5. **Install Typst:**
-   - Typst is an external dependency required for generating nutrition labels. Follow the installation instructions on the official Typst website: [https://typst.app/docs/getting-started/](https://typst.app/docs/getting-started/)
+   - Typst is an external dependency required for generating nutrition labels. For non-Docker installations, you need to ensure the `typst` executable is available in your system's PATH (e.g., by placing it in `/usr/local/bin`).
+   - Download the pre-built binary for your system from the official Typst website: [https://typst.app/docs/getting-started/](https://typst.app/docs/getting-started/)
+   - **Note:** The `typst/` directory in the project root is primarily used for the Docker build context. If you are running the application outside of Docker, ensure `typst` is installed and accessible via your system's PATH.
    - **Note:** The snapd version of Typst may have limitations. Refer to the "Typst PDF Generation Issues" in the Troubleshooting section for more details.
 
 6. **Install Liberation Sans Font:**
@@ -46,15 +49,26 @@ OpenNourish is a free and open source food tracker.
      ```
      For other operating systems, please refer to your system's documentation for font installation.
 
-6. **Create and populate the database:**
+7. **Create and populate the database:**
    - Run the import script to build the `usda_data.db` file from the USDA data. This may take a few minutes.
      ```bash
      python import_usda_data.py [--keep_newest_upc_only]
      ```
    - The `--keep_newest_upc_only` flag (optional) will ensure that if multiple food entries share the same UPC, only the one with the most recent `available_date` is imported. By default, all entries with duplicate UPCs will be imported.
-   - Run `flask init-user-db` to initialize the `user_data.db`.
+   - Initialize the user database (only needed the very first time you set up the project):
+     ```bash
+     flask db init
+     ```
+   - Apply any pending database migrations to create the necessary tables:
+     ```bash
+     flask db upgrade
+     ```
+   - Seed the unified portion system with USDA data. This is crucial for the application to function correctly with USDA foods.
+     ```bash
+     flask seed-usda-portions
+     ```
 
-7. **Run the Flask application:**
+8. **Run the Flask application:**
    - Start the web server:
      ```bash
      flask run
@@ -69,9 +83,6 @@ OpenNourish is designed for a fully automated setup using Docker. The container 
 
 1.  **Docker and Docker Compose:** Ensure Docker and Docker Compose (v2.x, using `docker compose` command) are installed on your system.
 2.  **`.env` file:** In the project root, create a file named `.env` and add your `SECRET_KEY`.
-    ```
-    SECRET_KEY='a_very_strong_and_random_secret_key'
-    ```
 
 ### Running the Application
 
@@ -86,7 +97,7 @@ OpenNourish is designed for a fully automated setup using Docker. The container 
 
 ### Accessing the Application
 
-The application will be accessible in your web browser at `http://localhost:8081`.
+The application will be accessible in your web browser at the port mapped by Docker Compose (typically `http://localhost:8081`). Check your `docker-compose.yml` for the exact port mapping.
 
 ### Stopping the Application
 

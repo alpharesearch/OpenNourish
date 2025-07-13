@@ -123,7 +123,7 @@ This script executes `flask db upgrade` to apply any pending migrations and then
 
 ## For Project Maintainers: Creating the Pre-built Database
 
-To update the static USDA data, the maintainer must:
+To update the static USDA data (which is used to provide a pre-populated USDA database for new deployments), the maintainer must:
 
 1.  Run `python import_usda_data.py` locally to generate a new `usda_data.db`.
 2.  Create a new Release on the project's GitHub page.
@@ -137,11 +137,14 @@ This section outlines how to use Docker for local development. The setup uses vo
 ### Prerequisites
 
 1.  **Docker and Docker Compose:** Ensure Docker and Docker Compose are installed on your system.
-2.  **`.env` file:** Create a `.env` file in the project root with your `SECRET_KEY`.
+2.  **`.env` file:** Copy the `.env.example` file to `.env` in the project root and configure your `SECRET_KEY`.
+    ```bash
+    cp .env.example .env
+    ```
 3.  ```bash
     echo "SECRET_KEY='dev1'" > .env
     ```
-4.  **Typst Binary:** Ensure the `typst/` directory (containing the `typst` executable) is present in the project root. This directory is copied into the Docker image during the build process.
+4.  **Typst Binary:** Ensure the `typst/` directory (containing the `typst` executable, a typesetting system used for generating PDF reports) is present in the project root. This directory is copied into the Docker image during the build process.
 
 ### Building and Running the Container
 
@@ -188,79 +191,78 @@ Since the project files are copied into the image at build time, you need to reb
 
 ## 5. Deploying to TrueNAS SCALE
 
-This guide outlines how to deploy the OpenNourish Docker image to TrueNAS SCALE using a private, on-premises Docker registry. This avoids the need to upload your image to a public registry like Docker Hub.
+This guide outlines how to deploy the OpenNourish Docker image to TrueNAS SCALE. This setup uses a private Docker registry to store the images, which is highly recommended for local network deployments.
 
-### Step 1: Install a Private Docker Registry on TrueNAS
+### Step 1: Set Up a Private Docker Registry
 
-First, you need a place to push your images on your local network. TrueNAS makes this easy.
+Before you can deploy OpenNourish, you need a private Docker registry accessible by your TrueNAS server. You can set one up on TrueNAS itself by installing the **Docker Registry** application from the **Apps > Available Applications** page.
 
-1.  In the TrueNAS UI, navigate to **Apps > Available Applications**.
-2.  Search for `registry` and locate the official **Docker Registry** application.
-3.  Click **Install**.
-4.  Give the application a name (e.g., `docker-registry`).
-5.  In the **Registry Port Configuration** section, set the **Node Port** to an unused port, for example, `5000`.
-6.  Deploy the app.
+### Step 2: Build, Tag, and Push the Docker Images
 
-### Step 2: Configure Your Development PC to Trust the Registry
+From your development machine, follow these steps to prepare the images for deployment:
 
-Your new registry is not secured with SSL (it's on your private network), so you must configure your local Docker daemon to allow connections to it.
-
-1.  Open your Docker Desktop settings and navigate to the **Docker Engine** section.
-2.  In the JSON configuration editor, add the `insecure-registries` key, pointing to your TrueNAS server's IP and the port you configured.
-
-    ```json
-    {
-      "builder": {
-        "gc": {
-          "defaultKeepStorage": "20GB",
-          "enabled": true
-        }
-      },
-      "experimental": false,
-      "insecure-registries": [
-        "YOUR_TRUENAS_IP:5000"
-      ]
-    }
-    ```
-    Replace `YOUR_TRUENAS_IP` with the actual IP address of your TrueNAS server.
-
-3.  **Apply & Restart** Docker for the changes to take effect.
-
-### Step 3: Tag and Push the Image
-
-Now you can push the locally built image to your new private registry.
-
-1.  **Build the image** (if you haven't already):
+1.  **Build the images using the standard `docker-compose.yml`:**
+    This file contains the necessary build instructions for the application and Nginx services.
     ```bash
     docker compose build
     ```
 
-2.  **Tag the image** with the address of your private registry:
+2.  **Tag the images for your private registry:**
+    Replace `YOUR_REGISTRY_URL` with the address of your private registry (e.g., `your-truenas-ip:5000`).
     ```bash
-    docker tag opennourish-app:latest YOUR_TRUENAS_IP:5000/opennourish-app:latest
+    docker tag opennourish-app:latest YOUR_REGISTRY_URL/opennourish-app:latest
+    docker tag opennourish-nginx:latest YOUR_REGISTRY_URL/opennourish-nginx:latest
     ```
 
-3.  **Push the image** to the registry on your TrueNAS server:
+3.  **Push the images to your registry:**
     ```bash
-    docker push YOUR_TRUENAS_IP:5000/opennourish-app:latest
+    docker push YOUR_REGISTRY_URL/opennourish-app:latest
+    docker push YOUR_REGISTRY_URL/opennourish-nginx:latest
     ```
 
-### Step 4: Deploy the Custom App on TrueNAS
+### Step 3: Deploy the Application on TrueNAS
 
-Finally, create a "Custom App" in TrueNAS to run your image.
+The following YAML configuration should be used when creating a "Custom App" in the TrueNAS UI.
 
-1.  In the TrueNAS UI, go to **Apps > Installed Applications** and click **Add App**.
-2.  Select **Custom App**.
-3.  Configure the application settings:
-    *   **Application Name:** `opennourish`
-    *   **Image Repository:** `YOUR_TRUENAS_IP:5000/opennourish-app`
-    *   **Image Tag:** `latest`
-4.  Under **Port Forwarding**, add a new entry:
-    *   **Container Port:** `8081`
-    *   **Node Port:** Choose a port to access the app from your network (e.g., `8081`).
-5.  Under **Storage**, configure the persistent storage for the application:
-    *   Click **Add** under **Host Path Volumes**.
-    *   **Host Path:** Select the path on your TrueNAS server where you want to store the OpenNourish data (e.g., `/mnt/your-pool/apps/opennourish`).
-    *   **Mount Path:** `/app`
-6.  Deploy the application. TrueNAS will pull the image from your private registry and start the container with its data persisted in the host path you specified.
+1.  In the TrueNAS UI, navigate to **Apps > Custom App**.
+2.  Paste the following YAML into the **Docker Compose** editor:
+
+    ```yaml
+    services:
+      opennourish-app:
+        image: saturn.ms4f.net:30095/opennourish-app:latest
+        restart: unless-stopped
+        environment:
+          - SECRET_KEY=YourSuperStrongSecretKeyGoesHere
+          - SEED_DEV_DATA=true # Set to 'false' or remove for production deployments
+        volumes:
+          - /mnt/data-pool/opennourish:/app/persistent
+
+      nginx:
+        image: saturn.ms4f.net:30095/opennourish-nginx:latest
+        restart: unless-stopped
+        ports:
+          - "18080:80"
+          - "18443:443"
+        environment:
+          # These variables tell the entrypoint script where to find the real certs.
+          # Users can change these values if their certs are named differently.
+          # Leave these blank or unset them to use the self-signed fallback.
+          REAL_CERT_PATH: /etc/certificates/LEProduction.crt
+          REAL_KEY_PATH: /etc/certificates/LEProduction.key
+        volumes:
+          # 1. Mount the TrueNAS certificates directory so the container can see it.
+          - /etc/certificates:/etc/certificates:ro
+          # 2. Mount a persistent directory for Nginx to store its fallback certs.
+          - /mnt/data-pool/opennourish/nginx_certs:/etc/nginx/certs
+        depends_on:
+          - opennourish-app
+    ```
+3.  **Important:** Before deploying, you must update the following values in the YAML you just pasted:
+    *   Replace `saturn.ms4f.net:30095` with the address of your private registry for both `image` definitions.
+    *   Set a strong, unique `SECRET_KEY` in the `environment` section of the `opennourish-app` service.
+    *   Adjust the `volumes` paths (e.g., `/mnt/data-pool/opennourish`) to match the desired storage locations on your TrueNAS server.
+    *   **Certificate Paths for Nginx:** If you are using real SSL certificates managed by TrueNAS (e.g., from Let's Encrypt), you will need to update the `REAL_CERT_PATH` and `REAL_KEY_PATH` environment variables under the `nginx` service. These paths should point to where TrueNAS stores your certificates. You can typically find these paths by navigating to **System Settings > Certificates** in the TrueNAS UI, selecting your certificate, and inspecting its details or by checking the `/etc/certificates` directory on your TrueNAS server via SSH.
+4.  Deploy the application.
+
 

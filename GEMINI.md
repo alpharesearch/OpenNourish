@@ -130,6 +130,35 @@ To maintain a consistent and professional look and feel, all generated HTML temp
 - **Challenge:** A common challenge in this project is querying relationships between the user database (`user_data.db`) and the static USDA database (`usda_data.db`). Standard SQLAlchemy eager loading strategies like `joinedload` or `selectinload` can fail, as they may attempt to join tables across different database files, resulting in `sqlite3.OperationalError: no such table`.
 - **Solution:** To handle these cross-database relationships, you must use a manual, two-step query process. First, query the primary database (usually the user database) to retrieve the main objects. Then, extract the foreign keys from the results and perform a second, separate query against the second database (usually the USDA database) to fetch the related objects. Finally, manually attach the related objects to the main objects in your Python code. This approach ensures that each query is sent to the correct database, avoiding the "no such table" error.
 
+### 8.2. Testing Flash Messages
+- **Challenge:** When testing routes that flash a message and then immediately redirect, the flashed message is consumed by the redirected request. Asserting the message content in the final response body after setting `follow_redirects=True` will fail because the message has already been displayed and removed from the session.
+- **Solution:** To reliably test flash messages, you must check the session *before* following the redirect.
+  1. Make the POST request **without** `follow_redirects=True`.
+  2. Assert that the response status code is `302` (the redirect).
+  3. Use a `with client.session_transaction() as session:` block to access the session context.
+  4. Assert the content of the `_flashes` object within the session.
+  5. Optionally, you can then follow the redirect and assert the final page's status code.
+- **Example:**
+  ```python
+  def test_flash_message_on_redirect(client):
+      # Make the request that triggers the flash and redirect
+      response = client.post('/some/url', data={'key': 'value'})
+      
+      # Assert the redirect happened
+      assert response.status_code == 302
+
+      # Check the session for the flash message
+      with client.session_transaction() as session:
+          flashes = session.get('_flashes', [])
+          assert len(flashes) > 0
+          assert flashes[0][0] == 'success' # Category
+          assert flashes[0][1] == 'Your item was created!' # Message
+
+      # Optionally, follow the redirect
+      response = client.get(response.headers['Location'])
+      assert response.status_code == 200
+  ```
+
 ## 9. Debugging with the Flask Logger
 To maintain a clean and professional codebase, **do not use `print()` statements for debugging.** Instead, use Flask's built-in logger, which is automatically configured to show messages only when the application is in debug mode.
 
