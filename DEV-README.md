@@ -141,10 +141,8 @@ This section outlines how to use Docker for local development. The setup uses vo
     ```bash
     cp .env.example .env
     ```
-3.  ```bash
-    echo "SECRET_KEY='dev1'" > .env
-    ```
-4.  **Typst Binary:** Ensure the `typst/` directory (containing the `typst` executable, a typesetting system used for generating PDF reports) is present in the project root. This directory is copied into the Docker image during the build process.
+    
+3.  **Typst Binary:** Ensure the `typst/` directory (containing the `typst` executable, a typesetting system used for generating PDF reports) is present in the project root. This directory is copied into the Docker image during the build process.
 
 ### Building and Running the Container
 
@@ -220,6 +218,26 @@ From your development machine, follow these steps to prepare the images for depl
     docker push YOUR_REGISTRY_URL/opennourish-nginx:latest
     ```
 
+#### Step 2.1 Script
+To build, tag, and push the Docker images to your private TrueNAS registry, and to generate the necessary YAML configuration for TrueNAS Custom Apps, use the `deploy_truenas.sh` script.
+
+**IMPORTANT:** Before running the script, ensure you have set the following variables in your `.env` file:
+- `TRUENAS_REGISTRY_URL`: The address of your TrueNAS registry (e.g., `your-truenas-ip:5000`).
+- `SECRET_KEY`: Your Flask application's secret key.
+- `REAL_CERT_PATH` (optional): The path to your real SSL certificate on TrueNAS (e.g., `/etc/certificates/LEProduction.crt`).
+- `REAL_KEY_PATH` (optional): The path to your real SSL key on TrueNAS (e.g., `/etc/certificates/LEProduction.key`).
+- `TRUENAS_APP_PATH` (REQUIRED): The base path on your TrueNAS server where application data will be stored (e.g., `/mnt/data-pool/opennourish`).
+
+```bash
+./deploy_truenas.sh
+```
+
+This script will:
+1.  Build the Docker images using the standard `docker-compose.yml`.
+2.  Tag the images with your specified registry URL.
+3.  Push the tagged images to your private TrueNAS registry.
+4.  Print the TrueNAS Custom App YAML configuration to your console. You will need to copy this output and paste it into the TrueNAS UI.
+
 ### Step 3: Deploy the Application on TrueNAS
 
 The following YAML configuration should be used when creating a "Custom App" in the TrueNAS UI.
@@ -230,7 +248,7 @@ The following YAML configuration should be used when creating a "Custom App" in 
     ```yaml
     services:
       opennourish-app:
-        image: saturn.ms4f.net:30095/opennourish-app:latest
+        image: TRUENAS_REGISTRY_URL/opennourish-app:latest
         restart: unless-stopped
         environment:
           - SECRET_KEY=YourSuperStrongSecretKeyGoesHere
@@ -239,7 +257,7 @@ The following YAML configuration should be used when creating a "Custom App" in 
           - /mnt/data-pool/opennourish:/app/persistent
 
       nginx:
-        image: saturn.ms4f.net:30095/opennourish-nginx:latest
+        image: TRUENAS_REGISTRY_URL/opennourish-nginx:latest
         restart: unless-stopped
         ports:
           - "18080:80"
@@ -248,8 +266,8 @@ The following YAML configuration should be used when creating a "Custom App" in 
           # These variables tell the entrypoint script where to find the real certs.
           # Users can change these values if their certs are named differently.
           # Leave these blank or unset them to use the self-signed fallback.
-          REAL_CERT_PATH: /etc/certificates/LEProduction.crt
-          REAL_KEY_PATH: /etc/certificates/LEProduction.key
+          REAL_CERT_PATH: /etc/certificates/yourname.crt
+          REAL_KEY_PATH: /etc/certificates/yourname.key
         volumes:
           # 1. Mount the TrueNAS certificates directory so the container can see it.
           - /etc/certificates:/etc/certificates:ro
@@ -262,7 +280,7 @@ The following YAML configuration should be used when creating a "Custom App" in 
     *   Replace `saturn.ms4f.net:30095` with the address of your private registry for both `image` definitions.
     *   Set a strong, unique `SECRET_KEY` in the `environment` section of the `opennourish-app` service.
     *   Adjust the `volumes` paths (e.g., `/mnt/data-pool/opennourish`) to match the desired storage locations on your TrueNAS server.
-    *   **Certificate Paths for Nginx:** If you are using real SSL certificates managed by TrueNAS (e.g., from Let's Encrypt), you will need to update the `REAL_CERT_PATH` and `REAL_KEY_PATH` environment variables under the `nginx` service. These paths should point to where TrueNAS stores your certificates. You can typically find these paths by navigating to **System Settings > Certificates** in the TrueNAS UI, selecting your certificate, and inspecting its details or by checking the `/etc/certificates` directory on your TrueNAS server via SSH.
+    *   **Certificate Paths for Nginx:** If you are using real SSL certificates managed by TrueNAS (e.g., from Let's Encrypt), you will need to update the `REAL_CERT_PATH` and `REAL_KEY_PATH` environment variables under the `nginx` service in the YAML. These paths should point to where TrueNAS stores your certificates. You can typically find these paths by navigating to **System Settings > Certificates** in the TrueNAS UI, selecting your certificate, and inspecting its details or by checking the `/etc/certificates` directory on your TrueNAS server via SSH. You can copy these values from your local `.env` file.
 4.  Deploy the application.
 
 
