@@ -302,3 +302,47 @@ def test_usda_portion_p_icon_logic(auth_client_with_data):
     assert response2.status_code == 200
     # The 'P' icon SHOULD be present because there are 2 portions (the auto-added 1g + the slice)
     assert b'<span class="me-2 fw-bold text-primary" title="Portion sizes available">P2</span>' in response2.data
+
+def test_usda_search_ranking(auth_client_with_data):
+    auth_client = auth_client_with_data
+    with auth_client.application.app_context():
+        # Create several food items with descriptions designed to test the ranking logic.
+        food1 = Food(fdc_id=300001, description='Milk') # Exact match, should be first.
+        food2 = Food(fdc_id=300002, description='Milk, whole') # Starts with, should be second.
+        food3 = Food(fdc_id=300003, description='Soy milk') # Contains, but not at start.
+        food4 = Food(fdc_id=300004, description='Milk chocolate') # Starts with, but longer.
+        food5 = Food(fdc_id=300005, description='A long description about almond milk') # Contains, but long.
+        food6 = Food(fdc_id=300006, description='Milk with many portions') # Test portion count ranking
+
+        db.session.add_all([food1, food2, food3, food4, food5, food6])
+        db.session.commit()
+
+        # Add portions to food6 to test ranking
+        db.session.add(UnifiedPortion(fdc_id=300006, portion_description='cup', gram_weight=240.0))
+        db.session.add(UnifiedPortion(fdc_id=300006, portion_description='oz', gram_weight=28.35))
+        db.session.commit()
+
+    # Search for "Milk"
+    response = auth_client.get('/search/?search_term=Milk&search_usda=true')
+    assert response.status_code == 200
+
+    response_data = response.data.decode('utf-8')
+
+    # Find the indices of each food description in the response.
+    # A lower index means a higher ranking.
+    idx_milk_with_portions = response_data.find('<strong>Milk with many portions</strong>')
+    idx_milk = response_data.find('<strong>Milk</strong>')
+    idx_milk_whole = response_data.find('<strong>Milk, whole</strong>')
+    idx_milk_chocolate = response_data.find('<strong>Milk chocolate</strong>')
+    idx_soy_milk = response_data.find('<strong>Soy milk</strong>')
+    idx_almond_milk = response_data.find('<strong>A long description about almond milk</strong>')
+
+    # Assert that all items were found
+    assert all(idx != -1 for idx in [idx_milk, idx_milk_whole, idx_milk_chocolate, idx_soy_milk, idx_almond_milk, idx_milk_with_portions])
+
+    # Assert the ranking order based on their position in the HTML
+    assert idx_milk_with_portions < idx_milk
+    assert idx_milk < idx_milk_whole
+    assert idx_milk_whole < idx_milk_chocolate
+    assert idx_milk_chocolate < idx_soy_milk
+    assert idx_soy_milk < idx_almond_milk

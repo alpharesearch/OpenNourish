@@ -152,8 +152,71 @@ def search():
                 user_ids_to_search.extend(friend_ids)
 
         if search_usda:
-            usda_query = Food.query.filter(Food.description.ilike(f'%{search_term}%'))
-            usda_foods_pagination = usda_query.paginate(page=usda_page, per_page=per_page, error_out=False)
+            # Step 1: Get all matching food IDs from the USDA database first.
+            all_matching_foods_query = Food.query.filter(
+                Food.description.ilike(f'%{search_term}%')
+            ).with_entities(Food.fdc_id, Food.description).all()
+
+            if all_matching_foods_query:
+                matching_fdc_ids = [food.fdc_id for food in all_matching_foods_query]
+                food_descriptions = {food.fdc_id: food.description for food in all_matching_foods_query}
+
+                # Step 2: Get portion counts for those IDs from the user database.
+                portion_counts = dict(db.session.query(
+                    UnifiedPortion.fdc_id,
+                    func.count(UnifiedPortion.id)
+                ).filter(
+                    UnifiedPortion.fdc_id.in_(matching_fdc_ids)
+                ).group_by(UnifiedPortion.fdc_id).all())
+
+                # Step 3: Manually sort the food IDs in Python based on the desired logic.
+                def sort_key(fdc_id):
+                    description = food_descriptions[fdc_id].lower()
+                    search_term_lower = search_term.lower()
+                    
+                    # Primary sort key: Portion count (descending)
+                    portion_count = portion_counts.get(fdc_id, 0)
+                    
+                    # Secondary sort key: Relevance
+                    if description == search_term_lower:
+                        relevance = 1
+                    elif description.startswith(search_term_lower):
+                        relevance = 2
+                    elif f' {search_term_lower} ' in f' {description} ':
+                        relevance = 3
+                    else:
+                        relevance = 4
+                    
+                    # Tertiary sort key: Description length (ascending)
+                    length = len(description)
+                    
+                    return (-portion_count, relevance, length)
+
+                sorted_fdc_ids = sorted(matching_fdc_ids, key=sort_key)
+
+                # Step 4: Paginate the sorted list of IDs.
+                start = (usda_page - 1) * per_page
+                end = start + per_page
+                paginated_fdc_ids = sorted_fdc_ids[start:end]
+
+                # Step 5: Fetch the full Food objects for the paginated IDs.
+                if paginated_fdc_ids:
+                    paginated_foods = Food.query.filter(Food.fdc_id.in_(paginated_fdc_ids)).all()
+                    # Preserve the sorted order
+                    food_map = {food.fdc_id: food for food in paginated_foods}
+                    ordered_foods = [food_map[fdc_id] for fdc_id in paginated_fdc_ids]
+                else:
+                    ordered_foods = []
+
+                # Step 6: Create a manual pagination object.
+                usda_foods_pagination = ManualPagination(
+                    page=usda_page,
+                    per_page=per_page,
+                    total=len(sorted_fdc_ids),
+                    items=ordered_foods
+                )
+            else:
+                usda_foods_pagination = ManualPagination(page=usda_page, per_page=per_page, total=0, items=[])
             # Manually add the detail_url to each item
             for food in usda_foods_pagination.items:
                 food.detail_url = url_for('main.food_detail', fdc_id=food.fdc_id)
