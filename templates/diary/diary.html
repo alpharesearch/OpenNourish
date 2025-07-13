@@ -88,38 +88,45 @@
         <ul class="list-group list-group-flush">
             {% for item in items %}
             <li class="list-group-item">
-                <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}">
-                    <div class="row align-items-center">
-                        <div class="col-md-5">
-                            {{ item.description }}
-                            <br>
-                            <small class="text-muted">
-                                Calories: {{ item.nutrition.calories|round(0) }} kcal |
-                                Protein: {{ item.nutrition.protein|round(1) }}g |
-                                Carbs: {{ item.nutrition.carbs|round(1) }}g |
-                                Fat: {{ item.nutrition.fat|round(1) }}g
-                            </small>
+                <div class="row align-items-center">
+                    <div class="col-md-5">
+                        {{ item.description }}
+                        <br>
+                        <small class="text-muted">
+                            Calories: {{ item.nutrition.calories|round(0) }} kcal |
+                            Protein: {{ item.nutrition.protein|round(1) }}g |
+                            Carbs: {{ item.nutrition.carbs|round(1) }}g |
+                            Fat: {{ item.nutrition.fat|round(1) }}g
+                        </small>
+                    </div>
+                    <div class="col-md-7">
+                        {% if not is_read_only %}
+                        <div class="d-flex justify-content-end align-items-center">
+                            <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}" class="d-flex align-items-center">
+                                <input type="number" name="amount" value="{{ item.amount|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
+                                <select name="portion_id" class="form-select form-select-sm ms-2" style="width: auto; max-width: 200px;">
+                                    {% for portion in item.portions %}
+                                        {% if portion.id != 'g' %}
+                                        <option value="{{ portion.id }}" {% if item.selected_portion_id == portion.id %}selected{% endif %}>
+                                            {{ portion.full_description_str }}
+                                        </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <option value="g" {% if item.selected_portion_id == 'g' %}selected{% endif %}>g</option>
+                                </select>
+                                <button type="submit" class="btn btn-outline-success btn-sm ms-2">Save</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}" class="ms-2">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
                         </div>
-                        <div class="col-md-7">
-                            {% if not is_read_only %}
-                            <div class="d-flex justify-content-end align-items-center">
-                                <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}" class="d-flex align-items-center">
-                                    <input type="number" name="amount" value="{{ item.amount|round(2) }}" class="form-control form-control-sm" style="width: 80px;" step="0.01" required>
-                                    <select name="portion_id" class="form-select form-select-sm ms-2" style="width: 180px;">
-                                        <option value="g" {% if item.selected_portion_id == 'g' %}selected{% endif %}>g</option>
-                                        {% for portion in item.portions %}
-                                            <option value="{{ portion.id }}" {% if item.selected_portion_id == portion.id %}selected{% endif %}>
-                                                {{ portion.full_description_str }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="submit" class="btn btn-outline-success btn-sm ms-2">Save</button>
-                                </form>
-                                <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}" class="ms-2">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-                                </form>
-                            </div>
-                            {% endif %}
+                        {% else %}
+                        <div class="text-end text-muted">
+                            {{ item.amount|round(2) }} {{ item.serving_type }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
             </li>
             {% else %}
             <li class="list-group-item">No items logged for this meal.</li>

@@ -40,20 +40,27 @@ def diary(log_date_str=None):
     for log in daily_logs:
         food_item = None
         description_to_display = "Unknown Food"
+        
+        # Default to true, as the user owns the log entry itself.
+        # We will only add context to the description, not restrict editing.
+        is_own_food_item = True
+
         if log.fdc_id:
             food_item = db.session.query(Food).get(log.fdc_id)
         elif log.my_food_id:
-            food_item = db.session.get(MyFood, log.my_food_id)
+            food_item = db.session.query(MyFood).options(joinedload(MyFood.user)).get(log.my_food_id)
+            if food_item and food_item.user_id != current_user.id:
+                is_own_food_item = False
         elif log.recipe_id:
-            food_item = db.session.get(Recipe, log.recipe_id)
+            food_item = db.session.query(Recipe).options(joinedload(Recipe.user)).get(log.recipe_id)
+            if food_item and food_item.user_id != current_user.id:
+                is_own_food_item = False
 
         if food_item:
             available_portions = get_available_portions(food_item)
-            current_app.logger.debug(f"Debug: Available portions for {description_to_display}: {[p.full_description_str if hasattr(p, 'full_description_str') else p.portion_description for p in available_portions]}")
             
-            # Determine display_amount and selected_portion_id
             display_amount = log.amount_grams
-            selected_portion_id = 'g' # Default to grams
+            selected_portion_id = 'g'
             
             if log.portion_id_fk:
                 selected_portion = db.session.get(UnifiedPortion, log.portion_id_fk)
@@ -63,6 +70,10 @@ def diary(log_date_str=None):
             
             nutrition = calculate_nutrition_for_items([log])
             description_to_display = food_item.description if hasattr(food_item, 'description') else food_item.name
+            
+            if not is_own_food_item and hasattr(food_item, 'user') and food_item.user:
+                description_to_display += f" (from {food_item.user.username})"
+
             meals[log.meal_name].append({
                 'log_id': log.id,
                 'description': description_to_display,
