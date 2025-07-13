@@ -296,7 +296,15 @@ def _get_nutrition_label_data(fdc_id):
     return food, nutrient_info, nutrients_for_label
 
 def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_extra_info=False):
+    def _sanitize_for_typst(text):
+        """Sanitizes text to be safely included in Typst markup by escaping the '*' character."""
+        if not isinstance(text, str):
+            return text
+        return text.replace('*', r'\*')
+
     ingredients_str = food.ingredients if food.ingredients else "N/A"
+    ingredients_str = _sanitize_for_typst(ingredients_str)
+    
     portions_str = ""
     food_portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
     if food_portions:
@@ -304,6 +312,10 @@ def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_ex
         portions_str = "; ".join(portions_list)
     else:
         portions_str = "N/A"
+    portions_str = _sanitize_for_typst(portions_str)
+
+    # Sanitize food description
+    sanitized_food_description = _sanitize_for_typst(food.description)
 
     typst_content_data = f"""
 #import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
@@ -334,7 +346,7 @@ def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_ex
         typst_content = typst_content_data + f"""
 #set page(paper: "a4")
 #set text(font: "Liberation Sans")
-= {food.description}
+= {sanitized_food_description}
 
 == Ingredients: 
 {ingredients_str}
