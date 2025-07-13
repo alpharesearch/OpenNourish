@@ -301,4 +301,4 @@ def test_usda_portion_p_icon_logic(auth_client_with_data):
     response2 = auth_client.get(f'/search/?search_term=USDA Food With One Portion&search_usda=true')
     assert response2.status_code == 200
     # The 'P' icon SHOULD be present because there are 2 portions (the auto-added 1g + the slice)
-    assert b'<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>' in response2.data
+    assert b'<span class="me-2 fw-bold text-primary" title="Portion sizes available">P2</span>' in response2.data

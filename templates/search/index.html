@@ -125,7 +125,7 @@
                                     <span class="badge bg-secondary">by {{ food.user.username }}</span>
                                 {% endif %}
                                 <small class="d-block text-muted">
-                                    {% if food.portions %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>{% endif %}
+                                    {% if food.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P{{ food.portions|length }}</span>{% endif %}
                                     {% if food.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
                                 </small>
                             </div>
@@ -209,7 +209,7 @@
                                     <span class="badge bg-info text-dark">Public</span>
                                 {% endif %}
                                 <small class="d-block text-muted">
-                                    {% if recipe.portions %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>{% endif %}
+                                    {% if recipe.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P{{ recipe.portions|length }}</span>{% endif %}
                                     {% if recipe.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
                                 </small>
                             </div>
@@ -257,7 +257,7 @@
                         <div>
                             <strong>{{ food.description }}</strong>
                             <div class="text-muted small">
-                                {% if food.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P</span>{% endif %}
+                                {% if food.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P{{ food.portions|length }}</span>{% endif %}
                                 {% if food.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
                                 {% if food.nutrients %}<span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>{% endif %}
                             </div>
