@@ -454,3 +454,84 @@ def test_auto_add_recipe_portion_from_servings(auth_client_with_user):
         assert new_portion.gram_weight == pytest.approx(100.0)
         assert new_portion.measure_unit_description == "serving"
         assert new_portion.amount == 1.0
+
+def test_recipe_edit_ingredient_dropdown_1g_portion_uniqueness(auth_client_with_user):
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        # Create a recipe
+        recipe = Recipe(user_id=user.id, name='Recipe with USDA Ingredient', instructions='Test')
+        db.session.add(recipe)
+        db.session.commit()
+        recipe_id = recipe.id
+
+        # Create a USDA food with a non-gram portion
+        usda_food_fdc_id = 100004
+        usda_food = Food(fdc_id=usda_food_fdc_id, description='USDA Food for Recipe Test')
+        db.session.add(usda_food)
+        db.session.commit()
+
+        # Add a '1 cup' portion for this USDA food
+        cup_portion = UnifiedPortion(
+            fdc_id=usda_food_fdc_id,
+            amount=1.0,
+            measure_unit_description="cup",
+            portion_description="",
+            modifier="",
+            gram_weight=240.0 # Example gram weight for 1 cup
+        )
+        db.session.add(cup_portion)
+
+        # Explicitly create the 1-gram portion for this USDA food in the test setup
+        one_gram_portion = UnifiedPortion(
+            fdc_id=usda_food_fdc_id,
+            amount=1.0,
+            measure_unit_description="g",
+            portion_description="",
+            modifier="",
+            gram_weight=1.0
+        )
+        db.session.add(one_gram_portion)
+        db.session.commit()
+
+        # Add the USDA food as an ingredient to the recipe
+        ingredient = RecipeIngredient(
+            recipe_id=recipe_id,
+            fdc_id=usda_food_fdc_id,
+            amount_grams=100,
+            serving_type="g", # Default to g
+            portion_id_fk=one_gram_portion.id # Link to the 1g portion
+        )
+        db.session.add(ingredient)
+        db.session.commit()
+        ingredient_id = ingredient.id
+
+        one_gram_portion_id = one_gram_portion.id
+        cup_portion_id = cup_portion.id # Store cup portion ID as well
+
+    # Navigate to the recipe edit page
+    response = client.get(f'/recipes/{recipe_id}/edit')
+    assert response.status_code == 200
+
+    # Inspect the HTML response
+    html_content = response.data.decode('utf-8')
+
+    # Find the select element for the ingredient's portion
+    form_start_index = html_content.find(f'action="/recipes/recipe/ingredient/{ingredient_id}/update"')
+    assert form_start_index != -1, "Ingredient update form not found"
+
+    form_end_index = html_content.find('</form>', form_start_index)
+    assert form_end_index != -1, "Ingredient update form end tag not found"
+
+    ingredient_form_html = html_content[form_start_index:form_end_index]
+    # Count occurrences of ' g' and ' cup' options
+    # Re-query portions within this context to ensure they are attached
+    with client.application.app_context():
+        re_queried_one_gram_portion = db.session.get(UnifiedPortion, one_gram_portion_id)
+        re_queried_cup_portion = db.session.get(UnifiedPortion, cup_portion_id)
+
+        expected_1g_option_html = f'<option value="{re_queried_one_gram_portion.id}" selected> g</option>'
+        assert expected_1g_option_html in ingredient_form_html, "' g' portion option not found in dropdown HTML"
+
+        # Verify the '1 cup' portion is also still there
+        expected_1cup_option_html = f'<option value="{re_queried_cup_portion.id}" > cup</option>'
+        assert expected_1cup_option_html in ingredient_form_html, "' cup' portion option not found in dropdown HTML"

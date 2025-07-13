@@ -347,6 +347,24 @@ def add_item():
     amount = float(request.form.get('amount', 1))
     portion_id_str = request.form.get('portion_id')
 
+    # Ensure a 1-gram portion exists for USDA foods when they are added.
+    # This is crucial for consistency across the application.
+    if food_type == 'usda':
+        food_id_int = int(food_id)
+        one_gram_portion = UnifiedPortion.query.filter_by(fdc_id=food_id_int, gram_weight=1.0).first()
+        if not one_gram_portion:
+            one_gram_portion = UnifiedPortion(
+                fdc_id=food_id_int,
+                amount=1.0,
+                measure_unit_description="g",
+                portion_description="",
+                modifier="",
+                gram_weight=1.0
+            )
+            db.session.add(one_gram_portion)
+            db.session.commit()
+            current_app.logger.debug(f"Created 1-gram portion for USDA food FDC_ID: {food_id_int} during add_item.")
+
     if food_type == 'my_meal':
         my_meal = db.session.get(MyMeal, food_id)
         if not my_meal or my_meal.user_id != current_user.id:
@@ -398,50 +416,23 @@ def add_item():
             flash(f'Cannot add a meal to the selected target: {target}.', 'danger')
             return redirect(request.referrer or url_for('diary.diary'))
 
-    if not portion_id_str and food_type == 'usda':
-        # For USDA foods, if no portion is selected, default to a 1-gram portion.
-        # This ensures that the food can be added to the diary or a recipe.
-        food_id_int = int(food_id)
-        portion = UnifiedPortion.query.filter_by(fdc_id=food_id_int, gram_weight=1.0).first()
-        if not portion:
-            portion = UnifiedPortion(
-                fdc_id=food_id_int,
-                amount=1.0,
-                measure_unit_description="g",
-                portion_description="",
-                modifier="",
-                gram_weight=1.0
-            )
-            db.session.add(portion)
-            db.session.commit()
-        portion_id_str = str(portion.id)
-
-    # For all other food types, a portion must be selected. The validation happens below.
     portion = None
-    if food_type == 'usda' and portion_id_str == 'g':
-        # Check if a 1-gram portion already exists
-        portion = UnifiedPortion.query.filter_by(fdc_id=food_id, gram_weight=1.0).first()
-        if not portion:
-            # Create it if it doesn't exist
-            portion = UnifiedPortion(
-                fdc_id=food_id,
-                amount=1.0,
-                measure_unit_description="g",
-                portion_description="",
-                modifier="",
-                gram_weight=1.0
-            )
-            db.session.add(portion)
-            db.session.commit()
-    else:
+    if portion_id_str:
         try:
             portion_id_int = int(portion_id_str)
             portion = db.session.get(UnifiedPortion, portion_id_int)
         except (ValueError, TypeError):
             flash('Invalid portion ID.', 'danger')
             return redirect(request.referrer)
-
-    if not portion:
+    
+    # If no portion was selected (portion_id_str is empty) and it's a USDA food,
+    # default to the 1-gram portion that was just ensured to exist.
+    if not portion and food_type == 'usda':
+        portion = UnifiedPortion.query.filter_by(fdc_id=food_id_int, gram_weight=1.0).first()
+        if not portion: # This should ideally not happen if the above logic worked
+            flash('Could not find or create a default 1-gram portion for USDA food.', 'danger')
+            return redirect(request.referrer)
+    elif not portion: # For non-USDA foods, or if a portion_id_str was provided but invalid
         flash('Invalid portion selected.', 'danger')
         return redirect(request.referrer)
 
