@@ -57,3 +57,13 @@ html[data-bs-theme="dark"] .navbar.navbar-light.bg-light .nav-link:hover {
 html[data-bs-theme="dark"] .navbar.navbar-light.bg-light.border-bottom {
     border-color: rgba(255, 255, 255, 0.1) !important; /* Lighter border */
 }
+
+/* Improve headline readability in dark mode */
+html[data-bs-theme="dark"] h1,
+html[data-bs-theme="dark"] h2,
+html[data-bs-theme="dark"] h3,
+html[data-bs-theme="dark"] h4,
+html[data-bs-theme="dark"] h5,
+html[data-bs-theme="dark"] h6 {
+    color: #f8f9fa !important; /* Very light gray/off-white */
+}
