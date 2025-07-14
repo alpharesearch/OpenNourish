@@ -19,6 +19,11 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.blueprint == 'friends' %}active{% endif %}" href="{{ url_for('friends.friends_page') }}">Friends</a>
                 </li>
+                {% if current_user.is_admin %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.blueprint == 'admin' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Administration</a>
+                </li>
+                {% endif %}
             </ul>
             <ul class="navbar-nav">
                 {% if current_user.is_authenticated %}
@@ -29,9 +34,7 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
                         <li><a class="dropdown-item" href="{{ url_for('goals.goals') }}">Goals</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('settings.settings') }}">Settings</a></li>
-                        {% if current_user.is_admin %}
-                        <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">Admin Settings</a></li>
-                        {% endif %}
+                        
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
                     </ul>

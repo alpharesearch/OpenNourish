@@ -55,6 +55,16 @@
                     <a class="nav-link px-2 {% if request.endpoint == 'tracking.progress' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Check-in & Progress</a>
                 </li>
             {% endif %}
+
+            {# --- Admin Sub-Menu --- #}
+            {% if request.blueprint == 'admin' %}
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Admin Settings</a>
+                </li>
+            {% endif %}
         </ul>
     </div>
 </nav>

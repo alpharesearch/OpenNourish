@@ -6,6 +6,12 @@ from sqlalchemy import and_
 
 db = SQLAlchemy()
 
+class SystemSetting(db.Model):
+    __tablename__ = 'system_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(50), unique=True, nullable=False)
+    value = db.Column(db.String(100), nullable=False)
+
 # --- User-specific Models (Default Bind) ---
 
 class User(UserMixin, db.Model):

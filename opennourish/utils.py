@@ -130,21 +130,22 @@ def remove_leading_one(input_string):
         return input_string
 
 def get_allow_registration_status():
-    """Reads the ALLOW_REGISTRATION setting from instance/settings.json or defaults to True.
-    This function is used to get the current state of the setting without relying on app context.
     """
-    settings_file = os.path.join(current_app.instance_path, 'settings.json')
-    current_app.logger.debug(f"DEBUG: get_allow_registration_status - instance_path: {current_app.instance_path}")
-    current_app.logger.debug(f"DEBUG: get_allow_registration_status - settings_file: {settings_file}")
-    if os.path.exists(settings_file):
-        with open(settings_file, 'r') as f:
-            try:
-                settings_data = json.load(f)
-                return settings_data.get('ALLOW_REGISTRATION', True)
-            except json.JSONDecodeError:
-                current_app.logger.debug("get_allow_registration_status: JSONDecodeError, defaulting to True")
-                pass # File is empty or invalid JSON, fall through to default
-    current_app.logger.debug("get_allow_registration_status: File not found or no setting, defaulting to True")
+    Checks the system setting in the database to see if user registration is currently allowed.
+    Returns True if allowed, False otherwise.
+    """
+    from models import SystemSetting # Import here to avoid circular dependency issues
+    
+    # Query the database for the setting
+    allow_registration_setting = SystemSetting.query.filter_by(key='allow_registration').first()
+    
+    # If the setting exists and its value is 'False', registration is disabled
+    if allow_registration_setting and allow_registration_setting.value.lower() == 'false':
+        current_app.logger.debug("get_allow_registration_status: Setting found and is 'False'. Registration disabled.")
+        return False
+        
+    # In all other cases (setting doesn't exist, or value is not 'False'), registration is allowed
+    current_app.logger.debug("get_allow_registration_status: Setting not found or not 'False'. Registration enabled.")
     return True
 
 def calculate_nutrition_for_items(items, processed_recipes=None):

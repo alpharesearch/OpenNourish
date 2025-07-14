@@ -1,6 +1,8 @@
 import pytest
 from models import db, User
 from flask import url_for, current_app, get_flashed_messages
+import os
+import json
 
 # Helper function to create users
 def create_test_user(username, password='password', user_id=None):
@@ -34,12 +36,11 @@ def admin_client(app_with_db):
         admin_user_id = admin_user.id
 
     with app_with_db.test_client() as client:
-        with app_with_db.app_context():
-            admin_user_in_context = db.session.get(User, admin_user_id)
+        admin_user_in_context = db.session.get(User, admin_user_id)
         with client.session_transaction() as sess:
             sess['_user_id'] = admin_user_in_context.id
             sess['_fresh'] = True
-        yield client, admin_user_in_context
+        yield client, admin_user_in_context, app_with_db
 
 def test_non_admin_cannot_access_admin_page(auth_client_non_admin):
     """Test that a non-admin user cannot access the admin page."""
@@ -55,51 +56,88 @@ def test_unauthenticated_user_is_redirected(client):
     assert response.status_code == 302
     assert '/auth/login' in response.headers['Location']
 
-def test_admin_can_access_and_view_settings(admin_client):
-    """Test that the admin user can access and view the admin settings page."""
-    client, _ = admin_client
+def test_admin_can_access_admin_dashboard(admin_client):
+    """Test that the admin user can access the admin dashboard page."""
+    client, _, app = admin_client
     response = client.get('/admin/')
+    assert response.status_code == 302
+    assert response.headers['Location'] == '/admin/dashboard'
+
+def test_admin_can_view_admin_dashboard(admin_client):
+    """Test that the admin user can view the admin dashboard content."""
+    client, _, app = admin_client
+    response = client.get('/admin/dashboard')
+    assert response.status_code == 200
+    assert b'Admin Dashboard' in response.data
+    assert b'Total Users' in response.data
+
+def test_admin_can_access_admin_settings_page_directly(admin_client):
+    """Test that the admin user can access the admin settings page directly."""
+    client, _, app = admin_client
+    response = client.get('/admin/settings')
     assert response.status_code == 200
     assert b'Admin Settings' in response.data
-    assert b'Allow New User Registrations?' in response.data
 
-def test_admin_can_disable_registration(admin_client):
-    """Test that the admin can disable user registration via the admin interface."""
-    admin_client_instance, admin_user = admin_client
+def test_admin_can_disable_and_enable_registration(admin_client):
+    """
+    Test that the admin can disable and re-enable user registration,
+    and that the system correctly handles flash messages on redirect.
+    """
+    admin_client_instance, admin_user, app = admin_client
 
-    # 1. Admin disables registration
-    response = admin_client_instance.post('/admin/', data={}, follow_redirects=True)
+    # 1. Admin disables registration by submitting the form without the 'allow_registration' checkbox checked
+    response = admin_client_instance.post('/admin/settings', data={}, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Settings saved!' in response.data
+    assert b'Settings have been saved.' in response.data
 
     # 2. Log out admin user
     response = admin_client_instance.get('/auth/logout', follow_redirects=True)
     assert b'Sign In' in response.data
 
-    # 3. Verify unauthenticated user cannot register
-    register_initial_response = admin_client_instance.get('/auth/register', follow_redirects=False)
-    assert register_initial_response.status_code == 302
-    assert '/auth/login' in register_initial_response.headers['Location']
+    # 3. Verify unauthenticated user is redirected from register to login
+    # Make the request WITHOUT following redirects to check the session
+    register_redirect_response = admin_client_instance.get('/auth/register', follow_redirects=False)
+    assert register_redirect_response.status_code == 302
+    assert register_redirect_response.headers['Location'] == '/auth/login'
 
-    # Follow the redirect and check for the flashed message on the login page
-    login_page_response = admin_client_instance.get(register_initial_response.headers['Location'])
+    # Check the session for the flashed message
+    with admin_client_instance.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == 'danger'
+        assert flashes[0][1] == 'New user registration is currently disabled.'
+
+    # 4. Follow the redirect and check for the message on the login page
+    login_page_response = admin_client_instance.get(register_redirect_response.headers['Location'])
+    assert login_page_response.status_code == 200
     assert b'New user registration is currently disabled.' in login_page_response.data
-    assert b'<form' in login_page_response.data  # The login form should still be present
+    assert b'<form' in login_page_response.data  # The login form should be present
 
-    # 4. Log admin user back in
+    # 5. Log admin user back in
     login_response = admin_client_instance.post('/auth/login', data={'username': admin_user.username, 'password': 'password'}, follow_redirects=True)
     assert b'Dashboard' in login_response.data
 
-    # 5. Re-enable registration
-    response = admin_client_instance.post('/admin/', data={'allow_registration': 'y'}, follow_redirects=True)
+    # 6. Re-enable registration
+    response = admin_client_instance.post('/admin/settings', data={'allow_registration': 'y'}, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Settings saved!' in response.data
+    assert b'Settings have been saved.' in response.data
 
-    # 6. Log out admin user again
+    # 7. Log out admin user again
     admin_client_instance.get('/auth/logout', follow_redirects=True)
 
-    # 7. Verify unauthenticated user can now register
+    # 8. Verify unauthenticated user can now access the register page
     register_enabled_response = admin_client_instance.get('/auth/register', follow_redirects=False)
-    assert register_enabled_response.status_code == 200  # Should not redirect
+    assert register_enabled_response.status_code == 200
     assert b'New user registration is currently disabled.' not in register_enabled_response.data
-    assert b'<form' in register_enabled_response.data
+    assert b'Register' in register_enabled_response.data
+
+    # 9. Verify that a new user can be created
+    new_user_response = admin_client_instance.post('/auth/register', data={
+        'username': 'newuser',
+        'password': 'newpassword',
+        'password2': 'newpassword'
+    }, follow_redirects=True)
+    assert new_user_response.status_code == 200
+    assert b'Congratulations, you are now a registered user!' in new_user_response.data
+    # After registration, user is redirected to the dashboard if goals exist
+    assert b'Dashboard' in new_user_response.data
