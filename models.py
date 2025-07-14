@@ -17,6 +17,8 @@ class User(UserMixin, db.Model):
     gender = db.Column(db.String(10), nullable=True) # 'Male', 'Female'
     measurement_system = db.Column(db.String(10), default='metric', nullable=False) # 'metric' or 'us'
     height_cm = db.Column(db.Float, nullable=True)
+    navbar_preference = db.Column(db.String(50), default='bg-dark navbar-dark')
+    diary_default_view = db.Column(db.String(10), default='today')
     goal = db.relationship('UserGoal', backref='user', uselist=False)
     sent_friend_requests = db.relationship(
         'Friendship',

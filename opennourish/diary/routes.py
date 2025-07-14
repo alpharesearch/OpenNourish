@@ -17,7 +17,10 @@ def diary(log_date_str=None):
     if log_date_str:
         log_date = date.fromisoformat(log_date_str)
     else:
-        log_date = date.today()
+        if current_user.diary_default_view == 'yesterday':
+            log_date = date.today() - timedelta(days=1)
+        else:
+            log_date = date.today()
 
     user_goal = db.session.get(UserGoal, current_user.id)
     if not user_goal:

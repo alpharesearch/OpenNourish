@@ -30,6 +30,8 @@ def settings():
 
         user.age = settings_form.age.data
         user.gender = settings_form.gender.data
+        user.navbar_preference = settings_form.navbar_preference.data
+        user.diary_default_view = settings_form.diary_default_view.data
         
         db.session.commit()
         flash('Your settings have been updated.', 'success')

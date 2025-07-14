@@ -2,13 +2,7 @@
 
 {# --- Primary Navigation Bar (Top Tier) --- #}
 {# This part remains the same, as its collapsing behavior is correct. #}
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">OpenNourish</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#primaryNavbar" aria-controls="primaryNavbar" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="primaryNavbar">
+    <div class="collapse navbar-collapse" id="primaryNavbar">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 {% set viewing_friend_username = request.view_args.get('username') if request.blueprint == 'profile' else none %}
                 <li class="nav-item">
@@ -20,10 +14,7 @@
                        href="{% if viewing_friend_username %}{{ url_for('profile.diary', username=viewing_friend_username) }}{% else %}{{ url_for('diary.diary') }}{% endif %}">Food</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.blueprint == 'exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.blueprint == 'tracking' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Progress</a>
+                    <a class="nav-link {% if request.blueprint == 'exercise' or request.blueprint == 'tracking' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Body</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.blueprint == 'friends' %}active{% endif %}" href="{{ url_for('friends.friends_page') }}">Friends</a>
@@ -52,44 +43,4 @@
                 {% endif %}
             </ul>
         </div>
-    </div>
-</nav>
 
-{# --- Secondary Navigation Bar (Bottom Tier) - NOW FULLY RESPONSIVE --- #}
-{# We remove navbar-expand-lg to prevent it from ever trying to collapse. #}
-<nav class="navbar navbar-light bg-light border-bottom mb-4">
-    <div class="container">
-        {# We remove .collapse and .navbar-collapse to ensure it's always visible. #}
-        {# The .navbar-nav class will automatically handle wrapping on small screens. #}
-        <ul class="navbar-nav flex-row flex-wrap">
-            {# --- Food Sub-Menu --- #}
-            {% if request.blueprint in ['diary', 'my_foods', 'recipes', 'search', 'main'] %}
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint.startswith('diary.') and 'my_meals' not in request.endpoint %}active{% endif %}" href="{{ url_for('diary.diary') }}">Food Diary</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'my_foods.my_foods' %}active{% endif %}" href="{{ url_for('my_foods.my_foods') }}">My Foods</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'diary.my_meals' %}active{% endif %}" href="{{ url_for('diary.my_meals') }}">My Meals</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint.startswith('recipes.') %}active{% endif %}" href="{{ url_for('recipes.recipes') }}">My Recipes</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'search.search' and search_mode == 'usda_only' %}active{% endif %}" href="{{ url_for('search.search', search_mode='usda_only') }}">Search USDA</a>
-                </li>
-            {% endif %}
-
-            {# --- Exercise & Progress Sub-Menu --- #}
-            {% if request.blueprint == 'exercise' or request.blueprint == 'tracking' %}
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'exercise.log_exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise Log</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'tracking.progress' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Check-in & Progress</a>
-                </li>
-            {% endif %}
-        </ul>
-    </div>
-</nav>

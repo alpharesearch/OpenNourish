@@ -18,6 +18,26 @@ class SettingsForm(FlaskForm):
         choices=[('metric', 'Metric (kg, cm)'), ('us', 'US (lbs, ft/in)')],
         validators=[DataRequired()]
     )
+    navbar_preference = SelectField(
+        'Navbar Color',
+        choices=[
+            ('bg-dark navbar-dark', 'Default Dark'),
+            ('bg-primary navbar-dark', 'Primary Blue'),
+            ('bg-success navbar-dark', 'Green'),
+            ('bg-danger navbar-dark', 'Red'),
+            ('bg-light navbar-light', 'Light Gray'),
+            ('bg-white navbar-light', 'White')
+        ],
+        validators=[DataRequired()]
+    )
+    diary_default_view = SelectField(
+        'Default Diary View',
+        choices=[
+            ('today', 'Today'),
+            ('yesterday', 'Yesterday')
+        ],
+        validators=[DataRequired()]
+    )
     submit = SubmitField('Save Settings')
 
 class ChangePasswordForm(FlaskForm):
