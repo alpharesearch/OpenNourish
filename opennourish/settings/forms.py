@@ -38,6 +38,15 @@ class SettingsForm(FlaskForm):
         ],
         validators=[DataRequired()]
     )
+    theme_preference = SelectField(
+        'Theme Preference',
+        choices=[
+            ('light', 'Light Mode'),
+            ('dark', 'Dark Mode'),
+            ('auto', 'System Default')
+        ],
+        validators=[DataRequired()]
+    )
     submit = SubmitField('Save Settings')
 
 class ChangePasswordForm(FlaskForm):

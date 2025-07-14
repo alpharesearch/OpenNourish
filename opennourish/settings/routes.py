@@ -32,6 +32,7 @@ def settings():
         user.gender = settings_form.gender.data
         user.navbar_preference = settings_form.navbar_preference.data
         user.diary_default_view = settings_form.diary_default_view.data
+        user.theme_preference = settings_form.theme_preference.data
         
         db.session.commit()
         flash('Your settings have been updated.', 'success')

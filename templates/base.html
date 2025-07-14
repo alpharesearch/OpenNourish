@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="{{ current_user.theme_preference if current_user.is_authenticated else 'light' }}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -73,5 +73,20 @@
     </div>
     <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
     {% block scripts %}{% endblock %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const htmlTag = document.documentElement;
+            const userThemePreference = htmlTag.getAttribute('data-bs-theme');
+
+            if (userThemePreference === 'auto') {
+                const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDarkMode) {
+                    htmlTag.setAttribute('data-bs-theme', 'dark');
+                } else {
+                    htmlTag.setAttribute('data-bs-theme', 'light');
+                }
+            }
+        });
+    </script>
   </body>
 </html>

@@ -65,6 +65,12 @@
                             {{ settings_form.diary_default_view.label(class="form-label") }}
                             {{ settings_form.diary_default_view(class="form-select") }}
                         </div>
+
+                        <!-- Theme Preference -->
+                        <div class="mb-3">
+                            {{ settings_form.theme_preference.label(class="form-label") }}
+                            {{ settings_form.theme_preference(class="form-select") }}
+                        </div>
                         
                         <button type="submit" name="submit_settings" class="btn btn-outline-primary">Save Settings</button>
                     </form>
