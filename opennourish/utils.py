@@ -488,16 +488,29 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
     brand_name = "OpenNourish MyFood"
     sanitized_brand = _sanitize_for_typst(brand_name)
     
-    # Prepare UPC for EAN-13. A 12-digit UPC-A needs a leading 0.
-    # The ean13 function takes the first 12 digits and calculates the 13th.
-    upc_str = "0"
-    if my_food.upc and len(my_food.upc) == 12:
+    # Prepare UPC for EAN-13. The typst ean13 function takes the first 12 digits.
+    current_app.logger.debug(f"my_food.upc from DB: {my_food.upc}")
+    upc_str = "0" # Default
+
+    # Check for our internal 13-digit UPCs (now stored with checksum)
+    if my_food.upc and len(my_food.upc) == 13 and my_food.upc.startswith('200'):
+        upc_str = my_food.upc[:12] # Slice off the checksum for the label generator
+        current_app.logger.debug(f"Internal EAN-13 detected. Passing first 12 digits to label: {upc_str}")
+
+    # Check for a standard 12-digit UPC-A, which needs a leading '0'
+    elif my_food.upc and len(my_food.upc) == 12:
         upc_str = f"0{my_food.upc}"[:12]
+        current_app.logger.debug(f"Standard UPC-A detected. Prepending 0: {upc_str}")
+
+    # Handle existing full 13-digit EANs that are NOT our internal ones
     elif my_food.upc and len(my_food.upc) == 13:
         upc_str = my_food.upc[:12]
+        current_app.logger.debug(f"Full EAN-13 detected. Using first 12 digits: {upc_str}")
+
+    # Fallback for other lengths
     elif my_food.upc:
-        # Pad or truncate to 12 digits if it's some other length
         upc_str = my_food.upc.ljust(12, '0')[:12]
+        current_app.logger.debug(f"Fallback sizing applied: {upc_str}")
 
     portions_str = ""
     food_portions = UnifiedPortion.query.filter_by(my_food_id=my_food.id).all()
