@@ -288,8 +288,8 @@ def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_ex
     portions_str = ""
     food_portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
     if food_portions:
-        portions_list = [f"{p.portion_description} ({p.gram_weight}g)" for p in food_portions]
-        portions_str = "; ".join(portions_list)
+        portions_list = [f"{p.full_description_str} ({p.gram_weight}g)" for p in food_portions]
+        portions_str = "\\ ".join(portions_list)
     else:
         portions_str = "N/A"
     portions_str = _sanitize_for_typst(portions_str)
@@ -326,9 +326,18 @@ def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_ex
 
     if include_extra_info:
         typst_content = typst_content_data + f"""
-#set page(paper: "a4")
+#set page(paper: "a4", header: align(right + horizon)[OpenNourish Food fact sheet], columns: 2)
 #set text(font: "Liberation Sans")
+#place(
+  top + center,
+  float: true,
+  scope: "parent",
+  clearance: 2em,
+)[
 = {sanitized_food_description}
+]
+== UPC:
+#ean13(scale:(1.8, .5), "{UPC_str}")
 
 == Ingredients: 
 {ingredients_str}
@@ -336,10 +345,7 @@ def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_ex
 == Portion Sizes: 
 {portions_str}
 
-== UPC:
-#ean13(scale:(1.8, .5), "{UPC_str}")
-
-== Lable:
+#colbreak()
 #show: nutrition-label-nam(data)
 
 """
@@ -357,7 +363,7 @@ def generate_nutrition_label_pdf(fdc_id):
         return "Food not found", 404
 
     typst_content = _generate_typst_content(food, nutrient_info, nutrients_for_label, include_extra_info=True)
-
+    current_app.logger.debug(f"typst_content: {typst_content}")
     with tempfile.TemporaryDirectory() as tmpdir:
         typ_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.typ")
         pdf_file_path = os.path.join(tmpdir, f"nutrition_label_{fdc_id}.pdf")
@@ -542,7 +548,7 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
         return "Food not found", 404
 
     typst_content = _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=label_only)
-
+    current_app.logger.debug(f"typst_content: {typst_content}")
     with tempfile.TemporaryDirectory() as tmpdir:
         file_suffix = "label_only" if label_only else "details"
         typ_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.typ")
