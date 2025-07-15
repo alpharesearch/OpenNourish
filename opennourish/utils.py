@@ -548,25 +548,24 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 
     if label_only:
         typst_content = typst_content_data + f"""
-#set page(width: 12cm, height: 18cm)
-#show: nutrition-label-nam(data)
+#set page(width: 2in, height: 1in)
+#set page(margin: (x: 0.1cm, y: 0.1cm))
+#set text(font: "Liberation Sans", size: 8pt)
+#ean13(scale:(1.6, .5), "{upc_str}")
+{sanitized_food_name}
 """
     else:
         typst_content = typst_content_data + f"""
-#set page(paper: "a4")
-#set text(font: "Liberation Sans")
-
-= {sanitized_food_name}
-== Brand: {sanitized_brand}
-
+#set page(width: 6in, height: 4in, columns: 2)
+#set page(margin: (x: 0.5cm, y: 0.3cm))
+#set text(font: "Liberation Sans", size: 8pt)
+#ean13(scale:(2.0, .5), "{upc_str}")
+== My Food: 
+{sanitized_food_name}
 == Portion Sizes: 
 {portions_str}
-
-== UPC:
-#ean13(scale:(1.8, .5), "{upc_str}")
-
-== Nutrition Label (per 100g):
-#show: nutrition-label-nam(data)
+#colbreak()
+#show: nutrition-label-nam(data, scale-percent: 75%, show-footnote: false,)
 """
 
     return typst_content
@@ -593,7 +592,7 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
         try:
             # Run Typst command
             subprocess.run(
-                ["typst", "compile", os.path.basename(typ_file_path), os.path.basename(pdf_file_path)],
+                ["typst", "compile", os.path.basename(typ_file_path), "--pages", "1", os.path.basename(pdf_file_path)],
                 capture_output=True, text=True, check=True, cwd=tmpdir
             )
 
