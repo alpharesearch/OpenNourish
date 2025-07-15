@@ -296,7 +296,17 @@ def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_ex
 
     # Sanitize food description
     sanitized_food_description = _sanitize_for_typst(food.description)
-    UPC_str = food.upc if food.upc else "0"
+    
+    # Prepare UPC for EAN-13. A 12-digit UPC-A needs a leading 0.
+    # The ean13 function takes the first 12 digits and calculates the 13th.
+    upc_str = "0"
+    if food.upc and len(food.upc) == 12:
+        upc_str = f"0{food.upc}"[:12]
+    elif food.upc and len(food.upc) == 13:
+        upc_str = food.upc[:12]
+    elif food.upc:
+        # Pad or truncate to 12 digits if it's some other length
+        upc_str = food.upc.ljust(12, '0')[:12]
 
     typst_content_data = f"""
 #import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
@@ -337,7 +347,7 @@ def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_ex
 = {sanitized_food_description}
 ]
 == UPC:
-#ean13(scale:(1.8, .5), "{UPC_str}")
+#ean13(scale:(1.8, .5), "{upc_str}")
 
 == Ingredients: 
 {ingredients_str}
@@ -477,13 +487,23 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
     sanitized_food_name = _sanitize_for_typst(my_food.description)
     brand_name = "OpenNourish MyFood"
     sanitized_brand = _sanitize_for_typst(brand_name)
-    UPC_str = my_food.upc if my_food.upc else "0"
     
+    # Prepare UPC for EAN-13. A 12-digit UPC-A needs a leading 0.
+    # The ean13 function takes the first 12 digits and calculates the 13th.
+    upc_str = "0"
+    if my_food.upc and len(my_food.upc) == 12:
+        upc_str = f"0{my_food.upc}"[:12]
+    elif my_food.upc and len(my_food.upc) == 13:
+        upc_str = my_food.upc[:12]
+    elif my_food.upc:
+        # Pad or truncate to 12 digits if it's some other length
+        upc_str = my_food.upc.ljust(12, '0')[:12]
+
     portions_str = ""
     food_portions = UnifiedPortion.query.filter_by(my_food_id=my_food.id).all()
     if food_portions:
-        portions_list = [f"{_sanitize_for_typst(p.portion_description)} ({p.gram_weight}g)" for p in food_portions]
-        portions_str = "; ".join(portions_list)
+        portions_list = [f"{_sanitize_for_typst(p.full_description_str)} ({p.gram_weight}g)" for p in food_portions]
+        portions_str = "\\ ".join(portions_list)
     else:
         portions_str = "N/A"
 
@@ -530,7 +550,7 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 {portions_str}
 
 == UPC:
-#ean13(scale:(1.8, .5), "{UPC_str}")
+#ean13(scale:(1.8, .5), "{upc_str}")
 
 == Nutrition Label (per 100g):
 #show: nutrition-label-nam(data)
