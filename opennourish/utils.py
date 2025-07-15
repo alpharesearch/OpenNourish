@@ -296,9 +296,11 @@ def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_ex
 
     # Sanitize food description
     sanitized_food_description = _sanitize_for_typst(food.description)
+    UPC_str = food.upc if food.upc else "0"
 
     typst_content_data = f"""
 #import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
+#import "@preview/codetastic:0.2.2": ean13
 #let data = (
   servings: "1", // Assuming 1 serving for 100g
   serving_size: "100g",
@@ -334,9 +336,11 @@ def _generate_typst_content(food, nutrient_info, nutrients_for_label, include_ex
 == Portion Sizes: 
 {portions_str}
 
+== UPC:
+#ean13(scale:(1.8, .5), "{UPC_str}")
+
 == Lable:
 #show: nutrition-label-nam(data)
-
 
 """
     else:
@@ -467,6 +471,7 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
     sanitized_food_name = _sanitize_for_typst(my_food.description)
     brand_name = "OpenNourish MyFood"
     sanitized_brand = _sanitize_for_typst(brand_name)
+    UPC_str = my_food.upc if my_food.upc else "0"
     
     portions_str = ""
     food_portions = UnifiedPortion.query.filter_by(my_food_id=my_food.id).all()
@@ -478,6 +483,7 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 
     typst_content_data = f"""
 #import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
+#import "@preview/codetastic:0.2.2": ean13
 #let data = (
   servings: "1", // Assuming 1 serving for 100g
   serving_size: "100g",
@@ -516,6 +522,9 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 
 == Portion Sizes: 
 {portions_str}
+
+== UPC:
+#ean13(scale:(1.8, .5), "{UPC_str}")
 
 == Nutrition Label (per 100g):
 #show: nutrition-label-nam(data)
