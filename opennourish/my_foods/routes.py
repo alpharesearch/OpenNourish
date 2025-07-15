@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from models import db, MyFood, Food, Nutrient, FoodNutrient, UnifiedPortion, User
 from opennourish.my_foods.forms import MyFoodForm, PortionForm
 from sqlalchemy.orm import joinedload
+from opennourish.utils import generate_myfood_label_pdf
 
 my_foods_bp = Blueprint('my_foods', __name__)
 
@@ -274,6 +275,22 @@ def copy_my_food(food_id):
     db.session.commit()
     flash(f"Successfully copied '{original_food.description}' to your foods.", "success")
     return redirect(url_for('my_foods.my_foods'))
+
+
+
+@my_foods_bp.route('/<int:food_id>/generate_pdf_label', methods=['GET'])
+@login_required
+def generate_pdf_label(food_id):
+    # Verify the user owns the food item
+    my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
+    return generate_myfood_label_pdf(food_id, label_only=True)
+
+@my_foods_bp.route('/<int:food_id>/generate_pdf_details', methods=['GET'])
+@login_required
+def generate_pdf_details(food_id):
+    # Verify the user owns the food item
+    my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
+    return generate_myfood_label_pdf(food_id, label_only=False)
 
 
 

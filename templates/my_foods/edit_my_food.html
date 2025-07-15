@@ -100,6 +100,8 @@
                 </div>
                 {{ form.submit(class="btn btn-outline-primary") }}
                 <a href="{{ url_for('my_foods.my_foods') }}" class="btn btn-outline-secondary">Cancel</a>
+                <a href="{{ url_for('my_foods.generate_pdf_label', food_id=my_food.id) }}" class="btn btn-outline-info" target="_blank">Print Label</a>
+                <a href="{{ url_for('my_foods.generate_pdf_details', food_id=my_food.id) }}" class="btn btn-outline-info" target="_blank">Print Details</a>
             </form>
         </div>
     </div>

@@ -426,3 +426,134 @@ def calculate_recipe_nutrition_per_100g(recipe):
         nutrition_per_100g['fat'] = total_nutrition['fat'] * scaling_factor
     
     return nutrition_per_100g
+
+def _get_nutrition_label_data_myfood(my_food_id):
+    """
+    Fetches a MyFood item and its nutritional data, formatted for the Typst label generator.
+    """
+    my_food = db.session.get(MyFood, my_food_id)
+    if not my_food:
+        return None, None
+
+    # The Typst template expects specific keys. We map the MyFood attributes to these keys.
+    # All values are per 100g.
+    nutrients_for_label = {
+        'Energy': my_food.calories_per_100g or 0,
+        'Total lipid (fat)': my_food.fat_per_100g or 0,
+        'Fatty acids, total saturated': my_food.saturated_fat_per_100g or 0,
+        'Fatty acids, total trans': my_food.trans_fat_per_100g or 0,
+        'Cholesterol': my_food.cholesterol_mg_per_100g or 0,
+        'Sodium': my_food.sodium_mg_per_100g or 0,
+        'Carbohydrate, by difference': my_food.carbs_per_100g or 0,
+        'Fiber, total dietary': my_food.fiber_per_100g or 0,
+        'Sugars, total including NLEA': my_food.sugars_per_100g or 0,
+        'Sugars, added': 0,  # MyFood model does not have 'added sugars'
+        'Protein': my_food.protein_per_100g or 0,
+        'Vitamin D': my_food.vitamin_d_mcg_per_100g or 0,
+        'Calcium': my_food.calcium_mg_per_100g or 0,
+        'Iron': my_food.iron_mg_per_100g or 0,
+        'Potassium': my_food.potassium_mg_per_100g or 0,
+    }
+    return my_food, nutrients_for_label
+
+def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=False):
+    def _sanitize_for_typst(text):
+        """Sanitizes text to be safely included in Typst markup by escaping special characters."""
+        if not isinstance(text, str):
+            return text
+        return text.replace('\\', r'\\').replace('"', r'\"').replace('*', r'\*')
+
+    # Sanitize all user-provided strings
+    sanitized_food_name = _sanitize_for_typst(my_food.description)
+    brand_name = "OpenNourish MyFood"
+    sanitized_brand = _sanitize_for_typst(brand_name)
+    
+    portions_str = ""
+    food_portions = UnifiedPortion.query.filter_by(my_food_id=my_food.id).all()
+    if food_portions:
+        portions_list = [f"{_sanitize_for_typst(p.portion_description)} ({p.gram_weight}g)" for p in food_portions]
+        portions_str = "; ".join(portions_list)
+    else:
+        portions_str = "N/A"
+
+    typst_content_data = f"""
+#import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
+#let data = (
+  servings: "1", // Assuming 1 serving for 100g
+  serving_size: "100g",
+  calories: "{nutrients_for_label['Energy']:.0f}",
+  total_fat: (value: {nutrients_for_label['Total lipid (fat)']:.1f}, unit: "g"),
+  saturated_fat: (value: {nutrients_for_label['Fatty acids, total saturated']:.1f}, unit: "g"),
+  trans_fat: (value: {nutrients_for_label['Fatty acids, total trans']:.1f}, unit: "g"),
+  cholesterol: (value: {nutrients_for_label['Cholesterol']:.0f}, unit: "mg"),
+  sodium: (value: {nutrients_for_label['Sodium']:.0f}, unit: "mg"),
+  carbohydrate: (value: {nutrients_for_label['Carbohydrate, by difference']:.1f}, unit: "g"),
+  fiber: (value: {nutrients_for_label['Fiber, total dietary']:.1f}, unit: "g"),
+  sugars: (value: {nutrients_for_label['Sugars, total including NLEA']:.1f}, unit: "g"),
+  added_sugars: (value: {nutrients_for_label['Sugars, added']:.1f}, unit: "g"),
+  protein: (value: {nutrients_for_label['Protein']:.1f}, unit: "g"),
+  micronutrients: (
+    (name: "Vitamin D", key: "vitamin_d", value: {nutrients_for_label['Vitamin D']:.0f}, unit: "mcg"),
+    (name: "Calcium", key: "calcium", value: {nutrients_for_label['Calcium']:.0f}, unit: "mg"),
+    (name: "Iron", key: "iron", value: {nutrients_for_label['Iron']:.1f}, unit: "mg"),
+    (name: "Potassium", key: "potassium", value: {nutrients_for_label['Potassium']:.0f}, unit: "mg"),
+  ),
+)
+"""
+
+    if label_only:
+        typst_content = typst_content_data + f"""
+#set page(width: 12cm, height: 18cm)
+#show: nutrition-label-nam(data)
+"""
+    else:
+        typst_content = typst_content_data + f"""
+#set page(paper: "a4")
+#set text(font: "Liberation Sans")
+
+= {sanitized_food_name}
+== Brand: {sanitized_brand}
+
+== Portion Sizes: 
+{portions_str}
+
+== Nutrition Label (per 100g):
+#show: nutrition-label-nam(data)
+"""
+
+    return typst_content
+
+def generate_myfood_label_pdf(my_food_id, label_only=False):
+    """
+    Generates a PDF nutrition label for a MyFood item.
+    Can generate a label-only PDF or a full-page PDF with additional details.
+    """
+    my_food, nutrients_for_label = _get_nutrition_label_data_myfood(my_food_id)
+    if not my_food:
+        return "Food not found", 404
+
+    typst_content = _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=label_only)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        file_suffix = "label_only" if label_only else "details"
+        typ_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.typ")
+        pdf_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.pdf")
+
+        with open(typ_file_path, "w", encoding="utf-8") as f:
+            f.write(typst_content)
+
+        try:
+            # Run Typst command
+            subprocess.run(
+                ["typst", "compile", os.path.basename(typ_file_path), os.path.basename(pdf_file_path)],
+                capture_output=True, text=True, check=True, cwd=tmpdir
+            )
+
+            download_name = f"{my_food.description}_{file_suffix}.pdf"
+            return send_file(pdf_file_path, as_attachment=False, download_name=download_name, mimetype='application/pdf')
+        except subprocess.CalledProcessError as e:
+            current_app.logger.error(f"Typst compilation failed for my_food_id {my_food_id}: {e.stderr}")
+            return f"Error generating PDF: {e.stderr}", 500
+        except FileNotFoundError:
+            current_app.logger.error("Typst executable not found.")
+            return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
