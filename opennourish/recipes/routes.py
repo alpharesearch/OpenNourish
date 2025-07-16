@@ -6,7 +6,7 @@ from opennourish.diary.forms import AddToLogForm
 from opennourish.my_foods.forms import PortionForm
 from sqlalchemy.orm import joinedload, selectinload
 from datetime import date
-from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g, get_available_portions, remove_leading_one, update_recipe_nutrition
+from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g, get_available_portions, remove_leading_one, update_recipe_nutrition, generate_recipe_label_pdf
 
 recipes_bp = Blueprint('recipes', __name__, template_folder='templates')
 
@@ -413,6 +413,16 @@ def delete_recipe_portion(portion_id):
     else:
         flash('Portion not found or you do not have permission to delete it.', 'danger')
         return redirect(url_for('recipes.recipes'))
+
+
+@recipes_bp.route('/<int:recipe_id>/generate_label_pdf')
+@login_required
+def generate_label_pdf(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.user_id != current_user.id:
+        flash('You are not authorized to view this recipe.', 'danger')
+        return redirect(url_for('recipes.recipes'))
+    return generate_recipe_label_pdf(recipe_id)
 
 
 @recipes_bp.route('/<int:recipe_id>/copy', methods=['POST'])

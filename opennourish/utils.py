@@ -518,7 +518,7 @@ def _get_nutrition_label_data_myfood(my_food_id):
     }
     return my_food, nutrients_for_label
 
-def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=False):
+def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False):
     def _sanitize_for_typst(text):
         """Sanitizes text to be safely included in Typst markup by escaping special characters."""
         if not isinstance(text, str):
@@ -526,39 +526,56 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
         return text.replace('\\', r'\\').replace('"', r'\"').replace('*', r'\*')
 
     # Sanitize all user-provided strings
-    sanitized_food_name = _sanitize_for_typst(my_food.description)
-    brand_name = "OpenNourish MyFood"
-    sanitized_brand = _sanitize_for_typst(brand_name)
+    sanitized_recipe_name = _sanitize_for_typst(recipe.name)
 
-    ingredients_str = my_food.ingredients if my_food.ingredients else "N/A"
+    # Create a string of ingredients for the recipe
+    ingredients_str = ""
+    if recipe.ingredients:
+        ingredient_names = []
+        for ing in recipe.ingredients:
+            if ing.fdc_id:
+                food = db.session.get(Food, ing.fdc_id)
+                if food:
+                    ingredient_names.append(food.description)
+            elif ing.my_food_id:
+                my_food = db.session.get(MyFood, ing.my_food_id)
+                if my_food:
+                    ingredient_names.append(my_food.description)
+            elif ing.recipe_id_link:
+                linked_recipe = db.session.get(Recipe, ing.recipe_id_link)
+                if linked_recipe:
+                    ingredient_names.append(linked_recipe.name)
+        ingredients_str = ", ".join(ingredient_names)
+    else:
+        ingredients_str = "N/A"
     ingredients_str = _sanitize_for_typst(ingredients_str)
     
     # Prepare UPC for EAN-13. The typst ean13 function takes the first 12 digits.
-    current_app.logger.debug(f"my_food.upc from DB: {my_food.upc}")
+    current_app.logger.debug(f"recipe.upc from DB: {recipe.upc}")
     upc_str = "0" # Default
 
     # Check for our internal 13-digit UPCs (now stored with checksum)
-    if my_food.upc and len(my_food.upc) == 13 and my_food.upc.startswith('200'):
-        upc_str = my_food.upc[:12] # Slice off the checksum for the label generator
+    if recipe.upc and len(recipe.upc) == 13 and recipe.upc.startswith('201'):
+        upc_str = recipe.upc[:12] # Slice off the checksum for the label generator
         current_app.logger.debug(f"Internal EAN-13 detected. Passing first 12 digits to label: {upc_str}")
 
     # Check for a standard 12-digit UPC-A, which needs a leading '0'
-    elif my_food.upc and len(my_food.upc) == 12:
-        upc_str = f"0{my_food.upc}"[:12]
+    elif recipe.upc and len(recipe.upc) == 12:
+        upc_str = f"0{recipe.upc}"[:12]
         current_app.logger.debug(f"Standard UPC-A detected. Prepending 0: {upc_str}")
 
     # Handle existing full 13-digit EANs that are NOT our internal ones
-    elif my_food.upc and len(my_food.upc) == 13:
-        upc_str = my_food.upc[:12]
+    elif recipe.upc and len(recipe.upc) == 13:
+        upc_str = recipe.upc[:12]
         current_app.logger.debug(f"Full EAN-13 detected. Using first 12 digits: {upc_str}")
 
     # Fallback for other lengths
-    elif my_food.upc:
-        upc_str = my_food.upc.ljust(12, '0')[:12]
+    elif recipe.upc:
+        upc_str = recipe.upc.ljust(12, '0')[:12]
         current_app.logger.debug(f"Fallback sizing applied: {upc_str}")
 
     portions_str = ""
-    food_portions = UnifiedPortion.query.filter_by(my_food_id=my_food.id).all()
+    food_portions = UnifiedPortion.query.filter_by(recipe_id=recipe.id).all()
     if food_portions:
         portions_list = [f"{_sanitize_for_typst(p.full_description_str)} ({p.gram_weight}g)" for p in food_portions]
         portions_str = "\\ ".join(portions_list)
@@ -597,7 +614,7 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 #set page(margin: (x: 0.1cm, y: 0.1cm))
 #set text(font: "Liberation Sans", size: 8pt)
 #ean13(scale:(1.6, .5), "{upc_str}")
-{sanitized_food_name}
+{sanitized_recipe_name}
 """
     else:
         typst_content = typst_content_data + f"""
@@ -607,8 +624,8 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 #ean13(scale:(2.0, .5), "{upc_str}")
 
 #box(width: 3.25in, height: 3in, clip: true, 
-[== My Food: 
-{sanitized_food_name}
+[== Recipe: 
+{sanitized_recipe_name}
 == Ingredients: 
 {ingredients_str}
 == Portion Sizes: 
@@ -650,6 +667,70 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
             return send_file(pdf_file_path, as_attachment=False, download_name=download_name, mimetype='application/pdf')
         except subprocess.CalledProcessError as e:
             current_app.logger.error(f"Typst compilation failed for my_food_id {my_food_id}: {e.stderr}")
+            return f"Error generating PDF: {e.stderr}", 500
+        except FileNotFoundError:
+            current_app.logger.error("Typst executable not found.")
+            return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
+        
+def _get_nutrition_label_data_recipe(recipe_id):
+    """
+    Fetches a Recipe item and its nutritional data, formatted for the Typst label generator.
+    """
+    recipe = db.session.get(Recipe, recipe_id)
+    if not recipe:
+        return None, None
+
+    # The Typst template expects specific keys. We map the Recipe attributes to these keys.
+    # All values are per 100g.
+    nutrients_for_label = {
+        'Energy': recipe.calories_per_100g or 0,
+        'Total lipid (fat)': recipe.fat_per_100g or 0,
+        'Fatty acids, total saturated': recipe.saturated_fat_per_100g or 0,
+        'Fatty acids, total trans': recipe.trans_fat_per_100g or 0,
+        'Cholesterol': recipe.cholesterol_mg_per_100g or 0,
+        'Sodium': recipe.sodium_mg_per_100g or 0,
+        'Carbohydrate, by difference': recipe.carbs_per_100g or 0,
+        'Fiber, total dietary': recipe.fiber_per_100g or 0,
+        'Sugars, total including NLEA': recipe.sugars_per_100g or 0,
+        'Sugars, added': 0,  # Recipe model does not have 'added sugars'
+        'Protein': recipe.protein_per_100g or 0,
+        'Vitamin D': recipe.vitamin_d_mcg_per_100g or 0,
+        'Calcium': recipe.calcium_mg_per_100g or 0,
+        'Iron': recipe.iron_mg_per_100g or 0,
+        'Potassium': recipe.potassium_mg_per_100g or 0,
+    }
+    return recipe, nutrients_for_label
+
+def generate_recipe_label_pdf(recipe_id, label_only=False):
+    """
+    Generates a PDF nutrition label for a Recipe item.
+    Can generate a label-only PDF or a full-page PDF with additional details.
+    """
+    recipe, nutrients_for_label = _get_nutrition_label_data_recipe(recipe_id)
+    if not recipe:
+        return "Recipe not found", 404
+
+    typst_content = _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=label_only)
+    current_app.logger.debug(f"typst_content: {typst_content}")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        file_suffix = "label_only" if label_only else "details"
+        typ_file_path = os.path.join(tmpdir, f"recipe_label_{recipe.id}_{file_suffix}.typ")
+        pdf_file_path = os.path.join(tmpdir, f"recipe_label_{recipe.id}_{file_suffix}.pdf")
+
+        with open(typ_file_path, "w", encoding="utf-8") as f:
+            f.write(typst_content)
+
+        try:
+            # Run Typst command
+            subprocess.run(
+                ["typst", "compile", os.path.basename(typ_file_path), "--pages", "1", os.path.basename(pdf_file_path)],
+                capture_output=True, text=True, check=True, cwd=tmpdir
+            )
+
+            download_name = f"{recipe.name}_{file_suffix}.pdf"
+            return send_file(pdf_file_path, as_attachment=False, download_name=download_name, mimetype='application/pdf')
+        except subprocess.CalledProcessError as e:
+            current_app.logger.error(f"Typst compilation failed for recipe_id {recipe_id}: {e.stderr}")
             return f"Error generating PDF: {e.stderr}", 500
         except FileNotFoundError:
             current_app.logger.error("Typst executable not found.")
