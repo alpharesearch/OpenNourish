@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
 from . import exercise_bp
 from .forms import ExerciseLogForm
@@ -99,7 +99,9 @@ def log_exercise():
 @exercise_bp.route('/<int:log_id>/edit', methods=['POST'])
 @login_required
 def edit_exercise(log_id):
-    exercise_log = ExerciseLog.query.get_or_404(log_id)
+    exercise_log = db.session.get(ExerciseLog, log_id)
+    if not exercise_log:
+        abort(404)
     if exercise_log.user_id != current_user.id:
         flash('You do not have permission to edit this exercise log.', 'danger')
         return redirect(url_for('.log_exercise'))
@@ -143,7 +145,9 @@ def edit_exercise(log_id):
 @exercise_bp.route('/<int:log_id>/delete', methods=['POST'])
 @login_required
 def delete_exercise(log_id):
-    exercise_log = ExerciseLog.query.get_or_404(log_id)
+    exercise_log = db.session.get(ExerciseLog, log_id)
+    if not exercise_log:
+        abort(404)
     if exercise_log.user_id != current_user.id:
         flash('You do not have permission to delete this exercise log.', 'danger')
         return redirect(url_for('.log_exercise'))

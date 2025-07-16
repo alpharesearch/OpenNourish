@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: 6cbf733e275b
+Revision ID: ac545d3ce094
 Revises: 
-Create Date: 2025-07-13 15:54:24.449277
+Create Date: 2025-07-15 22:53:22.771566
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '6cbf733e275b'
+revision = 'ac545d3ce094'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -24,6 +24,13 @@ def upgrade():
     sa.Column('met_value', sa.Float(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('system_settings',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('key', sa.String(length=50), nullable=False),
+    sa.Column('value', sa.String(length=100), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('key')
+    )
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(length=80), nullable=False),
@@ -32,6 +39,9 @@ def upgrade():
     sa.Column('gender', sa.String(length=10), nullable=True),
     sa.Column('measurement_system', sa.String(length=10), nullable=False),
     sa.Column('height_cm', sa.Float(), nullable=True),
+    sa.Column('navbar_preference', sa.String(length=50), nullable=True),
+    sa.Column('diary_default_view', sa.String(length=10), nullable=True),
+    sa.Column('theme_preference', sa.String(length=10), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('username')
     )
@@ -107,6 +117,21 @@ def upgrade():
     sa.Column('is_public', sa.Boolean(), nullable=False),
     sa.Column('instructions', sa.Text(), nullable=True),
     sa.Column('servings', sa.Float(), nullable=True),
+    sa.Column('upc', sa.String(), nullable=True),
+    sa.Column('calories_per_100g', sa.Float(), nullable=False),
+    sa.Column('protein_per_100g', sa.Float(), nullable=False),
+    sa.Column('carbs_per_100g', sa.Float(), nullable=False),
+    sa.Column('fat_per_100g', sa.Float(), nullable=False),
+    sa.Column('saturated_fat_per_100g', sa.Float(), nullable=False),
+    sa.Column('trans_fat_per_100g', sa.Float(), nullable=False),
+    sa.Column('cholesterol_mg_per_100g', sa.Float(), nullable=False),
+    sa.Column('sodium_mg_per_100g', sa.Float(), nullable=False),
+    sa.Column('fiber_per_100g', sa.Float(), nullable=False),
+    sa.Column('sugars_per_100g', sa.Float(), nullable=False),
+    sa.Column('vitamin_d_mcg_per_100g', sa.Float(), nullable=False),
+    sa.Column('calcium_mg_per_100g', sa.Float(), nullable=False),
+    sa.Column('iron_mg_per_100g', sa.Float(), nullable=False),
+    sa.Column('potassium_mg_per_100g', sa.Float(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -217,5 +242,6 @@ def downgrade():
     op.drop_table('exercise_logs')
     op.drop_table('check_ins')
     op.drop_table('users')
+    op.drop_table('system_settings')
     op.drop_table('exercise_activities')
     # ### end Alembic commands ###
