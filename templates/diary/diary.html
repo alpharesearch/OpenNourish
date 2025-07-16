@@ -82,6 +82,7 @@
                     <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
                 </form>
                 <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}" class="btn btn-outline-primary btn-sm">Add Food</a>
+                <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}" class="btn btn-outline-info btn-sm ms-2">Scan Barcode</a>
             </div>
             {% endif %}
         </div>

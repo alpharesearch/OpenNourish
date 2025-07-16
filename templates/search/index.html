@@ -451,6 +451,12 @@ document.addEventListener('DOMContentLoaded', function () {
             targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
+
+    // Check for 'scan' parameter and open scanner if present
+    const scanParam = urlParams.get('scan');
+    if (scanParam === 'true') {
+        scanButton.click();
+    }
 });
 </script>
 {% endblock %}
