@@ -348,6 +348,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         // If no target, redirect to a relevant page
                         if (data.source === 'usda') {
                             window.location.href = `/food/${data.food.fdc_id}`;
+                        } else if (data.food.type === 'recipe') {
+                            window.location.href = `/recipes/${data.food.id}`;
                         } else { // my_food or friend_food
                             window.location.href = `/my_foods/${data.food.id}/edit`;
                         }

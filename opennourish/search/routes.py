@@ -56,7 +56,9 @@ def search_by_upc():
     if not upc:
         return jsonify({'error': 'UPC code is required'}), 400
 
-    # 1. Search in current user's MyFood
+    friend_ids = [friend.id for friend in current_user.friends]
+
+    # Priority 1: Current user's MyFood
     user_food = MyFood.query.filter_by(user_id=current_user.id, upc=upc).first()
     if user_food:
         user_food_portions = UnifiedPortion.query.filter_by(my_food_id=user_food.id).all()
@@ -72,9 +74,24 @@ def search_by_upc():
             }
         })
 
-    # 2. Search in friends' MyFood
-    friend_ids = [friend.id for friend in current_user.friends]
-    if friend_ids: # Only search if the user has friends
+    # Priority 2: Current user's Recipes
+    user_recipe = Recipe.query.filter_by(user_id=current_user.id, upc=upc).first()
+    if user_recipe:
+        user_recipe_portions = UnifiedPortion.query.filter_by(recipe_id=user_recipe.id).all()
+        portions_data = [{'id': p.id, 'description': p.full_description_str, 'gram_weight': p.gram_weight} for p in user_recipe_portions]
+        return jsonify({
+            'status': 'found',
+            'source': 'my_recipe',
+            'food': {
+                'id': user_recipe.id,
+                'description': user_recipe.name,
+                'type': 'recipe',
+                'portions': portions_data
+            }
+        })
+
+    # Priority 3: Friends' MyFood
+    if friend_ids:
         friends_food = MyFood.query.filter(MyFood.user_id.in_(friend_ids), MyFood.upc==upc).first()
         if friends_food:
             friends_food_portions = UnifiedPortion.query.filter_by(my_food_id=friends_food.id).all()
@@ -90,7 +107,28 @@ def search_by_upc():
                 }
             })
 
-    # 3. Search in USDA database
+    # Priority 4: Friends' Recipes (public)
+    if friend_ids:
+        friends_recipe = Recipe.query.filter(
+            Recipe.user_id.in_(friend_ids),
+            Recipe.upc==upc,
+            Recipe.is_public == True
+        ).first()
+        if friends_recipe:
+            friends_recipe_portions = UnifiedPortion.query.filter_by(recipe_id=friends_recipe.id).all()
+            portions_data = [{'id': p.id, 'description': p.full_description_str, 'gram_weight': p.gram_weight} for p in friends_recipe_portions]
+            return jsonify({
+                'status': 'found',
+                'source': 'friend_recipe',
+                'food': {
+                    'id': friends_recipe.id,
+                    'description': friends_recipe.name,
+                    'type': 'recipe',
+                    'portions': portions_data
+                }
+            })
+
+    # Priority 5: USDA Database
     usda_food = Food.query.filter_by(upc=upc).first()
     if usda_food:
         # Ensure a 1-gram portion exists for this USDA food
