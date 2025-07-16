@@ -1,27 +1,66 @@
-{# templates/_navbar.html (Fully Responsive Version) #}
-
-{# --- Primary Navigation Bar (Top Tier) --- #}
-{# This part remains the same, as its collapsing behavior is correct. #}
-    <div class="collapse navbar-collapse" id="primaryNavbar">
+<nav class="navbar navbar-expand-lg {{ current_user.navbar_preference or 'bg-dark navbar-dark' }}">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('dashboard.index') }}"><img src="{{ url_for('static', filename='icon.png') }}" width="30" height="30" class="d-inline-block align-top" alt="OpenNourish Logo"> <span class="d-none d-sm-inline">OpenNourish</span></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#primaryNavbar" aria-controls="primaryNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="primaryNavbar">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 {% set viewing_friend_username = request.view_args.get('username') if request.blueprint == 'profile' else none %}
                 <li class="nav-item">
                     <a class="nav-link {% if request.blueprint == 'dashboard' or (request.blueprint == 'profile' and 'dashboard' in request.endpoint) %}active{% endif %}"
                        href="{% if viewing_friend_username %}{{ url_for('profile.dashboard', username=viewing_friend_username) }}{% else %}{{ url_for('dashboard.index') }}{% endif %}">Dashboard</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.blueprint in ['diary', 'database', 'recipes'] or (request.blueprint == 'profile' and 'diary' in request.endpoint) %}active{% endif %}"
+
+                <!-- Food Nav: Link for Desktop, Dropdown for Mobile -->
+                <li class="nav-item d-none d-lg-block">
+                    <a class="nav-link {% if request.blueprint in ['diary', 'my_foods', 'recipes', 'search', 'main'] %}active{% endif %}"
                        href="{% if viewing_friend_username %}{{ url_for('profile.diary', username=viewing_friend_username) }}{% else %}{{ url_for('diary.diary') }}{% endif %}">Food</a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item dropdown d-lg-none">
+                    <a class="nav-link dropdown-toggle {% if request.blueprint in ['diary', 'my_foods', 'recipes', 'search', 'main'] %}active{% endif %}" href="#" id="foodDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Food
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="foodDropdown">
+                        <li><a class="dropdown-item {% if request.endpoint.startswith('diary.') and 'my_meals' not in request.endpoint %}active{% endif %}" href="{{ url_for('diary.diary') }}">Food Diary</a></li>
+                        <li><a class="dropdown-item {% if request.endpoint == 'my_foods.my_foods' %}active{% endif %}" href="{{ url_for('my_foods.my_foods') }}">My Foods</a></li>
+                        <li><a class="dropdown-item {% if request.endpoint == 'diary.my_meals' %}active{% endif %}" href="{{ url_for('diary.my_meals') }}">My Meals</a></li>
+                        <li><a class="dropdown-item {% if request.endpoint.startswith('recipes.') %}active{% endif %}" href="{{ url_for('recipes.recipes') }}">My Recipes</a></li>
+                        <li><a class="dropdown-item {% if request.endpoint == 'search.search' and search_mode == 'usda_only' %}active{% endif %}" href="{{ url_for('search.search', search_mode='usda_only') }}">Search USDA</a></li>
+                    </ul>
+                </li>
+
+                <!-- Body Nav: Link for Desktop, Dropdown for Mobile -->
+                <li class="nav-item d-none d-lg-block">
                     <a class="nav-link {% if request.blueprint == 'exercise' or request.blueprint == 'tracking' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Body</a>
                 </li>
+                <li class="nav-item dropdown d-lg-none">
+                    <a class="nav-link dropdown-toggle {% if request.blueprint == 'exercise' or request.blueprint == 'tracking' %}active{% endif %}" href="#" id="bodyDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Body
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="bodyDropdown">
+                        <li><a class="dropdown-item {% if request.endpoint == 'exercise.log_exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise Log</a></li>
+                        <li><a class="dropdown-item {% if request.endpoint == 'tracking.progress' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Check-in & Progress</a></li>
+                    </ul>
+                </li>
+
                 <li class="nav-item">
                     <a class="nav-link {% if request.blueprint == 'friends' %}active{% endif %}" href="{{ url_for('friends.friends_page') }}">Friends</a>
                 </li>
+
+                <!-- Admin Nav: Link for Desktop, Dropdown for Mobile -->
                 {% if current_user.is_admin %}
-                <li class="nav-item">
+                <li class="nav-item d-none d-lg-block">
                     <a class="nav-link {% if request.blueprint == 'admin' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Administration</a>
+                </li>
+                <li class="nav-item dropdown d-lg-none">
+                    <a class="nav-link dropdown-toggle {% if request.blueprint == 'admin' %}active{% endif %}" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Administration
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                        <li><a class="dropdown-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a></li>
+                        <li><a class="dropdown-item {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Admin Settings</a></li>
+                    </ul>
                 </li>
                 {% endif %}
             </ul>
@@ -46,4 +85,52 @@
                 {% endif %}
             </ul>
         </div>
+    </div>
+</nav>
+
+<!-- Secondary Navigation Bar (Hidden on smaller screens) -->
+<nav class="navbar navbar-light bg-light border-bottom mb-4 d-none d-lg-block">
+    <div class="container">
+        <ul class="navbar-nav flex-row flex-wrap justify-content-center">
+            {# --- Food Sub-Menu --- #}
+            {% if request.blueprint in ['diary', 'my_foods', 'recipes', 'search', 'main'] %}
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint.startswith('diary.') and 'my_meals' not in request.endpoint %}active{% endif %}" href="{{ url_for('diary.diary') }}">Food Diary</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint == 'my_foods.my_foods' %}active{% endif %}" href="{{ url_for('my_foods.my_foods') }}">My Foods</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint == 'diary.my_meals' %}active{% endif %}" href="{{ url_for('diary.my_meals') }}">My Meals</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint.startswith('recipes.') %}active{% endif %}" href="{{ url_for('recipes.recipes') }}">My Recipes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint == 'search.search' and search_mode == 'usda_only' %}active{% endif %}" href="{{ url_for('search.search', search_mode='usda_only') }}">Search USDA</a>
+                </li>
+            {% endif %}
+
+            {# --- Exercise & Progress Sub-Menu --- #}
+            {% if request.blueprint == 'tracking' or request.blueprint == 'exercise' %}
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint == 'exercise.log_exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise Log</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint == 'tracking.progress' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Check-in & Progress</a>
+                </li>
+            {% endif %}
+
+            {# --- Admin Sub-Menu --- #}
+            {% if request.blueprint == 'admin' %}
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Admin Settings</a>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
 
