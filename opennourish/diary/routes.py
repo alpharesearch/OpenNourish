@@ -49,13 +49,13 @@ def diary(log_date_str=None):
         is_own_food_item = True
 
         if log.fdc_id:
-            food_item = db.session.query(Food).get(log.fdc_id)
+            food_item = db.session.get(Food, log.fdc_id)
         elif log.my_food_id:
-            food_item = db.session.query(MyFood).options(joinedload(MyFood.user)).get(log.my_food_id)
+            food_item = db.session.get(MyFood, log.my_food_id)
             if food_item and food_item.user_id != current_user.id:
                 is_own_food_item = False
         elif log.recipe_id:
-            food_item = db.session.query(Recipe).options(joinedload(Recipe.user)).get(log.recipe_id)
+            food_item = db.session.get(Recipe, log.recipe_id)
             if food_item and food_item.user_id != current_user.id:
                 is_own_food_item = False
 

@@ -268,7 +268,7 @@ def test_usda_food_search_results_include_1g_portion(auth_client_with_data):
 
         # Verify the '1 cup' portion is also still there
         # Retrieve the cup portion again within this context to avoid DetachedInstanceError
-        re_queried_cup_portion = UnifiedPortion.query.get(cup_portion_id)
+        re_queried_cup_portion = db.session.get(UnifiedPortion, cup_portion_id)
         assert re_queried_cup_portion is not None, "Cup portion not found after re-query"
         expected_1cup_option_html = f'<option value="{re_queried_cup_portion.id}"> cup</option>'.encode('utf-8')
         assert expected_1cup_option_html in response.data, "' cup' portion option not found in dropdown HTML"

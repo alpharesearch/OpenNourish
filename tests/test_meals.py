@@ -72,7 +72,7 @@ def test_delete_my_meal(auth_client_with_user):
         assert response.status_code == 200
 
         # Assert that the meal and its items are deleted
-        deleted_meal = MyMeal.query.get(meal_id)
+        deleted_meal = db.session.get(MyMeal, meal_id)
         assert deleted_meal is None
         deleted_item = MyMealItem.query.filter_by(my_meal_id=meal_id).first()
         assert deleted_item is None

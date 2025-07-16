@@ -211,7 +211,7 @@ def calculate_nutrition_for_items(items, processed_recipes=None):
         elif item.recipe_id:
             # Handle nested recipes recursively
             from models import Recipe # Import here to avoid circular dependency
-            nested_recipe = db.session.query(Recipe).options(selectinload(Recipe.ingredients)).get(item.recipe_id)
+            nested_recipe = db.session.get(Recipe, item.recipe_id)
             if nested_recipe:
                 # Prevent infinite recursion for circular recipe dependencies
                 if nested_recipe.id in processed_recipes:
@@ -236,7 +236,7 @@ def calculate_nutrition_for_items(items, processed_recipes=None):
     return totals
 
 def _get_nutrition_label_data(fdc_id):
-    food = db.session.query(Food).options(selectinload(Food.nutrients).selectinload(FoodNutrient.nutrient)).get(fdc_id)
+    food = db.session.get(Food, fdc_id)
     if not food:
         return None, None, None
 

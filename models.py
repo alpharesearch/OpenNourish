@@ -218,7 +218,9 @@ class RecipeIngredient(db.Model):
 
     @property
     def food(self):
-        return db.session.get(Food, self.fdc_id)
+        if self.fdc_id:
+            return db.session.get(Food, self.fdc_id)
+        return None
     my_food = db.relationship('MyFood', foreign_keys=[my_food_id])
     linked_recipe = db.relationship('Recipe', foreign_keys=[recipe_id_link])
 
@@ -244,7 +246,9 @@ class MyMealItem(db.Model):
 
     @property
     def food(self):
-        return db.session.get(Food, self.fdc_id)
+        if self.fdc_id:
+            return db.session.get(Food, self.fdc_id)
+        return None
     my_food = db.relationship('MyFood', foreign_keys=[my_food_id], uselist=False)
     recipe = db.relationship('Recipe', foreign_keys=[recipe_id], uselist=False)
 
