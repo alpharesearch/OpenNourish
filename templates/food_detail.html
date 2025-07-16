@@ -15,7 +15,7 @@
     {% endif %}
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-lg-6">
             <h2>Nutritional Information (per 100g)</h2>
             <ul>
                 {% for food_nutrient in food.nutrients %}
@@ -32,7 +32,7 @@
                 {% endfor %}
             </ul>
         </div>
-        <div class="col-md-6">
+        <div class="col-lg-6">
             <h2>Nutrition Label</h2>
             <img src="{{ url_for('main.nutrition_label_svg', fdc_id=food.fdc_id) }}" alt="Nutrition Label" class="img-fluid" >
         </div>

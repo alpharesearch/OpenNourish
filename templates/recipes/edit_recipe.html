@@ -6,7 +6,7 @@
 
     <div class="row">
         <!-- Left Column: Recipe Details -->
-        <div class="col-md-6">
+        <div class="col-lg-6">
             <div class="card mb-4">
                 <div class="card-header">
                     Recipe Details
@@ -62,7 +62,7 @@
         </div>
 
         <!-- Right Column: Portions Section -->
-        <div class="col-md-6">
+        <div class="col-lg-6">
             <div class="card mb-4">
                 <div class="card-header">
                     Custom Portions
@@ -70,53 +70,53 @@
                 <div class="card-body">
                     <p>Define custom serving sizes for this recipe (e.g., "1 bowl", "1 slice").</p>
                     {% if recipe %}
-                    <form action="{{ url_for('recipes.add_recipe_portion', recipe_id=recipe.id) }}" method="POST" class="d-flex align-items-center gap-2">
+                    <form action="{{ url_for('recipes.add_recipe_portion', recipe_id=recipe.id) }}" method="POST" class="d-flex flex-column flex-sm-row align-items-center gap-2">
                         {{ portion_form.hidden_tag() }}
-                        <div class="row g-2 flex-grow-1 me-2">
-                            <div class="col-md-3">
+                        <div class="row g-2 flex-grow-1 me-sm-2 w-100">
+                            <div class="col-lg-3">
                                 {{ portion_form.amount(class="form-control form-control-sm", placeholder="Amount") }}
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-lg-3">
                                 {{ portion_form.measure_unit_description(class="form-control form-control-sm", placeholder="Unit") }}
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-lg-3">
                                 {{ portion_form.portion_description(class="form-control form-control-sm", placeholder="Description") }}
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-lg-3">
                                 {{ portion_form.modifier(class="form-control form-control-sm", placeholder="Modifier") }}
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 w-100 w-sm-auto mt-2 mt-sm-0">
                             {{ portion_form.gram_weight(class="form-control form-control-sm", placeholder="Gram Weight") }}
                         </div>
-                        <button type="submit" class="btn btn-sm btn-outline-primary">Add</button>
+                        <button type="submit" class="btn btn-sm btn-outline-primary mt-2 mt-sm-0">Add</button>
                     </form>
                     <h6>Existing Portions</h6>
                     <ul class="list-group list-group-flush">
                         {% for portion in recipe.portions %}
                         <li class="list-group-item d-flex justify-content-between align-items-center p-1">
-                            <form action="{{ url_for('recipes.update_recipe_portion', portion_id=portion.id) }}" method="POST" class="d-flex align-items-center w-100">
+                            <form action="{{ url_for('recipes.update_recipe_portion', portion_id=portion.id) }}" method="POST" class="d-flex flex-column flex-sm-row align-items-center w-100">
                                 {{ portion_form.hidden_tag() }}
-                                <div class="row g-2 flex-grow-1 me-2">
-                                    <div class="col-md-3">
+                                <div class="row g-2 flex-grow-1 me-sm-2">
+                                    <div class="col-lg-3">
                                         <input type="number" step="any" name="amount" class="form-control form-control-sm" value="{{ portion.amount if portion.amount is not none else '' }}" placeholder="Amount">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-lg-3">
                                         <input type="text" name="measure_unit_description" class="form-control form-control-sm" value="{{ portion.measure_unit_description if portion.measure_unit_description is not none else '' }}" placeholder="Unit">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-lg-3">
                                         <input type="text" name="portion_description" class="form-control form-control-sm" value="{{ portion.portion_description if portion.portion_description is not none else '' }}" placeholder="Description">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-lg-3">
                                         <input type="text" name="modifier" class="form-control form-control-sm" value="{{ portion.modifier if portion.modifier is not none else '' }}" placeholder="Modifier">
                                     </div>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-lg-2 mt-2 mt-sm-0">
                                     <input type="number" step="any" name="gram_weight" class="form-control form-control-sm" value="{{ portion.gram_weight }}" placeholder="Gram Weight">
                                 </div>
-                                <button type="submit" class="btn btn-sm btn-outline-success me-1">Save</button>
+                                <button type="submit" class="btn btn-sm btn-outline-success ms-sm-1 mt-2 mt-sm-0">Save</button>
                             </form>
-                            <form action="{{ url_for('recipes.delete_recipe_portion', portion_id=portion.id) }}" method="POST" class="d-inline">
+                            <form action="{{ url_for('recipes.delete_recipe_portion', portion_id=portion.id) }}" method="POST" class="d-inline mt-2 mt-sm-0">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
                             </form>
                         </li>
@@ -161,9 +161,9 @@
                     </div>
                     <div class="d-flex gap-2">
                         <div>
-                            <form action="{{ url_for('recipes.update_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-flex align-items-center gap-2">
+                            <form action="{{ url_for('recipes.update_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-flex flex-column flex-sm-row align-items-center gap-2">
                                 <input type="number" step="any" name="amount" class="form-control form-control-sm" value="{{ '%.2f'|format(ingredient.quantity) }}">
-                                <select name="portion_id" class="form-select form-select-sm">
+                                <select name="portion_id" class="form-select form-select-sm mt-2 mt-sm-0">
                                     {% set food_item = ingredient.usda_food or ingredient.my_food or ingredient.linked_recipe %}
                                     {% if food_item %}
                                         {% for portion in get_available_portions(food_item) %}
@@ -171,10 +171,10 @@
                                         {% endfor %}
                                     {% endif %}
                                 </select>
-                                <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
+                                <button type="submit" class="btn btn-sm btn-outline-success mt-2 mt-sm-0">Save</button>
                             </form>
                         </div>
-                        <div>
+                        <div class="mt-2 mt-sm-0">
                             <form action="{{ url_for('recipes.delete_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
                             </form>

@@ -10,15 +10,15 @@
         </div>
         <div class="card-body">
             <div class="row text-center">
-                <div class="col-md-4">
+                <div class="col-lg-4">
                     <h5>Calories Burned</h5>
                     <p class="fs-4">{{ weekly_progress.calories_burned|round|int }} / {{ user_goal.calories_burned_goal_weekly }}</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-lg-4">
                     <h5>Workouts</h5>
                     <p class="fs-4">{{ weekly_progress.exercises }} / {{ user_goal.exercises_per_week_goal }}</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-lg-4">
                     <h5>Minutes</h5>
                     <p class="fs-4">{{ weekly_progress.minutes }} / {{ user_goal.minutes_per_exercise_goal * user_goal.exercises_per_week_goal }}</p>
                 </div>
@@ -31,11 +31,11 @@
     <form method="POST" action="{{ url_for('.log_exercise') }}" class="mb-5">
         {{ form.hidden_tag() }}
         <div class="row align-items-end">
-            <div class="col-md-3">
+            <div class="col-lg-3">
                 {{ form.log_date.label(class="form-label") }}
                 {{ form.log_date(class="form-control") }}
             </div>
-            <div class="col-md-3">
+            <div class="col-lg-3">
                 {{ form.activity.label(class="form-label") }}
                 <select name="{{ form.activity.name }}" id="activity" class="form-select">
                     <option value="__None">-- Manual Entry --</option>
@@ -44,7 +44,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-lg-2">
                 {{ form.duration_minutes.label(class="form-label") }}
                 {{ form.duration_minutes(class="form-control") }}
             </div>
@@ -52,12 +52,12 @@
                 {{ form.calories_burned.label(class="form-label") }}
                 {{ form.calories_burned(class="form-control") }}
             </div>
-            <div class="col-md-2 align-self-end">
+            <div class="col-lg-2 align-self-end">
                 {{ form.submit(class="btn btn-outline-primary w-100") }}
             </div>
         </div>
         <div class="row mt-3" id="manual-description-new" style="display: none;">
-            <div class="col-md-6">
+            <div class="col-lg-6">
                 {{ form.manual_description.label(class="form-label") }}
                 {{ form.manual_description(class="form-control") }}
             </div>
@@ -79,39 +79,40 @@
             <tbody>
                 {% for item in logs.items %}
                 <tr>
-                    <form method="POST" action="{{ url_for('.edit_exercise', log_id=item.id) }}">
-                        {{ forms[item.id].hidden_tag() }}
-                        <td>{{ forms[item.id].log_date(class="form-control") }}</td>
-                        <td>
-                            {% if item.activity %}
-                                <select name="{{ forms[item.id].activity.name }}" class="form-select">
-                                    {# Manually add the blank option for switching to manual #}
-                                    <option value="__None">-- Manual Entry --</option>
-                                    {# Iterate over all possible activities from the query #}
-                                    {% for activity_choice in forms[item.id].activity.query %}
-                                        <option value="{{ activity_choice.id }}" {% if item.activity_id == activity_choice.id %}selected{% endif %}>
-                                            {{ activity_choice.name }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            {% else %}
-                                {{ forms[item.id].manual_description(class="form-control") }}
-                            {% endif %}
-                        </td>
-                        <td>{{ forms[item.id].duration_minutes(class="form-control") }}</td>
-                        <td>
-                            {% if item.activity %}
-                                <span id="calories-burned-{{ item.id }}">{{ item.calories_burned|round|int }}</span>
-                            {% else %}
-                                {{ forms[item.id].calories_burned(class="form-control") }}
-                            {% endif %}
-                        </td>
-                        <td>
-                            <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
-                    </form>
-                    <form action="{{ url_for('.delete_exercise', log_id=item.id) }}" method="POST" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                    </form>
+                    <!-- Associate form fields with the specific edit form for this row -->
+                    <td>{{ forms[item.id].log_date(class="form-control", form="edit-form-{{ item.id }}") }}</td>
+                    <td>
+                        {% if item.activity %}
+                            <select name="{{ forms[item.id].activity.name }}" class="form-select" form="edit-form-{{ item.id }}">
+                                <option value="__None">-- Manual Entry --</option>
+                                {% for activity_choice in forms[item.id].activity.query %}
+                                    <option value="{{ activity_choice.id }}" {% if item.activity_id == activity_choice.id %}selected{% endif %}>
+                                        {{ activity_choice.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            {{ forms[item.id].manual_description(class="form-control", form="edit-form-{{ item.id }}") }}
+                        {% endif %}
+                    </td>
+                    <td>{{ forms[item.id].duration_minutes(class="form-control", form="edit-form-{{ item.id }}") }}</td>
+                    <td>
+                        {% if item.activity %}
+                            <span id="calories-burned-{{ item.id }}">{{ item.calories_burned|round|int }}</span>
+                        {% else %}
+                            {{ forms[item.id].calories_burned(class="form-control", form="edit-form-{{ item.id }}") }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex flex-column flex-sm-row gap-2">
+                            <form method="POST" action="{{ url_for('.edit_exercise', log_id=item.id) }}" id="edit-form-{{ item.id }}" class="d-inline">
+                                {{ forms[item.id].hidden_tag() }}
+                                <button type="submit" class="btn btn-sm btn-outline-success w-100">Save</button>
+                            </form>
+                            <form action="{{ url_for('.delete_exercise', log_id=item.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-danger w-100">Delete</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

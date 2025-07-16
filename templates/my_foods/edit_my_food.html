@@ -18,14 +18,14 @@
                     {{ form.description(class="form-control") }}
                 </div>
                 <div class="row">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-lg-6 mb-3">
                         {{ form.fdc_id.label(class="form-label") }}
                         {{ form.fdc_id(class="form-control") }}
                         {% if my_food.fdc_id %}
                         <a href="{{ url_for('main.food_detail', fdc_id=my_food.fdc_id) }}" class="btn btn-outline-info btn-sm mt-2">View USDA Details</a>
                         {% endif %}
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-lg-6 mb-3">
                         {{ form.upc.label(class="form-label") }}
                         <div class="input-group">
                             {{ form.upc(class="form-control", id="upc") }}
@@ -40,65 +40,65 @@
                     {{ form.ingredients(class="form-control", rows="3") }}
                 </div>
                 <div class="row">
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.calories_per_100g.label(class="form-label") }}
                         {{ form.calories_per_100g(class="form-control", type="number", step="any") }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.protein_per_100g.label(class="form-label") }}
                         {{ form.protein_per_100g(class="form-control", type="number", step="any") }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.carbs_per_100g.label(class="form-label") }}
                         {{ form.carbs_per_100g(class="form-control", type="number", step="any") }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.fat_per_100g.label(class="form-label") }}
                         {{ form.fat_per_100g(class="form-control", type="number", step="any") }}
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.saturated_fat_per_100g.label(class="form-label") }}
                         {{ form.saturated_fat_per_100g(class="form-control", type="number", step="any") }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.trans_fat_per_100g.label(class="form-label") }}
                         {{ form.trans_fat_per_100g(class="form-control", type="number", step="any") }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.cholesterol_mg_per_100g.label(class="form-label") }}
                         {{ form.cholesterol_mg_per_100g(class="form-control", type="number", step="any") }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.sodium_mg_per_100g.label(class="form-label") }}
                         {{ form.sodium_mg_per_100g(class="form-control", type="number", step="any") }}
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.fiber_per_100g.label(class="form-label") }}
                         {{ form.fiber_per_100g(class="form-control", type="number", step="any") }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.sugars_per_100g.label(class="form-label") }}
                         {{ form.sugars_per_100g(class="form-control", type="number", step="any") }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.vitamin_d_mcg_per_100g.label(class="form-label") }}
                         {{ form.vitamin_d_mcg_per_100g(class="form-control", type="number", step="any") }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.calcium_mg_per_100g.label(class="form-label") }}
                         {{ form.calcium_mg_per_100g(class="form-control", type="number", step="any") }}
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.iron_mg_per_100g.label(class="form-label") }}
                         {{ form.iron_mg_per_100g(class="form-control", type="number", step="any") }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-lg-3 mb-3">
                         {{ form.potassium_mg_per_100g.label(class="form-label") }}
                         {{ form.potassium_mg_per_100g(class="form-control", type="number", step="any") }}
                     </div>
@@ -121,28 +121,28 @@
             <ul class="list-group mb-3">
                 {% for portion in my_food.portions %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <form action="{{ url_for('my_foods.update_my_food_portion', portion_id=portion.id) }}" method="POST" class="d-flex align-items-center w-100">
+                    <form action="{{ url_for('my_foods.update_my_food_portion', portion_id=portion.id) }}" method="POST" class="d-flex flex-column flex-sm-row align-items-center w-100">
                         {{ portion_form.hidden_tag() }}
-                        <div class="row g-2 flex-grow-1 me-2">
-                            <div class="col-md-3">
+                        <div class="row g-2 flex-grow-1 me-sm-2">
+                            <div class="col-lg-3">
                                 <input type="number" step="any" name="amount" class="form-control form-control-sm" value="{{ portion.amount if portion.amount is not none else '' }}" placeholder="Amount">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-lg-3">
                                 <input type="text" name="measure_unit_description" class="form-control form-control-sm" value="{{ portion.measure_unit_description if portion.measure_unit_description is not none else '' }}" placeholder="Unit">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-lg-3">
                                 <input type="text" name="portion_description" class="form-control form-control-sm" value="{{ portion.portion_description if portion.portion_description is not none else '' }}" placeholder="Description">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-lg-3">
                                 <input type="text" name="modifier" class="form-control form-control-sm" value="{{ portion.modifier if portion.modifier is not none else '' }}" placeholder="Modifier">
                             </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 mt-2 mt-sm-0">
                             <input type="number" step="any" name="gram_weight" class="form-control form-control-sm" value="{{ portion.gram_weight }}" placeholder="Gram Weight">
                         </div>
-                        <button type="submit" class="btn btn-sm btn-outline-success me-1">Save</button>
+                        <button type="submit" class="btn btn-sm btn-outline-success ms-sm-1 mt-2 mt-sm-0">Save</button>
                     </form>
-                    <form action="{{ url_for('my_foods.delete_my_food_portion', portion_id=portion.id) }}" method="POST" class="d-inline">
+                    <form action="{{ url_for('my_foods.delete_my_food_portion', portion_id=portion.id) }}" method="POST" class="d-inline mt-2 mt-sm-0">
                         <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
                     </form>
                 </li>
@@ -153,26 +153,26 @@
 
             <hr>
             <h6>Add New Portion</h6>
-            <form method="POST" action="{{ url_for('my_foods.add_my_food_portion', food_id=my_food.id) }}" class="d-flex align-items-center gap-2">
+            <form method="POST" action="{{ url_for('my_foods.add_my_food_portion', food_id=my_food.id) }}" class="d-flex flex-column flex-sm-row align-items-center gap-2">
                 {{ portion_form.hidden_tag() }}
-                <div class="row g-2 flex-grow-1 me-2">
-                    <div class="col-md-3">
+                <div class="row g-2 flex-grow-1 me-sm-2 w-100">
+                    <div class="col-lg-3">
                         {{ portion_form.amount(class="form-control form-control-sm", placeholder="Amount") }}
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-lg-3">
                         {{ portion_form.measure_unit_description(class="form-control form-control-sm", placeholder="Unit") }}
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-lg-3">
                         {{ portion_form.portion_description(class="form-control form-control-sm", placeholder="Description") }}
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-lg-3">
                         {{ portion_form.modifier(class="form-control form-control-sm", placeholder="Modifier") }}
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-lg-2 w-100 w-sm-auto mt-2 mt-sm-0">
                     {{ portion_form.gram_weight(class="form-control form-control-sm", placeholder="Gram Weight") }}
                 </div>
-                <button type="submit" class="btn btn-sm btn-outline-primary">Add</button>
+                <button type="submit" class="btn btn-sm btn-outline-primary mt-2 mt-sm-0">Add</button>
             </form>
         </div>
     </div>

@@ -26,7 +26,7 @@
     {% for item in meal.items %}
     <li class="list-group-item">
         <div class="row align-items-center">
-            <div class="col-md-5">
+            <div class="col-lg-5">
                 {% if item.fdc_id %}
                     {{ item.food.description }}
                 {% elif item.my_food_id %}
@@ -41,7 +41,7 @@
                     Fat: {{ "%.1f" % item.nutrition_summary.fat }}g
                 </p>
             </div>
-            <div class="col-md-7">
+            <div class="col-lg-7">
                 <div class="d-flex justify-content-end align-items-center">
                     <form method="POST" action="{{ url_for('diary.update_meal_item', item_id=item.id) }}" class="d-flex align-items-center">
                         <input type="number" name="quantity" value="{{ item.display_amount|round(2) }}" class="form-control form-control-sm" step="any" required>

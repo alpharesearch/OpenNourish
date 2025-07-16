@@ -29,7 +29,7 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-6 mb-3">
+                <div class="col-lg-6 mb-3">
                     <h5 class="mb-1">Calories</h5>
                     <small class="text-muted d-block mb-1">
                         Goal: {{ "%.1f" % goals.calories }} kcal | Consumed: {{ "%.1f" % totals.calories }} kcal | Burned: {{ "%.1f" % calories_burned }} kcal
@@ -47,7 +47,7 @@
                 </div>
                 {% set nutrients = [('Protein', 'protein'), ('Carbohydrates', 'carbs'), ('Fat', 'fat')] %}
                 {% for label, key in nutrients %}
-                <div class="col-md-6 mb-3">
+                <div class="col-lg-6 mb-3">
                     <h5>{{ label }}</h5>
                     <small class="text-muted d-block mb-1">
                         Goal: {{ "%.1f" % goals[key] }}g | Consumed: {{ "%.1f" % totals[key] }}g
@@ -75,7 +75,7 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-4 mb-3">
+                <div class="col-lg-4 mb-3">
                     <h5>Calories Burned</h5>
                     <small class="text-muted d-block mb-1">Goal: {{ goals.calories_burned_goal_weekly }} kcal</small>
                     <p class="mb-2">Progress: {{ weekly_progress.calories_burned|round|int }} kcal</p>
@@ -84,7 +84,7 @@
                         <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.calories_burned }}" aria-valuemin="0" aria-valuemax="{{ goals.calories_burned_goal_weekly }}">{{ "%.0f" % percentage }}%</div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-3">
+                <div class="col-lg-4 mb-3">
                     <h5>Workouts</h5>
                     <small class="text-muted d-block mb-1">Goal: {{ goals.exercises_per_week_goal }}</small>
                     <p class="mb-2">Progress: {{ weekly_progress.exercises }}</p>
@@ -93,7 +93,7 @@
                         <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.exercises }}" aria-valuemin="0" aria-valuemax="{{ goals.exercises_per_week_goal }}">{{ "%.0f" % percentage }}%</div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-3">
+                <div class="col-lg-4 mb-3">
                     <h5>Exercise Minutes</h5>
                     {% set total_minutes_goal = goals.minutes_per_exercise_goal * goals.exercises_per_week_goal %}
                     <small class="text-muted d-block mb-1">Goal: {{ total_minutes_goal }} min</small>
@@ -122,7 +122,7 @@
         <div class="card-body">
             {% if goals and (goals.weight_goal_kg or goals.body_fat_percentage_goal or goals.waist_cm_goal) and latest_checkin %}
             <div class="row mb-4">
-                <div class="col-md-4">
+                <div class="col-lg-4">
                     <h5>Target Weight</h5>
                     <small class="text-muted d-block mb-1">
                         Goal: 
@@ -143,7 +143,7 @@
                         <div class="progress-bar bg-info" role="progressbar" style="width: {{ weight_progress }}%;" aria-valuenow="{{ latest_checkin.weight_kg }}" aria-valuemin="0" aria-valuemax="{{ goals.weight_goal_kg }}">{{ "%.0f" % weight_progress }}%</div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-lg-4">
                     <h5>Target Body Fat %</h5>
                     <small class="text-muted d-block mb-1">
                         Goal: {{ "%.1f" % goals.body_fat_percentage_goal }}% | Current: {{ "%.1f" % latest_checkin.body_fat_percentage }}%
@@ -153,7 +153,7 @@
                         <div class="progress-bar bg-info" role="progressbar" style="width: {{ body_fat_progress }}%;" aria-valuenow="{{ latest_checkin.body_fat_percentage }}" aria-valuemin="0" aria-valuemax="{{ goals.body_fat_percentage_goal }}">{{ "%.0f" % body_fat_progress }}%</div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-lg-4">
                     <h5>Target Waist</h5>
                     <small class="text-muted d-block mb-1">
                         Goal: 

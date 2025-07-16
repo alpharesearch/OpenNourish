@@ -8,7 +8,7 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-8">
+                <div class="col-lg-8">
                     {% if chart_labels and weight_data %}
                         <div style="height: 300px;">
                             <canvas id="progressChart"></canvas>
@@ -17,7 +17,7 @@
                         <p>Log a check-in to see your progress chart!</p>
                     {% endif %}
                 </div>
-                <div class="col-md-4 d-flex flex-column justify-content-center">
+                <div class="col-lg-4 d-flex flex-column justify-content-center">
                     <div class="text-center">
                         <h5>Start Weight</h5>
                         <p class="fs-4">{{ "%.1f"|format(start_weight) }} kg</p>
@@ -39,34 +39,34 @@
     <form method="POST" action="{{ url_for('tracking.progress') }}" class="mb-5">
         {{ form.hidden_tag() }}
         <div class="row align-items-end">
-            <div class="col-md-3">
+            <div class="col-lg-3">
                 {{ form.checkin_date.label(class="form-label") }}
                 {{ form.checkin_date(class="form-control") }}
             </div>
             {% if current_user.measurement_system == 'us' %}
-            <div class="col-md-2">
+            <div class="col-lg-2">
                 {{ form.weight_lbs.label(class="form-label") }}
                 {{ form.weight_lbs(class="form-control") }}
             </div>
-            <div class="col-md-2">
+            <div class="col-lg-2">
                 {{ form.waist_in.label(class="form-label") }}
                 {{ form.waist_in(class="form-control") }}
             </div>
             {% else %}
-            <div class="col-md-2">
+            <div class="col-lg-2">
                 {{ form.weight_kg.label(class="form-label") }}
                 {{ form.weight_kg(class="form-control") }}
             </div>
-            <div class="col-md-2">
+            <div class="col-lg-2">
                 {{ form.waist_cm.label(class="form-label") }}
                 {{ form.waist_cm(class="form-control") }}
             </div>
             {% endif %}
-            <div class="col-md-2">
+            <div class="col-lg-2">
                 {{ form.body_fat_percentage.label(class="form-label") }}
                 {{ form.body_fat_percentage(class="form-control") }}
             </div>
-            <div class="col-md-2">
+            <div class="col-lg-2">
                 {{ form.submit(class="btn btn-outline-primary w-100") }}
             </div>
         </div>
