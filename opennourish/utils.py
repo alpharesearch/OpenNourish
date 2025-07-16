@@ -517,7 +517,143 @@ def _get_nutrition_label_data_myfood(my_food_id):
         'Potassium': my_food.potassium_mg_per_100g or 0,
     }
     return my_food, nutrients_for_label
+def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=False):
+    def _sanitize_for_typst(text):
+        """Sanitizes text to be safely included in Typst markup by escaping special characters."""
+        if not isinstance(text, str):
+            return text
+        return text.replace('\\', r'\\').replace('"', r'\"').replace('*', r'\*')
 
+    # Sanitize all user-provided strings
+    sanitized_food_name = _sanitize_for_typst(my_food.description)
+    brand_name = "OpenNourish MyFood"
+    sanitized_brand = _sanitize_for_typst(brand_name)
+
+    ingredients_str = my_food.ingredients if my_food.ingredients else "N/A"
+    ingredients_str = _sanitize_for_typst(ingredients_str)
+    
+    # Prepare UPC for EAN-13. The typst ean13 function takes the first 12 digits.
+    current_app.logger.debug(f"my_food.upc from DB: {my_food.upc}")
+    upc_str = "0" # Default
+
+    # Check for our internal 13-digit UPCs (now stored with checksum)
+    if my_food.upc and len(my_food.upc) == 13 and my_food.upc.startswith('200'):
+        upc_str = my_food.upc[:12] # Slice off the checksum for the label generator
+        current_app.logger.debug(f"Internal EAN-13 detected. Passing first 12 digits to label: {upc_str}")
+
+    # Check for a standard 12-digit UPC-A, which needs a leading '0'
+    elif my_food.upc and len(my_food.upc) == 12:
+        upc_str = f"0{my_food.upc}"[:12]
+        current_app.logger.debug(f"Standard UPC-A detected. Prepending 0: {upc_str}")
+
+    # Handle existing full 13-digit EANs that are NOT our internal ones
+    elif my_food.upc and len(my_food.upc) == 13:
+        upc_str = my_food.upc[:12]
+        current_app.logger.debug(f"Full EAN-13 detected. Using first 12 digits: {upc_str}")
+
+    # Fallback for other lengths
+    elif my_food.upc:
+        upc_str = my_food.upc.ljust(12, '0')[:12]
+        current_app.logger.debug(f"Fallback sizing applied: {upc_str}")
+
+    portions_str = ""
+    food_portions = UnifiedPortion.query.filter_by(my_food_id=my_food.id).all()
+    if food_portions:
+        portions_list = [f"{_sanitize_for_typst(p.full_description_str)} ({p.gram_weight}g)" for p in food_portions]
+        portions_str = "\\ ".join(portions_list)
+    else:
+        portions_str = "N/A"
+
+    typst_content_data = f"""
+#import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
+#import "@preview/codetastic:0.2.2": ean13
+#let data = (
+  servings: "1", // Assuming 1 serving for 100g
+  serving_size: "100g",
+  calories: "{nutrients_for_label['Energy']:.0f}",
+  total_fat: (value: {nutrients_for_label['Total lipid (fat)']:.1f}, unit: "g"),
+  saturated_fat: (value: {nutrients_for_label['Fatty acids, total saturated']:.1f}, unit: "g"),
+  trans_fat: (value: {nutrients_for_label['Fatty acids, total trans']:.1f}, unit: "g"),
+  cholesterol: (value: {nutrients_for_label['Cholesterol']:.0f}, unit: "mg"),
+  sodium: (value: {nutrients_for_label['Sodium']:.0f}, unit: "mg"),
+  carbohydrate: (value: {nutrients_for_label['Carbohydrate, by difference']:.1f}, unit: "g"),
+  fiber: (value: {nutrients_for_label['Fiber, total dietary']:.1f}, unit: "g"),
+  sugars: (value: {nutrients_for_label['Sugars, total including NLEA']:.1f}, unit: "g"),
+  added_sugars: (value: {nutrients_for_label['Sugars, added']:.1f}, unit: "g"),
+  protein: (value: {nutrients_for_label['Protein']:.1f}, unit: "g"),
+  micronutrients: (
+    (name: "Vitamin D", key: "vitamin_d", value: {nutrients_for_label['Vitamin D']:.0f}, unit: "mcg"),
+    (name: "Calcium", key: "calcium", value: {nutrients_for_label['Calcium']:.0f}, unit: "mg"),
+    (name: "Iron", key: "iron", value: {nutrients_for_label['Iron']:.1f}, unit: "mg"),
+    (name: "Potassium", key: "potassium", value: {nutrients_for_label['Potassium']:.0f}, unit: "mg"),
+  ),
+)
+"""
+
+    if label_only:
+        typst_content = typst_content_data + f"""
+#set page(width: 2in, height: 1in)
+#set page(margin: (x: 0.1cm, y: 0.1cm))
+#set text(font: "Liberation Sans", size: 8pt)
+#ean13(scale:(1.6, .5), "{upc_str}")
+{sanitized_food_name}
+"""
+    else:
+        typst_content = typst_content_data + f"""
+#set page(width: 6in, height: 4in, columns: 2)
+#set page(margin: (x: 0.2in, y: 0.05in))
+#set text(font: "Liberation Sans", size: 8pt)
+#ean13(scale:(2.0, .5), "{upc_str}")
+
+#box(width: 3.25in, height: 3in, clip: true, 
+[== My Food: 
+{sanitized_food_name}
+== Ingredients: 
+{ingredients_str}
+== Portion Sizes: 
+{portions_str}])
+#colbreak()
+#set align(right)
+#show: nutrition-label-nam(data, scale-percent: 75%, show-footnote: false,)
+"""
+
+    return typst_content
+
+def generate_myfood_label_pdf(my_food_id, label_only=False):
+    """
+    Generates a PDF nutrition label for a MyFood item.
+    Can generate a label-only PDF or a full-page PDF with additional details.
+    """
+    my_food, nutrients_for_label = _get_nutrition_label_data_myfood(my_food_id)
+    if not my_food:
+        return "Food not found", 404
+
+    typst_content = _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=label_only)
+    current_app.logger.debug(f"typst_content: {typst_content}")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        file_suffix = "label_only" if label_only else "details"
+        typ_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.typ")
+        pdf_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.pdf")
+
+        with open(typ_file_path, "w", encoding="utf-8") as f:
+            f.write(typst_content)
+
+        try:
+            # Run Typst command
+            subprocess.run(
+                ["typst", "compile", os.path.basename(typ_file_path), "--pages", "1", os.path.basename(pdf_file_path)],
+                capture_output=True, text=True, check=True, cwd=tmpdir
+            )
+
+            download_name = f"{my_food.description}_{file_suffix}.pdf"
+            return send_file(pdf_file_path, as_attachment=False, download_name=download_name, mimetype='application/pdf')
+        except subprocess.CalledProcessError as e:
+            current_app.logger.error(f"Typst compilation failed for my_food_id {my_food_id}: {e.stderr}")
+            return f"Error generating PDF: {e.stderr}", 500
+        except FileNotFoundError:
+            current_app.logger.error("Typst executable not found.")
+            return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
+        
 def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False):
     def _sanitize_for_typst(text):
         """Sanitizes text to be safely included in Typst markup by escaping special characters."""
