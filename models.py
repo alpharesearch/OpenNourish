@@ -189,6 +189,21 @@ class Recipe(db.Model):
     ingredients = db.relationship('RecipeIngredient', backref='recipe', cascade="all, delete-orphan", foreign_keys='RecipeIngredient.recipe_id')
     portions = db.relationship('UnifiedPortion', foreign_keys=[UnifiedPortion.recipe_id], backref='recipe', cascade='all, delete-orphan')
     user = db.relationship('User')
+    upc = db.Column(db.String, nullable=True)
+    calories_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    protein_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    carbs_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    fat_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    saturated_fat_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    trans_fat_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    cholesterol_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    sodium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    fiber_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    sugars_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    vitamin_d_mcg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    calcium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    iron_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    potassium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
 
 class RecipeIngredient(db.Model):
     __tablename__ = 'recipe_ingredients'

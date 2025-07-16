@@ -447,6 +447,48 @@ def calculate_recipe_nutrition_per_100g(recipe):
     
     return nutrition_per_100g
 
+
+def update_recipe_nutrition(recipe):
+    """
+    Calculates and updates the nutritional data for a recipe based on its ingredients.
+    The session is not committed here.
+    """
+    total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
+    total_grams = sum(ing.amount_grams for ing in recipe.ingredients if ing.amount_grams is not None)
+
+    if total_grams > 0:
+        scaling_factor = 100.0 / total_grams
+        recipe.calories_per_100g = total_nutrition.get('calories', 0) * scaling_factor
+        recipe.protein_per_100g = total_nutrition.get('protein', 0) * scaling_factor
+        recipe.carbs_per_100g = total_nutrition.get('carbs', 0) * scaling_factor
+        recipe.fat_per_100g = total_nutrition.get('fat', 0) * scaling_factor
+        recipe.saturated_fat_per_100g = total_nutrition.get('saturated_fat', 0) * scaling_factor
+        recipe.trans_fat_per_100g = total_nutrition.get('trans_fat', 0) * scaling_factor
+        recipe.cholesterol_mg_per_100g = total_nutrition.get('cholesterol', 0) * scaling_factor
+        recipe.sodium_mg_per_100g = total_nutrition.get('sodium', 0) * scaling_factor
+        recipe.fiber_per_100g = total_nutrition.get('fiber', 0) * scaling_factor
+        recipe.sugars_per_100g = total_nutrition.get('sugars', 0) * scaling_factor
+        recipe.vitamin_d_mcg_per_100g = total_nutrition.get('vitamin_d', 0) * scaling_factor
+        recipe.calcium_mg_per_100g = total_nutrition.get('calcium', 0) * scaling_factor
+        recipe.iron_mg_per_100g = total_nutrition.get('iron', 0) * scaling_factor
+        recipe.potassium_mg_per_100g = total_nutrition.get('potassium', 0) * scaling_factor
+    else:
+        # If there are no ingredients with weight, zero out the nutritional info
+        recipe.calories_per_100g = 0.0
+        recipe.protein_per_100g = 0.0
+        recipe.carbs_per_100g = 0.0
+        recipe.fat_per_100g = 0.0
+        recipe.saturated_fat_per_100g = 0.0
+        recipe.trans_fat_per_100g = 0.0
+        recipe.cholesterol_mg_per_100g = 0.0
+        recipe.sodium_mg_per_100g = 0.0
+        recipe.fiber_per_100g = 0.0
+        recipe.sugars_per_100g = 0.0
+        recipe.vitamin_d_mcg_per_100g = 0.0
+        recipe.calcium_mg_per_100g = 0.0
+        recipe.iron_mg_per_100g = 0.0
+        recipe.potassium_mg_per_100g = 0.0
+
 def _get_nutrition_label_data_myfood(my_food_id):
     """
     Fetches a MyFood item and its nutritional data, formatted for the Typst label generator.

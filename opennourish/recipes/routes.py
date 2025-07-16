@@ -6,7 +6,7 @@ from opennourish.diary.forms import AddToLogForm
 from opennourish.my_foods.forms import PortionForm
 from sqlalchemy.orm import joinedload, selectinload
 from datetime import date
-from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g, get_available_portions, remove_leading_one
+from opennourish.utils import calculate_nutrition_for_items, calculate_recipe_nutrition_per_100g, get_available_portions, remove_leading_one, update_recipe_nutrition
 
 recipes_bp = Blueprint('recipes', __name__, template_folder='templates')
 
@@ -138,6 +138,7 @@ def edit_recipe(recipe_id):
     if form.validate_on_submit():
         form.populate_obj(recipe)
         recipe.is_public = form.is_public.data
+        update_recipe_nutrition(recipe)
         db.session.commit()
         flash('Recipe updated successfully.', 'success')
         return redirect(url_for('recipes.edit_recipe', recipe_id=recipe.id))
