@@ -487,6 +487,9 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
     sanitized_food_name = _sanitize_for_typst(my_food.description)
     brand_name = "OpenNourish MyFood"
     sanitized_brand = _sanitize_for_typst(brand_name)
+
+    ingredients_str = my_food.ingredients if my_food.ingredients else "N/A"
+    ingredients_str = _sanitize_for_typst(ingredients_str)
     
     # Prepare UPC for EAN-13. The typst ean13 function takes the first 12 digits.
     current_app.logger.debug(f"my_food.upc from DB: {my_food.upc}")
@@ -557,14 +560,19 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
     else:
         typst_content = typst_content_data + f"""
 #set page(width: 6in, height: 4in, columns: 2)
-#set page(margin: (x: 0.5cm, y: 0.3cm))
+#set page(margin: (x: 0.2in, y: 0.05in))
 #set text(font: "Liberation Sans", size: 8pt)
 #ean13(scale:(2.0, .5), "{upc_str}")
-== My Food: 
+
+#box(width: 3.25in, height: 3in, clip: true, 
+[== My Food: 
 {sanitized_food_name}
+== Ingredients: 
+{ingredients_str}
 == Portion Sizes: 
-{portions_str}
+{portions_str}])
 #colbreak()
+#set align(right)
 #show: nutrition-label-nam(data, scale-percent: 75%, show-footnote: false,)
 """
 
