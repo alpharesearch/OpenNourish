@@ -67,3 +67,26 @@ html[data-bs-theme="dark"] h5,
 html[data-bs-theme="dark"] h6 {
     color: #f8f9fa !important; /* Very light gray/off-white */
 }
+
+@media (max-width: 420px) {
+    h1 {
+        font-size: 1.75rem;
+    }
+    h2 {
+        font-size: 1.5rem;
+    }
+    .card {
+        /* Reduces padding inside cards to save space */
+        padding: 0.8rem;
+    }
+    .btn, .btn-sm {
+        /* Makes buttons smaller to fit better on narrow screens */
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    /* Further reduce padding on smaller form controls */
+    .form-control-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.8rem;
+    }
+}

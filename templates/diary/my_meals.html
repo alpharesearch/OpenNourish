@@ -17,57 +17,68 @@
 
     <div class="list-group">
         {% for meal in meals.items %}
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
+            <div class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                <div class="flex-grow-1 me-md-3">
                     <h5 class="mb-1">{{ meal.name }}</h5>
                     {% if view_mode == 'friends' %}
                         <p class="mb-1 text-muted"><em>by {{ meal.user.username }}</em></p>
                     {% endif %}
-                    <small class="text-muted">
-                        Calories: {{ meal.totals.calories|round(0) }} kcal |
-                        Protein: {{ meal.totals.protein|round(1) }}g |
-                        Carbs: {{ meal.totals.carbs|round(1) }}g |
-                        Fat: {{ meal.totals.fat|round(1) }}g
-                    </small>
-                    <table class="table table-sm table-striped mt-2" style="table-layout: fixed;">
-                        <colgroup>
-                            <col style="width: 70%;">
-                            <col style="width: 20%;">
-                            <col style="width: 10%;">
-                        </colgroup>
-                        <thead>
-                            <tr>
-                                <th scope="col">Item</th>
-                                <th scope="col">Nutrition (Cal/P/C/F)</th>
-                                <th scope="col" class="text-end">Quantity</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in meal.items %}
+                    <div class="d-none d-md-block">
+                        <small class="text-muted">
+                            Calories: {{ meal.totals.calories|round(0) }} kcal |
+                            Protein: {{ meal.totals.protein|round(1) }}g |
+                            Carbs: {{ meal.totals.carbs|round(1) }}g |
+                            Fat: {{ meal.totals.fat|round(1) }}g
+                        </small>
+                        <table class="table table-sm table-striped mt-2" style="table-layout: fixed;">
+                            <colgroup>
+                                <col style="width: 70%;">
+                                <col style="width: 20%;">
+                                <col style="width: 10%;">
+                            </colgroup>
+                            <thead>
                                 <tr>
-                                    <td class="text-truncate">
-                                        {% if item.fdc_id %}
-                                            {{ item.usda_food.description }}
-                                        {% elif item.my_food_id %}
-                                            {{ item.my_food.description }}
-                                        {% elif item.recipe_id %}
-                                            {{ item.recipe.name }}
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">
-                                            {{ item.nutrition_summary.calories|round(0) }} / {{ item.nutrition_summary.protein|round(1) }} / {{ item.nutrition_summary.carbs|round(1) }} / {{ item.nutrition_summary.fat|round(1) }}
-                                        </small>
-                                    </td>
-                                    <td class="text-end">
-                                        <strong>{{ item.display_amount|round(1) }}</strong> {{ item.display_serving_type }}
-                                    </td>
+                                    <th scope="col">Item</th>
+                                    <th scope="col">Nutrition (Cal/P/C/F)</th>
+                                    <th scope="col" class="text-end">Quantity</th>
                                 </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in meal.items %}
+                                    <tr>
+                                        <td class="text-truncate">
+                                            {% if item.fdc_id %}
+                                                {{ item.usda_food.description }}
+                                            {% elif item.my_food_id %}
+                                                {{ item.my_food.description }}
+                                            {% elif item.recipe_id %}
+                                                {{ item.recipe.name }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ item.nutrition_summary.calories|round(0) }} / {{ item.nutrition_summary.protein|round(1) }} / {{ item.nutrition_summary.carbs|round(1) }} / {{ item.nutrition_summary.fat|round(1) }}
+                                            </small>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong>{{ item.display_amount|round(1) }}</strong> {{ item.display_serving_type }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-block d-md-none">
+                        <small class="text-muted">
+                            {% for item in meal.items[:3] %}
+                                {{ item.usda_food.description if item.fdc_id else item.my_food.description if item.my_food_id else item.recipe.name }}{% if not loop.last %}, {% endif %}
                             {% endfor %}
-                        </tbody>
-                    </table>
+                            {% if meal.items|length > 3 %}...
+                            {% endif %}
+                        </small>
+                    </div>
                 </div>
-                <div class="btn-group" role="group" aria-label="Meal Actions">
+                <div class="btn-group mt-2 mt-md-0 flex-shrink-0" role="group" aria-label="Meal Actions">
                     {% if meal.user_id == current_user.id %}
                         <a href="{{ url_for('diary.edit_meal', meal_id=meal.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                         <form action="{{ url_for('diary.delete_meal', meal_id=meal.id) }}" method="post" class="d-inline">

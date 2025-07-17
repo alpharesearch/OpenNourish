@@ -2,19 +2,22 @@
 
 {% block content %}
 <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+        <div class="d-sm-flex justify-content-between align-items-center mb-3 mt-4">
+        <div class="d-flex justify-content-between mb-2 mb-sm-0">
         {% if is_read_only %}
-            <a href="{{ url_for('profile.diary', username=username, log_date_str=prev_date.isoformat()) }}" class="btn btn-outline-secondary">&laquo; Previous Day</a>
+            <a href="{{ url_for('profile.diary', username=username, log_date_str=prev_date.isoformat()) }}" class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
         {% else %}
-            <a href="{{ url_for('diary.diary', log_date_str=prev_date.isoformat()) }}" class="btn btn-outline-secondary">&laquo; Previous Day</a>
+            <a href="{{ url_for('diary.diary', log_date_str=prev_date.isoformat()) }}" class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
         {% endif %}
-        <h1 class="mb-0">{% if is_read_only %}{{ username }}'s {% endif %}Food Diary - {{ date.strftime('%A, %B %d, %Y') }}</h1>
         {% if is_read_only %}
             <a href="{{ url_for('profile.diary', username=username, log_date_str=next_date.isoformat()) }}" class="btn btn-outline-secondary">Next Day &raquo;</a>
         {% else %}
             <a href="{{ url_for('diary.diary', log_date_str=next_date.isoformat()) }}" class="btn btn-outline-secondary">Next Day &raquo;</a>
         {% endif %}
     </div>
+    <h1 class="mb-0 text-center">{% if is_read_only %}{{ username }}'s {% endif %}Food Diary</h1>
+    <h2 class="mb-0 text-center h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
+</div>
 
     <div class="card mb-4">
         <div class="card-header">
@@ -64,8 +67,8 @@
 
     {% for meal_name, items in meals.items() %}
     <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4>{{ meal_name }}</h4>
+        <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
+            <h4 class="mb-2 mb-md-0">{{ meal_name }}</h4>
             {% if is_read_only and items %}
                 <form action="{{ url_for('diary.copy_meal_from_friend') }}" method="post">
                     <input type="hidden" name="friend_username" value="{{ username }}">
@@ -74,15 +77,23 @@
                     <button type="submit" class="btn btn-outline-success btn-sm">Copy to My Diary</button>
                 </form>
             {% elif not is_read_only %}
-            <div class="d-flex align-items-center">
-                <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex me-2">
+            <div class="d-flex flex-column flex-md-row align-items-md-center">
+                <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex me-md-2 mb-2 mb-md-0">
                     <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
                     <input type="hidden" name="meal_name" value="{{ meal_name }}">
                     <input type="text" name="new_meal_name" class="form-control form-control-sm me-2" placeholder="Save as new meal...">
                     <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
                 </form>
-                <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}" class="btn btn-outline-primary btn-sm">Add Food</a>
-                <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}" class="btn btn-outline-info btn-sm ms-2">Scan Barcode</a>
+                <div class="d-flex">
+                    <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}" class="btn btn-outline-primary btn-sm">
+                        <span class="d-none d-md-inline">Add Food</span>
+                        <span class="d-inline d-md-none">Add</span>
+                    </a>
+                    <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}" class="btn btn-outline-info btn-sm ms-2">
+                        <span class="d-none d-md-inline">Scan Barcode</span>
+                        <span class="d-inline d-md-none">Scan</span>
+                    </a>
+                </div>
             </div>
             {% endif %}
         </div>
