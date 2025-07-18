@@ -65,3 +65,11 @@ def settings():
         settings_form=settings_form,
         password_form=password_form
     )
+
+@settings_bp.route('/restart-onboarding', methods=['POST'])
+@login_required
+def restart_onboarding():
+    current_user.has_completed_onboarding = False
+    db.session.commit()
+    flash('You have restarted the onboarding wizard.', 'info')
+    return redirect(url_for('onboarding.step1'))

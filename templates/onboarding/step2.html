@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4>Tell Us About Yourself</h4>
+                    <p class="mb-0">Step 2 of 3: Personal Information</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ form.age.label(class="form-label") }}
+                            {{ form.age(class="form-control") }}
+                            {% for error in form.age.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.gender.label(class="form-label") }}
+                            {{ form.gender(class="form-select") }}
+                            {% for error in form.gender.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        {% if measurement_system == 'us' %}
+                        <div class="mb-3">
+                            <label class="form-label">Height (ft/in)</label>
+                            <div class="input-group">
+                                {{ form.height_ft(class="form-control", placeholder="feet") }}
+                                {{ form.height_in(class="form-control", placeholder="inches") }}
+                            </div>
+                            {% for error in form.height_ft.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                            {% for error in form.height_in.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.weight_lbs.label(class="form-label") }}
+                            {{ form.weight_lbs(class="form-control") }}
+                            {% for error in form.weight_lbs.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="mb-3">
+                            {{ form.height_cm.label(class="form-label") }}
+                            {{ form.height_cm(class="form-control") }}
+                            {% for error in form.height_cm.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.weight_kg.label(class="form-label") }}
+                            {{ form.weight_kg(class="form-control") }}
+                            {% for error in form.weight_kg.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            {{ form.body_fat_percentage.label(class="form-label") }}
+                            {{ form.body_fat_percentage(class="form-control") }}
+                            {% for error in form.body_fat_percentage.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                            <small class="form-text text-muted">
+                                Providing body fat percentage allows for a more accurate BMR calculation using the Katch-McArdle formula.
+                            </small>
+                        </div>
+
+                        {% if measurement_system == 'us' %}
+                        <div class="mb-3">
+                            {{ form.waist_in.label(class="form-label") }}
+                            {{ form.waist_in(class="form-control") }}
+                            {% for error in form.waist_in.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="mb-3">
+                            {{ form.waist_cm.label(class="form-label") }}
+                            {{ form.waist_cm(class="form-control") }}
+                            {% for error in form.waist_cm.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-outline-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

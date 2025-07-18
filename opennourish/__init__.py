@@ -36,6 +36,9 @@ def create_app(config_class=Config):
     from opennourish.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
+    from opennourish.onboarding import onboarding_bp
+    app.register_blueprint(onboarding_bp, url_prefix='/onboarding')
+
     from opennourish.dashboard import dashboard_bp
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
 

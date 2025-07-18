@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4>Set Your Initial Goals</h4>
+                    <p class="mb-0">Step 3 of 3: Basic Nutritional & Weight Goals</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <div class="alert alert-info mt-4" id="bmr-display" {% if not bmr %}style="display: none;"{% endif %} role="alert">
+                            Your estimated Basal Metabolic Rate (BMR) is: <strong id="bmr-value">{{ "%.0f"|format(bmr) if bmr else '' }}</strong> kcal/day.
+                            <small class="d-block">Calculated using the <strong id="bmr-formula">{{ formula_name if formula_name else '' }}</strong> formula.</small>
+                        </div>
+
+                        <h5 class="mt-4 mb-3">Nutritional Goals</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Diet Preset</label>
+                            <select class="form-select" id="diet_preset">
+                                {% for key, value in diet_presets.items() %}
+                                    <option value="{{ key }}">{{ key }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.calories.label(class="form-label") }}
+                                {{ form.calories(class="form-control") }}
+                                {% for error in form.calories.errors %}
+                                    <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.protein.label(class="form-label") }}
+                                {{ form.protein(class="form-control") }}
+                                {% for error in form.protein.errors %}
+                                    <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.carbs.label(class="form-label") }}
+                                {{ form.carbs(class="form-control") }}
+                                {% for error in form.carbs.errors %}
+                                    <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.fat.label(class="form-label") }}
+                                {{ form.fat(class="form-control") }}
+                                {% for error in form.fat.errors %}
+                                    <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <h5 class="mt-4 mb-3">Weight Goal</h5>
+                        <div class="mb-3">
+                            {% if measurement_system == 'us' %}
+                            {{ form.weight_goal_lbs.label(class="form-label") }}
+                            {{ form.weight_goal_lbs(class="form-control") }}
+                            {% for error in form.weight_goal_lbs.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                            {% else %}
+                            {{ form.weight_goal_kg.label(class="form-label") }}
+                            {{ form.weight_goal_kg(class="form-control") }}
+                            {% for error in form.weight_goal_kg.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-outline-success") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dietPresetSelect = document.getElementById('diet_preset');
+    const caloriesField = document.getElementById('calories');
+    const proteinField = document.getElementById('protein');
+    const carbsField = document.getElementById('carbs');
+    const fatField = document.getElementById('fat');
+
+    // Function to update macro fields based on selected preset
+    function updateMacrosFromPreset() {
+        const selectedPreset = dietPresetSelect.value;
+        const dietPresets = {{ diet_presets|tojson }};
+        const bmr = parseFloat(document.getElementById('bmr-value').textContent);
+
+        if (selectedPreset && dietPresets[selectedPreset] && !isNaN(bmr)) {
+            const preset = dietPresets[selectedPreset];
+            caloriesField.value = Math.round(bmr);
+            proteinField.value = Math.round((bmr * preset.protein) / 4);
+            carbsField.value = Math.round((bmr * preset.carbs) / 4);
+            fatField.value = Math.round((bmr * preset.fat) / 9);
+        }
+    }
+
+    // Attach event listener to diet preset select
+    if (dietPresetSelect) {
+        dietPresetSelect.addEventListener('change', updateMacrosFromPreset);
+    }
+
+    // Initial update if a preset is already selected (e.g., after form validation error)
+    // Or if initial_goals are provided from backend
+    {% if initial_goals %}
+        // If initial_goals are provided, set the fields directly
+        caloriesField.value = {{ initial_goals.calories }};
+        proteinField.value = {{ initial_goals.protein }};
+        carbsField.value = {{ initial_goals.carbs }};
+        fatField.value = {{ initial_goals.fat }};
+    {% else %}
+        // Otherwise, trigger update from preset if one is selected
+        updateMacrosFromPreset();
+    {% endif %}
+});
+</script>
+{% endblock %}

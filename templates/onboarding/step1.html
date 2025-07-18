@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4>Welcome to OpenNourish!</h4>
+                    <p class="mb-0">Step 1 of 3: Choose Your Measurement System</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3 text-center">
+                            <p class="form-label">Please select your preferred measurement system:</p>
+                            {% for subfield in form.measurement_system %}
+                            <div class="form-check form-check-inline">
+                                {{ subfield(class="form-check-input") }}
+                                {{ subfield.label(class="form-check-label") }}
+                            </div>
+                            {% endfor %}
+                            {% if form.measurement_system.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.measurement_system.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.theme_preference.label(class="form-label") }}
+                            {{ form.theme_preference(class="form-select") }}
+                            {% for error in form.theme_preference.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-outline-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

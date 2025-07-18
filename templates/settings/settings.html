@@ -74,6 +74,9 @@
                         
                         <button type="submit" name="submit_settings" class="btn btn-outline-primary">Save Settings</button>
                     </form>
+                    <form action="{{ url_for('settings.restart_onboarding') }}" method="POST" class="mt-3">
+                        <button type="submit" class="btn btn-outline-secondary">Restart Onboarding Wizard</button>
+                    </form>
                 </div>
             </div>
         </div>

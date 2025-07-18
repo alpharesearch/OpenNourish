@@ -9,10 +9,12 @@ from . import dashboard_bp
 from models import db, DailyLog, Food, MyFood, UserGoal, CheckIn, ExerciseLog
 from opennourish.utils import calculate_nutrition_for_items, calculate_weekly_nutrition_summary
 from sqlalchemy import func
+from opennourish.decorators import onboarding_required
 
 @dashboard_bp.route('/')
 @dashboard_bp.route('/<string:log_date_str>')
 @login_required
+@onboarding_required
 def index(log_date_str=None):
     time_range = request.args.get('time_range', '3_month') # Default to 3 months
 
