@@ -33,7 +33,17 @@ input[name="quantity"] {
 }
 
 select[name="portion_id"] {
-  width: 80px;
+    width: 80px;
+}
+
+.progress-marker {
+    position: absolute;
+    top: -5px;
+    bottom: -5px;
+    width: 2px;
+    background-color: #000;
+    transform: translateX(-50%);
+    z-index: 2;
 }
 
 #progress-history-table input[name*="weight"],

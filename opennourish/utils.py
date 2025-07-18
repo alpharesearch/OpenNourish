@@ -8,6 +8,49 @@ import subprocess
 import tempfile
 from types import SimpleNamespace
 
+def calculate_weekly_nutrition_summary(weekly_logs):
+    """
+    Calculates the average daily nutritional summary for a given list of weekly DailyLog items.
+    """
+    if not weekly_logs:
+        return SimpleNamespace(avg_calories=0, avg_protein=0, avg_carbs=0, avg_fat=0)
+
+    total_nutrition = {
+        'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0
+    }
+    # Group logs by date
+    logs_by_date = {}
+    for log in weekly_logs:
+        if log.log_date not in logs_by_date:
+            logs_by_date[log.log_date] = []
+        logs_by_date[log.log_date].append(log)
+
+    # Calculate total nutrition for the week
+    for date, logs in logs_by_date.items():
+        daily_totals = calculate_nutrition_for_items(logs)
+        total_nutrition['calories'] += daily_totals['calories']
+        total_nutrition['protein'] += daily_totals['protein']
+        total_nutrition['carbs'] += daily_totals['carbs']
+        total_nutrition['fat'] += daily_totals['fat']
+
+    # Calculate the average over the number of days that have logs
+    num_days_with_logs = len(logs_by_date)
+    if num_days_with_logs > 0:
+        avg_calories = total_nutrition['calories'] / num_days_with_logs
+        avg_protein = total_nutrition['protein'] / num_days_with_logs
+        avg_carbs = total_nutrition['carbs'] / num_days_with_logs
+        avg_fat = total_nutrition['fat'] / num_days_with_logs
+    else:
+        avg_calories = avg_protein = avg_carbs = avg_fat = 0
+
+    return SimpleNamespace(
+        avg_calories=avg_calories,
+        avg_protein=avg_protein,
+        avg_carbs=avg_carbs,
+        avg_fat=avg_fat
+    )
+
+
 # --- Unit Conversion Utilities ---
 
 # Height

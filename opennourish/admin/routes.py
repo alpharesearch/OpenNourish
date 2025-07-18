@@ -5,14 +5,6 @@ from . import admin_bp
 from .forms import AdminSettingsForm
 import json
 import os
-
-from flask import render_template, redirect, url_for, flash, current_app, request
-from flask_login import login_required
-from opennourish.decorators import admin_required
-from . import admin_bp
-from .forms import AdminSettingsForm
-import json
-import os
 from models import db, User, Recipe, MyFood, DailyLog, ExerciseLog, SystemSetting
 
 @admin_bp.route('/')

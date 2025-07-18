@@ -7,7 +7,8 @@ from flask import render_template, request
 from flask_login import login_required, current_user
 from . import dashboard_bp
 from models import db, DailyLog, Food, MyFood, UserGoal, CheckIn, ExerciseLog
-from opennourish.utils import calculate_nutrition_for_items
+from opennourish.utils import calculate_nutrition_for_items, calculate_weekly_nutrition_summary
+from sqlalchemy import func
 
 @dashboard_bp.route('/')
 @dashboard_bp.route('/<string:log_date_str>')
@@ -77,21 +78,36 @@ def index(log_date_str=None):
     body_fat_data = [check_in.body_fat_percentage for check_in in check_ins]
     waist_data = [check_in.waist_cm for check_in in check_ins]
 
-    # --- Weekly Exercise Goal Progress ---
+    # --- Weekly Goal Progress ---
     # Calculate start and end of the week based on the currently viewed date (date_obj)
     start_of_week = date_obj - timedelta(days=date_obj.weekday())
     end_of_week = start_of_week + timedelta(days=6)
+    days_elapsed_in_week = date_obj.weekday() + 1
 
-    weekly_logs = ExerciseLog.query.filter(
+    weekly_exercise_logs = ExerciseLog.query.filter(
         ExerciseLog.user_id == current_user.id,
         ExerciseLog.log_date >= start_of_week,
         ExerciseLog.log_date <= end_of_week
     ).all()
 
     weekly_progress = {
-        'calories_burned': sum(log.calories_burned for log in weekly_logs),
-        'exercises': len(weekly_logs),
-        'minutes': sum(log.duration_minutes for log in weekly_logs)
+        'calories_burned': sum(log.calories_burned for log in weekly_exercise_logs),
+        'exercises': len(weekly_exercise_logs),
+        'minutes': sum(log.duration_minutes for log in weekly_exercise_logs)
     }
 
-    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, time_range=time_range, weekly_progress=weekly_progress, exercise_logs=exercise_logs, start_of_week=start_of_week, end_of_week=end_of_week, pending_received=current_user.pending_requests_received, current_user_measurement_system=current_user.measurement_system)
+    weekly_diet_logs = DailyLog.query.filter(
+        DailyLog.user_id == current_user.id,
+        DailyLog.log_date >= start_of_week,
+        DailyLog.log_date <= end_of_week
+    ).all()
+
+    weekly_totals = calculate_nutrition_for_items(weekly_diet_logs)
+    weekly_goals = {
+        'calories': user_goal.calories * 7,
+        'protein': user_goal.protein * 7,
+        'carbs': user_goal.carbs * 7,
+        'fat': user_goal.fat * 7
+    }
+
+    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, time_range=time_range, weekly_progress=weekly_progress, exercise_logs=exercise_logs, start_of_week=start_of_week, end_of_week=end_of_week, pending_received=current_user.pending_requests_received, current_user_measurement_system=current_user.measurement_system, weekly_totals=weekly_totals, weekly_goals=weekly_goals, days_elapsed_in_week=days_elapsed_in_week)
