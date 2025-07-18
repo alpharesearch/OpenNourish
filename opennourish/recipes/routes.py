@@ -41,7 +41,7 @@ def recipes():
 @login_required
 def new_recipe():
     form = RecipeForm()
-    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.name) for c in FoodCategory.query.order_by(FoodCategory.name)]
+    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.description) for c in FoodCategory.query.order_by(FoodCategory.code)]
     if form.validate_on_submit():
         new_recipe = Recipe(
             user_id=current_user.id,
@@ -124,7 +124,11 @@ def edit_recipe(recipe_id):
         return redirect(url_for('recipes.recipes'))
 
     form = RecipeForm(obj=recipe)
-    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.name) for c in FoodCategory.query.order_by(FoodCategory.name)]
+    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.description) for c in FoodCategory.query.order_by(FoodCategory.code)]
+    
+    if request.method == 'GET' and recipe.food_category_id:
+        form.food_category.data = recipe.food_category_id
+        
     servings_param = request.args.get('servings_param', type=float)
     name_param = request.args.get('name_param', type=str)
     instructions_param = request.args.get('instructions_param', type=str)
@@ -139,9 +143,20 @@ def edit_recipe(recipe_id):
     portion_form = PortionForm()
 
     if form.validate_on_submit():
-        form.populate_obj(recipe)
-        recipe.food_category_id = form.food_category.data if form.food_category.data else None
+        # Manually handle populating the object to avoid the relationship error
+        recipe.name = form.name.data
+        recipe.instructions = form.instructions.data
+        recipe.servings = form.servings.data
         recipe.is_public = form.is_public.data
+        recipe.upc = form.upc.data
+        
+        # Fetch the FoodCategory object based on the form's ID
+        food_category_id = form.food_category.data
+        if food_category_id:
+            recipe.food_category = db.session.get(FoodCategory, food_category_id)
+        else:
+            recipe.food_category = None
+
         update_recipe_nutrition(recipe)
         db.session.commit()
         flash('Recipe updated successfully.', 'success')

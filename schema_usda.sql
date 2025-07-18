@@ -38,3 +38,4 @@ CREATE TABLE food_nutrients (
 );
 
 -- DO NOT CREATE A PORTIONS TABLE HERE, unified portions table is now in the user database
+-- DO NOT CREATE A CATEGORY TABLE HERE, unified category table is now in the user database

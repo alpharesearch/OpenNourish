@@ -34,7 +34,7 @@ def my_foods():
 @login_required
 def new_my_food():
     form = MyFoodForm()
-    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.name) for c in FoodCategory.query.order_by(FoodCategory.name)]
+    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.description) for c in FoodCategory.query.order_by(FoodCategory.code)]
     portion_form = PortionForm()
 
     # Change form labels for the 'new' page context
@@ -57,20 +57,25 @@ def new_my_food():
 
         factor = 100.0 / gram_weight
 
-        my_food_data = {
-            'user_id': current_user.id,
-            'description': form.description.data,
-            'ingredients': form.ingredients.data,
-            'food_category_id': form.food_category.data if form.food_category.data else None
-        }
+        my_food = MyFood(
+            user_id=current_user.id,
+            description=form.description.data,
+            ingredients=form.ingredients.data,
+            food_category_id=form.food_category.data if form.food_category.data else None
+        )
 
+        nutrient_fields = [
+            'calories_per_100g', 'protein_per_100g', 'carbs_per_100g', 'fat_per_100g',
+            'saturated_fat_per_100g', 'trans_fat_per_100g', 'cholesterol_mg_per_100g',
+            'sodium_mg_per_100g', 'fiber_per_100g', 'sugars_per_100g',
+            'vitamin_d_mcg_per_100g', 'calcium_mg_per_100g', 'iron_mg_per_100g',
+            'potassium_mg_per_100g'
+        ]
         for field_name in nutrient_fields:
             field = getattr(form, field_name)
             if field.data is not None:
-                # The form field name is `calories_per_100g`, so we use it directly
-                my_food_data[field_name] = field.data * factor
+                setattr(my_food, field_name, field.data * factor)
         
-        my_food = MyFood(**my_food_data)
         db.session.add(my_food)
         db.session.flush()  # Get the ID for the new food item
 
@@ -107,11 +112,35 @@ def new_my_food():
 def edit_my_food(food_id):
     my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
     form = MyFoodForm(obj=my_food)
-    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.name) for c in FoodCategory.query.order_by(FoodCategory.name)]
+    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.description) for c in FoodCategory.query.order_by(FoodCategory.code)]
+    
+    if request.method == 'GET' and my_food.food_category_id:
+        form.food_category.data = my_food.food_category_id
+
     portion_form = PortionForm()
 
     if form.validate_on_submit():
-        form.populate_obj(my_food)
+        my_food.description = form.description.data
+        my_food.ingredients = form.ingredients.data
+        my_food.upc = form.upc.data
+        
+        food_category_id = form.food_category.data
+        if food_category_id:
+            my_food.food_category = db.session.get(FoodCategory, food_category_id)
+        else:
+            my_food.food_category = None
+
+        # Nutrient fields
+        nutrient_fields = [
+            'calories_per_100g', 'protein_per_100g', 'carbs_per_100g', 'fat_per_100g',
+            'saturated_fat_per_100g', 'trans_fat_per_100g', 'cholesterol_mg_per_100g',
+            'sodium_mg_per_100g', 'fiber_per_100g', 'sugars_per_100g',
+            'vitamin_d_mcg_per_100g', 'calcium_mg_per_100g', 'iron_mg_per_100g',
+            'potassium_mg_per_100g'
+        ]
+        for field_name in nutrient_fields:
+            setattr(my_food, field_name, getattr(form, field_name).data)
+
         db.session.commit()
         flash('Food updated successfully!', 'success')
         return redirect(url_for('my_foods.edit_my_food', food_id=my_food.id))

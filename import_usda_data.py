@@ -82,6 +82,7 @@ def import_usda_data(db_file=None, keep_newest_upc_only=False):
                         foods_with_energy.add(fdc_id)
             print(f"-> Found {len(foods_with_energy)} foods with energy.")
 
+            # --- Load data from specific food type CSVs into dictionaries ---
             print("-> Processing branded foods data...")
             branded_foods_data = {}
             if keep_newest_upc_only:
@@ -114,6 +115,24 @@ def import_usda_data(db_file=None, keep_newest_upc_only=False):
                         branded_foods_data[fdc_id] = (gtin_upc, ingredients)
                 print("-> Including all branded foods.")
 
+            print("-> Processing sr_legacy_food data...")
+            sr_legacy_foods_data = {}
+            with open(os.path.join(usda_data_dir, 'sr_legacy_food.csv'), 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader)
+                for row in reader:
+                    fdc_id = row[0]
+                    sr_legacy_foods_data[fdc_id] = () # No extra columns for now
+
+            print("-> Processing survey_fndds_food data...")
+            survey_foods_data = {}
+            with open(os.path.join(usda_data_dir, 'survey_fndds_food.csv'), 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader)
+                for row in reader:
+                    fdc_id = row[0]
+                    survey_foods_data[fdc_id] = () # No extra columns for now
+
             print("\nPopulating 'foods' table...")
             foods_to_insert_chunk = []
             count = 0
@@ -121,16 +140,35 @@ def import_usda_data(db_file=None, keep_newest_upc_only=False):
                 reader = csv.reader(f)
                 next(reader) # Skip header
                 for row in reader:
-                    fdc_id, description = row[0], row[2]
+                    fdc_id, data_type, description, food_category_id = row[0], row[1], row[2], row[3] or None
+                    
                     if fdc_id in foods_with_energy:
-                        upc, ingredients = branded_foods_data.get(fdc_id, (None, None))
-                        foods_to_insert_chunk.append((fdc_id, description, upc, ingredients))
+                        upc, ingredients = None, None
+                        
+                        if data_type == 'branded_food':
+                            upc, ingredients = branded_foods_data.get(fdc_id, (None, None))
+                        elif data_type == 'sr_legacy_food':
+                            # No extra data to pull for sr_legacy_food yet
+                            pass
+                        elif data_type == 'survey_fndds_food':
+                            # No extra data to pull for survey_fndds_food yet
+                            pass
+
+                        foods_to_insert_chunk.append((fdc_id, description, data_type, food_category_id, upc, ingredients))
+                        
                         if len(foods_to_insert_chunk) >= CHUNK_SIZE:
-                            cursor.executemany("INSERT INTO foods (fdc_id, description, upc, ingredients) VALUES (?, ?, ?, ?)", foods_to_insert_chunk)
+                            cursor.executemany(
+                                "INSERT INTO foods (fdc_id, description, data_type, food_category_id, upc, ingredients) VALUES (?, ?, ?, ?, ?, ?)",
+                                foods_to_insert_chunk
+                            )
                             count += len(foods_to_insert_chunk)
                             foods_to_insert_chunk = []
+
             if foods_to_insert_chunk:
-                cursor.executemany("INSERT INTO foods (fdc_id, description, upc, ingredients) VALUES (?, ?, ?, ?)", foods_to_insert_chunk)
+                cursor.executemany(
+                    "INSERT INTO foods (fdc_id, description, data_type, food_category_id, upc, ingredients) VALUES (?, ?, ?, ?, ?, ?)",
+                    foods_to_insert_chunk
+                )
                 count += len(foods_to_insert_chunk)
             print(f"-> Imported {count} foods.")
 

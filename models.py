@@ -142,7 +142,8 @@ class UnifiedPortion(db.Model):
 class FoodCategory(db.Model):
     __tablename__ = 'food_category'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
+    code = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.String, nullable=False)
 
 class MyFood(db.Model):
     __tablename__ = 'my_foods'
@@ -287,6 +288,7 @@ class Food(db.Model):
     __tablename__ = 'foods'
     fdc_id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String, nullable=False)
+    food_category_id = db.Column(db.Integer)
     upc = db.Column(db.String, unique=True)
     ingredients = db.Column(db.String)
     portions = db.relationship(
@@ -294,6 +296,12 @@ class Food(db.Model):
         primaryjoin="foreign(UnifiedPortion.fdc_id) == Food.fdc_id",
         viewonly=True,
         uselist=True
+    )
+    food_category = db.relationship(
+        'FoodCategory',
+        primaryjoin="foreign(Food.food_category_id) == FoodCategory.id",
+        viewonly=True,
+        uselist=False
     )
     nutrients = db.relationship('FoodNutrient', backref='food')
 

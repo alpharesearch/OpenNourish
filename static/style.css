@@ -36,6 +36,12 @@ select[name="portion_id"] {
   width: 80px;
 }
 
+#progress-history-table input[name*="weight"],
+#progress-history-table input[name*="waist"],
+#progress-history-table input[name*="body_fat_percentage"] {
+    min-width: 90px;
+}
+
 /* Custom styles for dark mode secondary navbar */
 html[data-bs-theme="dark"] .navbar.navbar-light.bg-light {
     background-color: #2b3035 !important; /* Slightly lighter dark gray */

@@ -151,6 +151,13 @@ def create_app(config_class=Config):
             # This assumes usda_data.db is already populated
             usda_fdc_ids = [f.fdc_id for f in Food.query.all()]
 
+            # Fetch all available food categories
+            food_categories = FoodCategory.query.all()
+            if not food_categories:
+                print("No food categories found. Please run 'flask seed-usda-categories' first.")
+                return
+            food_category_ids = [fc.id for fc in food_categories]
+
             for i in range(count):
                 user = User(
                     username='user'+f"{i}",
@@ -207,6 +214,7 @@ def create_app(config_class=Config):
                             my_food = MyFood(
                                 user_id=user.id,
                                 description=usda_food.description + ' My Custom USDA Food',
+                                food_category_id=usda_food.food_category_id if usda_food.food_category_id in food_category_ids else random.choice(food_category_ids),
                                 ingredients=usda_food.ingredients,
                                 fdc_id=usda_food.fdc_id,
                                 upc=usda_food.upc,
@@ -242,6 +250,7 @@ def create_app(config_class=Config):
                         my_food = MyFood(
                             user_id=user.id,
                             description=fake.word().capitalize() + ' ' + fake.word()+ ' My Custom Food',
+                            food_category_id=random.choice(food_category_ids) if food_category_ids else None,
                             ingredients=fake.sentence(nb_words=6),
                             calories_per_100g=calories_for_serving * factor,
                             protein_per_100g=protein_for_serving * factor,
@@ -336,7 +345,8 @@ def create_app(config_class=Config):
                         name=fake.word().capitalize() + ' ' + fake.word() + ' My Recipe',
                         instructions=fake.paragraph(nb_sentences=5),
                         servings=random.randint(1, 6),
-                        is_public=random.choice([True, False])
+                        is_public=random.choice([True, False]),
+                        food_category_id=random.choice(food_category_ids) if food_category_ids else None
                     )
                     db.session.add(recipe)
                     user_recipes.append(recipe)
@@ -705,7 +715,8 @@ def create_app(config_class=Config):
                 for row in reader:
                     category = FoodCategory(
                         id=int(row[0]),
-                        name=row[1]
+                        code=int(row[1]),
+                        description=row[2]
                     )
                     categories_to_add.append(category)
             
