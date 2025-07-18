@@ -51,8 +51,16 @@
         <input type="hidden" name="my_foods_page" value="{{ request.args.get('my_foods_page', 1) }}">
         <input type="hidden" name="recipes_page" value="{{ request.args.get('recipes_page', 1) }}">
         <input type="hidden" name="my_meals_page" value="{{ request.args.get('my_meals_page', 1) }}">
-        <div class="d-flex flex-column flex-md-row gap-2">
+        <div class="d-flex flex-column flex-md-row gap-2 align-items-md-center">
             <input type="text" name="search_term" class="form-control" placeholder="Search for a food..." value="{{ search_term or '' }}">
+            <select name="food_category_id" class="form-select category-select">
+                <option value="">All Categories</option>
+                {% for category in food_categories %}
+                    <option value="{{ category.id }}" {% if category.id == selected_category_id %}selected{% endif %}>
+                        {{ category.description }}
+                    </option>
+                {% endfor %}
+            </select>
             <div class="btn-group">
                 <button class="btn btn-outline-primary" type="submit">Search</button>
                 <button class="btn btn-outline-secondary" type="button" id="scan-barcode-btn">Scan Barcode</button>

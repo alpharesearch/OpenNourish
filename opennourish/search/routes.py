@@ -1,6 +1,6 @@
 from flask import render_template, request, flash, redirect, url_for, current_app, jsonify
 from . import search_bp
-from models import db, Food, MyFood, Recipe, MyMeal, DailyLog, RecipeIngredient, MyMealItem, UnifiedPortion, FoodNutrient
+from models import db, Food, MyFood, Recipe, MyMeal, DailyLog, RecipeIngredient, MyMealItem, UnifiedPortion, FoodNutrient, FoodCategory
 from flask_login import login_required, current_user
 from datetime import date
 from sqlalchemy import or_, func
@@ -167,6 +167,10 @@ def search_by_upc():
 def search():
     search_term = request.values.get('search_term', '')
     per_page = request.values.get('per_page', 10, type=int)
+    selected_category_id = request.values.get('food_category_id', type=int)
+
+    # Fetch all food categories for the dropdown
+    food_categories = FoodCategory.query.order_by(FoodCategory.description).all()
 
     # Separate page parameters for each category
     usda_page = request.values.get('usda_page', 1, type=int)
@@ -206,9 +210,13 @@ def search():
 
         if search_usda:
             # Step 1: Get all matching food IDs from the USDA database first.
-            all_matching_foods_query = Food.query.filter(
+            usda_query = Food.query.filter(
                 Food.description.ilike(f'%{search_term}%')
-            ).with_entities(Food.fdc_id, Food.description).all()
+            )
+            if selected_category_id:
+                usda_query = usda_query.filter(Food.food_category_id == selected_category_id)
+            
+            all_matching_foods_query = usda_query.with_entities(Food.fdc_id, Food.description).all()
 
             if all_matching_foods_query:
                 matching_fdc_ids = [food.fdc_id for food in all_matching_foods_query]
@@ -293,10 +301,13 @@ def search():
                 food.portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
 
         if search_my_foods:
-            my_foods_pagination = MyFood.query.filter(
+            my_foods_query = MyFood.query.filter(
                 MyFood.description.ilike(f'%{search_term}%'),
                 MyFood.user_id.in_(user_ids_to_search)
-            ).paginate(page=my_foods_page, per_page=per_page, error_out=False)
+            )
+            if selected_category_id:
+                my_foods_query = my_foods_query.filter(MyFood.food_category_id == selected_category_id)
+            my_foods_pagination = my_foods_query.paginate(page=my_foods_page, per_page=per_page, error_out=False)
 
         if search_recipes:
             recipe_query_filter = [Recipe.name.ilike(f'%{search_term}%')]
@@ -309,9 +320,10 @@ def search():
             
             recipe_query_filter.append(or_(*user_and_public_filter))
 
-            recipes_pagination = Recipe.query.filter(
-                *recipe_query_filter
-            ).paginate(page=recipes_page, per_page=per_page, error_out=False)
+            recipes_query = Recipe.query.filter(*recipe_query_filter)
+            if selected_category_id:
+                recipes_query = recipes_query.filter(Recipe.food_category_id == selected_category_id)
+            recipes_pagination = recipes_query.paginate(page=recipes_page, per_page=per_page, error_out=False)
 
         if search_my_meals:
             my_meals_pagination = MyMeal.query.filter(
@@ -447,7 +459,9 @@ def search():
                            usda_page=usda_page,
                            my_foods_page=my_foods_page,
                            recipes_page=recipes_page,
-                           my_meals_page=my_meals_page)
+                           my_meals_page=my_meals_page,
+                           food_categories=food_categories,
+                           selected_category_id=selected_category_id)
 
 @search_bp.route('/add_item', methods=['POST'])
 @login_required
