@@ -42,6 +42,7 @@ def register():
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
+        login_user(user)  # Log in the user after registration
         flash('Congratulations, you are now a registered user!')
         # After registration, check if the user has existing goals
         user_goal = UserGoal.query.filter_by(user_id=user.id).first()
