@@ -11,6 +11,8 @@ def test_dashboard_exercise_goals_display(auth_client):
     client = auth_client
     with client.application.app_context():
         user = db.session.get(User, 1) # Assuming user with ID 1 is the testuser
+        user.has_completed_onboarding = True
+        db.session.add(user)
 
         # Set up exercise goals for the user
         user_goal = UserGoal.query.filter_by(user_id=user.id).first()

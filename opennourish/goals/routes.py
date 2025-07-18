@@ -96,3 +96,22 @@ def goals():
         )
 
     return render_template('goals/goals.html', form=form, bmr=bmr, formula_name=formula_name, diet_presets=Config.DIET_PRESETS)
+
+@bp.route('/calculate-bmr', methods=['POST'])
+@login_required
+def calculate_bmr_api():
+    data = request.get_json()
+    bmr, formula = calculate_bmr(
+        weight_kg=data.get('weight_kg'),
+        height_cm=data.get('height_cm'),
+        age=data.get('age'),
+        gender=data.get('gender'),
+        body_fat_percentage=data.get('body_fat_percentage')
+    )
+    if bmr:
+        response = {'bmr': bmr, 'formula': formula}
+        if data.get('diet_preset'):
+            adjusted_goals = calculate_goals_from_preset(bmr, data['diet_preset'])
+            response['adjusted_goals'] = adjusted_goals
+        return jsonify(response)
+    return jsonify({'error': 'Could not calculate BMR with the provided data.'}), 400

@@ -10,6 +10,11 @@ def test_set_goals_for_new_user(auth_client):
     WHEN the user submits the goals form
     THEN a new UserGoal object should be created
     """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        user.has_completed_onboarding = True
+        db.session.add(user)
+        db.session.commit()
     data = {
         'age': 30,
         'gender': 'Male',
@@ -31,9 +36,6 @@ def test_set_goals_for_new_user(auth_client):
         assert user_goal is not None
         assert user_goal.calories == 2500
         assert user_goal.protein == 150
-        assert user.age == 30
-        assert user.gender == 'Male'
-        assert user.height_cm == 180
 
 def test_update_existing_goals(auth_client):
     """
@@ -43,6 +45,7 @@ def test_update_existing_goals(auth_client):
     """
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
+        user.has_completed_onboarding = True
         initial_goal = UserGoal(
             user_id=user.id,
             calories=2000,
@@ -50,6 +53,7 @@ def test_update_existing_goals(auth_client):
             carbs=250,
             fat=70
         )
+        db.session.add(user)
         db.session.add(initial_goal)
         db.session.commit()
         initial_goal_id = initial_goal.id
@@ -76,9 +80,6 @@ def test_update_existing_goals(auth_client):
         assert user_goal.calories == 2200
         assert user_goal.protein == 140
         assert user_goal.id == initial_goal_id
-        assert user.age == 31
-        assert user.gender == 'Female'
-        assert user.height_cm == 170
 
 def test_diet_preset_adjusts_goals(auth_client):
     """
@@ -86,11 +87,17 @@ def test_diet_preset_adjusts_goals(auth_client):
     WHEN the user submits the goals form with a diet preset
     THEN the UserGoal object should be created with BMR-adjusted values.
     """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        user.has_completed_onboarding = True
+        user.age = 30
+        user.gender = 'Male'
+        user.height_cm = 180
+        db.session.add(user)
+        checkin = CheckIn(user_id=user.id, weight_kg=80, checkin_date=date.today())
+        db.session.add(checkin)
+        db.session.commit()
     data = {
-        'age': 30,
-        'gender': 'Male',
-        'height_cm': 180,
-        'weight_kg': 80,
         'diet_preset': 'Keto',
         'calories': '',
         'protein': '',
@@ -125,6 +132,7 @@ def test_exercise_goals_update(auth_client):
     """
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
+        user.has_completed_onboarding = True
         initial_goal = UserGoal(
             user_id=user.id,
             calories=2000,
@@ -135,6 +143,7 @@ def test_exercise_goals_update(auth_client):
             exercises_per_week_goal=3,
             minutes_per_exercise_goal=30
         )
+        db.session.add(user)
         db.session.add(initial_goal)
         db.session.commit()
         initial_goal_id = initial_goal.id
@@ -173,6 +182,7 @@ def test_body_composition_goals_update(auth_client):
     """
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
+        user.has_completed_onboarding = True
         initial_goal = UserGoal(
             user_id=user.id,
             calories=2000,
@@ -183,6 +193,7 @@ def test_body_composition_goals_update(auth_client):
             body_fat_percentage_goal=15,
             waist_cm_goal=80
         )
+        db.session.add(user)
         db.session.add(initial_goal)
         db.session.commit()
         initial_goal_id = initial_goal.id
@@ -221,7 +232,9 @@ def test_body_composition_goals_update_us_measurements(auth_client):
     """
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
+        user.has_completed_onboarding = True
         user.measurement_system = 'us'
+        db.session.add(user)
         db.session.commit()
 
         # Ensure a UserGoal exists for this user

@@ -18,6 +18,9 @@ def auth_client_non_admin(app_with_db):
     with app_with_db.app_context():
         # Create a non-admin user (ID != 1)
         non_admin_user = create_test_user('normaluser', user_id=2)
+        non_admin_user.has_completed_onboarding = True
+        db.session.add(non_admin_user)
+        db.session.commit()
         non_admin_user_id = non_admin_user.id
 
     with app_with_db.test_client() as client:

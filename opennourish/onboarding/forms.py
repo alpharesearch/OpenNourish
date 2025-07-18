@@ -45,10 +45,11 @@ class PersonalInfoForm(FlaskForm):
     submit = SubmitField('Next')
 
 class InitialGoalsForm(FlaskForm):
-    calories = IntegerField('Daily Calories (kcal)', validators=[DataRequired(), NumberRange(min=500, max=10000)])
-    protein = IntegerField('Daily Protein (g)', validators=[DataRequired(), NumberRange(min=10, max=1000)])
-    carbs = IntegerField('Daily Carbohydrates (g)', validators=[DataRequired(), NumberRange(min=10, max=1000)])
-    fat = IntegerField('Daily Fat (g)', validators=[DataRequired(), NumberRange(min=10, max=500)])
+    diet_preset = SelectField('Diet Preset', choices=[], validators=[Optional()])
+    calories = FloatField('Daily Calories (kcal)', validators=[DataRequired(), NumberRange(min=500, max=10000)])
+    protein = FloatField('Daily Protein (g)', validators=[DataRequired(), NumberRange(min=10, max=1000)])
+    carbs = FloatField('Daily Carbohydrates (g)', validators=[DataRequired(), NumberRange(min=10, max=1000)])
+    fat = FloatField('Daily Fat (g)', validators=[DataRequired(), NumberRange(min=10, max=500)])
 
     # Weight Goal
     weight_goal_kg = FloatField('Weight Goal (kg)', validators=[Optional(), NumberRange(min=20, max=600)])

@@ -20,12 +20,11 @@
 
                         <h5 class="mt-4 mb-3">Nutritional Goals</h5>
                         <div class="mb-3">
-                            <label class="form-label">Diet Preset</label>
-                            <select class="form-select" id="diet_preset">
-                                {% for key, value in diet_presets.items() %}
-                                    <option value="{{ key }}">{{ key }}</option>
-                                {% endfor %}
-                            </select>
+                            {{ form.diet_preset.label(class="form-label") }}
+                            {{ form.diet_preset(class="form-select", id="diet_preset") }}
+                            {% for error in form.diet_preset.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">

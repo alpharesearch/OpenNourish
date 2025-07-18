@@ -101,6 +101,7 @@ def step3():
         return redirect(url_for('dashboard.index'))
 
     form = InitialGoalsForm()
+    form.diet_preset.choices = [('', 'Select a Preset...')] + [(preset, preset.replace('_', ' ').title()) for preset in Config.DIET_PRESETS.keys()]
     
     # Calculate BMR and initial goals for display
     bmr, formula_name = None, None
