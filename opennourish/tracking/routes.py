@@ -90,6 +90,8 @@ def update_check_in(check_in_id):
             check_in.weight_kg = lbs_to_kg(form.weight_lbs.data)
             if form.waist_in.data:
                 check_in.waist_cm = in_to_cm(form.waist_in.data)
+            else:
+                check_in.waist_cm = None
         else:
             check_in.weight_kg = form.weight_kg.data
             check_in.waist_cm = form.waist_cm.data

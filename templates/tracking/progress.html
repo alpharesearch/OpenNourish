@@ -20,15 +20,15 @@
                 <div class="col-lg-4 d-flex flex-column justify-content-center">
                     <div class="text-center">
                         <h5>Start Weight</h5>
-                        <p class="fs-4">{{ "%.1f"|format(start_weight) }} kg</p>
+                        <p class="fs-4">{{ "%.1f"|format(start_weight) }} {{ 'lbs' if current_user.measurement_system == 'us' else 'kg' }}</p>
                     </div>
                     <div class="text-center">
                         <h5>Current Weight</h5>
-                        <p class="fs-4">{{ "%.1f"|format(current_weight) }} kg</p>
+                        <p class="fs-4">{{ "%.1f"|format(current_weight) }} {{ 'lbs' if current_user.measurement_system == 'us' else 'kg' }}</p>
                     </div>
                     <div class="text-center">
                         <h5>Goal Weight</h5>
-                        <p class="fs-4">{{ "%.1f"|format(goal_weight) }} kg</p>
+                        <p class="fs-4">{{ "%.1f"|format(goal_weight) }} {{ 'lbs' if current_user.measurement_system == 'us' else 'kg' }}</p>
                     </div>
                 </div>
             </div>
@@ -74,43 +74,59 @@
 
     <h2 class="mb-4">History</h2>
     <div class="table-responsive">
-        <table class="table table-striped" id="progress-history-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Weight</th>
-                    <th>Waist</th>
-                    <th>Body Fat %</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in check_ins.items %}
-                <tr>
-                    <td>{{ forms[item.id].checkin_date(class="form-control", form="edit-form-{{ item.id }}") }}</td>
-                    {% if current_user.measurement_system == 'us' %}
-                    <td class="col-12 col-lg-2">{{ forms[item.id].weight_lbs(class="form-control", form="edit-form-{{ item.id }}") }}</td>
-                    <td class="col-12 col-lg-2">{{ forms[item.id].waist_in(class="form-control", form="edit-form-{{ item.id }}") }}</td>
-                    {% else %}
-                    <td class="col-12 col-lg-2">{{ forms[item.id].weight_kg(class="form-control", form="edit-form-{{ item.id }}") }}</td>
-                    <td class="col-12 col-lg-2">{{ forms[item.id].waist_cm(class="form-control", form="edit-form-{{ item.id }}") }}</td>
-                    {% endif %}
-                    <td class="col-12 col-lg-2">{{ forms[item.id].body_fat_percentage(class="form-control", form="edit-form-{{ item.id }}") }}</td>
-                    <td>
-                        <div class="d-flex gap-2">
-                            <form method="POST" action="{{ url_for('tracking.update_check_in', check_in_id=item.id) }}" id="edit-form-{{ item.id }}" class="d-inline">
-                                {{ forms[item.id].hidden_tag() }}
-                                <button type="submit" class="btn btn-sm btn-outline-success w-100">Save</button>
-                            </form>
-                            <form action="{{ url_for('tracking.delete_check_in', check_in_id=item.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-outline-danger w-100">Delete</button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <!-- Header -->
+        <div class="row g-0 fw-bold border-bottom mb-2 pb-2 d-none d-lg-flex">
+            <div class="col-lg-3">Date</div>
+            {% if current_user.measurement_system == 'us' %}
+            <div class="col-lg-2">Weight (lbs)</div>
+            <div class="col-lg-2">Waist (in)</div>
+            {% else %}
+            <div class="col-lg-2">Weight (kg)</div>
+            <div class="col-lg-2">Waist (cm)</div>
+            {% endif %}
+            <div class="col-lg-2">Body Fat %</div>
+            <div class="col-lg-3">Actions</div>
+        </div>
+        <!-- Body -->
+        {% for item in check_ins.items %}
+        <form method="POST" action="{{ url_for('tracking.update_check_in', check_in_id=item.id) }}" class="row g-2 mb-3 align-items-center border-bottom pb-2">
+            {{ forms[item.id].hidden_tag() }}
+            <div class="col-12 col-lg-3">
+                <label class="form-label d-lg-none">Date</label>
+                {{ forms[item.id].checkin_date(class="form-control") }}
+            </div>
+            {% if current_user.measurement_system == 'us' %}
+            <div class="col-12 col-lg-2">
+                <label class="form-label d-lg-none">Weight (lbs)</label>
+                {{ forms[item.id].weight_lbs(class="form-control") }}
+            </div>
+            <div class="col-12 col-lg-2">
+                <label class="form-label d-lg-none">Waist (in)</label>
+                {{ forms[item.id].waist_in(class="form-control") }}
+            </div>
+            {% else %}
+            <div class="col-12 col-lg-2">
+                <label class="form-label d-lg-none">Weight (kg)</label>
+                {{ forms[item.id].weight_kg(class="form-control") }}
+            </div>
+            <div class="col-12 col-lg-2">
+                <label class="form-label d-lg-none">Waist (cm)</label>
+                {{ forms[item.id].waist_cm(class="form-control") }}
+            </div>
+            {% endif %}
+            <div class="col-12 col-lg-2">
+                <label class="form-label d-lg-none">Body Fat %</label>
+                {{ forms[item.id].body_fat_percentage(class="form-control") }}
+            </div>
+            <div class="col-12 col-lg-1">
+                <button type="submit" class="btn btn-sm btn-outline-success w-100">Save</button>
+            </div>
+            <div class="col-12 col-lg-1">
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100" form="delete-form-{{ item.id }}">Delete</button>
+            </div>
+        </form>
+        <form id="delete-form-{{ item.id }}" action="{{ url_for('tracking.delete_check_in', check_in_id=item.id) }}" method="POST" class="d-none"></form>
+        {% endfor %}
     </div>
 
     <nav aria-label="Page navigation">
@@ -146,12 +162,12 @@
         data: {
             labels: labels,
             datasets: [{
-                label: 'Weight (kg)',
+                label: 'Weight ({{ "lbs" if current_user.measurement_system == "us" else "kg" }})',
                 data: weightData,
                 borderColor: 'rgb(75, 192, 192)',
                 tension: 0.1
             }, {
-                label: 'Goal (kg)',
+                label: 'Goal ({{ "lbs" if current_user.measurement_system == "us" else "kg" }})',
                 data: Array(labels.length).fill(goalWeight),
                 borderColor: 'rgb(255, 99, 132)',
                 borderDash: [5, 5],

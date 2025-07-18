@@ -108,27 +108,75 @@
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const measurementSystemRadios = document.querySelectorAll('input[name="measurement_system"]');
+    // --- Element Selection ---
     const heightMetricDiv = document.getElementById('height-metric');
     const heightUsDiv = document.getElementById('height-us');
+    const heightCmInput = document.getElementById('height_cm');
+    const heightFtInput = document.getElementById('height_ft');
+    const heightInInput = document.getElementById('height_in');
+    const metricRadio = document.querySelector('input[name="measurement_system"][value="metric"]');
+    const usRadio = document.querySelector('input[name="measurement_system"][value="us"]');
 
-    function toggleHeightFields() {
-        const selectedSystem = document.querySelector('input[name="measurement_system"]:checked').value;
-        if (selectedSystem === 'metric') {
-            heightMetricDiv.style.display = 'block';
-            heightUsDiv.style.display = 'none';
-        } else {
-            heightMetricDiv.style.display = 'none';
-            heightUsDiv.style.display = 'flex'; // Use flex for row layout
+    // --- Conversion Functions ---
+    function convertToUs() {
+        const cm = parseFloat(heightCmInput.value);
+        if (!isNaN(cm) && cm > 0) {
+            const totalInches = cm / 2.54;
+            const feet = Math.floor(totalInches / 12);
+            const inches = Math.round((totalInches % 12) * 10) / 10; // Round to one decimal place
+            heightFtInput.value = feet;
+            heightInInput.value = inches;
         }
     }
 
-    measurementSystemRadios.forEach(radio => {
-        radio.addEventListener('change', toggleHeightFields);
+    function convertToMetric() {
+        const feet = parseFloat(heightFtInput.value);
+        const inches = parseFloat(heightInInput.value);
+        if (!isNaN(feet) && !isNaN(inches)) {
+            const totalInches = (feet * 12) + inches;
+            const cm = Math.round(totalInches * 2.54);
+            heightCmInput.value = cm;
+        }
+    }
+
+    // --- State Update Functions ---
+    function setDisplayToMetric() {
+        heightUsDiv.style.display = 'none';
+        heightMetricDiv.style.display = 'block';
+        heightCmInput.disabled = false;
+        heightFtInput.disabled = true;
+        heightInInput.disabled = true;
+    }
+
+    function setDisplayToUs() {
+        heightUsDiv.style.display = 'flex';
+        heightMetricDiv.style.display = 'none';
+        heightFtInput.disabled = false;
+        heightInInput.disabled = false;
+        heightCmInput.disabled = true;
+    }
+
+    // --- Event Listeners ---
+    metricRadio.addEventListener('change', () => {
+        if (metricRadio.checked) {
+            convertToMetric();
+            setDisplayToMetric();
+        }
     });
 
-    // Initial check
-    toggleHeightFields();
+    usRadio.addEventListener('change', () => {
+        if (usRadio.checked) {
+            convertToUs();
+            setDisplayToUs();
+        }
+    });
+
+    // --- Initial State Setup ---
+    if (usRadio.checked) {
+        setDisplayToUs();
+    } else {
+        setDisplayToMetric();
+    }
 });
 </script>
 {% endblock %}
