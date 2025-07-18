@@ -27,6 +27,9 @@ flask db upgrade
 echo "Seeding usda portion data..."
 flask seed-usda-portions
 
+echo "Seeding usda category data..."
+flask seed-usda-categories
+
 echo "--- Seeding default exercise activities... ---"
 flask seed-exercise-activities
 

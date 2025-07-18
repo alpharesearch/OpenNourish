@@ -1,7 +1,7 @@
 from flask import Flask, current_app
 from sqlalchemy import text
 import os
-from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, UnifiedPortion, RecipeIngredient, MyMeal, MyMealItem, ExerciseActivity, ExerciseLog, Friendship
+from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, Nutrient, FoodNutrient, UnifiedPortion, RecipeIngredient, MyMeal, MyMealItem, ExerciseActivity, ExerciseLog, Friendship, FoodCategory
 from sqlalchemy.orm import joinedload
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -10,6 +10,7 @@ import click
 from faker import Faker
 import random
 from datetime import date, timedelta
+import csv
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
@@ -629,9 +630,6 @@ def create_app(config_class=Config):
         Seeds USDA food portions from food_portion.csv into the unified portions table.
         This command only seeds the portions explicitly defined in the USDA data.
         """
-        import csv
-        import os
-
         with app.app_context():
             print("Seeding USDA portions...")
 
@@ -640,7 +638,7 @@ def create_app(config_class=Config):
             db.session.commit()
             print(f"Deleted {deleted_count} existing USDA-linked portions from user_data.db.")
 
-            usda_data_dir = 'persistent/usda_data'
+            usda_data_dir = os.path.join(current_app.root_path, '..', 'persistent', 'usda_data')
             measure_unit_csv_path = os.path.join(usda_data_dir, 'measure_unit.csv')
             food_portion_csv_path = os.path.join(usda_data_dir, 'food_portion.csv')
 
@@ -663,24 +661,59 @@ def create_app(config_class=Config):
                 reader = csv.reader(f)
                 next(reader)  # Skip header
                 for row in reader:
+                    # Create a UnifiedPortion object for each row in the CSV
                     portion = UnifiedPortion(
                         fdc_id=int(row[1]),
                         seq_num=int(row[2]) if row[2] else None,
                         amount=float(row[3]) if row[3] else None,
                         measure_unit_description=measure_units.get(row[4], "") if row[4] != '9999' else "",
-                        portion_description=row[5],
-                        modifier=row[6],
+                        portion_description=row[5] or None, # Handle empty strings
+                        modifier=row[6] or None, # Handle empty strings
                         gram_weight=float(row[7])
                     )
                     portions_to_add.append(portion)
             print(f"Loaded {len(portions_to_add)} portions from food_portion.csv.")
 
-            # 4. Add all collected portions to the database.
+            # 4. Add all collected portions to the database in a single transaction.
             if portions_to_add:
-                db.session.add_all(portions_to_add)
+                db.session.bulk_save_objects(portions_to_add)
                 db.session.commit()
                 print(f"Successfully seeded {len(portions_to_add)} total USDA portions to the user database.")
             else:
                 print("No USDA portions were found or needed to be added.")
+
+    @app.cli.command("seed-usda-categories")
+    def seed_usda_categories_command():
+        """Seeds the database with USDA food categories."""
+        with app.app_context():
+            if FoodCategory.query.first():
+                print("Food categories already exist. Skipping.")
+                return
+
+            print("Seeding USDA food categories...")
+            usda_data_dir = os.path.join(current_app.root_path, '..', 'persistent', 'usda_data')
+            food_category_csv_path = os.path.join(usda_data_dir, 'food_category.csv')
+
+            if not os.path.exists(food_category_csv_path):
+                print(f"Error: USDA data file (food_category.csv) not found in {usda_data_dir}.")
+                return
+
+            categories_to_add = []
+            with open(food_category_csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader)  # Skip header
+                for row in reader:
+                    category = FoodCategory(
+                        id=int(row[0]),
+                        name=row[1]
+                    )
+                    categories_to_add.append(category)
+            
+            if categories_to_add:
+                db.session.bulk_save_objects(categories_to_add)
+                db.session.commit()
+                print(f"Successfully seeded {len(categories_to_add)} food categories.")
+            else:
+                print("No food categories found to seed.")
 
     return app

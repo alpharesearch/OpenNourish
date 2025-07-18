@@ -1,9 +1,10 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, SubmitField, TextAreaField
+from wtforms import StringField, FloatField, SubmitField, TextAreaField, SelectField
 from wtforms.validators import DataRequired, Optional, NumberRange
 
 class MyFoodForm(FlaskForm):
     description = StringField('Description', validators=[DataRequired()])
+    food_category = SelectField('Category', coerce=lambda x: int(x) if x else None, validators=[Optional()])
     servings = FloatField('Servings', validators=[Optional(), NumberRange(min=0)], default=1.0)
     instructions = TextAreaField('Instructions', validators=[Optional()])
     fdc_id = StringField('USDA FDC ID', validators=[Optional()])

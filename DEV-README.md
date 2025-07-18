@@ -166,7 +166,7 @@ This section outlines how to use Docker for local development. The setup uses vo
     *   Download the required USDA dataset.
     *   Build the `usda_data.db` from the downloaded CSV files.
     *   Run database migrations to create or update the `user_data.db`.
-    *   Seed the database with essential portion data.
+    *   Seed the database with essential portion and category data.
     This initial setup process can take several minutes.
 
 *   **Persistent Data via Volumes:** The `docker-compose.yml` file is configured to use Docker volumes for the database files (`usda_data.db` and `user_data.db`). This means that once the databases are created, they will persist on your host machine between container restarts. Subsequent runs of `docker compose up` will be much faster as they will detect the existing databases and skip the build process.

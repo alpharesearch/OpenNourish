@@ -4,6 +4,10 @@ CREATE TABLE foods (
     fdc_id INTEGER PRIMARY KEY,
     -- A description of the food item.
     description TEXT NOT NULL,
+    -- The source of the food data (e.g., 'sr_legacy_food', 'branded_food').
+    data_type TEXT,
+    -- The foreign key linking to the food_category table.
+    food_category_id INTEGER,
     -- The Global Trade Item Number (GTIN) or UPC barcode for the food.
     upc TEXT,
     -- A list of ingredients for the food item.
@@ -33,5 +37,4 @@ CREATE TABLE food_nutrients (
     FOREIGN KEY (nutrient_id) REFERENCES nutrients (id)
 );
 
--- DO NOT CREATE A PORTIONS TABLE HERE, unified portions table is now in the user database 
-
+-- DO NOT CREATE A PORTIONS TABLE HERE, unified portions table is now in the user database

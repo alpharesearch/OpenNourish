@@ -67,6 +67,10 @@ OpenNourish is a free and open source food tracker.
      ```bash
      flask seed-usda-portions
      ```
+   - Seed the food categories from the USDA data.
+     ```bash
+     flask seed-usda-categories
+     ```
 
 8. **Run the Flask application:**
    - Start the web server:

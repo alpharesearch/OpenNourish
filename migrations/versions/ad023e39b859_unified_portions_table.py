@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: ac545d3ce094
+Revision ID: ad023e39b859
 Revises: 
-Create Date: 2025-07-15 22:53:22.771566
+Create Date: 2025-07-18 09:02:15.931449
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ac545d3ce094'
+revision = 'ad023e39b859'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -22,6 +22,11 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('met_value', sa.Float(), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('food_category',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('system_settings',
@@ -82,6 +87,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
+    sa.Column('food_category_id', sa.Integer(), nullable=True),
     sa.Column('ingredients', sa.Text(), nullable=True),
     sa.Column('fdc_id', sa.Integer(), nullable=True),
     sa.Column('upc', sa.String(), nullable=True),
@@ -99,6 +105,7 @@ def upgrade():
     sa.Column('calcium_mg_per_100g', sa.Float(), nullable=False),
     sa.Column('iron_mg_per_100g', sa.Float(), nullable=False),
     sa.Column('potassium_mg_per_100g', sa.Float(), nullable=False),
+    sa.ForeignKeyConstraint(['food_category_id'], ['food_category.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -114,6 +121,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=True),
+    sa.Column('food_category_id', sa.Integer(), nullable=True),
     sa.Column('is_public', sa.Boolean(), nullable=False),
     sa.Column('instructions', sa.Text(), nullable=True),
     sa.Column('servings', sa.Float(), nullable=True),
@@ -132,6 +140,7 @@ def upgrade():
     sa.Column('calcium_mg_per_100g', sa.Float(), nullable=False),
     sa.Column('iron_mg_per_100g', sa.Float(), nullable=False),
     sa.Column('potassium_mg_per_100g', sa.Float(), nullable=False),
+    sa.ForeignKeyConstraint(['food_category_id'], ['food_category.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -243,5 +252,6 @@ def downgrade():
     op.drop_table('check_ins')
     op.drop_table('users')
     op.drop_table('system_settings')
+    op.drop_table('food_category')
     op.drop_table('exercise_activities')
     # ### end Alembic commands ###

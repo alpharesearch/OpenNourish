@@ -139,11 +139,17 @@ class UnifiedPortion(db.Model):
         return ret
 
 
+class FoodCategory(db.Model):
+    __tablename__ = 'food_category'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+
 class MyFood(db.Model):
     __tablename__ = 'my_foods'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     description = db.Column(db.String)
+    food_category_id = db.Column(db.Integer, db.ForeignKey('food_category.id'), nullable=True)
     ingredients = db.Column(db.Text, nullable=True)
     fdc_id = db.Column(db.Integer, nullable=True)
     upc = db.Column(db.String, nullable=True)
@@ -163,6 +169,7 @@ class MyFood(db.Model):
     potassium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     portions = db.relationship('UnifiedPortion', foreign_keys=[UnifiedPortion.my_food_id], backref='my_food', cascade='all, delete-orphan')
     user = db.relationship('User')
+    food_category = db.relationship('FoodCategory', backref='my_foods')
 
 
 class DailyLog(db.Model):
@@ -183,12 +190,14 @@ class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String)
+    food_category_id = db.Column(db.Integer, db.ForeignKey('food_category.id'), nullable=True)
     is_public = db.Column(db.Boolean, default=False, nullable=False, index=True)
     instructions = db.Column(db.Text)
     servings = db.Column(db.Float, default=1)
     ingredients = db.relationship('RecipeIngredient', backref='recipe', cascade="all, delete-orphan", foreign_keys='RecipeIngredient.recipe_id')
     portions = db.relationship('UnifiedPortion', foreign_keys=[UnifiedPortion.recipe_id], backref='recipe', cascade='all, delete-orphan')
     user = db.relationship('User')
+    food_category = db.relationship('FoodCategory', backref='recipes')
     upc = db.Column(db.String, nullable=True)
     calories_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     protein_per_100g = db.Column(db.Float, nullable=False, default=0.0)

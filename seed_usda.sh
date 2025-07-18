@@ -37,6 +37,10 @@ flask db upgrade
 echo "\n--- Seeding USDA portions into user_data.db ---"
 flask seed-usda-portions
 
+# Step 6: Seed USDA categories into the user database
+echo "\n--- Seeding USDA categories into user_data.db ---"
+flask seed-usda-categories
+
 echo "--- Seeding default exercise activities... ---"
 flask seed-exercise-activities
 

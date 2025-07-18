@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, Blueprint, current_app
 from flask_login import login_required, current_user
-from models import db, MyFood, Food, Nutrient, FoodNutrient, UnifiedPortion, User
+from models import db, MyFood, Food, Nutrient, FoodNutrient, UnifiedPortion, User, FoodCategory
 from opennourish.my_foods.forms import MyFoodForm, PortionForm
 from sqlalchemy.orm import joinedload
 from opennourish.utils import generate_myfood_label_pdf
@@ -34,6 +34,7 @@ def my_foods():
 @login_required
 def new_my_food():
     form = MyFoodForm()
+    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.name) for c in FoodCategory.query.order_by(FoodCategory.name)]
     portion_form = PortionForm()
 
     # Change form labels for the 'new' page context
@@ -60,6 +61,7 @@ def new_my_food():
             'user_id': current_user.id,
             'description': form.description.data,
             'ingredients': form.ingredients.data,
+            'food_category_id': form.food_category.data if form.food_category.data else None
         }
 
         for field_name in nutrient_fields:
@@ -105,6 +107,7 @@ def new_my_food():
 def edit_my_food(food_id):
     my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
     form = MyFoodForm(obj=my_food)
+    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.name) for c in FoodCategory.query.order_by(FoodCategory.name)]
     portion_form = PortionForm()
 
     if form.validate_on_submit():

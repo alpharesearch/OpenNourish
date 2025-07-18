@@ -19,6 +19,10 @@
                             {{ form.name(class="form-control") }}
                         </div>
                         <div class="mb-3">
+                            {{ form.food_category.label(class="form-label") }}
+                            {{ form.food_category(class="form-select") }}
+                        </div>
+                        <div class="mb-3">
                             {{ form.servings.label(class="form-label") }}
                             <div class="input-group">
                                 {{ form.servings(class="form-control") }}

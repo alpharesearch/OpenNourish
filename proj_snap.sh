@@ -23,7 +23,6 @@ find . -type f \
     -not -name "*.ico" \
     -not -name "*.env" \
     -not -name "*.js" \
-    -not -name "requirements.txt" \
     | while read -r file; do
         # For each file, print a clear header and then the file's content
         echo "--- FILE: ${file} ---" >> project_snapshot.txt

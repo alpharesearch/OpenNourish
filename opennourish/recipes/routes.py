@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, UnifiedPortion, User
+from models import db, Recipe, RecipeIngredient, DailyLog, Food, MyFood, MyMeal, UnifiedPortion, User, FoodCategory
 from opennourish.recipes.forms import RecipeForm
 from opennourish.diary.forms import AddToLogForm
 from opennourish.my_foods.forms import PortionForm
@@ -41,13 +41,15 @@ def recipes():
 @login_required
 def new_recipe():
     form = RecipeForm()
+    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.name) for c in FoodCategory.query.order_by(FoodCategory.name)]
     if form.validate_on_submit():
         new_recipe = Recipe(
             user_id=current_user.id,
             name=form.name.data,
             instructions=form.instructions.data,
             servings=form.servings.data,
-            is_public=form.is_public.data
+            is_public=form.is_public.data,
+            food_category_id=form.food_category.data if form.food_category.data else None
         )
         db.session.add(new_recipe)
         db.session.flush()  # Flush to get the new_recipe.id
@@ -122,6 +124,7 @@ def edit_recipe(recipe_id):
         return redirect(url_for('recipes.recipes'))
 
     form = RecipeForm(obj=recipe)
+    form.food_category.choices = [('', '-- Select a Category --')] + [(c.id, c.name) for c in FoodCategory.query.order_by(FoodCategory.name)]
     servings_param = request.args.get('servings_param', type=float)
     name_param = request.args.get('name_param', type=str)
     instructions_param = request.args.get('instructions_param', type=str)
@@ -137,6 +140,7 @@ def edit_recipe(recipe_id):
 
     if form.validate_on_submit():
         form.populate_obj(recipe)
+        recipe.food_category_id = form.food_category.data if form.food_category.data else None
         recipe.is_public = form.is_public.data
         update_recipe_nutrition(recipe)
         db.session.commit()
