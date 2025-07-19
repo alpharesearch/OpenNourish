@@ -163,3 +163,100 @@ def test_add_my_food_with_portion(auth_client):
         log_entry = DailyLog.query.filter_by(my_food_id=my_food_id).first()
         assert log_entry is not None
         assert log_entry.amount_grams == 120.0 # 3 * 40.0
+
+def test_diary_display_3_meals_empty_day(auth_client):
+    """
+    Tests that on an empty day, only 3 main meals are displayed when meals_per_day is 3.
+    """
+    with auth_client.application.app_context():
+        with auth_client.session_transaction() as sess:
+            user_id = sess['_user_id']
+        user = db.session.get(User, user_id)
+        user.meals_per_day = 3
+        db.session.commit()
+
+    response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    assert response.status_code == 200
+    assert b'Breakfast' in response.data
+    assert b'Lunch' in response.data
+    assert b'Dinner' in response.data
+    assert b'Snack (morning)' not in response.data
+    assert b'Snack (afternoon)' not in response.data
+    assert b'Snack (evening)' not in response.data
+    assert b'Unspecified' not in response.data
+
+def test_diary_display_6_meals_empty_day(auth_client):
+    """
+    Tests that on an empty day, all 6 meal types are displayed when meals_per_day is 6.
+    """
+    with auth_client.application.app_context():
+        with auth_client.session_transaction() as sess:
+            user_id = sess['_user_id']
+        user = db.session.get(User, user_id)
+        user.meals_per_day = 6
+        db.session.commit()
+
+    response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    assert response.status_code == 200
+    assert b'Breakfast' in response.data
+    assert b'Snack (morning)' in response.data
+    assert b'Lunch' in response.data
+    assert b'Snack (afternoon)' in response.data
+    assert b'Dinner' in response.data
+    assert b'Snack (evening)' in response.data
+    assert b'Unspecified' not in response.data
+
+def test_diary_display_snack_in_3_meal_mode(auth_client):
+    """
+    Tests that a snack logged in 3-meal mode still appears.
+    """
+    with auth_client.application.app_context():
+        with auth_client.session_transaction() as sess:
+            user_id = sess['_user_id']
+        user = db.session.get(User, user_id)
+        user.meals_per_day = 3
+        db.session.commit()
+
+        # Log a snack
+        log_entry = DailyLog(
+            user_id=user.id,
+            log_date=date.today(),
+            meal_name='Snack (morning)',
+            amount_grams=100,
+            fdc_id=10001 # Using a dummy fdc_id
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+
+    response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    assert response.status_code == 200
+    assert b'Breakfast' in response.data
+    assert b'Lunch' in response.data
+    assert b'Dinner' in response.data
+    assert b'Snack (morning)' in response.data # Should still be visible
+
+def test_diary_display_unspecified_meal(auth_client):
+    """
+    Tests that an unspecified meal logged still appears.
+    """
+    with auth_client.application.app_context():
+        with auth_client.session_transaction() as sess:
+            user_id = sess['_user_id']
+        user = db.session.get(User, user_id)
+        user.meals_per_day = 3 # Can be 3 or 6, unspecified should always show
+        db.session.commit()
+
+        # Log an unspecified meal
+        log_entry = DailyLog(
+            user_id=user.id,
+            log_date=date.today(),
+            meal_name='Unspecified',
+            amount_grams=100,
+            fdc_id=10001 # Using a dummy fdc_id
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+
+    response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    assert response.status_code == 200
+    assert b'Unspecified' in response.data

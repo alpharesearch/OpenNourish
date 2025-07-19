@@ -65,7 +65,8 @@
         </div>
     </div>
 
-    {% for meal_name, items in meals.items() %}
+    {% for meal_name in meal_names_to_render %}
+    {% set items = meals.get(meal_name, []) %}
     <div class="card mb-3">
         <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
             <h4 class="mb-2 mb-md-0">{{ meal_name }}</h4>

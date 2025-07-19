@@ -8,7 +8,8 @@ from .forms import MealForm, DailyLogForm, MealItemForm
 from sqlalchemy.orm import joinedload, selectinload
 
 from types import SimpleNamespace
-# ... (other imports)
+
+ALL_MEAL_TYPES = ['Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)', 'Unspecified']
 
 @diary_bp.route('/diary/')
 @diary_bp.route('/diary/<string:log_date_str>')
@@ -43,10 +44,11 @@ def diary(log_date_str=None):
     for log in daily_logs:
         food_item = None
         description_to_display = "Unknown Food"
-        
-        # Default to true, as the user owns the log entry itself.
-        # We will only add context to the description, not restrict editing.
         is_own_food_item = True
+        display_amount = log.amount_grams # Initialize with default
+        selected_portion_id = None # Initialize with default
+        nutrition = calculate_nutrition_for_items([log]) # Initialize with default
+        available_portions = [] # Initialize with default
 
         if log.fdc_id:
             food_item = db.session.get(Food, log.fdc_id)
@@ -84,6 +86,9 @@ def diary(log_date_str=None):
 
         # Assign to the correct meal category, defaulting to 'Unspecified'
         meal_key = log.meal_name or 'Unspecified'
+        #current_app.logger.debug(f"Processing log entry: meal_name={log.meal_name}, meal_key={meal_key}")
+        if meal_key not in meals:
+            meals[meal_key] = [] # Initialize if not present
         meals[meal_key].append({
             'log_id': log.id,
             'description': description_to_display,
@@ -94,10 +99,26 @@ def diary(log_date_str=None):
             'selected_portion_id': selected_portion_id
         })
 
+    #current_app.logger.debug(f"Meals dictionary: {meals}")
+
     prev_date = log_date - timedelta(days=1)
     next_date = log_date + timedelta(days=1)
 
-    return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned)
+    # Determine the base meal names to always display based on user settings
+    if current_user.meals_per_day == 3:
+        base_meals_to_show = ['Breakfast', 'Lunch', 'Dinner']
+    else: # meals_per_day == 6
+        base_meals_to_show = ['Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)']
+
+    # Collect all meal names that actually have items logged for the day
+    logged_meal_names = {meal_name for meal_name, items in meals.items() if items}
+
+    # Combine base meals with any other meals that have logged items
+    # Ensure 'Unspecified' is always included if it has items
+    meal_names_to_render = sorted(list(set(base_meals_to_show) | logged_meal_names), key=ALL_MEAL_TYPES.index)
+
+    
+    return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned, meal_names_to_render=meal_names_to_render)
 
 
 

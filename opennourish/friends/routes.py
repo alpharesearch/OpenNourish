@@ -34,7 +34,8 @@ def friends_page():
             'username': user.username,
             'diary_logs': diary_logs_count,
             'exercise_logs': exercise_logs_count,
-            'total_activity': diary_logs_count + exercise_logs_count
+            'total_activity': diary_logs_count + exercise_logs_count,
+            'meals_per_day': user.meals_per_day
         })
 
     # Sort the scoreboard data by total activity in descending order

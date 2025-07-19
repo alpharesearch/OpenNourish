@@ -54,22 +54,28 @@
                             </div>
                         </div>
                         
-                        <!-- Navbar Preference -->
-                        <div class="mb-3">
-                            {{ settings_form.navbar_preference.label(class="form-label") }}
-                            {{ settings_form.navbar_preference(class="form-select") }}
+                        <!-- Diary Default View and Meals Per Day -->
+                        <div class="row">
+                            <div class="col-lg-6 mb-3">
+                                {{ settings_form.diary_default_view.label(class="form-label") }}
+                                {{ settings_form.diary_default_view(class="form-select") }}
+                            </div>
+                            <div class="col-lg-6 mb-3">
+                                {{ settings_form.meals_per_day.label(class="form-label") }}
+                                {{ settings_form.meals_per_day(class="form-select") }}
+                            </div>
                         </div>
 
-                        <!-- Diary Default View -->
-                        <div class="mb-3">
-                            {{ settings_form.diary_default_view.label(class="form-label") }}
-                            {{ settings_form.diary_default_view(class="form-select") }}
-                        </div>
-
-                        <!-- Theme Preference -->
-                        <div class="mb-3">
-                            {{ settings_form.theme_preference.label(class="form-label") }}
-                            {{ settings_form.theme_preference(class="form-select") }}
+                        <!-- Theme Preference and Navbar Preference -->
+                        <div class="row">
+                            <div class="col-lg-6 mb-3">
+                                {{ settings_form.theme_preference.label(class="form-label") }}
+                                {{ settings_form.theme_preference(class="form-select") }}
+                            </div>
+                            <div class="col-lg-6 mb-3">
+                                {{ settings_form.navbar_preference.label(class="form-label") }}
+                                {{ settings_form.navbar_preference(class="form-select") }}
+                            </div>
                         </div>
                         
                         <button type="submit" name="submit_settings" class="btn btn-outline-primary">Save Settings</button>

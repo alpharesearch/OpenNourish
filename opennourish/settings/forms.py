@@ -47,6 +47,11 @@ class SettingsForm(FlaskForm):
         ],
         validators=[DataRequired()]
     )
+    meals_per_day = SelectField(
+        'Meals Per Day',
+        choices=[('3', '3 (Breakfast, Lunch, Dinner)'), ('6', '6 (Breakfast, Snacks, Lunch, Snacks, Dinner, Snacks)')],
+        validators=[DataRequired()]
+    )
     submit = SubmitField('Save Settings')
 
 class ChangePasswordForm(FlaskForm):

@@ -1,8 +1,12 @@
-from flask import render_template, request, flash, redirect, url_for, abort
+from flask import render_template, request, flash, redirect, url_for, abort, current_app
 from flask_login import login_required, current_user
 from models import db, User, Friendship, DailyLog, Food, MyFood, UserGoal, CheckIn, ExerciseLog, Recipe, UnifiedPortion
 from datetime import date, timedelta
 from opennourish.utils import calculate_nutrition_for_items, calculate_weekly_nutrition_summary
+from types import SimpleNamespace
+
+ALL_MEAL_TYPES = ['Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)', 'Unspecified']
+
 from . import profile_bp
 
 def _get_friend_user_or_404(username):
@@ -163,6 +167,11 @@ def diary(username, log_date_str=None):
     for log in daily_logs:
         food_item = None
         description_to_display = "Unknown Food"
+        display_amount = log.amount_grams # Initialize with default
+        selected_portion_id = None # Initialize with default
+        nutrition = calculate_nutrition_for_items([log]) # Initialize with default
+        available_portions = [] # Initialize with default
+
         if log.fdc_id:
             food_item = db.session.get(Food, log.fdc_id)
         elif log.my_food_id:
@@ -171,7 +180,7 @@ def diary(username, log_date_str=None):
             food_item = db.session.get(Recipe, log.recipe_id)
 
         if food_item:
-            available_portions = [] # No portions in read-only mode
+            # available_portions = [] # No portions in read-only mode
             
             display_amount = log.amount_grams
             selected_portion_id = 'g' # Default to grams
@@ -194,7 +203,25 @@ def diary(username, log_date_str=None):
                 'selected_portion_id': selected_portion_id
             })
 
+    #current_app.logger.debug(f"Friend's meals dictionary: {meals}")
+
     prev_date = log_date - timedelta(days=1)
     next_date = log_date + timedelta(days=1)
 
-    return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned, is_read_only=True, username=username)
+    # Determine the base meal names to always display based on user settings
+    if friend_user.meals_per_day == 3:
+        base_meals_to_show = ['Breakfast', 'Lunch', 'Dinner']
+    else: # meals_per_day == 6
+        base_meals_to_show = ['Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)']
+
+    # Collect all meal names that actually have items logged for the day
+    logged_meal_names = {meal_name for meal_name, items in meals.items() if items}
+
+    # Combine base meals with any other meals that have logged items
+    # Ensure 'Unspecified' is always included if it has items
+    meal_names_to_render = []
+    for meal_type in ALL_MEAL_TYPES:
+        if meal_type in base_meals_to_show or (meal_type in meals and meals[meal_type]):
+            meal_names_to_render.append(meal_type)
+
+    return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned, is_read_only=True, username=username, meal_names_to_render=meal_names_to_render)

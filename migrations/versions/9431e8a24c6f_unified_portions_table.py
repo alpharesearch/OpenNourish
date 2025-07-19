@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: eb3d545c4cc1
+Revision ID: 9431e8a24c6f
 Revises: 
-Create Date: 2025-07-18 10:22:36.895925
+Create Date: 2025-07-18 19:28:23.643479
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'eb3d545c4cc1'
+revision = '9431e8a24c6f'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -48,6 +48,8 @@ def upgrade():
     sa.Column('navbar_preference', sa.String(length=50), nullable=True),
     sa.Column('diary_default_view', sa.String(length=10), nullable=True),
     sa.Column('theme_preference', sa.String(length=10), nullable=True),
+    sa.Column('has_completed_onboarding', sa.Boolean(), nullable=True),
+    sa.Column('meals_per_day', sa.Integer(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('username')
     )

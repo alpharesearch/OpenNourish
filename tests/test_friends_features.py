@@ -1,6 +1,7 @@
 import pytest
-from models import db, User, Recipe, MyFood, MyMeal, Friendship, RecipeIngredient, MyMealItem, UnifiedPortion
+from models import db, User, Recipe, MyFood, MyMeal, Friendship, RecipeIngredient, MyMealItem, UnifiedPortion, DailyLog
 from flask_login import login_user
+from datetime import date
 
 # Helper function to create users
 def create_test_user(username, password='password'):
@@ -109,3 +110,97 @@ def test_search_friends_content(auth_client_with_friendship):
     assert b"Friend&#39;s Food" in response.data
     assert b"by friend" in response.data
     assert b"Copy" in response.data
+
+def test_friends_diary_display_3_meals_empty_day(auth_client_with_friendship):
+    """
+    Tests that on an empty day, only 3 main meals are displayed for a friend's diary when their meals_per_day is 3.
+    """
+    client, test_user, friend_user = auth_client_with_friendship
+    with client.application.app_context():
+        # Re-associate the detached friend_user object with the current session
+        db.session.add(friend_user)
+        friend_user.meals_per_day = 3
+        db.session.commit()
+
+        response = client.get(f'/user/{friend_user.username}/diary/{date.today().strftime("%Y-%m-%d")}', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Breakfast' in response.data
+        assert b'Lunch' in response.data
+        assert b'Dinner' in response.data
+        assert b'Snack (morning)' not in response.data
+        assert b'Snack (afternoon)' not in response.data
+        assert b'Snack (evening)' not in response.data
+        assert b'Unspecified' not in response.data
+
+def test_friends_diary_display_6_meals_empty_day(auth_client_with_friendship):
+    """
+    Tests that on an empty day, all 6 meal types are displayed for a friend's diary when their meals_per_day is 6.
+    """
+    client, test_user, friend_user = auth_client_with_friendship
+    with client.application.app_context():
+        db.session.add(friend_user)
+        friend_user.meals_per_day = 6
+        db.session.commit()
+
+        response = client.get(f'/user/{friend_user.username}/diary/{date.today().strftime("%Y-%m-%d")}', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Breakfast' in response.data
+        assert b'Snack (morning)' in response.data
+        assert b'Lunch' in response.data
+        assert b'Snack (afternoon)' in response.data
+        assert b'Dinner' in response.data
+        assert b'Snack (evening)' in response.data
+        assert b'Unspecified' not in response.data
+
+def test_friends_diary_display_snack_in_3_meal_mode(auth_client_with_friendship):
+    """
+    Tests that a snack logged by a friend in 3-meal mode still appears in their diary.
+    """
+    client, test_user, friend_user = auth_client_with_friendship
+    with client.application.app_context():
+        db.session.add(friend_user)
+        friend_user.meals_per_day = 3
+        db.session.commit()
+
+        # Log a snack for the friend
+        log_entry = DailyLog(
+            user_id=friend_user.id,
+            log_date=date.today(),
+            meal_name='Snack (morning)',
+            amount_grams=100,
+            fdc_id=10001 # Using a dummy fdc_id
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+
+        response = client.get(f'/user/{friend_user.username}/diary/{date.today().strftime("%Y-%m-%d")}', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Breakfast' in response.data
+        assert b'Lunch' in response.data
+        assert b'Dinner' in response.data
+        assert b'Snack (morning)' in response.data # Should still be visible
+
+def test_friends_diary_display_unspecified_meal(auth_client_with_friendship):
+    """
+    Tests that an unspecified meal logged by a friend still appears in their diary.
+    """
+    client, test_user, friend_user = auth_client_with_friendship
+    with client.application.app_context():
+        db.session.add(friend_user)
+        friend_user.meals_per_day = 3 # Can be 3 or 6, unspecified should always show
+        #db.session.commit()
+
+        # Log an unspecified meal for the friend
+        log_entry = DailyLog(
+            user_id=friend_user.id,
+            log_date=date.today(),
+            meal_name='Unspecified',
+            amount_grams=100,
+            fdc_id=10001 # Using a dummy fdc_id
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+
+        response = client.get(f'/user/{friend_user.username}/diary/{date.today().strftime("%Y-%m-%d")}', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Unspecified' in response.data
