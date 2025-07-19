@@ -101,6 +101,7 @@ add_env_var() {
 
 add_env_var "SECRET_KEY" "$SECRET_KEY"
 add_env_var "ENCRYPTION_KEY" "$ENCRYPTION_KEY"
+add_env_var "FLASK_DEBUG" "$FLASK_DEBUG"
 add_env_var "SEED_DEV_DATA" "$SEED_DEV_DATA_VAR"
 add_env_var "ENABLE_PASSWORD_RESET" "$ENABLE_PASSWORD_RESET"
 add_env_var "MAIL_CONFIG_SOURCE" "$MAIL_CONFIG_SOURCE"
