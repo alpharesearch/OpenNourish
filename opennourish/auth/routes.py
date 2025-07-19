@@ -5,6 +5,7 @@ from . import auth_bp
 from .forms import LoginForm, RegistrationForm, ResetPasswordRequestForm, ResetPasswordForm
 from models import db, User, UserGoal, SystemSetting
 from opennourish.utils import get_allow_registration_status, send_password_reset_email
+import os
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -42,12 +43,28 @@ def register():
         return redirect(url_for('main.index'))
     form = RegistrationForm()
     if form.validate_on_submit():
+        # Check if this is the first user
+        is_first_user = User.query.count() == 0
+        
         user = User(username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
+
+        # Grant admin rights based on conditions
+        admin_from_env = os.getenv('INITIAL_ADMIN_USERNAME')
+        if is_first_user or (admin_from_env and user.username == admin_from_env):
+            user.is_admin = True
+
         db.session.add(user)
         db.session.commit()
+
+        # Flash appropriate message
+        if user.is_admin:
+            flash('Congratulations, you are now a registered user and have been granted administrator privileges!', 'success')
+        else:
+            flash('Congratulations, you are now a registered user!', 'success')
+
         login_user(user)  # Log in the user after registration
-        flash('Congratulations, you are now a registered user!')
+        
         # After registration, check if the user has existing goals
         user_goal = UserGoal.query.filter_by(user_id=user.id).first()
         if user_goal:

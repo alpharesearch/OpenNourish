@@ -127,6 +127,38 @@ OpenNourish includes a password reset feature that relies on email functionality
   - `ENABLE_PASSWORD_RESET=true`
   - Other `MAIL_*` variables (e.g., `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `MAIL_USE_TLS`, `MAIL_USE_SSL`, `MAIL_SUPPRESS_SEND`). Refer to the `.env.example` file for a complete list and descriptions of these variables.
 
+## Administrator Privileges
+
+OpenNourish provides three methods for assigning administrator rights to a user:
+
+### 1. Automatic Assignment for the First User
+
+The very first user to register in a new OpenNourish instance is automatically granted administrator privileges. A special welcome message will confirm this upon their first login.
+
+### 2. Environment Variable
+
+You can pre-designate an administrator by setting the `INITIAL_ADMIN_USERNAME` environment variable in your `.env` file. If a user registers with a username that matches the value of this variable, they will be granted administrator rights.
+
+Example `.env` configuration:
+```
+INITIAL_ADMIN_USERNAME=my_admin_user
+```
+
+### 3. Command-Line Interface (CLI)
+
+For existing users, you can manually grant or revoke administrator rights using a Flask CLI command.
+
+-   **To grant admin rights:**
+    ```bash
+    flask user manage-admin <username> --action grant
+    ```
+
+-   **To revoke admin rights:**
+    ```bash
+    flask user manage-admin <username> --action revoke
+    ```
+This provides a flexible and secure way to manage administrator access after the initial setup.
+
 ## Troubleshooting
 
 ### Typst PDF Generation Issues

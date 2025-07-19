@@ -776,4 +776,32 @@ def create_app(config_class=Config):
             else:
                 print("No food categories found to seed.")
 
+    user_cli = app.cli.group('user')(lambda: None)
+
+    @user_cli.command('manage-admin')
+    @click.argument('username')
+    @click.option('--action', type=click.Choice(['grant', 'revoke']), required=True, help='Action to perform: grant or revoke admin rights.')
+    def manage_admin(username, action):
+        """Grant or revoke administrator privileges for a user."""
+        with app.app_context():
+            user = User.query.filter_by(username=username).first()
+            if not user:
+                print(f"Error: User '{username}' not found.")
+                return
+
+            if action == 'grant':
+                if user.is_admin:
+                    print(f"User '{username}' already has admin privileges.")
+                else:
+                    user.is_admin = True
+                    db.session.commit()
+                    print(f"Successfully granted admin privileges to '{username}'.")
+            elif action == 'revoke':
+                if not user.is_admin:
+                    print(f"User '{username}' does not have admin privileges.")
+                else:
+                    user.is_admin = False
+                    db.session.commit()
+                    print(f"Successfully revoked admin privileges from '{username}'.")
+
     return app

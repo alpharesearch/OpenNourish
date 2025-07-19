@@ -31,6 +31,10 @@ class User(UserMixin, db.Model):
     theme_preference = db.Column(db.String(10), default='light')
     has_completed_onboarding = db.Column(db.Boolean, default=False)
     meals_per_day = db.Column(db.Integer, default=6, nullable=False)
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    is_verified = db.Column(db.Boolean, nullable=False, default=False)
+    is_private = db.Column(db.Boolean, nullable=False, default=False)
 
     # Relationships
     goals = db.relationship('UserGoal', backref='user', uselist=False, cascade="all, delete-orphan")
@@ -65,10 +69,6 @@ class User(UserMixin, db.Model):
     @property
     def pending_requests_received(self):
         return self.received_friend_requests.filter_by(status='pending').all()
-
-    @property
-    def is_admin(self):
-        return self.id == 1
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
