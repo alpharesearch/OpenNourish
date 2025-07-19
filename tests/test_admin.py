@@ -38,6 +38,9 @@ def admin_client(app_with_db):
     """A test client that is authenticated as the admin user (ID=1)."""
     with app_with_db.app_context():
         admin_user = create_test_user('adminuser', user_id=1)
+        admin_user.is_admin = True
+        db.session.add(admin_user)
+        db.session.commit()
         admin_user_id = admin_user.id
 
     with app_with_db.test_client() as client:

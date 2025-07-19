@@ -20,6 +20,14 @@ def login():
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password', 'danger')
             return redirect(url_for('auth.login'))
+
+        # Retroactively grant admin rights if username matches INITIAL_ADMIN_USERNAME and they are not already an admin.
+        admin_from_env = os.getenv('INITIAL_ADMIN_USERNAME')
+        if admin_from_env and user.username == admin_from_env and not user.is_admin:
+            user.is_admin = True
+            db.session.commit()
+            flash('You have been granted administrator privileges.', 'success')
+
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
         if not next_page or urlsplit(next_page).netloc != '':
@@ -43,16 +51,18 @@ def register():
         return redirect(url_for('main.index'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        # Check if this is the first user
-        is_first_user = User.query.count() == 0
-        
         user = User(username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
 
-        # Grant admin rights based on conditions
+        # Grant admin rights based on environment variable or if it's the first user
         admin_from_env = os.getenv('INITIAL_ADMIN_USERNAME')
-        if is_first_user or (admin_from_env and user.username == admin_from_env):
-            user.is_admin = True
+        if admin_from_env:
+            if user.username == admin_from_env:
+                user.is_admin = True
+        else:
+            # No environment variable set, so make the first registered user an admin
+            if User.query.count() == 0:
+                user.is_admin = True
 
         db.session.add(user)
         db.session.commit()

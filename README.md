@@ -129,20 +129,26 @@ OpenNourish includes a password reset feature that relies on email functionality
 
 ## Administrator Privileges
 
-OpenNourish provides three methods for assigning administrator rights to a user:
+OpenNourish provides a flexible, two-pronged approach for assigning administrator rights, ensuring both ease of setup and control over user permissions.
 
-### 1. Automatic Assignment for the First User
+### 1. Easy Install: First User Becomes Admin
+If no specific admin user is designated via an environment variable, the system operates in "easy install" mode. In this mode, the **very first user** to register in a new OpenNourish instance is automatically granted full administrator privileges. This is ideal for single-user instances or for quickly setting up a new environment without extra configuration.
 
-The very first user to register in a new OpenNourish instance is automatically granted administrator privileges. A special welcome message will confirm this upon their first login.
+A confirmation message will be displayed to the user upon their first login, informing them of their new admin status. All subsequent users will register with standard, non-admin permissions.
 
-### 2. Environment Variable
-
-You can pre-designate an administrator by setting the `INITIAL_ADMIN_USERNAME` environment variable in your `.env` file. If a user registers with a username that matches the value of this variable, they will be granted administrator rights.
+### 2. Pre-designated Admin via Environment Variable
+For more controlled setups, you can pre-designate an administrator by setting the `INITIAL_ADMIN_USERNAME` environment variable in your `.env` file.
 
 Example `.env` configuration:
 ```
 INITIAL_ADMIN_USERNAME=my_admin_user
 ```
+
+This method has two effects:
+- **On Registration:** If a new user registers with a username that exactly matches the value of this variable, they will be granted administrator rights immediately upon creation.
+- **Retroactive Promotion:** If a user with that username already exists but does not have admin rights, the system will automatically promote them to an administrator the next time they log in. A message will flash to inform them of the change.
+
+This retroactive capability is particularly useful for granting admin access to an existing user without needing to modify the database manually.
 
 ### 3. Command-Line Interface (CLI)
 
