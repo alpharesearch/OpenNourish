@@ -153,7 +153,7 @@
     </div>
     {% endif %}
 
-    <div class="card mb-4">
+    <div class="card mb-4" id="bodyCompositionChart">
         <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
             <h2 class="card-title mb-2 mb-md-0">Body Composition Progress</h2>
             <div class="btn-group" role="group" aria-label="Time Range">
@@ -272,14 +272,36 @@
 <script>
     const ctx = document.getElementById('weightChart');
     const labels = {{ chart_labels|tojson }};
-    const weightData = {{ weight_data|tojson }};
+    let weightData = {{ weight_data|tojson }};
     const bodyFatData = {{ body_fat_data|tojson }};
-    const waistData = {{ waist_data|tojson }};
+    let waistData = {{ waist_data|tojson }};
+    const measurementSystem = {{ current_user_measurement_system|tojson }};
+
+    // Convert data to US units if necessary
+    if (measurementSystem === 'us') {
+        weightData = weightData.map(kg => kg * 2.20462); // kg to lbs
+        waistData = waistData.map(cm => cm * 0.393701); // cm to inches
+    }
 
     // Goal data - create arrays of the same length as labels
-    const weightGoalData = Array(labels.length).fill({{ goals.weight_goal_kg|tojson }});
+    let weightGoal = {{ goals.weight_goal_kg|tojson }};
+    let waistGoal = {{ goals.waist_cm_goal|tojson }};
+
+    if (measurementSystem === 'us') {
+        weightGoal = weightGoal * 2.20462; // kg to lbs
+        waistGoal = waistGoal * 0.393701; // cm to inches
+    }
+
+    const weightGoalData = Array(labels.length).fill(weightGoal);
     const bodyFatGoalData = Array(labels.length).fill({{ goals.body_fat_percentage_goal|tojson }});
-    const waistGoalData = Array(labels.length).fill({{ goals.waist_cm_goal|tojson }});
+    const waistGoalData = Array(labels.length).fill(waistGoal);
+
+    const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
+    const waistUnit = measurementSystem === 'us' ? 'in' : 'cm';
+    const weightLabel = `Weight (${weightUnit})`;
+    const waistLabel = `Waist (${waistUnit})`;
+    const y1Title = `Body Fat (%) / Waist (${waistUnit})`;
+
 
     new Chart(ctx, {
         type: 'line',
@@ -287,14 +309,14 @@
             labels: labels,
             datasets: [
                 {
-                    label: 'Weight (kg)',
+                    label: weightLabel,
                     data: weightData,
                     borderColor: 'rgb(75, 192, 192)',
                     yAxisID: 'y',
                     fill: false
                 },
                 {
-                    label: 'Weight Goal (kg)',
+                    label: `Weight Goal (${weightUnit})`,
                     data: weightGoalData,
                     borderColor: 'rgb(150, 192, 192)',
                     borderDash: [5, 5],
@@ -317,14 +339,14 @@
                     fill: false
                 },
                 {
-                    label: 'Waist (cm)',
+                    label: waistLabel,
                     data: waistData,
                     borderColor: 'rgb(54, 162, 235)',
                     yAxisID: 'y1',
                     fill: false
                 },
                 {
-                    label: 'Waist Goal (cm)',
+                    label: `Waist Goal (${waistUnit})`,
                     data: waistGoalData,
                     borderColor: 'rgb(120, 142, 158)',
                     borderDash: [5, 5],
@@ -353,7 +375,7 @@
                     },
                     title: {
                         display: true,
-                        text: 'Weight (kg)'
+                        text: weightLabel
                     }
                 },
                 y1: {
@@ -369,7 +391,7 @@
                     },
                     title: {
                         display: true,
-                        text: 'Body Fat (%) / Waist (cm)'
+                        text: y1Title
                     }
                 }
             }
@@ -377,4 +399,16 @@
     });
 </script>
 {% endif %}
+<script>
+    // Scroll to the chart if time_range parameter is present
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('time_range')) {
+            const chartElement = document.getElementById('bodyCompositionChart');
+            if (chartElement) {
+                chartElement.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    });
+</script>
 {% endblock %}

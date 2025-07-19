@@ -20,15 +20,33 @@
                 <div class="col-lg-4 d-flex flex-column justify-content-center">
                     <div class="text-center">
                         <h5>Start Weight</h5>
-                        <p class="fs-4">{{ "%.1f"|format(start_weight) }} {{ 'lbs' if current_user.measurement_system == 'us' else 'kg' }}</p>
+                        <p class="fs-4">
+                            {% if current_user.measurement_system == 'us' %}
+                                {{ "%.1f"|format(start_weight * 2.20462) }} lbs
+                            {% else %}
+                                {{ "%.1f"|format(start_weight) }} kg
+                            {% endif %}
+                        </p>
                     </div>
                     <div class="text-center">
                         <h5>Current Weight</h5>
-                        <p class="fs-4">{{ "%.1f"|format(current_weight) }} {{ 'lbs' if current_user.measurement_system == 'us' else 'kg' }}</p>
+                        <p class="fs-4">
+                            {% if current_user.measurement_system == 'us' %}
+                                {{ "%.1f"|format(current_weight * 2.20462) }} lbs
+                            {% else %}
+                                {{ "%.1f"|format(current_weight) }} kg
+                            {% endif %}
+                        </p>
                     </div>
                     <div class="text-center">
                         <h5>Goal Weight</h5>
-                        <p class="fs-4">{{ "%.1f"|format(goal_weight) }} {{ 'lbs' if current_user.measurement_system == 'us' else 'kg' }}</p>
+                        <p class="fs-4">
+                            {% if current_user.measurement_system == 'us' %}
+                                {{ "%.1f"|format(goal_weight * 2.20462) }} lbs
+                            {% else %}
+                                {{ "%.1f"|format(goal_weight) }} kg
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -154,20 +172,29 @@
 <script>
     const ctx = document.getElementById('progressChart');
     const labels = {{ chart_labels|tojson }};
-    const weightData = {{ weight_data|tojson }};
-    const goalWeight = {{ goal_weight|tojson }};
+    let weightData = {{ weight_data|tojson }};
+    let goalWeight = {{ goal_weight|tojson }};
+    const measurementSystem = "{{ current_user.measurement_system }}";
+
+    // Convert data to US units if necessary
+    if (measurementSystem === 'us') {
+        weightData = weightData.map(kg => kg * 2.20462); // kg to lbs
+        goalWeight = goalWeight * 2.20462; // kg to lbs
+    }
+
+    const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
 
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Weight ({{ "lbs" if current_user.measurement_system == "us" else "kg" }})',
+                label: `Weight (${weightUnit})`,
                 data: weightData,
                 borderColor: 'rgb(75, 192, 192)',
                 tension: 0.1
             }, {
-                label: 'Goal ({{ "lbs" if current_user.measurement_system == "us" else "kg" }})',
+                label: `Goal (${weightUnit})`,
                 data: Array(labels.length).fill(goalWeight),
                 borderColor: 'rgb(255, 99, 132)',
                 borderDash: [5, 5],
@@ -179,7 +206,11 @@
             maintainAspectRatio: false,
             scales: {
                 y: {
-                    beginAtZero: false
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: `Weight (${weightUnit})`
+                    }
                 }
             }
         }
