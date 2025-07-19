@@ -33,6 +33,12 @@ if [ -z "$SECRET_KEY" ]; then
     exit 1
 fi
 
+if [ -z "$ENCRYPTION_KEY" ]; then
+    echo "Error: ENCRYPTION_KEY is not set in your .env file or environment."
+    echo "Please add ENCRYPTION_KEY=\"your_encryption_secret_key\" to your .env file."
+    exit 1
+fi
+
 # Use provided TRUENAS_APP_PATH or default to /mnt/data-pool/opennourish if not set
 TRUENAS_APP_PATH_VAR=${TRUENAS_APP_PATH:-/mnt/data-pool/opennourish}
 
@@ -81,6 +87,33 @@ if [ -n "$REAL_CERT_PATH_VAR" ] || [ -n "$REAL_KEY_PATH_VAR" ]; then
       REAL_KEY_PATH: ${REAL_KEY_PATH_VAR}"
 fi
 
+APP_ENV_BLOCK=""
+
+# Helper function to add an environment variable if it exists
+add_env_var() {
+  local key=$1
+  local value=$2
+  if [ -n "$value" ]; then
+    APP_ENV_BLOCK+=$"      - ${key}=${value}"
+    APP_ENV_BLOCK+=$'\n'
+  fi
+}
+
+add_env_var "SECRET_KEY" "$SECRET_KEY"
+add_env_var "ENCRYPTION_KEY" "$ENCRYPTION_KEY"
+add_env_var "SEED_DEV_DATA" "$SEED_DEV_DATA_VAR"
+add_env_var "ENABLE_PASSWORD_RESET" "$ENABLE_PASSWORD_RESET"
+add_env_var "MAIL_CONFIG_SOURCE" "$MAIL_CONFIG_SOURCE"
+add_env_var "MAIL_SERVER" "$MAIL_SERVER"
+add_env_var "MAIL_PORT" "$MAIL_PORT"
+add_env_var "MAIL_USE_TLS" "$MAIL_USE_TLS"
+add_env_var "MAIL_USE_SSL" "$MAIL_USE_SSL"
+add_env_var "MAIL_USERNAME" "$MAIL_USERNAME"
+add_env_var "MAIL_PASSWORD" "$MAIL_PASSWORD"
+add_env_var "MAIL_FROM" "$MAIL_FROM"
+add_env_var "MAIL_SUPPRESS_SEND" "$MAIL_SUPPRESS_SEND"
+
+
 echo -e "\n--- Images successfully built, tagged, and pushed to ${REGISTRY_URL} ---"
 echo -e "\n--- TrueNAS Custom App YAML Configuration (Copy and Paste into TrueNAS UI) ---"
 cat <<EOF
@@ -89,9 +122,7 @@ services:
     image: ${REGISTRY_URL}/opennourish-app:latest
     restart: unless-stopped
     environment:
-      - SECRET_KEY=${SECRET_KEY}
-      - SEED_DEV_DATA=${SEED_DEV_DATA_VAR}
-    volumes:
+${APP_ENV_BLOCK}    volumes:
       - ${TRUENAS_APP_PATH_VAR}:/app/persistent
 
   nginx:
