@@ -78,8 +78,17 @@ def settings():
 def email_settings():
     form = EmailSettingsForm()
     if form.validate_on_submit():
+        # Always save the source selection
+        source_setting = SystemSetting.query.filter_by(key='MAIL_CONFIG_SOURCE').first()
+        if not source_setting:
+            source_setting = SystemSetting(key='MAIL_CONFIG_SOURCE', value=form.MAIL_CONFIG_SOURCE.data)
+            db.session.add(source_setting)
+        else:
+            source_setting.value = form.MAIL_CONFIG_SOURCE.data
+        
+        # These settings are only saved for 'database' mode, but we can save them anyway.
+        # The app's startup logic in __init__.py will decide whether to use them.
         settings_to_save = {
-            'MAIL_CONFIG_SOURCE': form.MAIL_CONFIG_SOURCE.data,
             'MAIL_SERVER': form.MAIL_SERVER.data,
             'MAIL_PORT': str(form.MAIL_PORT.data) if form.MAIL_PORT.data is not None else '',
             'MAIL_SECURITY_PROTOCOL': form.MAIL_SECURITY_PROTOCOL.data,
@@ -90,27 +99,18 @@ def email_settings():
             'ENABLE_PASSWORD_RESET': str(form.ENABLE_PASSWORD_RESET.data)
         }
 
-        # Determine MAIL_USE_TLS and MAIL_USE_SSL based on MAIL_SECURITY_PROTOCOL
-        mail_use_tls = False
-        mail_use_ssl = False
-        if form.MAIL_SECURITY_PROTOCOL.data == 'tls':
-            mail_use_tls = True
-        elif form.MAIL_SECURITY_PROTOCOL.data == 'ssl':
-            mail_use_ssl = True
-        
+        mail_use_tls = form.MAIL_SECURITY_PROTOCOL.data == 'tls'
+        mail_use_ssl = form.MAIL_SECURITY_PROTOCOL.data == 'ssl'
         settings_to_save['MAIL_USE_TLS'] = str(mail_use_tls)
         settings_to_save['MAIL_USE_SSL'] = str(mail_use_ssl)
 
         for key, value in settings_to_save.items():
-            current_app.logger.debug(f"Saving setting: {key} = {value}")
             setting = SystemSetting.query.filter_by(key=key).first()
+            value_to_save = value
             if key == 'MAIL_PASSWORD' and value:
-                # Encrypt password before saving
                 encrypted_value = encrypt_value(value, current_app.config['ENCRYPTION_KEY'])
                 value_to_save = encrypted_value
-            else:
-                value_to_save = value
-
+            
             if not setting:
                 setting = SystemSetting(key=key, value=value_to_save)
                 db.session.add(setting)
@@ -118,52 +118,62 @@ def email_settings():
                 setting.value = value_to_save
         db.session.commit()
 
-        # Reload email settings into current_app.config
-        current_app.config['MAIL_CONFIG_SOURCE'] = settings_to_save['MAIL_CONFIG_SOURCE']
-        current_app.config['MAIL_SERVER'] = settings_to_save['MAIL_SERVER']
-        current_app.config['MAIL_PORT'] = int(settings_to_save['MAIL_PORT']) if settings_to_save['MAIL_PORT'] else 587
-        current_app.config['MAIL_USE_TLS'] = mail_use_tls
-        current_app.config['MAIL_USE_SSL'] = mail_use_ssl
-        current_app.config['MAIL_USERNAME'] = settings_to_save['MAIL_USERNAME']
-        current_app.config['MAIL_PASSWORD'] = settings_to_save['MAIL_PASSWORD'] # This is the unencrypted value from the form
-        current_app.config['MAIL_FROM'] = settings_to_save['MAIL_FROM']
-        current_app.config['MAIL_SUPPRESS_SEND'] = settings_to_save['MAIL_SUPPRESS_SEND'].lower() == 'true'
-        current_app.config['ENABLE_PASSWORD_RESET'] = settings_to_save['ENABLE_PASSWORD_RESET'].lower() == 'true'
+        # Immediately reload the app's config to reflect the changes
+        current_app.config['MAIL_CONFIG_SOURCE'] = form.MAIL_CONFIG_SOURCE.data
+        if current_app.config['MAIL_CONFIG_SOURCE'] == 'database':
+            current_app.config.update(
+                MAIL_SERVER=settings_to_save['MAIL_SERVER'],
+                MAIL_PORT=int(settings_to_save['MAIL_PORT']) if settings_to_save['MAIL_PORT'] else 587,
+                MAIL_USE_TLS=mail_use_tls,
+                MAIL_USE_SSL=mail_use_ssl,
+                MAIL_USERNAME=settings_to_save['MAIL_USERNAME'],
+                MAIL_PASSWORD=settings_to_save['MAIL_PASSWORD'],
+                MAIL_FROM=settings_to_save['MAIL_FROM'],
+                MAIL_SUPPRESS_SEND=settings_to_save['MAIL_SUPPRESS_SEND'].lower() == 'true',
+                ENABLE_PASSWORD_RESET=settings_to_save['ENABLE_PASSWORD_RESET'].lower() == 'true'
+            )
+        else: # Reload from environment
+            current_app.config.update(
+                MAIL_SERVER=os.getenv('MAIL_SERVER', ''),
+                MAIL_PORT=int(os.getenv('MAIL_PORT', 587)),
+                MAIL_USE_TLS=os.getenv('MAIL_USE_TLS', 'False').lower() == 'true',
+                MAIL_USE_SSL=os.getenv('MAIL_USE_SSL', 'False').lower() == 'true',
+                MAIL_USERNAME=os.getenv('MAIL_USERNAME', ''),
+                MAIL_PASSWORD=os.getenv('MAIL_PASSWORD', ''),
+                MAIL_FROM=os.getenv('MAIL_FROM', 'no-reply@example.com'),
+                MAIL_SUPPRESS_SEND=os.getenv('MAIL_SUPPRESS_SEND', 'True').lower() == 'true',
+                ENABLE_PASSWORD_RESET=os.getenv('ENABLE_PASSWORD_RESET', 'False').lower() == 'true'
+            )
 
-        flash('Email settings have been saved.', 'success')
+        flash('Email settings have been saved. A restart may be required for all changes to take effect.', 'success')
         return redirect(url_for('admin.email_settings'))
 
-    # Populate form for GET requests
-    mail_config_source = SystemSetting.query.filter_by(key='MAIL_CONFIG_SOURCE').first()
-    form.MAIL_CONFIG_SOURCE.data = mail_config_source.value if mail_config_source else 'environment'
-
-    form.MAIL_SERVER.data = SystemSetting.query.filter_by(key='MAIL_SERVER').first().value if SystemSetting.query.filter_by(key='MAIL_SERVER').first() else ''
-    form.MAIL_PORT.data = int(SystemSetting.query.filter_by(key='MAIL_PORT').first().value) if SystemSetting.query.filter_by(key='MAIL_PORT').first() and SystemSetting.query.filter_by(key='MAIL_PORT').first().value else 587
+    # Populate form for GET requests, always showing the values from the database.
+    from config import get_setting_from_db
+    form.MAIL_CONFIG_SOURCE.data = get_setting_from_db(current_app, 'MAIL_CONFIG_SOURCE', 'environment')
+    form.MAIL_SERVER.data = get_setting_from_db(current_app, 'MAIL_SERVER', '')
+    form.MAIL_PORT.data = int(get_setting_from_db(current_app, 'MAIL_PORT', 587))
     
-    mail_use_tls_setting = SystemSetting.query.filter_by(key='MAIL_USE_TLS').first()
-    mail_use_ssl_setting = SystemSetting.query.filter_by(key='MAIL_USE_SSL').first()
-
-    if mail_use_tls_setting and mail_use_tls_setting.value.lower() == 'true':
+    if get_setting_from_db(current_app, 'MAIL_USE_TLS', 'False').lower() == 'true':
         form.MAIL_SECURITY_PROTOCOL.data = 'tls'
-    elif mail_use_ssl_setting and mail_use_ssl_setting.value.lower() == 'true':
+    elif get_setting_from_db(current_app, 'MAIL_USE_SSL', 'False').lower() == 'true':
         form.MAIL_SECURITY_PROTOCOL.data = 'ssl'
     else:
         form.MAIL_SECURITY_PROTOCOL.data = 'none'
 
-    form.MAIL_USERNAME.data = SystemSetting.query.filter_by(key='MAIL_USERNAME').first().value if SystemSetting.query.filter_by(key='MAIL_USERNAME').first() else ''
-    # Password field should not be pre-filled for security reasons
-    form.MAIL_FROM.data = SystemSetting.query.filter_by(key='MAIL_FROM').first().value if SystemSetting.query.filter_by(key='MAIL_FROM').first() else ''
-    form.MAIL_SUPPRESS_SEND.data = SystemSetting.query.filter_by(key='MAIL_SUPPRESS_SEND').first().value.lower() == 'true' if SystemSetting.query.filter_by(key='MAIL_SUPPRESS_SEND').first() else False
-    form.ENABLE_PASSWORD_RESET.data = SystemSetting.query.filter_by(key='ENABLE_PASSWORD_RESET').first().value.lower() == 'true' if SystemSetting.query.filter_by(key='ENABLE_PASSWORD_RESET').first() else False
+    form.MAIL_USERNAME.data = get_setting_from_db(current_app, 'MAIL_USERNAME', '')
+    form.MAIL_FROM.data = get_setting_from_db(current_app, 'MAIL_FROM', '')
+    form.MAIL_SUPPRESS_SEND.data = get_setting_from_db(current_app, 'MAIL_SUPPRESS_SEND', 'False').lower() == 'true'
+    form.ENABLE_PASSWORD_RESET.data = get_setting_from_db(current_app, 'ENABLE_PASSWORD_RESET', 'False').lower() == 'true'
 
-    # Pass environment variables to the template
+    # Pass environment variables to the template for display purposes
     env_vars = {
         'MAIL_SERVER': os.getenv('MAIL_SERVER', 'Not Set'),
         'MAIL_PORT': os.getenv('MAIL_PORT', 'Not Set'),
         'MAIL_USE_TLS': os.getenv('MAIL_USE_TLS', 'Not Set'),
         'MAIL_USE_SSL': os.getenv('MAIL_USE_SSL', 'Not Set'),
         'MAIL_USERNAME': os.getenv('MAIL_USERNAME', 'Not Set'),
-        'MAIL_PASSWORD': '********' if os.getenv('MAIL_PASSWORD') else 'Not Set', # Mask password
+        'MAIL_PASSWORD': '********' if os.getenv('MAIL_PASSWORD') else 'Not Set',
         'MAIL_FROM': os.getenv('MAIL_FROM', 'Not Set'),
         'MAIL_SUPPRESS_SEND': os.getenv('MAIL_SUPPRESS_SEND', 'Not Set'),
         'ENABLE_PASSWORD_RESET': os.getenv('ENABLE_PASSWORD_RESET', 'Not Set'),

@@ -24,10 +24,8 @@ def login():
         if not next_page or urlsplit(next_page).netloc != '':
             next_page = url_for('main.index')
         return redirect(next_page)
-    enable_password_reset = SystemSetting.query.filter_by(key='ENABLE_PASSWORD_RESET').first()
-    enable_password_reset = SystemSetting.query.filter_by(key='ENABLE_PASSWORD_RESET').first()
-    enable_password_reset_value = enable_password_reset.value.lower() == 'true' if enable_password_reset else False
-    return render_template('login.html', title='Sign In', form=form, enable_password_reset=enable_password_reset_value)
+    return render_template('login.html', title='Sign In', form=form, 
+                           enable_password_reset=current_app.config.get('ENABLE_PASSWORD_RESET', False))
 
 @auth_bp.route('/logout')
 def logout():
@@ -60,8 +58,7 @@ def register():
 
 @auth_bp.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
-    enable_password_reset = SystemSetting.query.filter_by(key='ENABLE_PASSWORD_RESET').first()
-    if not enable_password_reset or enable_password_reset.value.lower() != 'true':
+    if not current_app.config.get('ENABLE_PASSWORD_RESET', False):
         flash('Password reset feature is currently disabled.', 'warning')
         return redirect(url_for('auth.login'))
 
