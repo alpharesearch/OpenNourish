@@ -193,15 +193,20 @@ def diary(username, log_date_str=None):
             
             nutrition = calculate_nutrition_for_items([log])
             description_to_display = food_item.description if hasattr(food_item, 'description') else food_item.name
-            meals[log.meal_name].append({
-                'log_id': log.id,
-                'description': description_to_display,
-                'amount': display_amount,
-                'nutrition': nutrition,
-                'portions': available_portions,
-                'serving_type': log.serving_type,
-                'selected_portion_id': selected_portion_id
-            })
+
+        # Assign to the correct meal category, defaulting to 'Unspecified'
+        meal_key = log.meal_name or 'Unspecified'
+        if meal_key not in meals:
+            meals[meal_key] = [] # Initialize if not present
+        meals[meal_key].append({
+            'log_id': log.id,
+            'description': description_to_display,
+            'amount': display_amount,
+            'nutrition': nutrition,
+            'portions': available_portions,
+            'serving_type': log.serving_type,
+            'selected_portion_id': selected_portion_id
+        })
 
     #current_app.logger.debug(f"Friend's meals dictionary: {meals}")
 
@@ -219,9 +224,6 @@ def diary(username, log_date_str=None):
 
     # Combine base meals with any other meals that have logged items
     # Ensure 'Unspecified' is always included if it has items
-    meal_names_to_render = []
-    for meal_type in ALL_MEAL_TYPES:
-        if meal_type in base_meals_to_show or (meal_type in meals and meals[meal_type]):
-            meal_names_to_render.append(meal_type)
+    meal_names_to_render = sorted(list(set(base_meals_to_show) | logged_meal_names), key=ALL_MEAL_TYPES.index)
 
     return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned, is_read_only=True, username=username, meal_names_to_render=meal_names_to_render)

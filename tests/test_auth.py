@@ -25,7 +25,7 @@ def test_duplicate_registration(client):
     # First, register a user
     client.post(
         '/auth/register',
-        data={'username': 'testuser', 'password': 'password', 'password2': 'password'},
+        data={'username': 'testuser', 'email': 'testuser@example.com', 'password': 'password', 'password2': 'password'},
         follow_redirects=True
     )
     # Log out the user to test registration by an unauthenticated user
@@ -33,7 +33,7 @@ def test_duplicate_registration(client):
     # Then, attempt to register the same user again
     response = client.post(
         '/auth/register',
-        data={'username': 'testuser', 'password': 'password', 'password2': 'password'},
+        data={'username': 'testuser', 'email': 'testuser2@example.com', 'password': 'password', 'password2': 'password'},
         follow_redirects=False
     )
     assert response.status_code == 200
@@ -48,7 +48,7 @@ def test_login_logout(client):
     # Register a user for login
     client.post(
         '/auth/register',
-        data={'username': 'testuser', 'password': 'password', 'password2': 'password'},
+        data={'username': 'testuser', 'email': 'testuser@example.com', 'password': 'password', 'password2': 'password'},
         follow_redirects=True
     )
     # Log out to test the login flow separately
@@ -57,7 +57,7 @@ def test_login_logout(client):
     # Test login
     response = client.post(
         '/auth/login',
-        data={'username': 'testuser', 'password': 'password'},
+        data={'username_or_email': 'testuser', 'password': 'password'},
         follow_redirects=False
     )
     assert response.status_code == 302
@@ -81,7 +81,7 @@ def test_auto_login_after_registration(client):
     """
     response = client.post(
         '/auth/register',
-        data={'username': 'autologinuser', 'password': 'password', 'password2': 'password'},
+        data={'username': 'autologinuser', 'email': 'autologinuser@example.com', 'password': 'password', 'password2': 'password'},
         follow_redirects=True
     )
     assert response.status_code == 200

@@ -17,12 +17,14 @@ class RegistrationForm(FlaskForm):
         'Repeat Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Register')
 
-    def validate_username_and_email(self, username):
-        user_by_username = User.query.filter_by(username=username.data).first()
-        if user_by_username is not None:
+    def validate_username(self, username):
+        user = User.query.filter_by(username=username.data).first()
+        if user is not None:
             raise ValidationError('Please use a different username.')
-        user_by_email = User.query.filter_by(email=self.email.data).first()
-        if user_by_email is not None:
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user is not None:
             raise ValidationError('Please use a different email address.')
 
 class ResetPasswordRequestForm(FlaskForm):

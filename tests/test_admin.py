@@ -90,8 +90,18 @@ def test_admin_can_disable_and_enable_registration(admin_client):
     """
     admin_client_instance, admin_user, app = admin_client
 
-    # 1. Admin disables registration by submitting the form without the 'allow_registration' checkbox checked
-    response = admin_client_instance.post('/admin/settings', data={}, follow_redirects=True)
+    # 1. Admin disables registration
+    response = admin_client_instance.post('/admin/settings', data={}, follow_redirects=False)
+    assert response.status_code == 302  # Should redirect
+
+    # Check for the flash message in the session
+    with admin_client_instance.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][1] == 'Settings have been saved.'
+
+    # Follow the redirect to ensure the page loads
+    response = admin_client_instance.get(response.headers['Location'], follow_redirects=True)
     assert response.status_code == 200
     assert b'Settings have been saved.' in response.data
 
@@ -119,11 +129,21 @@ def test_admin_can_disable_and_enable_registration(admin_client):
     assert b'<form' in login_page_response.data  # The login form should be present
 
     # 5. Log admin user back in
-    login_response = admin_client_instance.post('/auth/login', data={'username': admin_user.username, 'password': 'password'}, follow_redirects=True)
+    login_response = admin_client_instance.post('/auth/login', data={'username_or_email': admin_user.username, 'password': 'password'}, follow_redirects=True)
     assert b'Dashboard' in login_response.data
 
     # 6. Re-enable registration
-    response = admin_client_instance.post('/admin/settings', data={'allow_registration': 'y'}, follow_redirects=True)
+    response = admin_client_instance.post('/admin/settings', data={'allow_registration': 'y'}, follow_redirects=False)
+    assert response.status_code == 302  # Should redirect
+
+    # Check for the flash message in the session
+    with admin_client_instance.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][1] == 'Settings have been saved.'
+
+    # Follow the redirect to ensure the page loads
+    response = admin_client_instance.get(response.headers['Location'], follow_redirects=True)
     assert response.status_code == 200
     assert b'Settings have been saved.' in response.data
 
@@ -139,6 +159,7 @@ def test_admin_can_disable_and_enable_registration(admin_client):
     # 9. Verify that a new user can be created
     new_user_response = admin_client_instance.post('/auth/register', data={
         'username': 'newuser',
+        'email': 'newuser@example.com',
         'password': 'newpassword',
         'password2': 'newpassword'
     }, follow_redirects=True)

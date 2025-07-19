@@ -28,7 +28,7 @@ def test_onboarding_step1_post(client):
     user = register_and_login(client, 'onboard_user_2', 'password')
     response = client.post(
         '/onboarding/step1',
-        data={'measurement_system': 'us', 'theme_preference': 'dark'},
+        data={'email': 'onboard_user_2@example.com', 'measurement_system': 'us', 'theme_preference': 'dark'},
         follow_redirects=True
     )
     assert response.status_code == 200
@@ -185,7 +185,7 @@ def test_full_onboarding_workflow(client):
     # Step 0: Register
     response = client.post(
         '/auth/register',
-        data={'username': 'full_workflow_user', 'password': 'password', 'password2': 'password'},
+        data={'username': 'full_workflow_user', 'email': 'full_workflow_user@example.com', 'password': 'password', 'password2': 'password'},
         follow_redirects=True
     )
     assert response.status_code == 200
@@ -194,7 +194,7 @@ def test_full_onboarding_workflow(client):
     # Step 1: Measurement System
     response = client.post(
         '/onboarding/step1',
-        data={'measurement_system': 'us', 'theme_preference': 'light'},
+        data={'email': 'full_workflow_user@example.com', 'measurement_system': 'us', 'theme_preference': 'light'},
         follow_redirects=True
     )
     assert response.status_code == 200
