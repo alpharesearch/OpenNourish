@@ -10,6 +10,9 @@ import tempfile
 from types import SimpleNamespace
 from cryptography.fernet import Fernet
 from flask_mailing import Message
+from opennourish import mail
+
+import asyncio
 
 def encrypt_value(value, key):
     f = Fernet(key)
@@ -27,13 +30,8 @@ def send_password_reset_email(user):
         html=render_template('email/reset_password.html', user=user, token=token)
     )
     current_app.logger.debug(f"Attempting to send email. MAIL_SUPPRESS_SEND: {current_app.config.get('MAIL_SUPPRESS_SEND')}")
-    current_app.logger.debug(f"Mail object: {current_app.extensions['mail']}")
-    current_app.logger.debug(f"Mail config: {current_app.extensions['mail']._mail_options}")
     try:
-        current_app.logger.debug(f"Attempting to send email. MAIL_SUPPRESS_SEND: {current_app.config.get('MAIL_SUPPRESS_SEND')}")
-        current_app.logger.debug(f"Mail object: {current_app.extensions['mail']}")
-        current_app.logger.debug(f"Mail config: {current_app.extensions['mail']._mail_options}")
-        current_app.extensions['mail'].send(msg)
+        asyncio.run(mail.send_message(msg))
         current_app.logger.info(f"Password reset email sent to {user.email}")
     except Exception as e:
         current_app.logger.error(f"Failed to send password reset email to {user.email}: {e}")

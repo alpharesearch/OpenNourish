@@ -6,7 +6,7 @@ from opennourish.utils import update_recipe_nutrition
 def client_with_recipe(client):
     recipe_id = None
     with client.application.app_context():
-        user = User(username='testuser_recipe_nutrition')
+        user = User(username='testuser_recipe_nutrition', email='testuser@example.com')
         user.set_password('password')
         db.session.add(user)
         db.session.commit()

@@ -4,7 +4,7 @@ from flask_login import login_user, logout_user
 
 # Helper function to create users
 def create_test_user(username, password='password'):
-    user = User(username=username)
+    user = User(username=username, email='testuser_friendship@example.com')
     user.set_password(password)
     db.session.add(user)
     db.session.commit()

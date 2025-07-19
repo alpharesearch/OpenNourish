@@ -9,11 +9,13 @@ from opennourish.utils import kg_to_lbs, cm_to_ft_in
 def register_and_login(client, username, password):
     client.post(
         '/auth/register',
-        data={'username': username, 'password': password, 'password2': password},
+        data={'username': username, 'email': f'{username}@example.com', 'password': password, 'password2': password},
         follow_redirects=True
     )
-    # The user is now automatically logged in, so we can proceed
-    return User.query.filter_by(username=username).first()
+    user = User.query.filter_by(username=username).first()
+    if user:
+        db.session.refresh(user)
+    return user
 
 # Test for Step 1: Measurement System
 def test_onboarding_step1_get(client):

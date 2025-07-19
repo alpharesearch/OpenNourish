@@ -5,11 +5,11 @@ from datetime import date
 @pytest.fixture
 def two_users(app_with_db):
     with app_with_db.app_context():
-        user_one = User(username='user_one')
+        user_one = User(username='user_one', email='userone@example.com')
         user_one.set_password('password')
         db.session.add(user_one)
 
-        user_two = User(username='user_two')
+        user_two = User(username='user_two', email='usertwo@example.com')
         user_two.set_password('password')
         db.session.add(user_two)
         db.session.commit()

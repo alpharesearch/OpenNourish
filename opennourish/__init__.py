@@ -42,6 +42,12 @@ def create_app(config_class=Config):
         app.config['MAIL_PASSWORD'] = get_setting_from_db(app, 'MAIL_PASSWORD', decrypt=True, default='')
         app.config['MAIL_FROM'] = get_setting_from_db(app, 'MAIL_FROM', default='no-reply@example.com')
         app.config['MAIL_SUPPRESS_SEND'] = get_setting_from_db(app, 'MAIL_SUPPRESS_SEND', default='True').lower() == 'true'
+        app.config['MAIL_USE_SSL'] = False
+        # Set USE_CREDENTIALS based on whether username and password are provided
+        if app.config['MAIL_USERNAME'] and app.config['MAIL_PASSWORD']:
+            app.config['USE_CREDENTIALS'] = True
+        else:
+            app.config['USE_CREDENTIALS'] = False
 
         # Initialize Flask-Mailing here, after config is loaded
         mail.init_app(app)

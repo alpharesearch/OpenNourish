@@ -59,7 +59,7 @@ def auth_client(app_with_db):
     """A test client that is authenticated."""
     with app_with_db.test_client() as client:
         with app_with_db.app_context():
-            user = User(username='testuser')
+            user = User(username='testuser', email='testuser@example.com')
             user.set_password('password')
             db.session.add(user)
             db.session.commit()
@@ -75,7 +75,7 @@ def auth_client_with_user(app_with_db):
     """A test client that is authenticated, and provides the user object."""
     with app_with_db.test_client() as client:
         with app_with_db.app_context():
-            user = User(username='testuser2')
+            user = User(username='testuser2', email='testuser2@example.com')
             user.set_password('password')
             db.session.add(user)
             db.session.commit()
@@ -90,11 +90,11 @@ def auth_client_with_user(app_with_db):
 def auth_client_two_users(app_with_db):
     """Fixture for providing two authenticated users."""
     with app_with_db.app_context():
-        user_one = User(username='user_one')
+        user_one = User(username='user_one', email='userone@example.com')
         user_one.set_password('password_one')
         db.session.add(user_one)
 
-        user_two = User(username='user_two')
+        user_two = User(username='user_two', email='usertwo@example.com')
         user_two.set_password('password_two')
         db.session.add(user_two)
         db.session.commit()
@@ -112,11 +112,11 @@ def auth_client_two_users(app_with_db):
 def auth_client_with_friendship(app_with_db):
     """A test client authenticated as test_user, with an accepted friendship to friend_user."""
     with app_with_db.app_context():
-        test_user = User(username='testuser_friendship')
+        test_user = User(username='testuser_friendship', email='testuser_friendship@example.com')
         test_user.set_password('password')
         db.session.add(test_user)
 
-        friend_user = User(username='frienduser_friendship')
+        friend_user = User(username='frienduser_friendship', email='frienduser_friendship@example.com')
         friend_user.set_password('password')
         db.session.add(friend_user)
         db.session.commit()

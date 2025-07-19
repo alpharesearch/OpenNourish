@@ -69,15 +69,6 @@ class Config:
     if not ENCRYPTION_KEY:
         raise ValueError("No ENCRYPTION_KEY set for Flask application. Please set it in your .env file or environment variables.")
 
-    # These will be loaded from the database after app context is available
-    MAIL_SERVER = os.environ.get('MAIL_SERVER', '')
-    MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'False').lower() == 'true'
-    MAIL_USERNAME = os.environ.get('MAIL_USERNAME', '')
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
-    MAIL_FROM = os.environ.get('MAIL_FROM', 'no-reply@example.com')
-    MAIL_SUPPRESS_SEND = os.environ.get('MAIL_SUPPRESS_SEND', 'True').lower() == 'true'
-    ENABLE_PASSWORD_RESET = os.environ.get('ENABLE_PASSWORD_RESET', 'False').lower() == 'true'
 
     @property
     def ALLOW_REGISTRATION(self):

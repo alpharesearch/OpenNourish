@@ -8,7 +8,7 @@ def test_registration(client):
     """
     response = client.post(
         '/auth/register',
-        data={'username': 'newuser', 'password': 'newpassword', 'password2': 'newpassword'},
+        data={'username': 'newuser', 'email': 'newuser@example.com', 'password': 'newpassword', 'password2': 'newpassword'},
         follow_redirects=False
     )
     assert response.status_code == 302

@@ -5,8 +5,10 @@ import os
 import json
 
 # Helper function to create users
-def create_test_user(username, password='password', user_id=None):
-    user = User(username=username, id=user_id) if user_id else User(username=username)
+def create_test_user(username, password='password', user_id=None, email=None):
+    if email is None:
+        email = f'{username}@example.com'
+    user = User(username=username, id=user_id, email=email) if user_id else User(username=username, email=email)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()

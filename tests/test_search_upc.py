@@ -122,7 +122,7 @@ def test_search_by_upc_friend_food(auth_client, app_with_db):
     upc = "555666777888"
     with app_with_db.app_context():
         user1 = User.query.filter_by(username='testuser').first()
-        user2 = User(username='frienduser')
+        user2 = User(username='frienduser', email='frienduser@example.com')
         user2.set_password('password')
         db.session.add(user2)
         db.session.commit()

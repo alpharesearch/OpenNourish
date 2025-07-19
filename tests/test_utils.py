@@ -6,7 +6,7 @@ from flask_login import current_user
 def client_with_usda_food(client):
     with client.application.app_context():
         # Create a dummy user for login_required routes
-        user = User(username='testuser_utils')
+        user = User(username='testuser_utils', email='testuser@example.com')
         user.set_password('password')
         db.session.add(user)
         db.session.commit()

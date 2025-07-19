@@ -7,7 +7,7 @@ def auth_client_with_data(auth_client):
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
         if not user:
-            user = User(username='testuser')
+            user = User(username='testuser', email='testuser@example.com')
             user.set_password('password')
             db.session.add(user)
             db.session.commit()
