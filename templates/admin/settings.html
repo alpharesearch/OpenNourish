@@ -9,4 +9,8 @@
         </div>
         {{ form.submit(class="btn btn-outline-primary") }}
     </form>
+
+    <h2 class="mt-4">Email Configuration</h2>
+    <p>Manage your email server settings for features like password reset.</p>
+    <a href="{{ url_for('admin.email_settings') }}" class="btn btn-outline-info">Configure Email Settings</a>
 {% endblock %}

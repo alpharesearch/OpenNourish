@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: 9431e8a24c6f
+Revision ID: 8c8a14fe8f44
 Revises: 
-Create Date: 2025-07-18 19:28:23.643479
+Create Date: 2025-07-19 02:10:48.429196
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9431e8a24c6f'
+revision = '8c8a14fe8f44'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -40,6 +40,7 @@ def upgrade():
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(length=80), nullable=False),
+    sa.Column('email', sa.String(length=120), nullable=False),
     sa.Column('password_hash', sa.String(length=128), nullable=True),
     sa.Column('age', sa.Integer(), nullable=True),
     sa.Column('gender', sa.String(length=10), nullable=True),
@@ -51,6 +52,7 @@ def upgrade():
     sa.Column('has_completed_onboarding', sa.Boolean(), nullable=True),
     sa.Column('meals_per_day', sa.Integer(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email'),
     sa.UniqueConstraint('username')
     )
     op.create_table('check_ins',

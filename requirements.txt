@@ -30,3 +30,6 @@ WTForms-SQLAlchemy==0.3
 SQLAlchemy-Utils==0.41.1
 zipp==3.23.0
 Faker==25.8.0
+Flask-Mailing
+cryptography
+PyJWT

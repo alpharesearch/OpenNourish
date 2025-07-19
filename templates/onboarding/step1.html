@@ -12,6 +12,15 @@
                 <div class="card-body">
                     <form method="POST">
                         {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control" ~ (" is-invalid" if form.email.errors else "")) }}
+                            {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.email.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
                         <div class="mb-3 text-center">
                             <p class="form-label">Please select your preferred measurement system:</p>
                             {% for subfield in form.measurement_system %}

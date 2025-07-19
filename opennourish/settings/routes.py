@@ -13,6 +13,7 @@ def settings():
 
     if settings_form.validate_on_submit() and 'submit_settings' in request.form:
         user = db.session.get(User, current_user.id)
+        user.email = settings_form.email.data
         
         # Handle measurement system first
         system = settings_form.measurement_system.data
@@ -48,6 +49,7 @@ def settings():
 
     # Pre-populate form fields for GET request
     if request.method == 'GET':
+        settings_form.email.data = current_user.email
         settings_form.age.data = current_user.age
         settings_form.gender.data = current_user.gender
         settings_form.measurement_system.data = current_user.measurement_system

@@ -13,6 +13,17 @@
                     <form method="POST" action="{{ url_for('settings.settings') }}">
                         {{ settings_form.hidden_tag() }}
 
+                        <!-- Email Field -->
+                        <div class="mb-3">
+                            {{ settings_form.email.label(class="form-label") }}
+                            {{ settings_form.email(class="form-control" ~ (" is-invalid" if settings_form.email.errors else "")) }}
+                            {% if settings_form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in settings_form.email.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
                         <!-- Measurement System -->
                         <div class="mb-3">
                             {{ settings_form.measurement_system.label(class="form-label") }}

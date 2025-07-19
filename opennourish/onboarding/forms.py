@@ -1,8 +1,10 @@
 from flask_wtf import FlaskForm
-from wtforms import RadioField, IntegerField, FloatField, SelectField, SubmitField
-from wtforms.validators import DataRequired, NumberRange, Optional
+from wtforms import RadioField, IntegerField, FloatField, SelectField, SubmitField, StringField
+from wtforms.validators import DataRequired, NumberRange, Optional, Email, ValidationError
+from models import User
 
 class MeasurementSystemForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
     measurement_system = RadioField(
         'Select Measurement System',
         choices=[('metric', 'Metric (kg, cm)'), ('us', 'US (lbs, ft/in)')],
@@ -16,6 +18,12 @@ class MeasurementSystemForm(FlaskForm):
         validators=[DataRequired()]
     )
     submit = SubmitField('Next')
+
+    def validate_email(self, email):
+        from flask_login import current_user
+        user = User.query.filter_by(email=email.data).first()
+        if user is not None and user != current_user:
+            raise ValidationError('This email is already registered.')
 
 class PersonalInfoForm(FlaskForm):
     age = IntegerField('Age', validators=[DataRequired(), NumberRange(min=1, max=120)])

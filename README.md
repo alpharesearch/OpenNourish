@@ -34,6 +34,12 @@ OpenNourish is a free and open source food tracker.
       import secrets
       secrets.token_hex(16)
       ```
+    - Also, add an `ENCRYPTION_KEY` to your `.env` file. This key is crucial for encrypting sensitive data like email passwords stored in the database.
+    - You can generate a strong, URL-safe `ENCRYPTION_KEY` using Python:
+      ```python
+      import secrets
+      print(secrets.token_urlsafe(32))
+      ```
     - The `SEED_DEV_DATA` variable in `.env` controls whether development data is seeded on the first run. Set it to `true` for development or `false` for a clean production setup.
 
 5. **Install Typst:**

@@ -2,9 +2,9 @@ from flask import render_template, redirect, url_for, flash, request, current_ap
 from flask_login import login_user, logout_user, current_user
 from urllib.parse import urlsplit
 from . import auth_bp
-from .forms import LoginForm, RegistrationForm
-from models import db, User, UserGoal
-from opennourish.utils import get_allow_registration_status
+from .forms import LoginForm, RegistrationForm, ResetPasswordRequestForm, ResetPasswordForm
+from models import db, User, UserGoal, SystemSetting
+from opennourish.utils import get_allow_registration_status, send_password_reset_email
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -12,7 +12,10 @@ def login():
         return redirect(url_for('main.index'))
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
+        user = User.query.filter(
+            (User.username == form.username_or_email.data) | 
+            (User.email == form.username_or_email.data)
+        ).first()
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password')
             return redirect(url_for('auth.login'))
@@ -21,7 +24,10 @@ def login():
         if not next_page or urlsplit(next_page).netloc != '':
             next_page = url_for('main.index')
         return redirect(next_page)
-    return render_template('login.html', title='Sign In', form=form)
+    enable_password_reset = SystemSetting.query.filter_by(key='ENABLE_PASSWORD_RESET').first()
+    enable_password_reset = SystemSetting.query.filter_by(key='ENABLE_PASSWORD_RESET').first()
+    enable_password_reset_value = enable_password_reset.value.lower() == 'true' if enable_password_reset else False
+    return render_template('login.html', title='Sign In', form=form, enable_password_reset=enable_password_reset_value)
 
 @auth_bp.route('/logout')
 def logout():
@@ -38,7 +44,7 @@ def register():
         return redirect(url_for('main.index'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data)
+        user = User(username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
@@ -51,3 +57,39 @@ def register():
         else:
             return redirect(url_for('goals.goals'))
     return render_template('register.html', title='Register', form=form)
+
+@auth_bp.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    enable_password_reset = SystemSetting.query.filter_by(key='ENABLE_PASSWORD_RESET').first()
+    if not enable_password_reset or enable_password_reset.value.lower() != 'true':
+        flash('Password reset feature is currently disabled.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            send_password_reset_email(user)
+            flash('Check your email for the instructions to reset your password')
+            return redirect(url_for('auth.login'))
+        else:
+            flash('Email address not found.', 'danger')
+    return render_template('reset_password_request.html', title='Reset Password', form=form)
+
+@auth_bp.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    user = User.verify_reset_password_token(token)
+    if not user:
+        flash('That is an invalid or expired token', 'danger')
+        return redirect(url_for('auth.reset_password_request'))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        flash('Your password has been reset.', 'success')
+        return redirect(url_for('auth.login'))
+    return render_template('reset_password.html', title='Reset Password', form=form)

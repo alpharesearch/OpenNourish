@@ -60,6 +60,7 @@
                     <ul class="dropdown-menu" aria-labelledby="adminDropdown">
                         <li><a class="dropdown-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a></li>
                         <li><a class="dropdown-item {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Admin Settings</a></li>
+                        <li><a class="dropdown-item {% if request.endpoint == 'admin.email_settings' %}active{% endif %}" href="{{ url_for('admin.email_settings') }}">Email Settings</a></li>
                     </ul>
                 </li>
                 {% endif %}
@@ -128,6 +129,9 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link px-2 {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Admin Settings</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link px-2 {% if request.endpoint == 'admin.email_settings' %}active{% endif %}" href="{{ url_for('admin.email_settings') }}">Email Settings</a>
                 </li>
             {% endif %}
         </ul>

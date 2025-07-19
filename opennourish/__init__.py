@@ -5,6 +5,7 @@ from models import db, User, UserGoal, MyFood, CheckIn, Recipe, DailyLog, Food, 
 from sqlalchemy.orm import joinedload
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from flask_mailing import Mail
 from config import Config
 import click
 from faker import Faker
@@ -14,6 +15,7 @@ import csv
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
+mail = Mail()
 
 def create_app(config_class=Config):
     app = Flask(__name__,
@@ -29,6 +31,20 @@ def create_app(config_class=Config):
     db.init_app(app)
     Migrate(app, db)
     login_manager.init_app(app)
+
+    # Load email settings from DB after app and db are initialized
+    with app.app_context():
+        from config import get_setting_from_db
+        app.config['MAIL_SERVER'] = get_setting_from_db(app, 'MAIL_SERVER', default='')
+        app.config['MAIL_PORT'] = int(get_setting_from_db(app, 'MAIL_PORT', default=587))
+        app.config['MAIL_USE_TLS'] = get_setting_from_db(app, 'MAIL_USE_TLS', default='False').lower() == 'true'
+        app.config['MAIL_USERNAME'] = get_setting_from_db(app, 'MAIL_USERNAME', default='')
+        app.config['MAIL_PASSWORD'] = get_setting_from_db(app, 'MAIL_PASSWORD', decrypt=True, default='')
+        app.config['MAIL_FROM'] = get_setting_from_db(app, 'MAIL_FROM', default='no-reply@example.com')
+        app.config['MAIL_SUPPRESS_SEND'] = get_setting_from_db(app, 'MAIL_SUPPRESS_SEND', default='True').lower() == 'true'
+
+        # Initialize Flask-Mailing here, after config is loaded
+        mail.init_app(app)
 
     # Enable the Jinja2 'do' extension
     app.jinja_env.add_extension('jinja2.ext.do')
@@ -132,7 +148,7 @@ def create_app(config_class=Config):
             print("Starting to seed development data...")
 
             print("Creating main test user...")
-            test_user = User(username='markus')
+            test_user = User(username='markus', email='schulz@alpharesearch.de')
             test_user.set_password('1')
             db.session.add(test_user)
             db.session.commit() # Commit here to get test_user.id
@@ -164,6 +180,7 @@ def create_app(config_class=Config):
             for i in range(count):
                 user = User(
                     username='user'+f"{i}",
+                    email=f'user{i}@example.com',
                     age=random.randint(18, 70),
                     gender=random.choice(['Male', 'Female']),
                     height_cm=random.uniform(150, 190)

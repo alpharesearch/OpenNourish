@@ -9,11 +9,11 @@
                 <form action="" method="post" novalidate>
                     {{ form.hidden_tag() }}
                     <div class="mb-3">
-                        {{ form.username.label(class="form-label") }}
-                        {{ form.username(class="form-control" ~ (" is-invalid" if form.username.errors else "")) }}
-                        {% if form.username.errors %}
+                        {{ form.username_or_email.label(class="form-label") }}
+                        {{ form.username_or_email(class="form-control" ~ (" is-invalid" if form.username_or_email.errors else "")) }}
+                        {% if form.username_or_email.errors %}
                         <div class="invalid-feedback">
-                            {% for error in form.username.errors %}
+                            {% for error in form.username_or_email.errors %}
                                 {{ error }}
                             {% endfor %}
                         </div>
@@ -39,6 +39,9 @@
                 </form>
                 <hr class="my-4">
                 <div class="text-center">
+                    {% if enable_password_reset %}
+                    <p class="mb-2"><a href="{{ url_for('auth.reset_password_request') }}">Forgot Password?</a></p>
+                    {% endif %}
                     <p class="mb-0">New User? <a href="{{ url_for('auth.register') }}">Click to Register!</a></p>
                 </div>
             </div>

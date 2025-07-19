@@ -1,8 +1,10 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, FloatField, RadioField, SubmitField, PasswordField
-from wtforms.validators import DataRequired, Optional, EqualTo
+from wtforms.validators import DataRequired, Optional, EqualTo, Email, ValidationError
+from models import User
 
 class SettingsForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
     age = FloatField('Age', validators=[Optional()])
     gender = SelectField('Gender', choices=[('', 'Select...'), ('Male', 'Male'), ('Female', 'Female')], validators=[Optional()])
     
@@ -53,6 +55,12 @@ class SettingsForm(FlaskForm):
         validators=[DataRequired()]
     )
     submit = SubmitField('Save Settings')
+
+    def validate_email(self, email):
+        if email.data != current_user.email:
+            user = User.query.filter_by(email=email.data).first()
+            if user:
+                raise ValidationError('This email is already registered.')
 
 class ChangePasswordForm(FlaskForm):
     password = PasswordField('New Password', validators=[DataRequired()])

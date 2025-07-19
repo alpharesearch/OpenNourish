@@ -3,10 +3,40 @@ import json
 from models import db, Food, MyFood, Nutrient, FoodNutrient, Recipe, UnifiedPortion
 from sqlalchemy.orm import selectinload
 from config import Config
-from flask import send_file, current_app
+from constants import DIET_PRESETS, CORE_NUTRIENT_IDS
+from flask import send_file, current_app, render_template
 import subprocess
 import tempfile
 from types import SimpleNamespace
+from cryptography.fernet import Fernet
+from flask_mailing import Message
+
+def encrypt_value(value, key):
+    f = Fernet(key)
+    return f.encrypt(value.encode()).decode()
+
+def decrypt_value(encrypted_value, key):
+    f = Fernet(key)
+    return f.decrypt(encrypted_value.encode()).decode()
+
+def send_password_reset_email(user):
+    token = user.get_reset_password_token()
+    msg = Message(
+        subject="Password Reset Request",
+        recipients=[user.email],
+        html=render_template('email/reset_password.html', user=user, token=token)
+    )
+    current_app.logger.debug(f"Attempting to send email. MAIL_SUPPRESS_SEND: {current_app.config.get('MAIL_SUPPRESS_SEND')}")
+    current_app.logger.debug(f"Mail object: {current_app.extensions['mail']}")
+    current_app.logger.debug(f"Mail config: {current_app.extensions['mail']._mail_options}")
+    try:
+        current_app.logger.debug(f"Attempting to send email. MAIL_SUPPRESS_SEND: {current_app.config.get('MAIL_SUPPRESS_SEND')}")
+        current_app.logger.debug(f"Mail object: {current_app.extensions['mail']}")
+        current_app.logger.debug(f"Mail config: {current_app.extensions['mail']._mail_options}")
+        current_app.extensions['mail'].send(msg)
+        current_app.logger.info(f"Password reset email sent to {user.email}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to send password reset email to {user.email}: {e}")
 
 def calculate_weekly_nutrition_summary(weekly_logs):
     """
@@ -130,7 +160,7 @@ def calculate_goals_from_preset(bmr, preset_name):
     """
     Calculates nutritional goals based on a BMR and a diet preset.
     """
-    preset = Config.DIET_PRESETS.get(preset_name)
+    preset = DIET_PRESETS.get(preset_name)
     if not preset:
         return None
 
@@ -206,7 +236,7 @@ def calculate_nutrition_for_items(items, processed_recipes=None):
     }
 
     # Get nutrient IDs for common nutrients to avoid repeated lookups
-    nutrient_ids = Config.CORE_NUTRIENT_IDS
+    nutrient_ids = CORE_NUTRIENT_IDS
 
     usda_fdc_ids = set()
     for item in items:

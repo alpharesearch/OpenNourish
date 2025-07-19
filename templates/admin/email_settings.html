@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Email Settings</h1>
+    <form method="POST" action="{{ url_for('admin.email_settings') }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.MAIL_SERVER.label(class="form-label") }}
+            {{ form.MAIL_SERVER(class="form-control") }}
+            {% if form.MAIL_SERVER.errors %}
+                <div class="alert alert-danger mt-1">{{ form.MAIL_SERVER.errors|join(', ') }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.MAIL_PORT.label(class="form-label") }}
+            {{ form.MAIL_PORT(class="form-control") }}
+            {% if form.MAIL_PORT.errors %}
+                <div class="alert alert-danger mt-1">{{ form.MAIL_PORT.errors|join(', ') }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3 form-check">
+            {{ form.MAIL_USE_TLS(class="form-check-input") }}
+            {{ form.MAIL_USE_TLS.label(class="form-check-label") }}
+            {% if form.MAIL_USE_TLS.errors %}
+                <div class="alert alert-danger mt-1">{{ form.MAIL_USE_TLS.errors|join(', ') }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.MAIL_USERNAME.label(class="form-label") }}
+            {{ form.MAIL_USERNAME(class="form-control") }}
+            {% if form.MAIL_USERNAME.errors %}
+                <div class="alert alert-danger mt-1">{{ form.MAIL_USERNAME.errors|join(', ') }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.MAIL_PASSWORD.label(class="form-label") }}
+            {{ form.MAIL_PASSWORD(class="form-control") }}
+            {% if form.MAIL_PASSWORD.errors %}
+                <div class="alert alert-danger mt-1">{{ form.MAIL_PASSWORD.errors|join(', ') }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.MAIL_FROM.label(class="form-label") }}
+            {{ form.MAIL_FROM(class="form-control") }}
+            {% if form.MAIL_FROM.errors %}
+                <div class="alert alert-danger mt-1">{{ form.MAIL_FROM.errors|join(', ') }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3 form-check">
+            {{ form.ENABLE_PASSWORD_RESET(class="form-check-input") }}
+            {{ form.ENABLE_PASSWORD_RESET.label(class="form-check-label") }}
+            {% if form.ENABLE_PASSWORD_RESET.errors %}
+                <div class="alert alert-danger mt-1">{{ form.ENABLE_PASSWORD_RESET.errors|join(', ') }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3 form-check">
+            {{ form.MAIL_SUPPRESS_SEND(class="form-check-input") }}
+            {{ form.MAIL_SUPPRESS_SEND.label(class="form-check-label") }}
+            {% if form.MAIL_SUPPRESS_SEND.errors %}
+                <div class="alert alert-danger mt-1">{{ form.MAIL_SUPPRESS_SEND.errors|join(', ') }}</div>
+            {% endif %}
+        </div>
+        {{ form.submit(class="btn btn-outline-primary") }}
+    </form>
+</div>
+{% endblock %}
