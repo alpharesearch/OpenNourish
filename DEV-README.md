@@ -283,4 +283,18 @@ The following YAML configuration should be used when creating a "Custom App" in 
     *   **Certificate Paths for Nginx:** If you are using real SSL certificates managed by TrueNAS (e.g., from Let's Encrypt), you will need to update the `REAL_CERT_PATH` and `REAL_KEY_PATH` environment variables under the `nginx` service in the YAML. These paths should point to where TrueNAS stores your certificates. You can typically find these paths by navigating to **System Settings > Certificates** in the TrueNAS UI, selecting your certificate, and inspecting its details or by checking the `/etc/certificates` directory on your TrueNAS server via SSH. You can copy these values from your local `.env` file.
 4.  Deploy the application.
 
+## 5. Creating pip requirments.txt for deployment
+
+To create a `requirements.txt` file, run the following command in your virtual environment.
+
+```bash
+pip freeze > requirements.txt
+```
+To remove a package and all dependencies, run the following command:
+
+```bash
+pip install pip3-autoremove
+pip-autoremove <package name> -y
+pip uninstall pip3-autoremove
+```bash
 
