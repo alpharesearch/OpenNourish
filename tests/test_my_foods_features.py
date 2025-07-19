@@ -152,3 +152,74 @@ def test_delete_my_food(auth_client):
     with auth_client.application.app_context():
         deleted_food = db.session.get(MyFood, food_id)
         assert deleted_food is None
+
+def test_user_cannot_delete_another_users_food(client):
+    """
+    Tests that a user cannot delete a food item belonging to another user.
+    """
+    with client.application.app_context():
+        # Create two users
+        user_a = User(username='user_a', email='a@a.com')
+        user_a.set_password('password_a')
+        user_b = User(username='user_b', email='b@b.com')
+        user_b.set_password('password_b')
+        db.session.add_all([user_a, user_b])
+        db.session.commit()
+
+        # User A creates a food item
+        food_a = MyFood(user_id=user_a.id, description='Food A', calories_per_100g=100)
+        db.session.add(food_a)
+        db.session.commit()
+        food_a_id = food_a.id
+
+    # Log in as User B
+    login_response = client.post('/auth/login', data={'username_or_email': 'user_b', 'password': 'password_b'}, follow_redirects=True)
+    assert login_response.status_code == 200
+    assert b'Dashboard' in login_response.data # Confirm login success
+
+    # User B attempts to delete User A's food
+    response = client.post(f'/my_foods/{food_a_id}/delete', follow_redirects=False) # Test the direct response
+
+    # Assert that the action is not found
+    assert response.status_code == 404
+
+    # Assert that the food item still exists in the database
+    with client.application.app_context():
+        food_still_exists = db.session.get(MyFood, food_a_id)
+        assert food_still_exists is not None
+
+def test_edit_my_food_with_invalid_data_type(auth_client):
+    """
+    Tests that submitting a non-numeric value to a numeric field during
+    an edit fails validation gracefully.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        initial_food = MyFood(
+            user_id=user.id,
+            description='Test Food',
+            calories_per_100g=100.0
+        )
+        db.session.add(initial_food)
+        db.session.commit()
+        food_id = initial_food.id
+
+    # Attempt to update with a non-numeric value for calories
+    invalid_data = {
+        'description': 'Updated Food Name',
+        'calories_per_100g': 'not-a-number'
+    }
+    response = auth_client.post(f'/my_foods/{food_id}/edit', data=invalid_data, follow_redirects=True)
+
+    # The form should fail validation and re-render the page
+    assert response.status_code == 200
+    # Check for the standard WTForms error message for an invalid float
+    assert b'Not a valid float value.' in response.data
+    # Check that the success message is NOT present
+    assert b'Food updated successfully!' not in response.data
+
+    # Verify that the original food data was not changed in the database
+    with auth_client.application.app_context():
+        food_in_db = db.session.get(MyFood, food_id)
+        assert food_in_db.description == 'Test Food'
+        assert food_in_db.calories_per_100g == 100.0
