@@ -21,6 +21,10 @@ def login():
             flash('Invalid username or password', 'danger')
             return redirect(url_for('auth.login'))
 
+        if not user.is_active:
+            flash('This account has been disabled.', 'warning')
+            return redirect(url_for('auth.login'))
+
         # Retroactively grant admin rights if username matches INITIAL_ADMIN_USERNAME and they are not already an admin.
         admin_from_env = os.getenv('INITIAL_ADMIN_USERNAME')
         if admin_from_env and user.username == admin_from_env and not user.is_admin:

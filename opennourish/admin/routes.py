@@ -1,5 +1,5 @@
 from flask import render_template, redirect, url_for, flash, current_app, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 from opennourish.decorators import admin_required
 from . import admin_bp
 from .forms import AdminSettingsForm, EmailSettingsForm
@@ -180,3 +180,39 @@ def email_settings():
     }
 
     return render_template('admin/email_settings.html', title='Email Settings', form=form, env_vars=env_vars)
+
+@admin_bp.route('/users')
+@login_required
+@admin_required
+def users():
+    users = User.query.all()
+    return render_template('admin/users.html', users=users, title='User Management')
+
+@admin_bp.route('/users/<int:user_id>/disable', methods=['POST'])
+@login_required
+@admin_required
+def disable_user(user_id):
+    user = db.session.get(User, user_id)
+    if user:
+        if user.id == current_user.id:
+            flash('You cannot disable your own account.', 'danger')
+        else:
+            user.is_active = False
+            db.session.commit()
+            flash(f'User {user.username} has been disabled.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/users/<int:user_id>/enable', methods=['POST'])
+@login_required
+@admin_required
+def enable_user(user_id):
+    user = db.session.get(User, user_id)
+    if user:
+        user.is_active = True
+        db.session.commit()
+        flash(f'User {user.username} has been enabled.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('admin.users'))
