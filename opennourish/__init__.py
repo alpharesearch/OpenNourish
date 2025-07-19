@@ -35,14 +35,29 @@ def create_app(config_class=Config):
     # Load email settings from DB after app and db are initialized
     with app.app_context():
         from config import get_setting_from_db
-        app.config['MAIL_SERVER'] = get_setting_from_db(app, 'MAIL_SERVER', default='')
-        app.config['MAIL_PORT'] = int(get_setting_from_db(app, 'MAIL_PORT', default=587))
-        app.config['MAIL_USE_TLS'] = get_setting_from_db(app, 'MAIL_USE_TLS', default='False').lower() == 'true'
-        app.config['MAIL_USERNAME'] = get_setting_from_db(app, 'MAIL_USERNAME', default='')
-        app.config['MAIL_PASSWORD'] = get_setting_from_db(app, 'MAIL_PASSWORD', decrypt=True, default='')
-        app.config['MAIL_FROM'] = get_setting_from_db(app, 'MAIL_FROM', default='no-reply@example.com')
-        app.config['MAIL_SUPPRESS_SEND'] = get_setting_from_db(app, 'MAIL_SUPPRESS_SEND', default='True').lower() == 'true'
-        app.config['MAIL_USE_SSL'] = False
+        
+        mail_config_source = get_setting_from_db(app, 'MAIL_CONFIG_SOURCE', default='environment')
+
+        if mail_config_source == 'environment':
+            app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', '')
+            app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+            app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'False').lower() == 'true'
+            app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
+            app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
+            app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
+            app.config['MAIL_FROM'] = os.getenv('MAIL_FROM', 'no-reply@example.com')
+            app.config['MAIL_SUPPRESS_SEND'] = os.getenv('MAIL_SUPPRESS_SEND', 'True').lower() == 'true'
+            app.config['ENABLE_PASSWORD_RESET'] = os.getenv('ENABLE_PASSWORD_RESET', 'False').lower() == 'true'
+        else: # Default to database
+            app.config['MAIL_SERVER'] = get_setting_from_db(app, 'MAIL_SERVER', default='')
+            app.config['MAIL_PORT'] = int(get_setting_from_db(app, 'MAIL_PORT', default=587))
+            app.config['MAIL_USE_TLS'] = get_setting_from_db(app, 'MAIL_USE_TLS', default='False').lower() == 'true'
+            app.config['MAIL_USE_SSL'] = get_setting_from_db(app, 'MAIL_USE_SSL', default='False').lower() == 'true'
+            app.config['MAIL_USERNAME'] = get_setting_from_db(app, 'MAIL_USERNAME', default='')
+            app.config['MAIL_PASSWORD'] = get_setting_from_db(app, 'MAIL_PASSWORD', decrypt=True, default='')
+            app.config['MAIL_FROM'] = get_setting_from_db(app, 'MAIL_FROM', default='no-reply@example.com')
+            app.config['MAIL_SUPPRESS_SEND'] = get_setting_from_db(app, 'MAIL_SUPPRESS_SEND', default='True').lower() == 'true'
+        
         # Set USE_CREDENTIALS based on whether username and password are provided
         if app.config['MAIL_USERNAME'] and app.config['MAIL_PASSWORD']:
             app.config['USE_CREDENTIALS'] = True

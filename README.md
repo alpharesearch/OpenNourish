@@ -116,6 +116,17 @@ To stop the running containers, press `Ctrl+C` in the terminal where compose is 
 docker compose down
 ```
 
+## Email Configuration and Password Reset
+
+OpenNourish includes a password reset feature that relies on email functionality. To enable and configure this:
+
+- **Configuration Source:** You can choose to configure email settings either via the Admin Panel (Database) or directly through Environment Variables. This choice is made in the Admin Panel under Email Settings.
+- **Password Reset:** The primary reason to configure email settings is to enable the password reset functionality, allowing users to recover their accounts.
+- **Environment Variables:** If you choose to use environment variables, ensure the following are set in your `.env` file:
+  - `MAIL_CONFIG_SOURCE=environment`
+  - `ENABLE_PASSWORD_RESET=true`
+  - Other `MAIL_*` variables (e.g., `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `MAIL_USE_TLS`, `MAIL_USE_SSL`, `MAIL_SUPPRESS_SEND`). Refer to the `.env.example` file for a complete list and descriptions of these variables.
+
 ## Troubleshooting
 
 ### Typst PDF Generation Issues

@@ -6,10 +6,13 @@ class AdminSettingsForm(FlaskForm):
     allow_registration = BooleanField('Allow New User Registrations?')
     submit = SubmitField('Save Settings')
 
+from wtforms import RadioField
+
 class EmailSettingsForm(FlaskForm):
+    MAIL_CONFIG_SOURCE = RadioField('Configuration Source', choices=[('database', 'Database'), ('environment', 'Environment Variables')], default='database', validators=[DataRequired()])
     MAIL_SERVER = StringField('Mail Server', validators=[Optional()])
     MAIL_PORT = IntegerField('Mail Port', validators=[Optional()])
-    MAIL_USE_TLS = BooleanField('Use TLS/SSL')
+    MAIL_SECURITY_PROTOCOL = RadioField('Security Protocol', choices=[('none', 'None'), ('tls', 'TLS'), ('ssl', 'SSL')], default='tls', validators=[DataRequired()])
     MAIL_USERNAME = StringField('Mail Username', validators=[Optional()])
     MAIL_PASSWORD = PasswordField('Mail Password', validators=[Optional()])
     MAIL_FROM = StringField('Mail From Address', validators=[Optional(), Email()])
