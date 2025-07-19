@@ -12,6 +12,7 @@ from faker import Faker
 import random
 from datetime import date, timedelta
 import csv
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
@@ -27,6 +28,10 @@ def create_app(config_class=Config):
         app.config.update(config_class)
     else:
         app.config.from_object(config_class)
+
+    # Apply ProxyFix middleware to handle headers from the reverse proxy
+    # This is crucial for generating correct external URLs (e.g., in emails)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     db.init_app(app)
     Migrate(app, db)
