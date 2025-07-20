@@ -55,6 +55,7 @@ class SettingsForm(FlaskForm):
         choices=[('3', '3 (Breakfast, Lunch, Dinner)'), ('6', '6 (Breakfast, Snacks, Lunch, Snacks, Dinner, Snacks)')],
         validators=[DataRequired()]
     )
+    is_private = BooleanField('Enable Unlisted Mode')
     submit = SubmitField('Save Settings')
 
     def validate_email(self, email):

@@ -104,7 +104,11 @@
                                 {{ settings_form.navbar_preference(class="form-select") }}
                             </div>
                         </div>
-                        
+                        <div class="mb-3 form-check">
+                            {{ settings_form.is_private(class="form-check-input") }}
+                            {{ settings_form.is_private.label(class="form-check-label") }}
+                            <small class="form-text text-muted">When enabled, other users will not be able to find you in searches or send you new friend requests. This will not affect your existing friendships.</small>
+                        </div>
                         <button type="submit" name="submit_settings" class="btn btn-outline-primary">Save Settings</button>
                     </form>
                     <form action="{{ url_for('settings.restart_onboarding') }}" method="POST" class="mt-3">

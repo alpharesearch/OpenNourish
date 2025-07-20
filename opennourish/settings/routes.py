@@ -40,6 +40,7 @@ def settings():
         user.diary_default_view = settings_form.diary_default_view.data
         user.theme_preference = settings_form.theme_preference.data
         user.meals_per_day = int(settings_form.meals_per_day.data)
+        user.is_private = settings_form.is_private.data
         
         db.session.commit()
         flash('Your settings have been updated.', 'success')

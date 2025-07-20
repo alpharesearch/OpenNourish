@@ -63,7 +63,7 @@ def add_friend():
         flash('Username is required.', 'danger')
         return redirect(url_for('friends.friends_page'))
 
-    user_to_add = User.query.filter_by(username=username).first()
+    user_to_add = User.query.filter_by(username=username, is_private=False).first()
 
     if not user_to_add:
         flash('User not found.', 'danger')
