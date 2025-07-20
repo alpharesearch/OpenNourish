@@ -184,6 +184,9 @@ def create_app(config_class=Config):
             print("Creating main test user...")
             test_user = User(username='markus', email='schulz@alpharesearch.de')
             test_user.set_password('1')
+            test_user.is_admin=True
+            test_user.is_verified=True
+            test_user.has_completed_onboarding=True
             db.session.add(test_user)
             db.session.commit() # Commit here to get test_user.id
             print(f"Created main test user: {test_user.username}")
@@ -219,6 +222,8 @@ def create_app(config_class=Config):
                     gender=random.choice(['Male', 'Female']),
                     height_cm=random.uniform(150, 190)
                 )
+                user.is_verified=True
+                user.has_completed_onboarding=True
                 user.set_password('1')
                 db.session.add(user)
                 db.session.flush()  # To get user.id
