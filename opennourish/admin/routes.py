@@ -155,7 +155,8 @@ def email_settings():
     from config import get_setting_from_db
     form.MAIL_CONFIG_SOURCE.data = get_setting_from_db(current_app, 'MAIL_CONFIG_SOURCE', 'environment')
     form.MAIL_SERVER.data = get_setting_from_db(current_app, 'MAIL_SERVER', '')
-    form.MAIL_PORT.data = int(get_setting_from_db(current_app, 'MAIL_PORT', 587))
+    mail_port_from_db = get_setting_from_db(current_app, 'MAIL_PORT', 587)
+    form.MAIL_PORT.data = int(mail_port_from_db) if mail_port_from_db else None
     
     if get_setting_from_db(current_app, 'MAIL_USE_TLS', 'False').lower() == 'true':
         form.MAIL_SECURITY_PROTOCOL.data = 'tls'

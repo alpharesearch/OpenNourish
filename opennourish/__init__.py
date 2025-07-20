@@ -47,12 +47,13 @@ def create_app(config_class=Config):
         if mail_config_source == 'database':
             # Load all settings from the database, with safe defaults
             app.config['MAIL_SERVER'] = get_setting_from_db(app, 'MAIL_SERVER', default='')
-            app.config['MAIL_PORT'] = int(get_setting_from_db(app, 'MAIL_PORT', default=587))
+            mail_port_from_db = get_setting_from_db(app, 'MAIL_PORT', default=587)
+            app.config['MAIL_PORT'] = int(mail_port_from_db) if mail_port_from_db else 587
             app.config['MAIL_USE_TLS'] = get_setting_from_db(app, 'MAIL_USE_TLS', default='False').lower() == 'true'
             app.config['MAIL_USE_SSL'] = get_setting_from_db(app, 'MAIL_USE_SSL', default='False').lower() == 'true'
             app.config['MAIL_USERNAME'] = get_setting_from_db(app, 'MAIL_USERNAME', default='')
             app.config['MAIL_PASSWORD'] = get_setting_from_db(app, 'MAIL_PASSWORD', decrypt=True, default='')
-            app.config['MAIL_FROM'] = get_setting_from_db(app, 'MAIL_FROM', default='no-reply@example.com')
+            app.config['MAIL_FROM'] = get_setting_from_db(app, 'MAIL_FROM', default='no-reply@example.com') or 'no-reply@example.com'
             app.config['MAIL_SUPPRESS_SEND'] = get_setting_from_db(app, 'MAIL_SUPPRESS_SEND', default='True').lower() == 'true'
             app.config['ENABLE_PASSWORD_RESET'] = get_setting_from_db(app, 'ENABLE_PASSWORD_RESET', default='False').lower() == 'true'
             app.config['ENABLE_EMAIL_VERIFICATION'] = get_setting_from_db(app, 'ENABLE_EMAIL_VERIFICATION', default='False').lower() == 'true'
@@ -63,7 +64,7 @@ def create_app(config_class=Config):
             app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
             app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
             app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
-            app.config['MAIL_FROM'] = os.getenv('MAIL_FROM', 'no-reply@example.com')
+            app.config['MAIL_FROM'] = os.getenv('MAIL_FROM', 'no-reply@example.com') or 'no-reply@example.com'
             app.config['MAIL_SUPPRESS_SEND'] = os.getenv('MAIL_SUPPRESS_SEND', 'True').lower() == 'true'
             app.config['ENABLE_PASSWORD_RESET'] = os.getenv('ENABLE_PASSWORD_RESET', 'False').lower() == 'true'
             app.config['ENABLE_EMAIL_VERIFICATION'] = os.getenv('ENABLE_EMAIL_VERIFICATION', 'False').lower() == 'true'

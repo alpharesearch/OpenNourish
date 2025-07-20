@@ -19,6 +19,20 @@
         </div>
 
         <div id="database-settings-fields">
+            <div class="mb-3 form-check">
+                {{ form.ENABLE_PASSWORD_RESET(class="form-check-input") }}
+                {{ form.ENABLE_PASSWORD_RESET.label(class="form-check-label") }}
+                {% if form.ENABLE_PASSWORD_RESET.errors %}
+                    <div class="alert alert-danger mt-1">{{ form.ENABLE_PASSWORD_RESET.errors|join(', ') }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3 form-check">
+                {{ form.ENABLE_EMAIL_VERIFICATION(class="form-check-input") }}
+                {{ form.ENABLE_EMAIL_VERIFICATION.label(class="form-check-label") }}
+                {% if form.ENABLE_EMAIL_VERIFICATION.errors %}
+                    <div class="alert alert-danger mt-1">{{ form.ENABLE_EMAIL_VERIFICATION.errors|join(', ') }}</div>
+                {% endif %}
+            </div>
             <div class="mb-3">
                 {{ form.MAIL_SERVER.label(class="form-label") }}
                 {{ form.MAIL_SERVER(class="form-control") }}
@@ -67,13 +81,6 @@
                 {% endif %}
             </div>
             <div class="mb-3 form-check">
-                {{ form.ENABLE_PASSWORD_RESET(class="form-check-input") }}
-                {{ form.ENABLE_PASSWORD_RESET.label(class="form-check-label") }}
-                {% if form.ENABLE_PASSWORD_RESET.errors %}
-                    <div class="alert alert-danger mt-1">{{ form.ENABLE_PASSWORD_RESET.errors|join(', ') }}</div>
-                {% endif %}
-            </div>
-            <div class="mb-3 form-check">
                 {{ form.MAIL_SUPPRESS_SEND(class="form-check-input") }}
                 {{ form.MAIL_SUPPRESS_SEND.label(class="form-check-label") }}
                 {% if form.MAIL_SUPPRESS_SEND.errors %}
@@ -116,12 +123,15 @@
 
         function updateMailPort() {
             const selectedProtocol = document.querySelector('input[name="MAIL_SECURITY_PROTOCOL"]:checked').value;
-            if (selectedProtocol === 'none') {
-                mailPortInput.value = 25;
-            } else if (selectedProtocol === 'tls') {
-                mailPortInput.value = 587;
-            } else if (selectedProtocol === 'ssl') {
-                mailPortInput.value = 465;
+            // Only set the port if the input is currently empty
+            if (!mailPortInput.value) {
+                if (selectedProtocol === 'none') {
+                    mailPortInput.value = 25;
+                } else if (selectedProtocol === 'tls') {
+                    mailPortInput.value = 587;
+                } else if (selectedProtocol === 'ssl') {
+                    mailPortInput.value = 465;
+                }
             }
         }
 
