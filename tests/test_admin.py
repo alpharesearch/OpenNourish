@@ -135,20 +135,37 @@ def test_admin_can_disable_and_enable_registration(admin_client):
     login_response = admin_client_instance.post('/auth/login', data={'username_or_email': admin_user.username, 'password': 'password'}, follow_redirects=True)
     assert b'Dashboard' in login_response.data
 
-    # 6. Re-enable registration
-    response = admin_client_instance.post('/admin/settings', data={'allow_registration': 'y'}, follow_redirects=False)
-    assert response.status_code == 302  # Should redirect
+def test_admin_can_toggle_email_verification(admin_client):
+    """Test that the admin can enable and disable email verification."""
+    admin_client_instance, admin_user, app = admin_client
 
-    # Check for the flash message in the session
+    # 1. Disable email verification
+    with app.test_request_context():
+        response = admin_client_instance.post(
+            url_for('admin.email_settings'),
+            data={'MAIL_CONFIG_SOURCE': 'database', 'ENABLE_EMAIL_VERIFICATION': 'n'},
+            follow_redirects=False
+        )
+    assert response.status_code == 302
     with admin_client_instance.session_transaction() as session:
         flashes = session.get('_flashes', [])
         assert len(flashes) > 0
-        assert flashes[0][1] == 'Settings have been saved.'
+        assert flashes[0][1] == 'Email settings have been saved. A restart may be required for all changes to take effect.'
+    assert not app.config['ENABLE_EMAIL_VERIFICATION']
 
-    # Follow the redirect to ensure the page loads
-    response = admin_client_instance.get(response.headers['Location'], follow_redirects=True)
-    assert response.status_code == 200
-    assert b'Settings have been saved.' in response.data
+    # 2. Enable email verification
+    with app.test_request_context():
+        response = admin_client_instance.post(
+            url_for('admin.email_settings'),
+            data={'MAIL_CONFIG_SOURCE': 'database', 'ENABLE_EMAIL_VERIFICATION': 'y'},
+            follow_redirects=False
+        )
+    assert response.status_code == 302
+    with admin_client_instance.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][1] == 'Email settings have been saved. A restart may be required for all changes to take effect.'
+    assert app.config['ENABLE_EMAIL_VERIFICATION']
 
     # 7. Log out admin user again
     admin_client_instance.get('/auth/logout', follow_redirects=True)

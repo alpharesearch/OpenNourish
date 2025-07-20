@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, session, request
+from flask import render_template, redirect, url_for, flash, session, request, current_app
 from flask_login import login_required, current_user
 from models import db, User, UserGoal, CheckIn # Import CheckIn model
 from .forms import MeasurementSystemForm, PersonalInfoForm, InitialGoalsForm
@@ -26,7 +26,7 @@ def step1():
     form.measurement_system.data = current_user.measurement_system
     form.theme_preference.data = current_user.theme_preference
 
-    return render_template('onboarding/step1.html', form=form)
+    return render_template('onboarding/step1.html', form=form, current_app=current_app)
 
 @onboarding_bp.route('/step2', methods=['GET', 'POST'])
 @login_required

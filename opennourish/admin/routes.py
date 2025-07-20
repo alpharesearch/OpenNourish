@@ -89,14 +89,15 @@ def email_settings():
         # These settings are only saved for 'database' mode, but we can save them anyway.
         # The app's startup logic in __init__.py will decide whether to use them.
         settings_to_save = {
-            'MAIL_SERVER': form.MAIL_SERVER.data,
+            'MAIL_SERVER': form.MAIL_SERVER.data or '',
             'MAIL_PORT': str(form.MAIL_PORT.data) if form.MAIL_PORT.data is not None else '',
             'MAIL_SECURITY_PROTOCOL': form.MAIL_SECURITY_PROTOCOL.data,
-            'MAIL_USERNAME': form.MAIL_USERNAME.data,
-            'MAIL_PASSWORD': form.MAIL_PASSWORD.data,
-            'MAIL_FROM': form.MAIL_FROM.data,
+            'MAIL_USERNAME': form.MAIL_USERNAME.data or '',
+            'MAIL_PASSWORD': form.MAIL_PASSWORD.data or '',
+            'MAIL_FROM': form.MAIL_FROM.data or '',
             'MAIL_SUPPRESS_SEND': str(form.MAIL_SUPPRESS_SEND.data),
-            'ENABLE_PASSWORD_RESET': str(form.ENABLE_PASSWORD_RESET.data)
+            'ENABLE_PASSWORD_RESET': str(form.ENABLE_PASSWORD_RESET.data),
+            'ENABLE_EMAIL_VERIFICATION': str(form.ENABLE_EMAIL_VERIFICATION.data)
         }
 
         mail_use_tls = form.MAIL_SECURITY_PROTOCOL.data == 'tls'
@@ -130,7 +131,8 @@ def email_settings():
                 MAIL_PASSWORD=settings_to_save['MAIL_PASSWORD'],
                 MAIL_FROM=settings_to_save['MAIL_FROM'],
                 MAIL_SUPPRESS_SEND=settings_to_save['MAIL_SUPPRESS_SEND'].lower() == 'true',
-                ENABLE_PASSWORD_RESET=settings_to_save['ENABLE_PASSWORD_RESET'].lower() == 'true'
+                ENABLE_PASSWORD_RESET=settings_to_save['ENABLE_PASSWORD_RESET'].lower() == 'true',
+                ENABLE_EMAIL_VERIFICATION=settings_to_save['ENABLE_EMAIL_VERIFICATION'].lower() == 'true'
             )
         else: # Reload from environment
             current_app.config.update(
@@ -142,7 +144,8 @@ def email_settings():
                 MAIL_PASSWORD=os.getenv('MAIL_PASSWORD', ''),
                 MAIL_FROM=os.getenv('MAIL_FROM', 'no-reply@example.com'),
                 MAIL_SUPPRESS_SEND=os.getenv('MAIL_SUPPRESS_SEND', 'True').lower() == 'true',
-                ENABLE_PASSWORD_RESET=os.getenv('ENABLE_PASSWORD_RESET', 'False').lower() == 'true'
+                ENABLE_PASSWORD_RESET=os.getenv('ENABLE_PASSWORD_RESET', 'False').lower() == 'true',
+                ENABLE_EMAIL_VERIFICATION=os.getenv('ENABLE_EMAIL_VERIFICATION', 'False').lower() == 'true'
             )
 
         flash('Email settings have been saved. A restart may be required for all changes to take effect.', 'success')
@@ -165,6 +168,7 @@ def email_settings():
     form.MAIL_FROM.data = get_setting_from_db(current_app, 'MAIL_FROM', '')
     form.MAIL_SUPPRESS_SEND.data = get_setting_from_db(current_app, 'MAIL_SUPPRESS_SEND', 'False').lower() == 'true'
     form.ENABLE_PASSWORD_RESET.data = get_setting_from_db(current_app, 'ENABLE_PASSWORD_RESET', 'False').lower() == 'true'
+    form.ENABLE_EMAIL_VERIFICATION.data = get_setting_from_db(current_app, 'ENABLE_EMAIL_VERIFICATION', 'False').lower() == 'true'
 
     # Pass environment variables to the template for display purposes
     env_vars = {
@@ -177,6 +181,7 @@ def email_settings():
         'MAIL_FROM': os.getenv('MAIL_FROM', 'Not Set'),
         'MAIL_SUPPRESS_SEND': os.getenv('MAIL_SUPPRESS_SEND', 'Not Set'),
         'ENABLE_PASSWORD_RESET': os.getenv('ENABLE_PASSWORD_RESET', 'Not Set'),
+        'ENABLE_EMAIL_VERIFICATION': os.getenv('ENABLE_EMAIL_VERIFICATION', 'Not Set'),
     }
 
     return render_template('admin/email_settings.html', title='Email Settings', form=form, env_vars=env_vars)
@@ -213,6 +218,84 @@ def enable_user(user_id):
         user.is_active = True
         db.session.commit()
         flash(f'User {user.username} has been enabled.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/users/<int:user_id>/verify', methods=['POST'])
+@login_required
+@admin_required
+def verify_user(user_id):
+    user = db.session.get(User, user_id)
+    if user:
+        user.is_verified = True
+        db.session.commit()
+        flash(f'User {user.username} has been marked as verified.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/users/<int:user_id>/unverify', methods=['POST'])
+@login_required
+@admin_required
+def unverify_user(user_id):
+    user = db.session.get(User, user_id)
+    if user:
+        user.is_verified = False
+        db.session.commit()
+        flash(f'User {user.username} has been marked as unverified.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/users/<int:user_id>/make-public', methods=['POST'])
+@login_required
+@admin_required
+def make_user_public(user_id):
+    user = db.session.get(User, user_id)
+    if user:
+        user.is_private = False
+        db.session.commit()
+        flash(f'User {user.username} has been made public.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/users/<int:user_id>/make-private', methods=['POST'])
+@login_required
+@admin_required
+def make_user_private(user_id):
+    user = db.session.get(User, user_id)
+    if user:
+        user.is_private = True
+        db.session.commit()
+        flash(f'User {user.username} has been made private.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/users/<int:user_id>/complete_onboarding', methods=['POST'])
+@login_required 
+@admin_required
+def complete_onboarding(user_id):
+    user = db.session.get(User, user_id)
+    if user:
+        user.has_completed_onboarding = True
+        db.session.commit()
+        flash(f'User {user.username} has been marked as completed onboarding.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/users/<int:user_id>/reset_onboarding', methods=['POST'])
+@login_required 
+@admin_required
+def reset_onboarding(user_id):
+    user = db.session.get(User, user_id)
+    if user:
+        user.has_completed_onboarding = False
+        db.session.commit()
+        flash(f'User {user.username} has been marked as pending onboarding.', 'success')
     else:
         flash('User not found.', 'danger')
     return redirect(url_for('admin.users'))

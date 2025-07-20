@@ -13,6 +13,9 @@
                             <th>User ID</th>
                             <th>Username</th>
                             <th>Status</th>
+                            <th>Verified</th>
+                            <th>Privacy</th>
+                            <th>Onboarding</th>
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -33,19 +36,65 @@
                                 <span class="badge bg-danger">Disabled</span>
                                 {% endif %}
                             </td>
+                            <td>
+                                {% if user.is_verified %}
+                                <span class="badge bg-success">Verified</span>
+                                {% else %}
+                                <span class="badge bg-danger">Unverified</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_private %}
+                                <span class="badge bg-secondary">Private</span>
+                                {% else %}
+                                <span class="badge bg-info">Public</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.has_completed_onboarding %}
+                                <span class="badge bg-success">Completed</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
                             <td class="text-center">
                                 {% if user.id != current_user.id %}
                                     {% if user.is_active %}
-                                    <form action="{{ url_for('admin.disable_user', user_id=user.id) }}" method="POST" class="d-inline">
+                                    <form action="{{ url_for('admin.disable_user', user_id=user.id) }}" method="POST" class="d-inline me-1">
                                         <button type="submit" class="btn btn-outline-danger btn-sm">Disable</button>
                                     </form>
                                     {% else %}
-                                    <form action="{{ url_for('admin.enable_user', user_id=user.id) }}" method="POST" class="d-inline">
+                                    <form action="{{ url_for('admin.enable_user', user_id=user.id) }}" method="POST" class="d-inline me-1">
                                         <button type="submit" class="btn btn-outline-success btn-sm">Enable</button>
                                     </form>
                                     {% endif %}
+                                {% endif %}
+                                {% if user.is_verified %}
+                                <form action="{{ url_for('admin.unverify_user', user_id=user.id) }}" method="POST" class="d-inline me-1">
+                                    <button type="submit" class="btn btn-outline-warning btn-sm">Unverify</button>
+                                </form>
                                 {% else %}
-                                <span class="text-muted">N/A</span>
+                                <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="POST" class="d-inline me-1">
+                                    <button type="submit" class="btn btn-outline-success btn-sm">Verify</button>
+                                </form>
+                                {% endif %}
+                                {% if user.is_private %}
+                                <form action="{{ url_for('admin.make_user_public', user_id=user.id) }}" method="POST" class="d-inline me-1">
+                                    <button type="submit" class="btn btn-outline-info btn-sm">Make Public</button>
+                                </form>
+                                {% else %}
+                                <form action="{{ url_for('admin.make_user_private', user_id=user.id) }}" method="POST" class="d-inline me-1">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">Make Private</button>
+                                </form>
+                                {% endif %}
+                                {% if user.has_completed_onboarding %}
+                                <form action="{{ url_for('admin.reset_onboarding', user_id=user.id) }}" method="POST" class="d-inline me-1">
+                                    <button type="submit" class="btn btn-outline-warning btn-sm">Reset Onboarding</button>
+                                </form>
+                                {% else %}
+                                <form action="{{ url_for('admin.complete_onboarding', user_id=user.id) }}" method="POST" class="d-inline me-1">
+                                    <button type="submit" class="btn btn-outline-info btn-sm">Complete Onboarding</button>
+                                </form>
                                 {% endif %}
                             </td>
                         </tr>

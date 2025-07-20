@@ -3,7 +3,8 @@ from models import db, User
 import os
 from flask.testing import FlaskCliRunner
 
-def test_first_registered_user_is_admin(client):
+def test_first_registered_user_is_admin(client, monkeypatch):
+    monkeypatch.delenv('INITIAL_ADMIN_USERNAME', raising=False)
     """
     Tests that the first user to register is automatically granted admin rights.
     """
@@ -14,7 +15,7 @@ def test_first_registered_user_is_admin(client):
         follow_redirects=True
     )
     assert response.status_code == 200
-    assert b'administrator privileges' in response.data
+    assert b'Congratulations, you are now a registered user and have been granted administrator privileges!' in response.data
 
     # Verify the user's admin status in the database
     with client.application.app_context():
@@ -60,7 +61,7 @@ def test_admin_assignment_via_environment_variable(client):
         follow_redirects=True
     )
     assert response.status_code == 200
-    assert b'administrator privileges' in response.data
+    assert b'Congratulations, you are now a registered user and have been granted administrator privileges!' in response.data
 
     # Verify the user's admin status
     with client.application.app_context():

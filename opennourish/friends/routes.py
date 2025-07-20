@@ -1,4 +1,4 @@
-from flask import render_template, request, flash, redirect, url_for
+from flask import render_template, request, flash, redirect, url_for, current_app
 from flask_login import current_user, login_required
 from models import db, User, Friendship, DailyLog, ExerciseLog
 from . import friends_bp
@@ -54,6 +54,10 @@ def friends_page():
 @friends_bp.route('/add', methods=['POST'])
 @login_required
 def add_friend():
+    if current_app.config.get('ENABLE_EMAIL_VERIFICATION', False) and not current_user.is_verified:
+        flash('Please verify your email address to send friend requests.', 'warning')
+        return redirect(url_for('friends.friends_page'))
+
     username = request.form.get('username')
     if not username:
         flash('Username is required.', 'danger')

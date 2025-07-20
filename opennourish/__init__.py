@@ -55,6 +55,7 @@ def create_app(config_class=Config):
             app.config['MAIL_FROM'] = get_setting_from_db(app, 'MAIL_FROM', default='no-reply@example.com')
             app.config['MAIL_SUPPRESS_SEND'] = get_setting_from_db(app, 'MAIL_SUPPRESS_SEND', default='True').lower() == 'true'
             app.config['ENABLE_PASSWORD_RESET'] = get_setting_from_db(app, 'ENABLE_PASSWORD_RESET', default='False').lower() == 'true'
+            app.config['ENABLE_EMAIL_VERIFICATION'] = get_setting_from_db(app, 'ENABLE_EMAIL_VERIFICATION', default='False').lower() == 'true'
         else: # Default to environment variables
             app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', '')
             app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
@@ -65,6 +66,7 @@ def create_app(config_class=Config):
             app.config['MAIL_FROM'] = os.getenv('MAIL_FROM', 'no-reply@example.com')
             app.config['MAIL_SUPPRESS_SEND'] = os.getenv('MAIL_SUPPRESS_SEND', 'True').lower() == 'true'
             app.config['ENABLE_PASSWORD_RESET'] = os.getenv('ENABLE_PASSWORD_RESET', 'False').lower() == 'true'
+            app.config['ENABLE_EMAIL_VERIFICATION'] = os.getenv('ENABLE_EMAIL_VERIFICATION', 'False').lower() == 'true'
         
         # Set USE_CREDENTIALS based on whether username and password are provided
         if app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'):
@@ -125,7 +127,10 @@ def create_app(config_class=Config):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return db.session.get(User, int(user_id))
+        user = db.session.get(User, int(user_id))
+        if user:
+            db.session.refresh(user) # Ensure the user object is fresh
+        return user
 
     @app.template_filter('nl2br')
     def nl2br_filter(s):

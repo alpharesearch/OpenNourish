@@ -1,0 +1,13 @@
+<p>Dear {{ user.username }},</p>
+
+<p>
+    To complete your OpenNourish registration and verify your email address, please click on the following link:
+</p>
+<p>
+    <a href="{{ url_for('auth.verify_email', token=token, _external=True) }}">Verify My Email Address</a>
+</p>
+<p>
+    If you have not requested this, please ignore this email.
+</p>
+<p>Sincerely,</p>
+<p>The OpenNourish Team</p>

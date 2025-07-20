@@ -25,6 +25,7 @@ def app_with_db():
         'SECRET_KEY': 'test_secret_key',
         'WTF_CSRF_ENABLED': False, # Disable CSRF for testing forms
         'ALLOW_REGISTRATION': True,
+        'SERVER_NAME': 'localhost.localdomain:5000' # Required for url_for(_external=True) in tests
     }
 
     # --- SAFEGUARD ---

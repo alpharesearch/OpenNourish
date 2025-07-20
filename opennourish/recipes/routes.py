@@ -49,8 +49,11 @@ def new_recipe():
             instructions=form.instructions.data,
             servings=form.servings.data,
             is_public=form.is_public.data,
-            food_category_id=form.food_category.data if form.food_category.data else None
-        )
+        food_category_id=form.food_category.data if form.food_category.data else None
+    )
+    if current_app.config.get('ENABLE_EMAIL_VERIFICATION', False) and not current_user.is_verified and new_recipe.is_public:
+        new_recipe.is_public = False
+        flash('Your email must be verified to make recipes public.', 'warning')
         db.session.add(new_recipe)
         db.session.flush()  # Flush to get the new_recipe.id
 
@@ -147,8 +150,14 @@ def edit_recipe(recipe_id):
         recipe.name = form.name.data
         recipe.instructions = form.instructions.data
         recipe.servings = form.servings.data
-        recipe.is_public = form.is_public.data
         recipe.upc = form.upc.data
+
+        # Handle is_public based on email verification status
+        if current_app.config.get('ENABLE_EMAIL_VERIFICATION', False) and not current_user.is_verified and form.is_public.data:
+            recipe.is_public = False
+            flash('Your email must be verified to make recipes public.', 'warning')
+        else:
+            recipe.is_public = form.is_public.data
         
         # Fetch the FoodCategory object based on the form's ID
         food_category_id = form.food_category.data

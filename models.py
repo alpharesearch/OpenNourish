@@ -76,19 +76,19 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def get_reset_password_token(self, expires_in=600):
+    def get_token(self, purpose: str, expires_in=3600):
         return jwt.encode(
-            {'reset_password': self.id, 'exp': datetime.utcnow() + timedelta(seconds=expires_in)},
+            {purpose: self.id, 'exp': datetime.utcnow() + timedelta(seconds=expires_in)},
             current_app.config['SECRET_KEY'], algorithm='HS256')
 
     @staticmethod
-    def verify_reset_password_token(token):
+    def verify_token(token: str, purpose: str):
         try:
             data = jwt.decode(token, current_app.config['SECRET_KEY'],
                               algorithms=['HS256'])
         except:
             return
-        return db.session.get(User, data['reset_password'])
+        return db.session.get(User, data.get(purpose))
 
 class Friendship(db.Model):
     __tablename__ = 'friendships'

@@ -1,4 +1,4 @@
-from flask import render_template, flash, redirect, url_for, request
+from flask import render_template, flash, redirect, url_for, request, current_app
 from flask_login import current_user, login_required
 from models import User, db
 from .forms import SettingsForm, ChangePasswordForm
@@ -13,7 +13,12 @@ def settings():
 
     if settings_form.validate_on_submit() and 'submit_settings' in request.form:
         user = db.session.get(User, current_user.id)
-        user.email = settings_form.email.data
+        
+        # Check if email has changed and unverify if so
+        if user.email != settings_form.email.data:
+            user.email = settings_form.email.data
+            user.is_verified = False
+            flash('Your email address has been changed and your email verification status has been reset. Please verify your new email.', 'warning')
         
         # Handle measurement system first
         system = settings_form.measurement_system.data
@@ -66,7 +71,8 @@ def settings():
         'settings/settings.html',
         title='Settings',
         settings_form=settings_form,
-        password_form=password_form
+        password_form=password_form,
+        current_app=current_app
     )
 
 @settings_bp.route('/restart-onboarding', methods=['POST'])

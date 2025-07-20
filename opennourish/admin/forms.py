@@ -18,4 +18,5 @@ class EmailSettingsForm(FlaskForm):
     MAIL_FROM = StringField('Mail From Address', validators=[Optional(), Email()])
     MAIL_SUPPRESS_SEND = BooleanField('Suppress Email Sending (for development)')
     ENABLE_PASSWORD_RESET = BooleanField('Enable Password Reset Feature')
+    ENABLE_EMAIL_VERIFICATION = BooleanField('Enable Email Verification Feature')
     submit = SubmitField('Save Email Settings')

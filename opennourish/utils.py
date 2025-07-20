@@ -22,8 +22,7 @@ def decrypt_value(encrypted_value, key):
     f = Fernet(key)
     return f.decrypt(encrypted_value.encode()).decode()
 
-def send_password_reset_email(user):
-    token = user.get_reset_password_token()
+def send_password_reset_email(user, token):
     msg = Message(
         subject="Password Reset Request",
         recipients=[user.email],
@@ -35,6 +34,19 @@ def send_password_reset_email(user):
         current_app.logger.info(f"Password reset email sent to {user.email}")
     except Exception as e:
         current_app.logger.error(f"Failed to send password reset email to {user.email}: {e}")
+
+def send_verification_email(user, token):
+    msg = Message(
+        subject="Verify Your Email Address",
+        recipients=[user.email],
+        html=render_template('email/verify_email.html', user=user, token=token)
+    )
+    current_app.logger.debug(f"Attempting to send verification email. MAIL_SUPPRESS_SEND: {current_app.config.get('MAIL_SUPPRESS_SEND')}")
+    try:
+        asyncio.run(mail.send_message(msg))
+        current_app.logger.info(f"Verification email sent to {user.email}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to send verification email to {user.email}: {e}")
 
 def calculate_weekly_nutrition_summary(weekly_logs):
     """

@@ -1,6 +1,7 @@
 import pytest
-from models import db, User, Recipe, RecipeIngredient, Food, FoodNutrient, Nutrient, MyFood, MyMeal, MyMealItem, DailyLog, UnifiedPortion
+from models import db, User, Recipe, RecipeIngredient, Food, FoodNutrient, Nutrient, MyFood, MyMeal, MyMealItem, DailyLog, UnifiedPortion, SystemSetting
 from datetime import date
+from flask import url_for
 
 @pytest.fixture
 def two_users(app_with_db):
@@ -30,6 +31,45 @@ def auth_client_user_two(app_with_db, two_users):
             sess['_fresh'] = True
         yield client, user_one_in_context, user_two_in_context
 
+@pytest.fixture
+def enable_email_verification_for_recipes(app_with_db):
+    with app_with_db.app_context():
+        setting = SystemSetting.query.filter_by(key='ENABLE_EMAIL_VERIFICATION').first()
+        if not setting:
+            setting = SystemSetting(key='ENABLE_EMAIL_VERIFICATION', value='True')
+            db.session.add(setting)
+        else:
+            setting.value = 'True'
+        db.session.commit()
+        app_with_db.config['ENABLE_EMAIL_VERIFICATION'] = True
+
+@pytest.fixture
+def unverified_user_client_for_recipes(app_with_db):
+    with app_with_db.app_context():
+        user = User(username='unverified_recipe_user', email='unverified_recipe@example.com', is_verified=False)
+        user.set_password('password')
+        db.session.add(user)
+        db.session.commit()
+        with app_with_db.test_client() as client:
+            with client.session_transaction() as sess:
+                sess['_user_id'] = user.id
+                sess['_fresh'] = True
+            yield client, user
+
+@pytest.fixture
+def verified_user_client_for_recipes(app_with_db):
+    with app_with_db.app_context():
+        user = User(username='verified_recipe_user', email='verified_recipe@example.com', is_verified=True)
+        user.set_password('password')
+        db.session.add(user)
+        db.session.commit()
+        with app_with_db.test_client() as client:
+            with client.session_transaction() as sess:
+                sess['_user_id'] = user.id
+                sess['_fresh'] = True
+            yield client, user
+
+
 def test_recipe_creation_and_editing(auth_client_with_user):
     """
     Tests creating and editing a recipe, including the is_public flag.
@@ -42,8 +82,8 @@ def test_recipe_creation_and_editing(auth_client_with_user):
             'servings': 1.0,
             'is_public': 'y'
         }
-    response = client.post('/recipes/recipe/new', data=new_recipe_data)
-    assert response.status_code == 302 # Expect a redirect
+    response = client.post('/recipes/recipe/new', data=new_recipe_data, follow_redirects=True)
+    assert response.status_code == 200 # Expect a 200 OK after following redirect
     
     # Extract recipe_id from the Location header
     location = response.headers['Location']
@@ -76,6 +116,88 @@ def test_recipe_creation_and_editing(auth_client_with_user):
         assert updated_recipe.name == 'My Super Awesome Recipe'
         assert updated_recipe.instructions == 'Step 1: Do something new. Step 2: Do something else new.'
         assert updated_recipe.is_public is False
+
+@pytest.mark.usefixtures('enable_email_verification_for_recipes')
+def test_new_recipe_public_unverified_user(unverified_user_client_for_recipes):
+    client, user = unverified_user_client_for_recipes
+    new_recipe_data = {
+        'name': 'Public Recipe Unverified',
+        'instructions': 'Instructions',
+        'servings': 1.0,
+        'is_public': 'y'
+    }
+    response = client.post(url_for('recipes.new_recipe'), data=new_recipe_data, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Your email must be verified to make recipes public.' in response.data
+    
+    with client.application.app_context():
+        created_recipe = Recipe.query.filter_by(name='Public Recipe Unverified').first()
+        assert created_recipe is not None
+        assert created_recipe.is_public is False # Should be private
+
+@pytest.mark.usefixtures('enable_email_verification_for_recipes')
+def test_new_recipe_public_verified_user(verified_user_client_for_recipes):
+    client, user = verified_user_client_for_recipes
+    new_recipe_data = {
+        'name': 'Public Recipe Verified',
+        'instructions': 'Instructions',
+        'servings': 1.0,
+        'is_public': 'y'
+    }
+    response = client.post(url_for('recipes.new_recipe'), data=new_recipe_data, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Recipe created successfully. Now add ingredients.' in response.data
+
+    with client.application.app_context():
+        created_recipe = Recipe.query.filter_by(name='Public Recipe Verified').first()
+        assert created_recipe is not None
+        assert created_recipe.is_public is True # Should be public
+
+@pytest.mark.usefixtures('enable_email_verification_for_recipes')
+def test_edit_recipe_public_unverified_user(unverified_user_client_for_recipes):
+    client, user = unverified_user_client_for_recipes
+    with client.application.app_context():
+        recipe = Recipe(user_id=user.id, name='Test Recipe', instructions='Test', is_public=False)
+        db.session.add(recipe)
+        db.session.commit()
+        recipe_id = recipe.id
+
+    edited_recipe_data = {
+        'name': 'Test Recipe',
+        'instructions': 'Test',
+        'servings': 1.0,
+        'is_public': 'y'
+    }
+    response = client.post(url_for('recipes.edit_recipe', recipe_id=recipe_id), data=edited_recipe_data, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Your email must be verified to make recipes public.' in response.data
+
+    with client.application.app_context():
+        updated_recipe = db.session.get(Recipe, recipe_id)
+        assert updated_recipe.is_public is False # Should remain private
+
+@pytest.mark.usefixtures('enable_email_verification_for_recipes')
+def test_edit_recipe_public_verified_user(verified_user_client_for_recipes):
+    client, user = verified_user_client_for_recipes
+    with client.application.app_context():
+        recipe = Recipe(user_id=user.id, name='Test Recipe', instructions='Test', is_public=False)
+        db.session.add(recipe)
+        db.session.commit()
+        recipe_id = recipe.id
+
+    edited_recipe_data = {
+        'name': 'Test Recipe',
+        'instructions': 'Test',
+        'servings': 1.0,
+        'is_public': 'y'
+    }
+    response = client.post(url_for('recipes.edit_recipe', recipe_id=recipe_id), data=edited_recipe_data, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Recipe updated successfully.' in response.data
+
+    with client.application.app_context():
+        updated_recipe = db.session.get(Recipe, recipe_id)
+        assert updated_recipe.is_public is True # Should become public
 
 def test_recipe_nutrition_calculation(auth_client_with_user):
     """

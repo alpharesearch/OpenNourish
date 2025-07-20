@@ -4,7 +4,7 @@ from urllib.parse import urlsplit
 from . import auth_bp
 from .forms import LoginForm, RegistrationForm, ResetPasswordRequestForm, ResetPasswordForm
 from models import db, User, UserGoal, SystemSetting
-from opennourish.utils import get_allow_registration_status, send_password_reset_email
+from opennourish.utils import get_allow_registration_status, send_password_reset_email, send_verification_email
 import os
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -99,7 +99,8 @@ def reset_password_request():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
-            send_password_reset_email(user)
+            token = user.get_token(purpose='reset-password')
+            send_password_reset_email(user, token)
             flash('Check your email for the instructions to reset your password')
             return redirect(url_for('auth.login'))
         else:
@@ -110,7 +111,7 @@ def reset_password_request():
 def reset_password(token):
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
-    user = User.verify_reset_password_token(token)
+    user = User.verify_token(token, purpose='reset-password')
     if not user:
         flash('That is an invalid or expired token', 'danger')
         return redirect(url_for('auth.reset_password_request'))
@@ -121,3 +122,52 @@ def reset_password(token):
         flash('Your password has been reset.', 'success')
         return redirect(url_for('auth.login'))
     return render_template('reset_password.html', title='Reset Password', form=form)
+
+@auth_bp.route('/send-verification-email', methods=['POST'])
+def send_verification_email_route():
+    if not current_user.is_authenticated:
+        flash('Please log in to send a verification email.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    if not current_app.config.get('ENABLE_EMAIL_VERIFICATION', False):
+        flash('Email verification is not enabled.', 'warning')
+        return redirect(url_for('main.index'))
+
+    if current_user.is_verified:
+        flash('Your email is already verified.', 'info')
+        return redirect(url_for('settings.settings'))
+
+    token = current_user.get_token(purpose='verify-email')
+    send_verification_email(current_user, token)
+    flash('A new verification email has been sent to your email address.', 'success')
+    if current_user.has_completed_onboarding:
+        return redirect(url_for('settings.settings'))
+    else:
+        return redirect(url_for('onboarding.step1'))
+
+@auth_bp.route('/verify-email/<token>')
+def verify_email(token):
+    user = User.verify_token(token, purpose='verify-email')
+
+    if not user:
+        flash('That is an invalid or expired verification link.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    # If user is already logged in and verified, just redirect
+    if current_user.is_authenticated and current_user.id == user.id and user.is_verified:
+        flash('Your email is already verified.', 'info')
+        return redirect(url_for('dashboard.index'))
+
+    user.is_verified = True
+    db.session.commit()
+    db.session.refresh(user) # Refresh the user object to reflect the updated is_verified status
+    login_user(user) # Re-login the user to refresh current_user proxy
+    flash('Your email address has been verified!', 'success')
+    if user.has_completed_onboarding:
+        return redirect(url_for('dashboard.index', _external=True))
+    else:
+        return redirect(url_for('onboarding.step1', _external=True))
+    if user.has_completed_onboarding:
+        return redirect(url_for('dashboard.index', _external=True))
+    else:
+        return redirect(url_for('onboarding.step1', _external=True))
