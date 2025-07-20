@@ -78,6 +78,7 @@ def settings():
 def email_settings():
     form = EmailSettingsForm()
     if form.validate_on_submit():
+        current_app.logger.debug("EmailSettingsForm validated successfully. Entering submission block.")
         # Always save the source selection
         source_setting = SystemSetting.query.filter_by(key='MAIL_CONFIG_SOURCE').first()
         if not source_setting:
@@ -90,11 +91,11 @@ def email_settings():
         # The app's startup logic in __init__.py will decide whether to use them.
         settings_to_save = {
             'MAIL_SERVER': form.MAIL_SERVER.data or '',
-            'MAIL_PORT': str(form.MAIL_PORT.data) if form.MAIL_PORT.data is not None else '',
+            'MAIL_PORT': str(form.MAIL_PORT.data) if form.MAIL_PORT.data is not None else '587',
             'MAIL_SECURITY_PROTOCOL': form.MAIL_SECURITY_PROTOCOL.data,
             'MAIL_USERNAME': form.MAIL_USERNAME.data or '',
             'MAIL_PASSWORD': form.MAIL_PASSWORD.data or '',
-            'MAIL_FROM': form.MAIL_FROM.data or '',
+            'MAIL_FROM': form.MAIL_FROM.data or 'no-reply@example.com',
             'MAIL_SUPPRESS_SEND': str(form.MAIL_SUPPRESS_SEND.data),
             'ENABLE_PASSWORD_RESET': str(form.ENABLE_PASSWORD_RESET.data),
             'ENABLE_EMAIL_VERIFICATION': str(form.ENABLE_EMAIL_VERIFICATION.data)
@@ -150,6 +151,8 @@ def email_settings():
 
         flash('Email settings have been saved. A restart may be required for all changes to take effect.', 'success')
         return redirect(url_for('admin.email_settings'))
+    else:
+        current_app.logger.debug(f"EmailSettingsForm validation failed. Errors: {form.errors}")
 
     # Populate form for GET requests, always showing the values from the database.
     from config import get_setting_from_db

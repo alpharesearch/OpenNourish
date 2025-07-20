@@ -142,7 +142,13 @@ def test_admin_can_toggle_email_verification(admin_client):
     # 1. Disable email verification
     response = admin_client_instance.post(
         url_for('admin.email_settings'),
-                    data={'MAIL_CONFIG_SOURCE': 'database', 'ENABLE_EMAIL_VERIFICATION': ''},
+                    data={
+                'MAIL_CONFIG_SOURCE': 'database',
+                'ENABLE_EMAIL_VERIFICATION': '',
+                'MAIL_SERVER': 'smtp.example.com',
+                'MAIL_PORT': 587,
+                'MAIL_FROM': 'test@example.com'
+            },
         follow_redirects=False
     )
     assert response.status_code == 302
@@ -157,7 +163,13 @@ def test_admin_can_toggle_email_verification(admin_client):
     # 2. Enable email verification
     response = admin_client_instance.post(
         url_for('admin.email_settings'),
-        data={'MAIL_CONFIG_SOURCE': 'database', 'ENABLE_EMAIL_VERIFICATION': 'y'},
+        data={
+                'MAIL_CONFIG_SOURCE': 'database',
+                'ENABLE_EMAIL_VERIFICATION': 'y',
+                'MAIL_SERVER': 'smtp.example.com',
+                'MAIL_PORT': 587,
+                'MAIL_FROM': 'test@example.com'
+            },
         follow_redirects=False
     )
     assert response.status_code == 302
