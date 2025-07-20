@@ -1,5 +1,5 @@
 import pytest
-from models import db, User
+from models import db, User, SystemSetting
 from flask import url_for, current_app, get_flashed_messages
 import os
 import json
@@ -140,32 +140,34 @@ def test_admin_can_toggle_email_verification(admin_client):
     admin_client_instance, admin_user, app = admin_client
 
     # 1. Disable email verification
-    with app.test_request_context():
-        response = admin_client_instance.post(
-            url_for('admin.email_settings'),
-            data={'MAIL_CONFIG_SOURCE': 'database', 'ENABLE_EMAIL_VERIFICATION': 'n'},
-            follow_redirects=False
-        )
+    response = admin_client_instance.post(
+        url_for('admin.email_settings'),
+                    data={'MAIL_CONFIG_SOURCE': 'database', 'ENABLE_EMAIL_VERIFICATION': ''},
+        follow_redirects=False
+    )
     assert response.status_code == 302
     with admin_client_instance.session_transaction() as session:
         flashes = session.get('_flashes', [])
         assert len(flashes) > 0
         assert flashes[0][1] == 'Email settings have been saved. A restart may be required for all changes to take effect.'
-    assert not app.config['ENABLE_EMAIL_VERIFICATION']
+    email_verification_setting = SystemSetting.query.filter_by(key='ENABLE_EMAIL_VERIFICATION').first()
+    assert email_verification_setting is not None
+    assert email_verification_setting.value == 'False'
 
     # 2. Enable email verification
-    with app.test_request_context():
-        response = admin_client_instance.post(
-            url_for('admin.email_settings'),
-            data={'MAIL_CONFIG_SOURCE': 'database', 'ENABLE_EMAIL_VERIFICATION': 'y'},
-            follow_redirects=False
-        )
+    response = admin_client_instance.post(
+        url_for('admin.email_settings'),
+        data={'MAIL_CONFIG_SOURCE': 'database', 'ENABLE_EMAIL_VERIFICATION': 'y'},
+        follow_redirects=False
+    )
     assert response.status_code == 302
     with admin_client_instance.session_transaction() as session:
         flashes = session.get('_flashes', [])
         assert len(flashes) > 0
         assert flashes[0][1] == 'Email settings have been saved. A restart may be required for all changes to take effect.'
-    assert app.config['ENABLE_EMAIL_VERIFICATION']
+    email_verification_setting = SystemSetting.query.filter_by(key='ENABLE_EMAIL_VERIFICATION').first()
+    assert email_verification_setting is not None
+    assert email_verification_setting.value == 'True'
 
     # 7. Log out admin user again
     admin_client_instance.get('/auth/logout', follow_redirects=True)

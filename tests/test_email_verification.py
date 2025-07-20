@@ -2,7 +2,7 @@ import pytest
 from flask import url_for, current_app
 from flask_login import current_user
 from models import db, User, SystemSetting
-import unittest.mock
+from opennourish.utils import mail
 
 @pytest.fixture
 def enable_email_verification(app_with_db):
@@ -33,7 +33,7 @@ def disable_email_verification(app_with_db):
 @pytest.fixture
 def verified_user_client(app_with_db):
     with app_with_db.app_context():
-        user = User(username='verified', email='verified@example.com', is_verified=True)
+        user = User(username='verified', email='verified@example.com', is_verified=True, has_completed_onboarding=True)
         user.set_password('password')
         db.session.add(user)
         db.session.commit()
@@ -103,40 +103,40 @@ def test_verify_token_invalid_purpose(app_with_db):
 @pytest.mark.usefixtures('enable_email_verification')
 def test_send_verification_email_success(unverified_user_client, mocker):
     client, user = unverified_user_client
-    unittest.mock.patch('opennourish.utils.mail.send_message', return_value=None)
+    mocker.patch('opennourish.utils.mail.send_message', return_value=None)
 
     response = client.post(url_for('auth.send_verification_email_route'), follow_redirects=True)
     assert response.status_code == 200
     assert b'A new verification email has been sent to your email address.' in response.data
-    opennourish.utils.mail.send_message.assert_called_once()
+    mail.send_message.assert_called_once()
 
 @pytest.mark.usefixtures('enable_email_verification')
 def test_send_verification_email_already_verified(verified_user_client, mocker):
     client, user = verified_user_client
-    unittest.mock.patch('opennourish.utils.mail.send_message', return_value=None)
+    mocker.patch('opennourish.utils.mail.send_message', return_value=None)
 
     response = client.post(url_for('auth.send_verification_email_route'), follow_redirects=True)
     assert response.status_code == 200
     assert b'Your email is already verified.' in response.data
-    opennourish.utils.mail.send_message.assert_not_called()
+    mail.send_message.assert_not_called()
 
 @pytest.mark.usefixtures('disable_email_verification')
 def test_send_verification_email_feature_disabled(unverified_user_client, mocker):
     client, user = unverified_user_client
-    unittest.mock.patch('opennourish.utils.mail.send_message', return_value=None)
+    mocker.patch('opennourish.utils.mail.send_message', return_value=None)
 
     response = client.post(url_for('auth.send_verification_email_route'), follow_redirects=True)
     assert response.status_code == 200
     assert b'Email verification is not enabled.' in response.data
-    opennourish.utils.mail.send_message.assert_not_called()
+    mail.send_message.assert_not_called()
 
 def test_send_verification_email_not_logged_in(client, mocker):
-    unittest.mock.patch('opennourish.utils.mail.send_message', return_value=None)
+    mocker.patch('opennourish.utils.mail.send_message', return_value=None)
 
     response = client.post(url_for('auth.send_verification_email_route'), follow_redirects=True)
     assert response.status_code == 200
     assert b'Please log in to send a verification email.' in response.data
-    opennourish.utils.mail.send_message.assert_not_called()
+    mail.send_message.assert_not_called()
 
 @pytest.mark.usefixtures('enable_email_verification')
 def test_verify_email_valid_token(app_with_db, client):
@@ -165,7 +165,8 @@ def test_verify_email_invalid_token(app_with_db, client):
         response = client.get(url_for('auth.verify_email', token='invalid-token'), follow_redirects=True)
     assert response.status_code == 200
     assert b'That is an invalid or expired verification link.' in response.data
-    assert not current_user.is_authenticated # Should not log in
+    with client.session_transaction() as sess:
+        assert '_user_id' not in sess # Should not log in
 
 @pytest.mark.usefixtures('enable_email_verification')
 def test_verify_email_expired_token(app_with_db, client):
@@ -177,14 +178,14 @@ def test_verify_email_expired_token(app_with_db, client):
         # Create an expired token (e.g., expires in -1 seconds)
         expired_token = user.get_token(purpose='verify-email', expires_in=-1)
 
-    with app_with_db.test_request_context():
-        response = client.get(url_for('auth.verify_email', token=expired_token), follow_redirects=True)
+    response = client.get(url_for('auth.verify_email', token=expired_token), follow_redirects=True)
     assert response.status_code == 200
     assert b'That is an invalid or expired verification link.' in response.data
     with app_with_db.app_context():
         updated_user = db.session.get(User, user.id)
         assert not updated_user.is_verified
-    assert not current_user.is_authenticated
+    with client.session_transaction() as sess:
+        assert '_user_id' not in sess
 
 @pytest.mark.usefixtures('enable_email_verification')
 def test_verify_email_already_verified_user(app_with_db, verified_user_client, client):
@@ -192,11 +193,19 @@ def test_verify_email_already_verified_user(app_with_db, verified_user_client, c
     # User is already verified by fixture
     token = user.get_token(purpose='verify-email') # Generate a new token for the already verified user
 
-    with app_with_db.test_request_context():
-        response = client.get(url_for('auth.verify_email', token=token), follow_redirects=True)
+    response = client.get(url_for('auth.verify_email', token=token), follow_redirects=False)
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == 'info' # Category
+        assert flashes[0][1] == 'Your email is already verified.' # Message
+    # Optionally, follow the redirect to ensure the page loads
+    response = client.get(response.headers['Location'])
     assert response.status_code == 200
-    assert b'Your email address has been verified!' in response.data # Still flashes success
+    assert b'Dashboard' in response.data
     with app_with_db.app_context():
         updated_user = db.session.get(User, user.id)
         assert updated_user.is_verified # Should remain verified
-    assert current_user.is_authenticated
+    with client.session_transaction() as sess:
+        assert '_user_id' in sess

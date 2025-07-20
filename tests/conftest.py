@@ -92,7 +92,7 @@ def auth_client_with_user(app_with_db):
     """A test client that is authenticated, and provides the user object."""
     with app_with_db.test_client() as client:
         with app_with_db.app_context():
-            user = User(username='testuser2', email='testuser2@example.com')
+            user = User(username='testuser2', email='testuser2@example.com', is_verified=True)
             user.set_password('password')
             db.session.add(user)
             db.session.commit()

@@ -4,7 +4,7 @@ from flask_login import login_user, logout_user
 from flask import url_for
 
 # Helper function to create users
-def create_test_user(username, password='password', is_verified=False):
+def create_test_user(username, password='password', is_verified=True):
     user = User(username=username, email=f'{username}@example.com', is_verified=is_verified)
     user.set_password(password)
     db.session.add(user)
@@ -27,12 +27,16 @@ def test_send_friend_request(auth_client_with_user):
     """Test sending a friend request to another user."""
     test_client, test_user = auth_client_with_user
     # The user that the logged-in user will send a request to
-    user2 = create_test_user('friend')
+    user2 = create_test_user('friend', is_verified=True)
 
     # test_client is already logged in as test_user
-    response = test_client.post('/friends/add', data={'username': 'friend'}, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'Friend request sent to friend.' in response.data
+    response = test_client.post('/friends/add', data={'username': 'friend'}, follow_redirects=False)
+    assert response.status_code == 302
+    with test_client.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == 'success'
+        assert flashes[0][1] == 'Friend request sent to friend.'
 
     friendship = Friendship.query.filter_by(requester_id=test_user.id, receiver_id=user2.id).first()
     assert friendship is not None

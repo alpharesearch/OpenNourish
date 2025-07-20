@@ -167,7 +167,3 @@ def verify_email(token):
         return redirect(url_for('dashboard.index', _external=True))
     else:
         return redirect(url_for('onboarding.step1', _external=True))
-    if user.has_completed_onboarding:
-        return redirect(url_for('dashboard.index', _external=True))
-    else:
-        return redirect(url_for('onboarding.step1', _external=True))

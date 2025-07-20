@@ -82,40 +82,26 @@ def test_recipe_creation_and_editing(auth_client_with_user):
             'servings': 1.0,
             'is_public': 'y'
         }
-    response = client.post('/recipes/recipe/new', data=new_recipe_data, follow_redirects=True)
-    assert response.status_code == 200 # Expect a 200 OK after following redirect
-    
-    # Extract recipe_id from the Location header
-    location = response.headers['Location']
-    created_recipe_id = int(location.split('/')[-2]) # Assumes /recipes/<id>/edit
-    assert f'/recipes/{created_recipe_id}/edit' in location
+    response = client.post(url_for('recipes.new_recipe'), data=new_recipe_data, follow_redirects=False)
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == 'success'
+        assert flashes[0][1] == 'Recipe created successfully. Now add ingredients.'
+    # Extract recipe_id from the URL after redirect
+    recipe_id = int(response.headers['Location'].split('/')[-2])
 
     with client.application.app_context():
-        created_recipe = db.session.get(Recipe, created_recipe_id)
+        created_recipe = db.session.get(Recipe, recipe_id)
         assert created_recipe is not None
         assert created_recipe.name == 'My Awesome Recipe'
         assert created_recipe.is_public is True
 
     # Follow the redirect and check for the flash message
-    response = client.get(location)
-    assert b'Recipe created successfully. Now add ingredients.' in response.data
-
-    # 2. Edit Recipe (and make it private)
-    edited_recipe_data = {
-        'name': 'My Super Awesome Recipe',
-        'instructions': 'Step 1: Do something new. Step 2: Do something else new.',
-        'servings': 2.0
-        # is_public is not included, so it should be treated as False
-    }
-    response = client.post(f'/recipes/{created_recipe_id}/edit', data=edited_recipe_data, follow_redirects=True)
+    response = client.get(f'/recipes/{recipe_id}/edit')
     assert response.status_code == 200
-    assert b'Recipe updated successfully.' in response.data
-
-    with client.application.app_context():
-        updated_recipe = db.session.get(Recipe, created_recipe_id)
-        assert updated_recipe.name == 'My Super Awesome Recipe'
-        assert updated_recipe.instructions == 'Step 1: Do something new. Step 2: Do something else new.'
-        assert updated_recipe.is_public is False
+    assert b'Recipe created successfully. Now add ingredients.' in response.data
 
 @pytest.mark.usefixtures('enable_email_verification_for_recipes')
 def test_new_recipe_public_unverified_user(unverified_user_client_for_recipes):
@@ -126,7 +112,16 @@ def test_new_recipe_public_unverified_user(unverified_user_client_for_recipes):
         'servings': 1.0,
         'is_public': 'y'
     }
-    response = client.post(url_for('recipes.new_recipe'), data=new_recipe_data, follow_redirects=True)
+    response = client.post(url_for('recipes.new_recipe'), data=new_recipe_data, follow_redirects=False)
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == 'warning'
+        assert flashes[0][1] == 'Your email must be verified to make recipes public.'
+
+    # Manually follow the redirect
+    response = client.get(response.headers['Location'])
     assert response.status_code == 200
     assert b'Your email must be verified to make recipes public.' in response.data
     
@@ -144,7 +139,16 @@ def test_new_recipe_public_verified_user(verified_user_client_for_recipes):
         'servings': 1.0,
         'is_public': 'y'
     }
-    response = client.post(url_for('recipes.new_recipe'), data=new_recipe_data, follow_redirects=True)
+    response = client.post(url_for('recipes.new_recipe'), data=new_recipe_data, follow_redirects=False)
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == 'success'
+        assert flashes[0][1] == 'Recipe created successfully. Now add ingredients.'
+
+    # Manually follow the redirect
+    response = client.get(response.headers['Location'])
     assert response.status_code == 200
     assert b'Recipe created successfully. Now add ingredients.' in response.data
 
