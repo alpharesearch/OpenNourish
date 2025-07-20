@@ -12,15 +12,7 @@
                 <div class="card-body">
                     <form method="POST">
                         {{ form.hidden_tag() }}
-                        <div class="mb-3">
-                            {{ form.email.label(class="form-label") }}
-                            {{ form.email(class="form-control" ~ (" is-invalid" if form.email.errors else "")) }}
-                            {% if form.email.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.email.errors %}{{ error }}{% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
+                        
                         <div class="mb-3 text-center">
                             <p class="form-label">Please select your preferred measurement system:</p>
                             {% for subfield in form.measurement_system %}
@@ -46,19 +38,6 @@
                             {{ form.submit(class="btn btn-outline-primary") }}
                         </div>
                     </form>
-                    {% if current_app.config.get('ENABLE_EMAIL_VERIFICATION', False) %}
-                        {% if not current_user.is_verified %}
-                        <div class="mb-3">
-                            <form action="{{ url_for('auth.send_verification_email_route') }}" method="POST">
-                                <button type="submit" class="btn btn-outline-warning btn-sm">Verify Email Now</button>
-                            </form>
-                        </div>
-                        {% else %}
-                        <div class="mb-3">
-                            <span class="badge bg-success">Email Verified</span>
-                        </div>
-                        {% endif %}
-                    {% endif %}
                 </div>
             </div>
         </div>

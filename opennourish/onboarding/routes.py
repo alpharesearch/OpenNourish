@@ -15,14 +15,12 @@ def step1():
 
     form = MeasurementSystemForm()
     if form.validate_on_submit():
-        current_user.email = form.email.data
         current_user.measurement_system = form.measurement_system.data
         current_user.theme_preference = form.theme_preference.data
         db.session.commit()
         return redirect(url_for('onboarding.step2'))
     
     # Pre-populate form for GET requests
-    form.email.data = current_user.email
     form.measurement_system.data = current_user.measurement_system
     form.theme_preference.data = current_user.theme_preference
 

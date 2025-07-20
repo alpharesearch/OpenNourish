@@ -12,7 +12,7 @@ from models import db, User
 from config import Config
 
 @pytest.fixture(scope='function')
-def app_with_db():
+def app_with_db(mocker):
     """
     Creates a new app instance for each test, configured for testing.
     Includes a safeguard to prevent running against a real database.
@@ -40,6 +40,9 @@ def app_with_db():
     # Create a temporary instance folder for each test
     instance_path = tempfile.mkdtemp()
     app.instance_path = instance_path
+
+    # Mock mail.send_message to prevent actual emails from being sent during tests
+    mocker.patch('flask_mailing.Mail.send_message')
 
     with app.app_context():
         db.create_all()

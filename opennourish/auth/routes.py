@@ -77,6 +77,12 @@ def register():
         else:
             flash('Congratulations, you are now a registered user!', 'success')
 
+        # Send verification email
+        if current_app.config.get('ENABLE_EMAIL_VERIFICATION', False):
+            token = user.get_token(purpose='verify-email')
+            send_verification_email(user, token)
+            flash('A verification email has been sent to your email address.', 'info')
+
         login_user(user)  # Log in the user after registration
         
         # After registration, check if the user has existing goals

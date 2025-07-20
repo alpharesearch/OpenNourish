@@ -14,7 +14,7 @@ def test_registration(client):
     assert response.status_code == 200
     # After registration, the user could be redirected to goals, dashboard, or onboarding
     assert any(s in response.request.path for s in ['/goals', '/dashboard', '/onboarding'])
-    assert b'Congratulations, you are now a registered user and have been granted administrator privileges!' in response.data
+    assert b'Congratulations, you are now a registered user!' in response.data
 
     # Register a second user to ensure they are not an admin
     client.get('/auth/logout')
@@ -99,3 +99,18 @@ def test_auto_login_after_registration(client):
     assert b'href="/auth/login"' not in response.data
     # Check for a logout link, which should be present for a logged-in user
     assert b'href="/auth/logout"' in response.data
+
+def test_registration_disabled(client, mocker):
+    """
+    Tests that registration is disabled when the setting is off.
+    """
+    mocker.patch('opennourish.auth.routes.get_allow_registration_status', return_value=False)
+    response = client.get('/auth/register', follow_redirects=False)
+    assert response.status_code == 302
+    assert '/auth/login' in response.headers['Location']
+
+    with client.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == 'danger'
+        assert flashes[0][1] == 'New user registration is currently disabled.'

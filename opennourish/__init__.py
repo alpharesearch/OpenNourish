@@ -29,6 +29,10 @@ def create_app(config_class=Config):
     else:
         app.config.from_object(config_class)
 
+    # Force MAIL_SUPPRESS_SEND to True if in testing mode
+    if app.testing:
+        app.config['MAIL_SUPPRESS_SEND'] = True
+
     # Apply ProxyFix middleware to handle headers from the reverse proxy
     # This is crucial for generating correct external URLs (e.g., in emails)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
