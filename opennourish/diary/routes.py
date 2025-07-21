@@ -52,6 +52,7 @@ def diary(log_date_str=None):
 
         if log.fdc_id:
             food_item = db.session.get(Food, log.fdc_id)
+            owner_username = None
         elif log.my_food_id:
             food_item = db.session.get(MyFood, log.my_food_id)
             if food_item and food_item.user_id != current_user.id:
@@ -81,11 +82,16 @@ def diary(log_date_str=None):
             nutrition = calculate_nutrition_for_items([log])
             description_to_display = food_item.description if hasattr(food_item, 'description') else food_item.name
             
-            if not is_own_food_item and hasattr(food_item, 'user'):
-                if food_item.user:
-                    description_to_display += f" (from {food_item.user.username})"
-                else:
-                    description_to_display += f" (deleted user)"
+            if hasattr(food_item, 'user_id'):
+                if food_item.user_id is None:
+                    description_to_display += f" (deleted)"
+                elif food_item.user_id != current_user.id:
+                    owner = db.session.get(User, food_item.user_id)
+                    if owner:
+                        description_to_display += f" (from {owner.username})"
+                    else:
+                        # This case handles if the user ID exists but the user record is gone
+                        description_to_display += f" (deleted)"
 
         # Assign to the correct meal category, defaulting to 'Unspecified'
         meal_key = log.meal_name or 'Unspecified'
@@ -99,7 +105,8 @@ def diary(log_date_str=None):
             'nutrition': nutrition,
             'portions': available_portions,
             'serving_type': log.serving_type,
-            'selected_portion_id': selected_portion_id
+            'selected_portion_id': selected_portion_id,
+            'owner_id': food_item.user_id if hasattr(food_item, 'user_id') else None
         })
 
     #current_app.logger.debug(f"Meals dictionary: {meals}")

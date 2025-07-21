@@ -180,7 +180,7 @@
                                         <span class="badge bg-secondary">by {{ food.user.username }}</span>
                                     {% endif %}
                                 {% else %}
-                                    <span class="badge bg-secondary">(deleted user)</span>
+                                    <span class="badge bg-secondary">(deleted)</span>
                                 {% endif %}
                                 <small class="d-block text-muted">
                                     {% if food.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P{{ food.portions|length }}</span>{% endif %}
@@ -269,7 +269,7 @@
                                         <span class="badge bg-secondary">by {{ recipe.user.username }}</span>
                                     {% endif %}
                                 {% else %}
-                                    <span class="badge bg-secondary">(deleted user)</span>
+                                    <span class="badge bg-secondary">(deleted)</span>
                                 {% endif %}
                                 {% if recipe.is_public %}
                                     <span class="badge bg-info text-dark">Public</span>

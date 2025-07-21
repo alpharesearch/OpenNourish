@@ -1,7 +1,15 @@
-
 import pytest
 from models import db, User, MyFood, Recipe, DailyLog
 from datetime import date
+
+@pytest.fixture
+def single_user(app_with_db):
+    with app_with_db.app_context():
+        user = User(username='single_user_soft_delete', email='single_user_soft_delete@example.com')
+        user.set_password('password')
+        db.session.add(user)
+        db.session.commit()
+        return user
 
 @pytest.fixture
 def two_users_with_friendship(app_with_db):
@@ -85,34 +93,60 @@ def test_soft_delete_preserves_other_users_data_integrity(client, two_users_with
     response = client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
     assert response.status_code == 200
 
-def test_ui_gracefully_displays_orphaned_items(client, two_users_with_friendship):
+def test_ui_gracefully_displays_orphaned_items(app_with_db, two_users_with_friendship):
     user_a, user_b = two_users_with_friendship
 
-    with client.application.app_context():
+    # Create separate client instances for each user
+    client_a = app_with_db.test_client()
+    client_b = app_with_db.test_client()
+
+    with app_with_db.app_context():
         user_a = User.query.filter_by(username='user_a_soft_delete').first()
         recipe = Recipe(user_id=user_a.id, name='Shared Pie')
         db.session.add(recipe)
         db.session.commit()
         recipe_id = recipe.id
 
-    client.post('/auth/login', data={'username_or_email': 'user_b_soft_delete', 'password': 'password_b'}, follow_redirects=True)
+    # User B logs in and logs the recipe
+    client_b.post('/auth/login', data={'username_or_email': 'user_b_soft_delete', 'password': 'password_b'}, follow_redirects=True)
 
-    with client.application.app_context():
+    with app_with_db.app_context():
         user_b = User.query.filter_by(username='user_b_soft_delete').first()
         log_entry = DailyLog(user_id=user_b.id, recipe_id=recipe_id, log_date=date.today(), amount_grams=1, meal_name='Dinner')
         db.session.add(log_entry)
         db.session.commit()
 
-    client.post('/auth/login', data={'username_or_email': 'user_a_soft_delete', 'password': 'password_a'}, follow_redirects=True)
-    client.post(f'/recipes/{recipe_id}/delete', follow_redirects=True)
-
-    client.post('/auth/login', data={'username_or_email': 'user_b_soft_delete', 'password': 'password_b'}, follow_redirects=True)
-    response = client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
-
+    # User B views diary (should see 'Shared Pie')
+    response = client_b.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
     assert response.status_code == 200
     html = response.data.decode('utf-8')
     assert 'Shared Pie' in html
-    assert '(deleted user)' in html
+    client_b.get('/auth/logout')
+
+    # User A logs in and deletes the recipe
+    client_a.post('/auth/login', data={'username_or_email': 'user_a_soft_delete', 'password': 'password_a'}, follow_redirects=True)
+    response = client_a.post(f'/recipes/{recipe_id}/delete', follow_redirects=True)
+    html = response.data.decode('utf-8')
+    assert 'user_b_soft_delete' not in html
+    assert 'user_a_soft_delete' in html
+    assert 'You are not authorized to delete this recipe.' not in html
+
+
+    with app_with_db.app_context():
+        # Explicitly refresh the recipe object to ensure its user_id is None
+        recipe_obj = db.session.get(Recipe, recipe_id)
+        db.session.refresh(recipe_obj)
+
+    client_a.get('/auth/logout')
+
+    # User B logs in again (if necessary, though client_b should retain its session) and views diary
+    # Re-login for client_b might be redundant if its session is maintained, but safer for testing.
+    client_b.post('/auth/login', data={'username_or_email': 'user_b_soft_delete', 'password': 'password_b'}, follow_redirects=True)
+    response = client_b.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    assert response.status_code == 200
+    html = response.data.decode('utf-8')
+    assert 'Shared Pie' in html
+    assert '(deleted)' in html
 
 def test_user_cannot_soft_delete_another_users_item(client, two_users_with_friendship):
     user_a, user_b = two_users_with_friendship
@@ -140,3 +174,36 @@ def test_user_cannot_soft_delete_another_users_item(client, two_users_with_frien
         food_still_exists = db.session.get(MyFood, food_a_id)
         assert food_still_exists is not None
         assert food_still_exists.user_id == user_a.id
+
+def test_ui_gracefully_displays_orphaned_items_single_user(client, single_user):
+    # Log in as the user
+    client.post('/auth/login', data={'username_or_email': 'single_user_soft_delete', 'password': 'password'}, follow_redirects=True)
+
+    with client.application.app_context():
+        user = User.query.filter_by(username='single_user_soft_delete').first()
+        # User creates a MyFood item
+        my_food = MyFood(user_id=user.id, description='My Orphaned Food')
+        db.session.add(my_food)
+        db.session.commit()
+        food_id = my_food.id
+
+        # User logs the food item
+        log_entry = DailyLog(user_id=user.id, my_food_id=food_id, log_date=date.today(), amount_grams=100, meal_name='Lunch')
+        db.session.add(log_entry)
+        db.session.commit()
+
+    # Check the diary before deletion
+    response = client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    assert response.status_code == 200
+    assert b'My Orphaned Food' in response.data
+    assert b'(deleted)' not in response.data
+
+    # User deletes the food item
+    client.post(f'/my_foods/{food_id}/delete', follow_redirects=True)
+
+    # Check the diary after deletion
+    response = client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    assert response.status_code == 200
+    html = response.data.decode('utf-8')
+    assert 'My Orphaned Food' in html
+    assert '(deleted)' in html

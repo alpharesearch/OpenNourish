@@ -35,7 +35,7 @@
                                 <p class="mb-1 text-muted"><em>by {{ recipe.user.username }}</em></p>
                             {% endif %}
                         {% else %}
-                            <p class="mb-1 text-muted"><em>by (deleted user)</em></p>
+                            <p class="mb-1 text-muted"><em>by (deleted)</em></p>
                         {% endif %}
                         <small class="text-muted">
                             Calories: {{ recipe.nutrition_per_100g.calories|round(0) }} kcal | Protein: {{ recipe.nutrition_per_100g.protein|round(1) }}g | Carbs: {{ recipe.nutrition_per_100g.carbs|round(1) }}g | Fat: {{ recipe.nutrition_per_100g.fat|round(1) }}g

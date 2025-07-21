@@ -188,13 +188,13 @@ def test_ui_handles_orphaned_content_gracefully(app_with_db, client, user_a, use
         # Test User B's diary page (should contain Alice's Chili)
         diary_response = client.get(url_for('diary.diary', log_date_str=date(2025, 1, 1).isoformat()))
         assert diary_response.status_code == 200
-        assert b'(deleted user)' in diary_response.data
+        assert b'(deleted)' in diary_response.data
         assert b"Alice&#39;s Chili" in diary_response.data
 
         # Test search page for friends' content (should show Alice's Pie as orphaned)
         search_response = client.get(url_for('search.search', search_friends=True, search_term="Alice's Pie"))
         assert search_response.status_code == 200
-        assert b'(deleted user)' in search_response.data
+        assert b'(deleted)' in search_response.data
         assert b"Alice&#39;s Pie" in search_response.data
 
 
