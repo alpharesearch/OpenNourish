@@ -5,7 +5,7 @@ from . import admin_bp
 from .forms import AdminSettingsForm, EmailSettingsForm
 import json
 import os
-from models import db, User, Recipe, MyFood, DailyLog, ExerciseLog, SystemSetting
+from models import db, User, Recipe, MyFood, DailyLog, ExerciseLog, SystemSetting, RecipeIngredient, MyMealItem
 from opennourish.utils import encrypt_value, decrypt_value
 
 @admin_bp.route('/')
@@ -303,3 +303,71 @@ def reset_onboarding(user_id):
     else:
         flash('User not found.', 'danger')
     return redirect(url_for('admin.users'))
+
+@admin_bp.route('/cleanup')
+@login_required
+@admin_required
+def cleanup():
+    # Find orphaned MyFood and Recipe items
+    orphaned_foods = MyFood.query.filter(MyFood.user_id.is_(None)).all()
+    orphaned_recipes = Recipe.query.filter(Recipe.user_id.is_(None)).all()
+
+    # Get all referenced IDs
+    referenced_my_food_ids = {row.my_food_id for row in db.session.query(DailyLog.my_food_id).filter(DailyLog.my_food_id.isnot(None)).distinct()}
+    referenced_my_food_ids.update({row.my_food_id for row in db.session.query(RecipeIngredient.my_food_id).filter(RecipeIngredient.my_food_id.isnot(None)).distinct()})
+    referenced_my_food_ids.update({row.my_food_id for row in db.session.query(MyMealItem.my_food_id).filter(MyMealItem.my_food_id.isnot(None)).distinct()})
+
+    referenced_recipe_ids = {row.recipe_id for row in db.session.query(DailyLog.recipe_id).filter(DailyLog.recipe_id.isnot(None)).distinct()}
+    referenced_recipe_ids.update({row.recipe_id_link for row in db.session.query(RecipeIngredient.recipe_id_link).filter(RecipeIngredient.recipe_id_link.isnot(None)).distinct()})
+    referenced_recipe_ids.update({row.recipe_id for row in db.session.query(MyMealItem.recipe_id).filter(MyMealItem.recipe_id.isnot(None)).distinct()})
+
+    safe_to_delete_orphans = []
+    in_use_orphans = []
+
+    for food in orphaned_foods:
+        if food.id not in referenced_my_food_ids:
+            safe_to_delete_orphans.append(food)
+        else:
+            in_use_orphans.append(food)
+
+    for recipe in orphaned_recipes:
+        if recipe.id not in referenced_recipe_ids:
+            safe_to_delete_orphans.append(recipe)
+        else:
+            in_use_orphans.append(recipe)
+
+    return render_template('admin/cleanup.html', safe_to_delete_orphans=safe_to_delete_orphans, in_use_orphans=in_use_orphans)
+
+@admin_bp.route('/cleanup/run', methods=['POST'])
+@login_required
+@admin_required
+def run_cleanup():
+    # Re-run the scan to ensure we are deleting the correct items
+    orphaned_foods = MyFood.query.filter(MyFood.user_id.is_(None)).all()
+    orphaned_recipes = Recipe.query.filter(Recipe.user_id.is_(None)).all()
+
+    referenced_my_food_ids = {row.my_food_id for row in db.session.query(DailyLog.my_food_id).filter(DailyLog.my_food_id.isnot(None)).distinct()}
+    referenced_my_food_ids.update({row.my_food_id for row in db.session.query(RecipeIngredient.my_food_id).filter(RecipeIngredient.my_food_id.isnot(None)).distinct()})
+    referenced_my_food_ids.update({row.my_food_id for row in db.session.query(MyMealItem.my_food_id).filter(MyMealItem.my_food_id.isnot(None)).distinct()})
+
+    referenced_recipe_ids = {row.recipe_id for row in db.session.query(DailyLog.recipe_id).filter(DailyLog.recipe_id.isnot(None)).distinct()}
+    referenced_recipe_ids.update({row.recipe_id_link for row in db.session.query(RecipeIngredient.recipe_id_link).filter(RecipeIngredient.recipe_id_link.isnot(None)).distinct()})
+    referenced_recipe_ids.update({row.recipe_id for row in db.session.query(MyMealItem.recipe_id).filter(MyMealItem.recipe_id.isnot(None)).distinct()})
+
+    deleted_foods_count = 0
+    deleted_recipes_count = 0
+
+    for food in orphaned_foods:
+        if food.id not in referenced_my_food_ids:
+            db.session.delete(food)
+            deleted_foods_count += 1
+
+    for recipe in orphaned_recipes:
+        if recipe.id not in referenced_recipe_ids:
+            db.session.delete(recipe)
+            deleted_recipes_count += 1
+
+    db.session.commit()
+
+    flash(f'Database cleanup complete. Removed {deleted_foods_count} orphaned food items and {deleted_recipes_count} orphaned recipes.', 'success')
+    return redirect(url_for('admin.cleanup'))
