@@ -103,22 +103,22 @@ def test_account_deletion_anonymizes_and_deletes_correctly(app_with_db, client, 
 
         # Assertions
         # User A's record should be deleted
-        assert User.query.get(user_a) is None
+        assert db.session.get(User, user_a) is None
 
         # Personal data should be deleted
-        assert UserGoal.query.filter_by(user_id=user_a).first() is None
-        assert CheckIn.query.filter_by(user_id=user_a).first() is None
-        assert DailyLog.query.filter_by(user_id=user_a).first() is None
-        assert ExerciseLog.query.filter_by(user_id=user_a).first() is None
-        assert MyMeal.query.get(my_meal_a_id) is None
-        assert MyMealItem.query.get(my_meal_item_a_id) is None
+        assert db.session.query(UserGoal).filter_by(user_id=user_a).first() is None
+        assert db.session.query(CheckIn).filter_by(user_id=user_a).first() is None
+        assert db.session.query(DailyLog).filter_by(user_id=user_a).first() is None
+        assert db.session.query(ExerciseLog).filter_by(user_id=user_a).first() is None
+        assert db.session.get(MyMeal, my_meal_a_id) is None
+        assert db.session.get(MyMealItem, my_meal_item_a_id) is None
 
         # Shared content should exist but be anonymized
-        orphaned_my_food = MyFood.query.get(my_food_a_id)
+        orphaned_my_food = db.session.get(MyFood, my_food_a_id)
         assert orphaned_my_food is not None
         assert orphaned_my_food.user_id is None
 
-        orphaned_recipe = Recipe.query.get(recipe_a_id)
+        orphaned_recipe = db.session.get(Recipe, recipe_a_id)
         assert orphaned_recipe is not None
         assert orphaned_recipe.user_id is None
 
@@ -143,23 +143,23 @@ def test_deletion_does_not_break_other_users_data(app_with_db, client, user_a, u
 
         # Assertions
         # User A's shared content should exist but be anonymized
-        orphaned_my_food = MyFood.query.get(my_food_a_id)
+        orphaned_my_food = db.session.get(MyFood, my_food_a_id) 
         assert orphaned_my_food is not None
         assert orphaned_my_food.user_id is None
 
-        orphaned_recipe = Recipe.query.get(recipe_a_id)
+        orphaned_recipe = db.session.get(Recipe, recipe_a_id)
         assert orphaned_recipe is not None
         assert orphaned_recipe.user_id is None
 
         # User B's daily log entry should still exist and link correctly
-        retrieved_daily_log_b = DailyLog.query.get(daily_log_b_id)
+        retrieved_daily_log_b = db.session.get(DailyLog, daily_log_b_id)
         assert retrieved_daily_log_b is not None
         assert retrieved_daily_log_b.my_food_id == orphaned_my_food.id
 
         # User B's recipe and ingredient should still exist and link correctly
-        retrieved_recipe_b = Recipe.query.get(recipe_b_id)
+        retrieved_recipe_b = db.session.get(Recipe, recipe_b_id)
         assert retrieved_recipe_b is not None
-        retrieved_recipe_ingredient_b = RecipeIngredient.query.get(recipe_ingredient_b_id)
+        retrieved_recipe_ingredient_b = db.session.get(RecipeIngredient, recipe_ingredient_b_id)
         assert retrieved_recipe_ingredient_b is not None
         assert retrieved_recipe_ingredient_b.recipe_id_link == orphaned_recipe.id
 
@@ -223,6 +223,6 @@ def test_delete_account_fails_with_incorrect_password(app_with_db, client, user_
         assert b'Confirm Account Deletion' in response.data # Should remain on the confirmation page
 
         # User A's record and data should NOT be deleted
-        assert User.query.get(user_a) is not None
-        assert UserGoal.query.filter_by(user_id=user_a).first() is not None
-        assert MyFood.query.filter_by(user_id=user_a).first() is not None
+        assert db.session.query(User, user_a) is not None
+        assert db.session.query(UserGoal).filter_by(user_id=user_a).first() is not None
+        assert db.session.query(MyFood).filter_by(user_id=user_a).first() is not None
