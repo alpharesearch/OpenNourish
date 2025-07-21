@@ -151,7 +151,7 @@ def edit_my_food(food_id):
 @login_required
 def delete_my_food(food_id):
     my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
-    db.session.delete(my_food)
+    my_food.user_id = None
     db.session.commit()
     flash('Food deleted successfully!', 'success')
     return redirect(url_for('my_foods.my_foods'))

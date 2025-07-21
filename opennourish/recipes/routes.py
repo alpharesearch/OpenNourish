@@ -335,7 +335,7 @@ def delete_recipe(recipe_id):
         flash('You are not authorized to delete this recipe.', 'danger')
         return redirect(url_for('recipes.recipes'))
     
-    db.session.delete(recipe)
+    recipe.user_id = None
     db.session.commit()
     flash('Recipe deleted.', 'success')
     return redirect(url_for('recipes.recipes'))

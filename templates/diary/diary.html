@@ -104,6 +104,9 @@
                 <div class="row align-items-center">
                     <div class="col-md-7">
                         {{ item.description }}
+                        {% if not item.user %}
+                            <span class="text-muted">(deleted user)</span>
+                        {% endif %}
                         <br>
                         <small class="text-muted">
                             Calories: {{ item.nutrition.calories|round(0) }} kcal |

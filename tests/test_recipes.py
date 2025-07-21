@@ -285,9 +285,7 @@ def test_delete_recipe(auth_client_with_user):
 
     with client.application.app_context():
         deleted_recipe = db.session.get(Recipe, recipe_id)
-        assert deleted_recipe is None
-        deleted_ingredient = db.session.get(RecipeIngredient, ingredient_id)
-        assert deleted_ingredient is None
+        assert deleted_recipe.user_id is None
 
 
 def test_add_ingredient_to_recipe(auth_client_with_user):

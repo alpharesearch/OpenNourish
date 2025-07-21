@@ -151,7 +151,7 @@ def test_delete_my_food(auth_client):
 
     with auth_client.application.app_context():
         deleted_food = db.session.get(MyFood, food_id)
-        assert deleted_food is None
+        assert deleted_food.user_id is None
 
 def test_user_cannot_delete_another_users_food(client):
     """
