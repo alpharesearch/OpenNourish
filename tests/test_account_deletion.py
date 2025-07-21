@@ -1,7 +1,7 @@
 import pytest
 from datetime import date
 from flask import url_for
-from models import db, User, UserGoal, CheckIn, DailyLog, ExerciseLog, MyFood, Recipe, Friendship, RecipeIngredient, MyMealItem
+from models import db, User, UserGoal, CheckIn, DailyLog, ExerciseLog, MyFood, Recipe, Friendship, RecipeIngredient, MyMealItem, MyMeal
 from flask_login import current_user
 
 @pytest.fixture
@@ -72,7 +72,11 @@ def test_account_deletion_anonymizes_and_deletes_correctly(app_with_db, client, 
         check_in_a = CheckIn(user_id=user_a_obj.id, weight_kg=70)
         daily_log_a = DailyLog(user_id=user_a_obj.id, log_date=date(2025, 1, 1), meal_name='Breakfast', amount_grams=100)
         exercise_log_a = ExerciseLog(user_id=user_a_obj.id, duration_minutes=30, calories_burned=300)
-        db.session.add_all([user_goal_a, check_in_a, daily_log_a, exercise_log_a])
+        my_meal_a = MyMeal(user_id=user_a_obj.id, name="UserA's Meal")
+        db.session.add_all([user_goal_a, check_in_a, daily_log_a, exercise_log_a, my_meal_a])
+        db.session.commit()
+        my_meal_item_a = MyMealItem(my_meal_id=my_meal_a.id, fdc_id=12345, amount_grams=100)
+        db.session.add(my_meal_item_a)
 
         # Setup shared content for User A
         my_food_a = MyFood(user_id=user_a_obj.id, description="UserA's Food", calories_per_100g=100)
@@ -81,6 +85,8 @@ def test_account_deletion_anonymizes_and_deletes_correctly(app_with_db, client, 
         db.session.commit()
         my_food_a_id = my_food_a.id
         recipe_a_id = recipe_a.id
+        my_meal_a_id = my_meal_a.id
+        my_meal_item_a_id = my_meal_item_a.id
 
         # Log in as User A
         login(client, user_a_obj.username, 'passwordA')
@@ -104,6 +110,8 @@ def test_account_deletion_anonymizes_and_deletes_correctly(app_with_db, client, 
         assert CheckIn.query.filter_by(user_id=user_a).first() is None
         assert DailyLog.query.filter_by(user_id=user_a).first() is None
         assert ExerciseLog.query.filter_by(user_id=user_a).first() is None
+        assert MyMeal.query.get(my_meal_a_id) is None
+        assert MyMealItem.query.get(my_meal_item_a_id) is None
 
         # Shared content should exist but be anonymized
         orphaned_my_food = MyFood.query.get(my_food_a_id)

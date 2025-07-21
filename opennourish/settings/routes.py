@@ -1,6 +1,6 @@
 from flask import render_template, flash, redirect, url_for, request, current_app
 from flask_login import current_user, login_required, logout_user
-from models import User, db, MyFood, Recipe, UserGoal, CheckIn, DailyLog, ExerciseLog, Friendship
+from models import User, db, MyFood, Recipe, UserGoal, CheckIn, DailyLog, ExerciseLog, Friendship, MyMeal
 from .forms import SettingsForm, ChangePasswordForm, DeleteAccountConfirmForm
 from opennourish.utils import ft_in_to_cm, cm_to_ft_in
 from . import settings_bp
@@ -109,6 +109,11 @@ def delete_account():
                 CheckIn.query.filter_by(user_id=user.id).delete()
                 DailyLog.query.filter_by(user_id=user.id).delete()
                 ExerciseLog.query.filter_by(user_id=user.id).delete()
+                
+                # Fetch and delete MyMeal records to trigger cascade deletion of MyMealItems
+                my_meals_to_delete = MyMeal.query.filter_by(user_id=user.id).all()
+                for meal in my_meals_to_delete:
+                    db.session.delete(meal)
 
                 # Delete social connections
                 Friendship.query.filter(
