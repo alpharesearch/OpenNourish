@@ -1,7 +1,7 @@
 from flask import render_template, flash, redirect, url_for, request, current_app
-from flask_login import current_user, login_required
-from models import User, db
-from .forms import SettingsForm, ChangePasswordForm
+from flask_login import current_user, login_required, logout_user
+from models import User, db, MyFood, Recipe, UserGoal, CheckIn, DailyLog, ExerciseLog, Friendship
+from .forms import SettingsForm, ChangePasswordForm, DeleteAccountConfirmForm
 from opennourish.utils import ft_in_to_cm, cm_to_ft_in
 from . import settings_bp
 
@@ -83,3 +83,51 @@ def restart_onboarding():
     db.session.commit()
     flash('You have restarted the onboarding wizard.', 'info')
     return redirect(url_for('onboarding.step1'))
+
+
+@settings_bp.route('/delete_confirm')
+@login_required
+def delete_confirm():
+    form = DeleteAccountConfirmForm()
+    return render_template('settings/delete_confirm.html', title='Confirm Deletion', form=form)
+
+
+@settings_bp.route('/delete', methods=['POST'])
+@login_required
+def delete_account():
+    form = DeleteAccountConfirmForm()
+    if form.validate_on_submit():
+        user = db.session.get(User, current_user.id)
+        if user.check_password(form.password.data):
+            try:
+                # Anonymize MyFood and Recipe records
+                MyFood.query.filter_by(user_id=user.id).update({'user_id': None})
+                Recipe.query.filter_by(user_id=user.id).update({'user_id': None})
+
+                # Delete direct personal data
+                UserGoal.query.filter_by(user_id=user.id).delete()
+                CheckIn.query.filter_by(user_id=user.id).delete()
+                DailyLog.query.filter_by(user_id=user.id).delete()
+                ExerciseLog.query.filter_by(user_id=user.id).delete()
+
+                # Delete social connections
+                Friendship.query.filter(
+                    (Friendship.requester_id == user.id) |
+                    (Friendship.receiver_id == user.id)
+                ).delete()
+
+                # Delete the user
+                db.session.delete(user)
+
+                db.session.commit()
+                logout_user()
+                flash('Your account has been permanently deleted.', 'success')
+                return redirect(url_for('main.index'))
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Error deleting user account: {e}")
+                flash('An error occurred during account deletion. Please try again.', 'danger')
+                return redirect(url_for('settings.delete_confirm'))
+        else:
+            flash('Incorrect password.', 'danger')
+    return render_template('settings/delete_confirm.html', title='Confirm Deletion', form=form)

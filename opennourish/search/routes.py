@@ -303,7 +303,7 @@ def search():
         if search_my_foods:
             my_foods_query = MyFood.query.filter(
                 MyFood.description.ilike(f'%{search_term}%'),
-                MyFood.user_id.in_(user_ids_to_search)
+                or_(MyFood.user_id.in_(user_ids_to_search), MyFood.user_id == None)
             )
             if selected_category_id:
                 my_foods_query = my_foods_query.filter(MyFood.food_category_id == selected_category_id)
@@ -315,6 +315,7 @@ def search():
             # Construct the part of the query that handles ownership and public status
             user_and_public_filter = []
             user_and_public_filter.append(Recipe.user_id.in_(user_ids_to_search))
+            user_and_public_filter.append(Recipe.user_id == None) # Include orphaned recipes
             if search_public:
                 user_and_public_filter.append(Recipe.is_public == True)
             
@@ -497,8 +498,18 @@ def add_item():
 
     if food_type == 'my_meal':
         my_meal = db.session.get(MyMeal, food_id)
-        if not my_meal or my_meal.user_id != current_user.id:
-            flash('My Meal not found or not authorized.', 'danger')
+        if not my_meal:
+            flash('My Meal not found.', 'danger')
+            return redirect(request.referrer or url_for('diary.diary'))
+
+        # Check if the user is trying to access a meal that is not theirs
+        # and the owner has been deleted.
+        if my_meal.user_id != current_user.id and not my_meal.user:
+             flash('This meal belongs to a deleted user and cannot be added.', 'info')
+             return redirect(request.referrer or url_for('diary.diary'))
+        
+        if my_meal.user_id != current_user.id:
+            flash('You are not authorized to add this meal.', 'danger')
             return redirect(request.referrer or url_for('diary.diary'))
 
         if target == 'diary':
@@ -596,7 +607,10 @@ def add_item():
                     flash('USDA Food not found.', 'danger')
             elif food_type == 'my_food':
                 food = db.session.get(MyFood, food_id)
-                if food and food.user_id == current_user.id:
+                if food:
+                    if food.user_id != current_user.id and not food.user:
+                        flash('This food belongs to a deleted user and cannot be added.', 'info')
+                        return redirect(url_for('diary.diary', log_date_str=log_date_str))
                     daily_log = DailyLog(
                         user_id=current_user.id,
                         log_date=log_date,
@@ -610,10 +624,13 @@ def add_item():
                     db.session.commit()
                     flash(f'{food.description} added to your diary.', 'success')
                 else:
-                    flash('My Food not found or not authorized.', 'danger')
+                    flash('My Food not found.', 'danger')
             elif food_type == 'recipe':
                 recipe = db.session.get(Recipe, food_id)
-                if recipe and (recipe.user_id == current_user.id or recipe.is_public):
+                if recipe:
+                    if recipe.user_id != current_user.id and not recipe.user:
+                        flash('This recipe belongs to a deleted user and cannot be added.', 'info')
+                        return redirect(url_for('diary.diary', log_date_str=log_date_str))
                     daily_log = DailyLog(
                         user_id=current_user.id,
                         log_date=log_date,
@@ -627,7 +644,7 @@ def add_item():
                     db.session.commit()
                     flash(f'{recipe.name} added to your diary.', 'success')
                 else:
-                    flash('Recipe not found or not authorized.', 'danger')
+                    flash('Recipe not found.', 'danger')
             else:
                 flash('Invalid food type for diary.', 'danger')
             return redirect(url_for('diary.diary', log_date_str=log_date_str))
@@ -659,7 +676,10 @@ def add_item():
                     flash('USDA Food not found.', 'danger')
             elif food_type == 'my_food':
                 food = db.session.get(MyFood, food_id)
-                if food: # Authorization check happens below for friends' foods
+                if food:
+                    if food.user_id != current_user.id and not food.user:
+                        flash('This food belongs to a deleted user and cannot be added as an ingredient.', 'info')
+                        return redirect(url_for('recipes.edit_recipe', recipe_id=recipe_id))
                     ingredient = RecipeIngredient(
                         recipe_id=target_recipe.id,
                         my_food_id=food.id,
@@ -671,13 +691,17 @@ def add_item():
                     db.session.commit()
                     flash(f'{food.description} added to recipe {target_recipe.name}.', 'success')
                 else:
-                    flash('My Food not found or not authorized.', 'danger')
+                    flash('My Food not found.', 'danger')
             elif food_type == 'recipe':
                 sub_recipe = db.session.get(Recipe, food_id)
-                if not sub_recipe or (sub_recipe.user_id != current_user.id and not sub_recipe.is_public):
-                    flash('Sub-recipe not found or not authorized.', 'danger')
+                if not sub_recipe:
+                    flash('Sub-recipe not found.', 'danger')
                     return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
                 
+                if sub_recipe.user_id != current_user.id and not sub_recipe.user:
+                    flash('This recipe belongs to a deleted user and cannot be added as an ingredient.', 'info')
+                    return redirect(url_for('recipes.edit_recipe', recipe_id=recipe_id))
+
                 if sub_recipe.id == target_recipe.id:
                     flash('A recipe cannot be an ingredient of itself.', 'danger')
                     return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
@@ -726,7 +750,10 @@ def add_item():
                     flash('USDA Food not found.', 'danger')
             elif food_type == 'my_food':
                 food = db.session.get(MyFood, food_id)
-                if food and food.user_id == current_user.id:
+                if food:
+                    if food.user_id != current_user.id and not food.user:
+                        flash('This food belongs to a deleted user and cannot be added to a meal.', 'info')
+                        return redirect(url_for('diary.edit_meal', meal_id=my_meal_id))
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         my_food_id=food.id,
@@ -738,10 +765,13 @@ def add_item():
                     db.session.commit()
                     flash(f'{food.description} added to meal {target_my_meal.name}.', 'success')
                 else:
-                    flash('My Food not found or not authorized.', 'danger')
+                    flash('My Food not found.', 'danger')
             elif food_type == 'recipe':
                 recipe = db.session.get(Recipe, food_id)
-                if recipe and recipe.user_id == current_user.id:
+                if recipe:
+                    if recipe.user_id != current_user.id and not recipe.user:
+                        flash('This recipe belongs to a deleted user and cannot be added to a meal.', 'info')
+                        return redirect(url_for('diary.edit_meal', meal_id=my_meal_id))
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         recipe_id=recipe.id,
@@ -753,10 +783,13 @@ def add_item():
                     db.session.commit()
                     flash(f'{recipe.name} added to meal {target_my_meal.name}.', 'success')
                 else:
-                    flash('Recipe not found or not authorized.', 'danger')
+                    flash('Recipe not found.', 'danger')
             elif food_type == 'my_meal':
                 sub_my_meal = db.session.get(MyMeal, food_id)
-                if sub_my_meal and sub_my_meal.user_id == current_user.id:
+                if sub_my_meal:
+                    if sub_my_meal.user_id != current_user.id and not sub_my_meal.user:
+                        flash('This meal belongs to a deleted user and cannot be added to another meal.', 'info')
+                        return redirect(url_for('diary.edit_meal', meal_id=my_meal_id))
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         my_meal_id_link=sub_my_meal.id,
@@ -766,7 +799,7 @@ def add_item():
                     db.session.commit()
                     flash(f'{sub_my_meal.name} added to meal {target_my_meal.name}.', 'success')
                 else:
-                    flash('Sub-meal not found or not authorized.', 'danger')
+                    flash('Sub-meal not found.', 'danger')
             else:
                 flash('Invalid food type for meal.', 'danger')
             return redirect(url_for('diary.edit_meal', meal_id=my_meal_id))

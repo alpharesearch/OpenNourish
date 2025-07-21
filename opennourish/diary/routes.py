@@ -81,8 +81,11 @@ def diary(log_date_str=None):
             nutrition = calculate_nutrition_for_items([log])
             description_to_display = food_item.description if hasattr(food_item, 'description') else food_item.name
             
-            if not is_own_food_item and hasattr(food_item, 'user') and food_item.user:
-                description_to_display += f" (from {food_item.user.username})"
+            if not is_own_food_item and hasattr(food_item, 'user'):
+                if food_item.user:
+                    description_to_display += f" (from {food_item.user.username})"
+                else:
+                    description_to_display += f" (deleted user)"
 
         # Assign to the correct meal category, defaulting to 'Unspecified'
         meal_key = log.meal_name or 'Unspecified'
@@ -117,7 +120,7 @@ def diary(log_date_str=None):
     # Ensure 'Unspecified' is always included if it has items
     meal_names_to_render = sorted(list(set(base_meals_to_show) | logged_meal_names), key=ALL_MEAL_TYPES.index)
 
-    
+    current_app.logger.debug(f"Meals dictionary: {meals}")
     return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned, meal_names_to_render=meal_names_to_render)
 
 

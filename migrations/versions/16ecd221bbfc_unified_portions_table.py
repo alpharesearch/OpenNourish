@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: 406b3bcfdb9d
+Revision ID: 16ecd221bbfc
 Revises: 
-Create Date: 2025-07-19 17:59:18.939143
+Create Date: 2025-07-20 21:43:36.312787
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '406b3bcfdb9d'
+revision = '16ecd221bbfc'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -94,7 +94,7 @@ def upgrade():
     )
     op.create_table('my_foods',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('description', sa.String(), nullable=True),
     sa.Column('food_category_id', sa.Integer(), nullable=True),
     sa.Column('ingredients', sa.Text(), nullable=True),
@@ -128,7 +128,7 @@ def upgrade():
     )
     op.create_table('recipes',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('name', sa.String(), nullable=True),
     sa.Column('food_category_id', sa.Integer(), nullable=True),
     sa.Column('is_public', sa.Boolean(), nullable=False),

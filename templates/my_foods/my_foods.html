@@ -25,7 +25,11 @@
                 <div class="flex-grow-1 me-md-3">
                     <h5>{{ food.description }}</h5>
                     {% if view_mode == 'friends' %}
-                        <p class="mb-1 text-muted"><em>by {{ food.user.username }}</em></p>
+                        {% if food.user %}
+                            <p class="mb-1 text-muted"><em>by {{ food.user.username }}</em></p>
+                        {% else %}
+                            <p class="mb-1 text-muted"><em>by (deleted user)</em></p>
+                        {% endif %}
                     {% endif %}
                     <small class="text-muted">
                         Calories: {{ food.calories_per_100g|default(0)|round(0) }} kcal/100g |

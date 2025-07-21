@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4>Confirm Account Deletion</h4>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <strong>WARNING:</strong> Deleting your account is a permanent action and cannot be undone.
+                        All your personal data, including daily logs, goals, and exercise logs, will be permanently removed.
+                        Any custom foods or recipes you have created will be anonymized and will no longer be associated with your account, but they will remain in the system for other users who may have referenced them.
+                    </p>
+                    <p class="card-text">
+                        To confirm, please re-enter your current password.
+                    </p>
+                    <form method="POST" action="{{ url_for('settings.delete_account') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control" ~ (" is-invalid" if form.password.errors else "")) }}
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-outline-danger me-2">Confirm Delete Account</button>
+                        <a href="{{ url_for('settings.settings') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

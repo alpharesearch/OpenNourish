@@ -169,7 +169,7 @@ class FoodCategory(db.Model):
 class MyFood(db.Model):
     __tablename__ = 'my_foods'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     description = db.Column(db.String)
     food_category_id = db.Column(db.Integer, db.ForeignKey('food_category.id'), nullable=True)
     ingredients = db.Column(db.Text, nullable=True)
@@ -210,7 +210,7 @@ class DailyLog(db.Model):
 class Recipe(db.Model):
     __tablename__ = 'recipes'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     name = db.Column(db.String)
     food_category_id = db.Column(db.Integer, db.ForeignKey('food_category.id'), nullable=True)
     is_public = db.Column(db.Boolean, default=False, nullable=False, index=True)

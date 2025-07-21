@@ -132,7 +132,7 @@ def dashboard(username, log_date_str=None):
         'fat': user_goal.fat * 7
     }
 
-    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, time_range=time_range, weekly_progress=weekly_progress, exercise_logs=exercise_logs, start_of_week=start_of_week, end_of_week=end_of_week, is_read_only=True, username=username, weekly_totals=weekly_totals, weekly_goals=weekly_goals, days_elapsed_in_week=days_elapsed_in_week)
+    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, time_range=time_range, weekly_progress=weekly_progress, exercise_logs=exercise_logs, start_of_week=start_of_week, end_of_week=end_of_week, is_read_only=True, username=username, weekly_totals=weekly_totals, weekly_goals=weekly_goals, days_elapsed_in_week=days_elapsed_in_week, current_user_measurement_system=getattr(current_user, 'measurement_system', ''))
 
 @profile_bp.route('/<username>/diary')
 @profile_bp.route('/<username>/diary/<string:log_date_str>')
