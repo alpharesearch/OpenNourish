@@ -47,7 +47,7 @@ fi
 
 # Step 3: Always run user database migrations and seeding
 echo "--- Applying database migrations... ---"
-flask db upgrade
+./safe_upgrade.sh
 
 echo "--- Seeding USDA portions... ---"
 flask seed-usda-portions

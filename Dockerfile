@@ -53,7 +53,7 @@ EXPOSE 8081
 
 # Copy and set up the entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh
-RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+RUN dos2unix /app/entrypoint.sh /app/safe_upgrade.sh && chmod +x /app/entrypoint.sh /app/safe_upgrade.sh
 ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Command to run the application
