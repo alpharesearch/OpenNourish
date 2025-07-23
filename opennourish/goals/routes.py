@@ -27,32 +27,15 @@ def goals():
             user_goal = UserGoal(user_id=current_user.id)
             db.session.add(user_goal)
 
-        if form.diet_preset.data:
-            # BMR calculation now relies on user data from the User model and latest check-in
-            weight_for_bmr = latest_checkin.weight_kg if latest_checkin else None
-            body_fat_percentage = latest_checkin.body_fat_percentage if latest_checkin else None
+        # Save the user's choices
+        user_goal.goal_modifier = form.goal_modifier.data
+        user_goal.diet_preset = form.diet_preset.data
 
-            if all([weight_for_bmr, current_user.height_cm, current_user.age, current_user.gender]):
-                bmr, _ = calculate_bmr(
-                    weight_kg=weight_for_bmr,
-                    height_cm=current_user.height_cm,
-                    age=current_user.age,
-                    gender=current_user.gender,
-                    body_fat_percentage=body_fat_percentage
-                )
-                if bmr:
-                    goals = calculate_goals_from_preset(bmr, form.diet_preset.data)
-                    user_goal.calories = goals['calories']
-                    user_goal.protein = goals['protein']
-                    user_goal.carbs = goals['carbs']
-                    user_goal.fat = goals['fat']
-            else:
-                flash('Cannot calculate goals from preset without complete personal information. Please update your profile.', 'danger')
-        else:
-            user_goal.calories = form.calories.data
-            user_goal.protein = form.protein.data
-            user_goal.carbs = form.carbs.data
-            user_goal.fat = form.fat.data
+        # Directly save the nutritional values from the form
+        user_goal.calories = form.calories.data
+        user_goal.protein = form.protein.data
+        user_goal.carbs = form.carbs.data
+        user_goal.fat = form.fat.data
 
         # Update Exercise Goals
         user_goal.calories_burned_goal_weekly = form.calories_burned_goal_weekly.data
@@ -75,6 +58,8 @@ def goals():
     # Pre-populate form for GET request
     if request.method == 'GET':
         if user_goal:
+            form.goal_modifier.data = user_goal.goal_modifier
+            form.diet_preset.data = user_goal.diet_preset
             if current_user.measurement_system == 'us':
                 form.weight_goal_lbs.data = kg_to_lbs(user_goal.weight_goal_kg)
                 form.waist_in_goal.data = cm_to_in(user_goal.waist_cm_goal)
@@ -110,8 +95,5 @@ def calculate_bmr_api():
     )
     if bmr:
         response = {'bmr': bmr, 'formula': formula}
-        if data.get('diet_preset'):
-            adjusted_goals = calculate_goals_from_preset(bmr, data['diet_preset'])
-            response['adjusted_goals'] = adjusted_goals
         return jsonify(response)
     return jsonify({'error': 'Could not calculate BMR with the provided data.'}), 400

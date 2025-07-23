@@ -18,7 +18,15 @@ class GoalForm(FlaskForm):
     weight_lbs = FloatField('Current Weight (lbs)', validators=[Optional(), NumberRange(min=1, max=700)])
 
     body_fat_percentage = FloatField('Body Fat % (optional)', validators=[Optional(), NumberRange(min=0, max=100)])
-    diet_preset = SelectField('Diet Preset', choices=[('', '-- Select a Preset --')] + [(key, key) for key in Config.DIET_PRESETS.keys()], validators=[Optional()])
+    goal_modifier = SelectField('Adjust Nutritional Goals', choices=[
+        ('manual', 'Manual Entry'),
+        ('safe_max_loss', 'Safe Max Loss'),
+        ('moderate_loss', 'Moderate Loss'),
+        ('maintain', 'Maintain'),
+        ('moderate_gain', 'Moderate Gain'),
+        ('safe_max_gain', 'Safe Max Gain')
+    ], validators=[Optional()])
+    diet_preset = SelectField('Diet Preset', choices=[('manual', 'Manual Entry')] + [(key, key) for key in Config.DIET_PRESETS.keys()], validators=[Optional()])
     calories = FloatField('Calories', validators=[Optional()])
     protein = FloatField('Protein (g)', validators=[Optional()])
     carbs = FloatField('Carbohydrates (g)', validators=[Optional()])

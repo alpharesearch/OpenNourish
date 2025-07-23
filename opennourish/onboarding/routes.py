@@ -129,6 +129,8 @@ def step3():
             user_goal = UserGoal(user_id=current_user.id)
             db.session.add(user_goal)
 
+        user_goal.goal_modifier = form.goal_modifier.data
+        user_goal.diet_preset = form.diet_preset.data
         user_goal.calories = form.calories.data
         user_goal.protein = form.protein.data
         user_goal.carbs = form.carbs.data
@@ -147,6 +149,8 @@ def step3():
     # Pre-populate form for GET requests
     user_goal = UserGoal.query.filter_by(user_id=current_user.id).first()
     if user_goal:
+        form.goal_modifier.data = user_goal.goal_modifier
+        form.diet_preset.data = user_goal.diet_preset
         form.calories.data = user_goal.calories
         form.protein.data = user_goal.protein
         form.carbs.data = user_goal.carbs

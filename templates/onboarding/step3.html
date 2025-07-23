@@ -19,41 +19,32 @@
                         </div>
 
                         <h5 class="mt-4 mb-3">Nutritional Goals</h5>
-                        <div class="mb-3">
-                            {{ form.diet_preset.label(class="form-label") }}
-                            {{ form.diet_preset(class="form-select", id="diet_preset") }}
-                            {% for error in form.diet_preset.errors %}
-                                <span class="text-danger">{{ error }}</span>
-                            {% endfor %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.goal_modifier.label(class="form-label") }}
+                                {{ form.goal_modifier(class="form-select") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.diet_preset.label(class="form-label") }}
+                                {{ form.diet_preset(class="form-select") }}
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.calories.label(class="form-label") }}
                                 {{ form.calories(class="form-control") }}
-                                {% for error in form.calories.errors %}
-                                    <span class="text-danger">{{ error }}</span>
-                                {% endfor %}
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.protein.label(class="form-label") }}
                                 {{ form.protein(class="form-control") }}
-                                {% for error in form.protein.errors %}
-                                    <span class="text-danger">{{ error }}</span>
-                                {% endfor %}
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.carbs.label(class="form-label") }}
                                 {{ form.carbs(class="form-control") }}
-                                {% for error in form.carbs.errors %}
-                                    <span class="text-danger">{{ error }}</span>
-                                {% endfor %}
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.fat.label(class="form-label") }}
                                 {{ form.fat(class="form-control") }}
-                                {% for error in form.fat.errors %}
-                                    <span class="text-danger">{{ error }}</span>
-                                {% endfor %}
                             </div>
                         </div>
 
@@ -62,15 +53,9 @@
                             {% if measurement_system == 'us' %}
                             {{ form.weight_goal_lbs.label(class="form-label") }}
                             {{ form.weight_goal_lbs(class="form-control") }}
-                            {% for error in form.weight_goal_lbs.errors %}
-                                <span class="text-danger">{{ error }}</span>
-                            {% endfor %}
                             {% else %}
                             {{ form.weight_goal_kg.label(class="form-label") }}
                             {{ form.weight_goal_kg(class="form-control") }}
-                            {% for error in form.weight_goal_kg.errors %}
-                                <span class="text-danger">{{ error }}</span>
-                            {% endfor %}
                             {% endif %}
                         </div>
 
@@ -89,44 +74,87 @@
 {{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const goalModifierSelect = document.getElementById('goal_modifier');
     const dietPresetSelect = document.getElementById('diet_preset');
     const caloriesField = document.getElementById('calories');
     const proteinField = document.getElementById('protein');
     const carbsField = document.getElementById('carbs');
     const fatField = document.getElementById('fat');
+    const bmrValueElement = document.getElementById('bmr-value');
+    const nutrientFields = [caloriesField, proteinField, carbsField, fatField];
+    const form = document.querySelector('form');
 
-    // Function to update macro fields based on selected preset
-    function updateMacrosFromPreset() {
-        const selectedPreset = dietPresetSelect.value;
+    function setNutrientFieldsDisabled(disabled) {
+        nutrientFields.forEach(field => field.disabled = disabled);
+    }
+
+    function calculateAndPopulateGoals() {
+        const goalModifier = goalModifierSelect.value;
+        const dietPreset = dietPresetSelect.value;
+
+        if (goalModifier === 'manual' || dietPreset === 'manual') {
+            setNutrientFieldsDisabled(false);
+            // If switching to manual, don't clear fields, just enable them
+            return;
+        }
+
+        const bmrText = bmrValueElement.textContent;
+        if (!bmrText) return;
+
+        const bmr = parseFloat(bmrText);
+        if (isNaN(bmr)) return;
+
+        setNutrientFieldsDisabled(true);
+
+        let adjustedCalories;
+        switch (goalModifier) {
+            case 'safe_max_loss':
+                adjustedCalories = bmr - 750;
+                break;
+            case 'moderate_loss':
+                adjustedCalories = bmr - 500;
+                break;
+            case 'maintain':
+                adjustedCalories = bmr;
+                break;
+            case 'moderate_gain':
+                adjustedCalories = bmr * 1.10;
+                break;
+            case 'safe_max_gain':
+                adjustedCalories = bmr * 1.20;
+                break;
+            default:
+                // If no modifier is selected, but a diet is, base it on maintenance
+                adjustedCalories = bmr; 
+        }
+        
+        if (goalModifier.includes('loss')) {
+            adjustedCalories = Math.max(adjustedCalories, 1200);
+        }
+
         const dietPresets = {{ diet_presets|tojson }};
-        const bmr = parseFloat(document.getElementById('bmr-value').textContent);
-
-        if (selectedPreset && dietPresets[selectedPreset] && !isNaN(bmr)) {
-            const preset = dietPresets[selectedPreset];
-            caloriesField.value = Math.round(bmr);
-            proteinField.value = Math.round((bmr * preset.protein) / 4);
-            carbsField.value = Math.round((bmr * preset.carbs) / 4);
-            fatField.value = Math.round((bmr * preset.fat) / 9);
+        if (dietPresets[dietPreset]) {
+            const preset = dietPresets[dietPreset];
+            caloriesField.value = Math.round(adjustedCalories);
+            proteinField.value = Math.round((adjustedCalories * preset.protein) / 4);
+            carbsField.value = Math.round((adjustedCalories * preset.carbs) / 4);
+            fatField.value = Math.round((adjustedCalories * preset.fat) / 9);
         }
     }
 
-    // Attach event listener to diet preset select
-    if (dietPresetSelect) {
-        dietPresetSelect.addEventListener('change', updateMacrosFromPreset);
+    goalModifierSelect.addEventListener('change', calculateAndPopulateGoals);
+    dietPresetSelect.addEventListener('change', calculateAndPopulateGoals);
+
+    if (form) {
+        form.addEventListener('submit', function() {
+            setNutrientFieldsDisabled(false);
+        });
     }
 
-    // Initial update if a preset is already selected (e.g., after form validation error)
-    // Or if initial_goals are provided from backend
-    {% if initial_goals %}
-        // If initial_goals are provided, set the fields directly
-        caloriesField.value = {{ initial_goals.calories }};
-        proteinField.value = {{ initial_goals.protein }};
-        carbsField.value = {{ initial_goals.carbs }};
-        fatField.value = {{ initial_goals.fat }};
-    {% else %}
-        // Otherwise, trigger update from preset if one is selected
-        updateMacrosFromPreset();
-    {% endif %}
+    // Initial calculation on page load
+    // This will run with the default form values ('maintain' and 'balanced')
+    // or with values pre-populated from the database if the user is re-visiting the page.
+    calculateAndPopulateGoals();
 });
 </script>
 {% endblock %}

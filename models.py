@@ -104,6 +104,8 @@ class UserGoal(db.Model):
     __tablename__ = 'user_goals'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    goal_modifier = db.Column(db.String(50), nullable=True)
+    diet_preset = db.Column(db.String(50), nullable=True)
     calories = db.Column(db.Float, default=2000)
     protein = db.Column(db.Float, default=150)
     carbs = db.Column(db.Float, default=250)

@@ -81,30 +81,26 @@ def test_update_existing_goals(auth_client):
         assert user_goal.protein == 140
         assert user_goal.id == initial_goal_id
 
-def test_diet_preset_adjusts_goals(auth_client):
+def test_goal_modifier_and_diet_preset_are_saved(auth_client):
     """
     GIVEN a logged-in user
-    WHEN the user submits the goals form with a diet preset
-    THEN the UserGoal object should be created with BMR-adjusted values.
+    WHEN the user submits the goals form with a goal modifier and diet preset
+    THEN the UserGoal object should be created with the selected values.
     """
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
         user.has_completed_onboarding = True
-        user.age = 30
-        user.gender = 'Male'
-        user.height_cm = 180
         db.session.add(user)
-        checkin = CheckIn(user_id=user.id, weight_kg=80, checkin_date=date.today())
-        db.session.add(checkin)
         db.session.commit()
+
     data = {
+        'goal_modifier': 'moderate_loss',
         'diet_preset': 'Keto',
-        'calories': '',
-        'protein': '',
-        'carbs': '',
-        'fat': ''
+        'calories': '1800',
+        'protein': '150',
+        'carbs': '25',
+        'fat': '125'
     }
-    
 
     response = auth_client.post('/goals/', data=data, follow_redirects=True)
     assert response.status_code == 200
@@ -112,17 +108,13 @@ def test_diet_preset_adjusts_goals(auth_client):
     with auth_client.application.app_context():
         user = User.query.filter_by(username='testuser').first()
         user_goal = UserGoal.query.filter_by(user_id=user.id).first()
-        # BMR for 80kg, 180cm, 30yo Male is ~1780 kcal (Mifflin-St Jeor)
-        # Keto preset is 20% protein, 5% carbs, 75% fat
-        # Expected calories: 1780
-        # Expected protein: (1780 * 0.20) / 4 = 89 -> 89
-        # Expected carbs: (1780 * 0.05) / 4 = 22.25 -> 22
-        # Expected fat: (1780 * 0.75) / 9 = 148.33 -> 148
         assert user_goal is not None
-        assert user_goal.calories == 1780
-        assert user_goal.protein == 89
-        assert user_goal.carbs == 22
-        assert user_goal.fat == 148
+        assert user_goal.goal_modifier == 'moderate_loss'
+        assert user_goal.diet_preset == 'Keto'
+        assert user_goal.calories == 1800
+        assert user_goal.protein == 150
+        assert user_goal.carbs == 25
+        assert user_goal.fat == 125
 
 def test_exercise_goals_update(auth_client):
     """
@@ -309,20 +301,3 @@ def test_calculate_bmr_api(auth_client):
     # BMR = 370 + (21.6 * 64) = 1752.4
     assert round(data['bmr']) == 1752
     assert data['formula'] == 'Katch-McArdle'
-
-    # Test with preset adjustment
-    response = auth_client.post('/goals/calculate-bmr', json={
-        'age': 30,
-        'gender': 'Male',
-        'height_cm': 180,
-        'weight_kg': 80,
-        'diet_preset': 'Paleo'
-    })
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data['bmr'] == 1780
-    assert data['formula'] == 'Mifflin-St Jeor'
-    assert data['adjusted_goals']['calories'] == 1780
-    assert data['adjusted_goals']['protein'] == 134 # (1780 * 0.30) / 4
-    assert data['adjusted_goals']['carbs'] == 134   # (1780 * 0.30) / 4
-    assert data['adjusted_goals']['fat'] == 79     # (1780 * 0.40) / 9
