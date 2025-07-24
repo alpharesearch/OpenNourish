@@ -247,6 +247,40 @@
         </div>
     </div>
 
+    {% if projected_dates %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Weight Goal Projection</h2>
+        </div>
+        <div class="card-body">
+            {% if trending_away %}
+                <div class="alert alert-warning" role="alert">
+                    Based on your recent activity, you are currently trending away from your weight goal.
+                </div>
+            {% elif at_goal_and_maintaining %}
+                <div class="alert alert-info" role="alert">
+                    You are currently at your goal weight and maintaining. Keep up the great work!
+                </div>
+            {% elif days_to_goal is not none %}
+                <div class="alert alert-success" role="alert">
+                    Based on your recent activity, you are projected to reach your goal of 
+                    <strong>
+                        {% if current_user_measurement_system == 'us' %}
+                            {{ "%.1f"|format(goals.weight_goal_kg * 2.20462) }} lbs
+                        {% else %}
+                            {{ "%.1f"|format(goals.weight_goal_kg) }} kg
+                        {% endif %}
+                    </strong> 
+                    in approximately <strong>{{ days_to_goal }}</strong> days, around <strong>{{ goal_date_str }}</strong>.
+                </div>
+            {% endif %}
+            <div style="height: 400px;">
+                <canvas id="projectionChart"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <h2 class="mt-4">Exercise History</h2>
     <ul class="list-group">
         {% for log in exercise_logs %}
@@ -411,4 +445,73 @@
         }
     });
 </script>
+{% if projected_dates %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('projectionChart');
+    if (!ctx) return;
+
+    const measurementSystem = {{ current_user_measurement_system|tojson }};
+    const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
+    const conversionFactor = measurementSystem === 'us' ? 2.20462 : 1;
+
+    let projectedWeights = {{ projected_weights|tojson }}.map(w => w * conversionFactor);
+    let goalWeight = {{ goals.weight_goal_kg|tojson }} * conversionFactor;
+
+    const goalData = Array(projectedWeights.length).fill(goalWeight);
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ projected_dates|tojson }},
+            datasets: [{
+                label: `Projected Weight (${weightUnit})`,
+                data: projectedWeights,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1,
+                fill: false
+            }, {
+                label: `Goal Weight (${weightUnit})`,
+                data: goalData,
+                borderColor: 'rgb(255, 99, 132)',
+                borderDash: [5, 5],
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Weight Projection'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y.toFixed(1) + ' ' + weightUnit;
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: `Weight (${weightUnit})`
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

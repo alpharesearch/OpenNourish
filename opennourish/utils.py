@@ -1,18 +1,18 @@
 import os
 import json
-from models import db, Food, MyFood, Nutrient, FoodNutrient, Recipe, UnifiedPortion
+import asyncio
+import subprocess
+import tempfile
 from sqlalchemy.orm import selectinload
 from config import Config
 from constants import DIET_PRESETS, CORE_NUTRIENT_IDS
 from flask import send_file, current_app, render_template
-import subprocess
-import tempfile
 from types import SimpleNamespace
 from cryptography.fernet import Fernet
 from flask_mailing import Message
 from opennourish import mail
-
-import asyncio
+from datetime import date, timedelta
+from models import db, User, UserGoal, CheckIn, DailyLog, ExerciseLog, Food, MyFood, Recipe, UnifiedPortion, FoodNutrient
 
 def encrypt_value(value, key):
     f = Fernet(key)
@@ -954,3 +954,131 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
         except FileNotFoundError:
             current_app.logger.error("Typst executable not found.")
             return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
+        
+def calculate_weight_projection(user):
+    """
+    Projects a user's weight over time based on recent activity and goals.
+    """
+    today = date.today()
+    
+    # 1. Fetch latest check-in and goal
+    latest_checkin = CheckIn.query.filter_by(user_id=user.id).order_by(CheckIn.checkin_date.desc()).first()
+    user_goal = UserGoal.query.filter_by(user_id=user.id).first()
+
+    if not latest_checkin or not user_goal or not user_goal.weight_goal_kg:
+        return [], [], False, False # Return empty lists if essential data is missing, and at_goal_and_maintaining is False
+
+    # 2. Calculate BMR
+    bmr, _ = calculate_bmr(
+        weight_kg=latest_checkin.weight_kg,
+        height_cm=user.height_cm,
+        age=user.age,
+        gender=user.gender,
+        body_fat_percentage=latest_checkin.body_fat_percentage
+    )
+    if not bmr:
+        return [], [], False, False
+    bmr = round(bmr)
+
+    current_weight = latest_checkin.weight_kg
+    goal_weight = user_goal.weight_goal_kg
+
+    # 3. Calculate average daily calorie surplus/deficit
+    two_weeks_ago = today - timedelta(days=14)
+    
+    recent_diet_logs = DailyLog.query.filter(
+        DailyLog.user_id == user.id,
+        DailyLog.log_date >= two_weeks_ago
+    ).all()
+    
+    recent_exercise_logs = ExerciseLog.query.filter(
+        ExerciseLog.user_id == user.id,
+        ExerciseLog.log_date >= two_weeks_ago
+    ).all()
+
+    # Determine average daily calorie intake and expenditure over the last 14 days
+    # If there's no recent activity, use the user's calorie goal as the intake baseline.
+    
+    logged_days = set(log.log_date for log in recent_diet_logs) | set(log.log_date for log in recent_exercise_logs)
+    num_logged_days = len(logged_days) if logged_days else 1 # Ensure at least 1 to avoid division by zero
+
+    total_calories_consumed = calculate_nutrition_for_items(recent_diet_logs)['calories']
+    total_calories_burned = sum(log.calories_burned for log in recent_exercise_logs)
+
+    # Calculate average daily intake based on logs, or fall back to user goal if no logs
+    if recent_diet_logs:
+        avg_daily_calories_in = total_calories_consumed / num_logged_days
+    elif user_goal and user_goal.calories is not None:
+        avg_daily_calories_in = user_goal.calories
+    else:
+        return [], [], False # Cannot make a projection without intake data
+
+    # Calculate average daily burned calories based on logs, or fall back to weekly goal if no logs
+    if recent_exercise_logs:
+        avg_daily_calories_out = total_calories_burned / num_logged_days
+    elif user_goal and user_goal.calories_burned_goal_weekly is not None:
+        avg_daily_calories_out = user_goal.calories_burned_goal_weekly / 7 # Convert weekly goal to daily
+    else:
+        avg_daily_calories_out = 0 # Assume no exercise if no logs and no weekly goal
+
+    avg_daily_surplus_deficit = avg_daily_calories_in - (bmr + avg_daily_calories_out)
+    #current_app.logger.debug(f"BMR: {bmr}, Avg Daily Calories In: {avg_daily_calories_in}, Avg Daily Calories Out: {avg_daily_calories_out}, Avg Daily Surplus/Deficit: {avg_daily_surplus_deficit}")
+
+    # Determine if the user is at their goal and maintaining
+    at_goal_and_maintaining = False
+    if abs(avg_daily_surplus_deficit) < 1 and abs(current_weight - goal_weight) < 0.5: # Within 1 calorie and 0.5 kg of goal
+        at_goal_and_maintaining = True
+
+    # 4. Project weight
+    projected_dates = []
+    projected_weights = []
+    
+    current_weight = latest_checkin.weight_kg
+    current_date = today
+    goal_weight = user_goal.weight_goal_kg
+    
+    # Determine if the user is trending towards or away from the goal
+    is_losing = avg_daily_surplus_deficit < 0
+    is_gaining = avg_daily_surplus_deficit > 0
+    
+    wants_to_lose = goal_weight < current_weight
+    wants_to_gain = goal_weight > current_weight
+
+    trending_away = (wants_to_lose and is_gaining) or (wants_to_gain and is_losing)
+    
+    # Constants
+    CALORIES_PER_KG_FAT = 7700
+    PROJECTION_LIMIT_DAYS = 1095 # 3 years
+    AWAY_TREND_LIMIT_DAYS = 1095
+
+    day_count = 0
+    
+    while True:
+        # If at goal and maintaining, only project for today
+        if at_goal_and_maintaining and day_count == 1:
+            break
+
+        # Safety break for infinite loops
+        if day_count > PROJECTION_LIMIT_DAYS:
+            break
+        
+        # Safety break if trending away
+        if trending_away and day_count > AWAY_TREND_LIMIT_DAYS:
+            break
+
+        # Add current state to projection
+        projected_dates.append(current_date.strftime('%Y-%m-%d'))
+        projected_weights.append(current_weight)
+
+        # Check for goal completion
+        if (wants_to_lose and current_weight <= goal_weight) or \
+           (wants_to_gain and current_weight >= goal_weight):
+            break # Goal reached
+
+        # Project next day's weight
+        weight_change_kg = avg_daily_surplus_deficit / CALORIES_PER_KG_FAT
+        current_weight += weight_change_kg
+        current_date += timedelta(days=1)
+        day_count += 1
+
+    return projected_dates, projected_weights, trending_away, at_goal_and_maintaining

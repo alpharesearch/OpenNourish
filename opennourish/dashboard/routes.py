@@ -7,7 +7,7 @@ from flask import render_template, request
 from flask_login import login_required, current_user
 from . import dashboard_bp
 from models import db, DailyLog, Food, MyFood, UserGoal, CheckIn, ExerciseLog
-from opennourish.utils import calculate_nutrition_for_items, calculate_weekly_nutrition_summary
+from opennourish.utils import calculate_nutrition_for_items, calculate_weekly_nutrition_summary, calculate_weight_projection
 from sqlalchemy import func
 from opennourish.decorators import onboarding_required
 
@@ -112,4 +112,27 @@ def index(log_date_str=None):
         'fat': (user_goal.fat or 0) * 7
     }
 
-    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, time_range=time_range, weekly_progress=weekly_progress, exercise_logs=exercise_logs, start_of_week=start_of_week, end_of_week=end_of_week, pending_received=current_user.pending_requests_received, current_user_measurement_system=current_user.measurement_system, weekly_totals=weekly_totals, weekly_goals=weekly_goals, days_elapsed_in_week=days_elapsed_in_week)
+    # --- Weight Goal Projection ---
+    projected_dates, projected_weights, trending_away, at_goal_and_maintaining = calculate_weight_projection(current_user)
+    days_to_goal = None
+    goal_date_str = None
+    if projected_dates and not trending_away and not at_goal_and_maintaining:
+        days_to_goal = len(projected_dates) - 1
+        goal_date = date.fromisoformat(projected_dates[-1])
+        goal_date_str = goal_date.strftime('%B %d, %Y')
+
+
+    return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, 
+                           daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, 
+                           remaining=remaining, calories_burned=calories_burned, chart_labels=chart_labels, 
+                           weight_data=weight_data, body_fat_data=body_fat_data, waist_data=waist_data, 
+                           time_range=time_range, weekly_progress=weekly_progress, exercise_logs=exercise_logs, 
+                           start_of_week=start_of_week, end_of_week=end_of_week, 
+                           pending_received=current_user.pending_requests_received, 
+                           current_user_measurement_system=current_user.measurement_system, 
+                           weekly_totals=weekly_totals, weekly_goals=weekly_goals, 
+                           days_elapsed_in_week=days_elapsed_in_week,
+                           projected_dates=projected_dates, projected_weights=projected_weights,
+                           trending_away=trending_away, days_to_goal=days_to_goal, goal_date_str=goal_date_str,
+                           at_goal_and_maintaining=at_goal_and_maintaining)
+

@@ -158,6 +158,65 @@ To maintain a consistent and professional look and feel, all generated HTML temp
       response = client.get(response.headers['Location'])
       assert response.status_code == 200
   ```
+### 8.3. Writing Effective Pytest Tests
+
+To avoid common pitfalls and ensure tests are robust and maintainable, follow these guidelines when writing tests for OpenNourish.
+
+-   **Fixtures and App Context:**
+    -   **Problem:** A frequent error is the `DetachedInstanceError` from SQLAlchemy. This occurs when a database object (like a `User`) is created in a fixture's app context but is then accessed in a test function *outside* of that context. The object loses its connection to the database session.
+    -   **Solution:**
+        1.  **Return IDs from Fixtures:** Fixtures that create database objects should return the object's primary ID, not the object instance itself.
+        2.  **Re-fetch Objects in Tests:** Inside the test function, use a `with client.application.app_context():` block. Within this block, use the ID from the fixture to re-fetch the object from the database (e.g., `user = db.session.get(User, user_id)`). This ensures the object is "attached" to the current session.
+        3.  **Keep Assertions in Context:** Any assertions that require accessing a lazy-loaded relationship (e.g., `user.goals`) must also be performed *inside* the `with client.application.app_context():` block.
+
+-   **Mocking with `monkeypatch`:**
+    -   **Problem:** Manually replacing functions or methods for testing (e.g., `original_func = my_module.func; my_module.func = mock_func`) is brittle and can have unintended side effects across tests.
+    -   **Solution:** Use the built-in `monkeypatch` fixture from pytest. It handles the setup and teardown of the mock automatically, ensuring that the original function is restored after the test completes.
+    -   **Example:**
+        ```python
+        def test_my_function(monkeypatch):
+            # Define the mock function
+            def mock_returns_five(arg1, arg2):
+                return 5
+            
+            # Apply the mock to the target function
+            monkeypatch.setattr('path.to.your.module.function_to_mock', mock_returns_five)
+            
+            # Now, when your code calls the original function, the mock will be executed instead.
+            result = call_my_function()
+            assert result == 5
+        ```
+
+-   **Test Structure Example:**
+    ```python
+    import pytest
+    from models import db, User
+    from opennourish.utils import some_function_to_test
+
+    @pytest.fixture
+    def my_fixture(auth_client):
+        with auth_client.application.app_context():
+            user = User.query.filter_by(username='testuser').first()
+            # ... create other necessary data ...
+            db.session.commit()
+            return auth_client, user.id # Return the ID
+
+    def test_my_feature(my_fixture):
+        client, user_id = my_fixture # Unpack client and ID
+
+        # Use the app context for all database operations and function calls
+        with client.application.app_context():
+            # Re-fetch the user to ensure it's session-bound
+            user = db.session.get(User, user_id)
+
+            # Call the function you want to test
+            result = some_function_to_test(user)
+
+            # Perform assertions
+            assert result is not None
+            # If you need to access lazy-loaded relationships, do it here
+            assert user.goals is not None 
+    ```
 
 ## 9. Debugging with the Flask Logger
 To maintain a clean and professional codebase, **do not use `print()` statements for debugging.** Instead, use Flask's built-in logger, which is automatically configured to show messages only when the application is in debug mode.
