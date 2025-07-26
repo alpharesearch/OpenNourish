@@ -290,7 +290,8 @@ def create_app(config_class=Config):
                     minutes_per_exercise_goal=random.randint(30, 60),
                     weight_goal_kg=random.uniform(50, 100),
                     body_fat_percentage_goal=random.uniform(10, 25),
-                    waist_cm_goal=random.uniform(60, 90)
+                    waist_cm_goal=random.uniform(60, 90),
+                    default_fasting_hours=random.uniform(12, 96)
                 )
                 db.session.add(goal)
 
