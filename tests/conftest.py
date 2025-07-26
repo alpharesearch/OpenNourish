@@ -171,7 +171,7 @@ def auth_client_onboarded(app_with_db):
                 gender='Female',
                 height_cm=165
             )
-            user.onboarding_completed = True
+            user.has_completed_onboarding = True
             user.set_password('password')
             db.session.add(user)
             db.session.commit()

@@ -51,7 +51,8 @@ def test_update_existing_goals(auth_client):
             calories=2000,
             protein=120,
             carbs=250,
-            fat=70
+            fat=70,
+            default_fasting_hours=20
         )
         db.session.add(user)
         db.session.add(initial_goal)
@@ -66,7 +67,8 @@ def test_update_existing_goals(auth_client):
         'calories': 2200,
         'protein': 140,
         'carbs': 280,
-        'fat': 75
+        'fat': 75,
+        'default_fasting_hours': 18
     }
     
 
@@ -79,6 +81,7 @@ def test_update_existing_goals(auth_client):
         assert user_goal is not None
         assert user_goal.calories == 2200
         assert user_goal.protein == 140
+        assert user_goal.default_fasting_hours == 18
         assert user_goal.id == initial_goal_id
 
 def test_goal_modifier_and_diet_preset_are_saved(auth_client):

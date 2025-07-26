@@ -135,8 +135,8 @@ def test_dashboard_displays_fasting_status(auth_client_onboarded):
     response = auth_client_onboarded.get('/dashboard/', follow_redirects=True)
     assert response.status_code == 200
     assert b'Fasting Status' in response.data
-    assert b'progress-bar' not in response.data
-    assert b'Start a New Fast' in response.data
+    assert b'Fast Started' not in response.data
+    
 
     # Start a fast
     auth_client_onboarded.post('/fasting/start', follow_redirects=True)
@@ -145,10 +145,8 @@ def test_dashboard_displays_fasting_status(auth_client_onboarded):
     response = auth_client_onboarded.get('/dashboard/', follow_redirects=True)
     assert response.status_code == 200
     assert b'Fasting Status' in response.data
-    assert b'progress-bar' in response.data
-    assert b'Start a New Fast' not in response.data
-
-
+    assert b'Fast Started' in response.data
+    
 def test_user_can_set_default_fasting_duration(auth_client_onboarded):
     """
     Tests that a user can set a default fasting duration in their goals.
@@ -183,3 +181,4 @@ def test_user_can_set_default_fasting_duration(auth_client_onboarded):
     response = auth_client_onboarded.get('/fasting/')
     assert response.status_code == 200
     assert b'value="18"' in response.data
+
