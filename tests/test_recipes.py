@@ -659,3 +659,27 @@ def test_recipe_edit_ingredient_dropdown_1g_portion_uniqueness(auth_client_with_
         # Verify the '1 cup' portion is also still there
         expected_1cup_option_html = f'<option value="{re_queried_cup_portion.id}" > cup</option>'
         assert expected_1cup_option_html in ingredient_form_html, "' cup' portion option not found in dropdown HTML"
+
+def test_user_cannot_delete_other_users_recipe_unauthorized(auth_client_user_two):
+    """
+    Tests that a user cannot delete another user's recipe.
+    """
+    client, user_one, user_two = auth_client_user_two
+
+    with client.application.app_context():
+        # Create a recipe belonging to user_one
+        recipe_user_one = Recipe(user_id=user_one.id, name="User One's Recipe to Delete", instructions='Test')
+        db.session.add(recipe_user_one)
+        db.session.commit()
+        recipe_id = recipe_user_one.id
+
+    # Attempt to make a POST request to delete user_one's recipe as user_two
+    response = client.post(f'/recipes/{recipe_id}/delete', follow_redirects=True)
+    assert response.status_code == 200
+    assert b'You are not authorized to delete this recipe.' in response.data
+
+    with client.application.app_context():
+        # Assert that the recipe still exists and its user_id is unchanged
+        recipe = db.session.get(Recipe, recipe_id)
+        assert recipe is not None
+        assert recipe.user_id == user_one.id

@@ -1,6 +1,69 @@
 import pytest
-from models import db, Food, Nutrient, FoodNutrient, User
-from flask_login import current_user
+from models import db, Food, Nutrient, FoodNutrient, User, SystemSetting
+from opennourish import utils
+
+# --- Unit Conversion Tests ---
+
+@pytest.mark.parametrize("cm, expected_ft, expected_in", [
+    (180, 5, 10.9),
+    (165, 5, 5.0),
+    (0, 0, 0),
+    (None, None, None)
+])
+def test_cm_to_ft_in(cm, expected_ft, expected_in):
+    ft, inches = utils.cm_to_ft_in(cm)
+    assert ft == expected_ft
+    assert inches == expected_in
+
+@pytest.mark.parametrize("ft, inches, expected_cm", [
+    (5, 11, 180.34),
+    (5, 5, 165.1),
+    (0, 0, 0),
+    (None, 5, None),
+    (5, None, None)
+])
+def test_ft_in_to_cm(ft, inches, expected_cm):
+    cm = utils.ft_in_to_cm(ft, inches)
+    if cm is not None:
+        assert round(cm, 2) == expected_cm
+    else:
+        assert cm is None
+
+# --- BMR Calculation Tests ---
+
+def test_calculate_bmr_katch_mcardle():
+    # weight_kg, height_cm, age, gender, body_fat_percentage
+    bmr, formula = utils.calculate_bmr(80, 180, 30, 'Male', 15)
+    assert formula == "Katch-McArdle"
+    assert round(bmr) == 1839
+
+def test_calculate_bmr_mifflin_st_jeor_male():
+    bmr, formula = utils.calculate_bmr(80, 180, 30, 'Male')
+    assert formula == "Mifflin-St Jeor"
+    assert round(bmr) == 1780
+
+def test_calculate_bmr_mifflin_st_jeor_female():
+    bmr, formula = utils.calculate_bmr(65, 165, 30, 'Female')
+    assert formula == "Mifflin-St Jeor"
+    assert round(bmr) == 1370
+
+# --- Registration Status Test ---
+
+def test_get_allow_registration_status(app_with_db):
+    with app_with_db.app_context():
+        # Test default (True)
+        assert utils.get_allow_registration_status() is True
+
+        # Test when setting is 'false'
+        setting = SystemSetting(key='allow_registration', value='false')
+        db.session.add(setting)
+        db.session.commit()
+        assert utils.get_allow_registration_status() is False
+
+        # Test when setting is 'true'
+        setting.value = 'true'
+        db.session.commit()
+        assert utils.get_allow_registration_status() is True
 
 @pytest.fixture
 def client_with_usda_food(client):

@@ -76,30 +76,4 @@ def generate_nutrition_label(fdc_id):
 def nutrition_label_svg(fdc_id):
     return generate_nutrition_label_svg(fdc_id)
 
-@main_bp.route('/debug-proxy')
-def debug_proxy():
-    """
-    A temporary route to debug ProxyFix by inspecting request headers and environment.
-    """
-    headers = dict(request.headers)
-    environ = {key: value for key, value in request.environ.items() if key.upper() in [
-        'wsgi.url_scheme'.upper(), 'HTTP_HOST', 'SERVER_NAME', 'SERVER_PORT', 
-        'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED_PROTO', 'HTTP_X_FORWARDED_HOST',
-        'HTTP_X_FORWARDED_PORT', 'HTTP_X_FORWARDED_PREFIX'
-    ]}
-    
-    debug_info = {
-        "message": "ProxyFix Debug Information",
-        "request.url": request.url,
-        "request.url_root": request.url_root,
-        "request.host_url": request.host_url,
-        "request.host": request.host,
-        "request.scheme": request.scheme,
-        "request.headers": headers,
-        "request.environ": environ
-    }
 
-    # Using the app logger to print the dictionary as a formatted string
-    current_app.logger.info(f"PROXY_DEBUG: {debug_info}")
-
-    return debug_info

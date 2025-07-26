@@ -8,7 +8,7 @@ import shutil
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from opennourish import create_app
-from models import db, User, UserGoal, CheckIn
+from models import db, User, UserGoal, CheckIn, Food
 from config import Config
 from models import UserGoal
 from datetime import date
@@ -192,3 +192,12 @@ def auth_client_onboarded(app_with_db):
             sess['_user_id'] = user_id
             sess['_fresh'] = True
         yield client
+
+@pytest.fixture(scope='function')
+def sample_usda_food(app_with_db):
+    """Creates a sample USDA food item in the test database."""
+    with app_with_db.app_context():
+        food = Food(fdc_id=12345, description='Test USDA Food')
+        db.session.add(food)
+        db.session.commit()
+        yield food

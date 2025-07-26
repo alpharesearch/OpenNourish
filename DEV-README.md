@@ -315,7 +315,7 @@ To ensure your changes are well-tested, you should run a coverage analysis.
 
 2.  **View a Quick Report:** To see a summary of coverage percentages directly in your terminal, use the `report` command. The `-m` flag will also highlight which line numbers are missing coverage.
     ```bash
-    coverage report -m
+    coverage report -m --skip-covered --format=markdown --omit="test*"
     ```
 
 3.  **Generate an Interactive HTML Report:** This is the most useful way to analyze coverage. It creates a detailed, clickable report.
@@ -323,6 +323,11 @@ To ensure your changes are well-tested, you should run a coverage analysis.
     coverage html
     ```
     After the command finishes, open the `htmlcov/index.html` file in your web browser to explore which specific lines and branches of your code are not currently being tested.
+4.  **All in one**
+    ```bash
+    coverage run -m pytest -m "not integration" && coverage html && coverage report -m --skip-covered --format=markdown --omit="test*","opennourish/__init__.py"
+    ```
+
 
 ## 5. Creating pip requirments.txt for deployment
 

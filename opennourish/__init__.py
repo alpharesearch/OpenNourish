@@ -200,7 +200,7 @@ def create_app(config_class=Config):
             db.session.add_all(activities)
             db.session.commit()
             print("Default exercise activities added.")
-
+# no cover: start
     @app.cli.command("seed-dev-data")
     @click.argument('count', default=3, type=int)
     def seed_dev_data_command(count):
@@ -729,7 +729,7 @@ def create_app(config_class=Config):
 
             db.session.commit()
             print(f"Database seeded with {users_created} users, {my_foods_created} MyFoods, {check_ins_created} CheckIns, {recipes_created} Recipes, {my_meals_created} MyMeals, {my_meal_items_created} MyMealItems, {daily_logs_created} Daily Logs, and {exercise_logs_created} Exercise Logs.")
-
+# no cover: stop
     @app.cli.command("seed-usda-portions")
     def seed_usda_portions_command():
         """

@@ -9,7 +9,7 @@ from opennourish.utils import (
 # Test cm_to_ft_in
 def test_cm_to_ft_in():
     assert cm_to_ft_in(180) == (5, pytest.approx(10.9, abs=0.1))
-    assert cm_to_ft_in(0) == (None, None)
+    assert cm_to_ft_in(0) == (0, 0)
     assert cm_to_ft_in(None) == (None, None)
     assert cm_to_ft_in(152.4) == (5, pytest.approx(0.0, abs=0.1))
 

@@ -95,8 +95,10 @@ def calculate_weekly_nutrition_summary(weekly_logs):
 
 # Height
 def cm_to_ft_in(cm):
-    if not cm:
+    if cm is None:
         return None, None
+    if cm == 0:
+        return 0, 0
     inches_total = cm / 2.54
     feet = int(inches_total // 12)
     inches = round(inches_total % 12, 1)
