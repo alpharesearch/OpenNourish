@@ -138,7 +138,7 @@ def diary(log_date_str=None):
     # --- Water Quick-Add Setup ---
     water_food = MyFood.query.filter_by(user_id=current_user.id, description="Water").first()
     if not water_food:
-        water_food = MyFood(user_id=current_user.id, description="Water", food_group="Water", calories=0, protein=0, carbs=0, fat=0)
+        water_food = MyFood(user_id=current_user.id, description="Water", calories_per_100g=0, protein_per_100g=0, carbs_per_100g=0, fat_per_100g=0)
         db.session.add(water_food)
         # Create default portions right away
         ml_portion = UnifiedPortion(my_food=water_food, portion_description="ml", gram_weight=1.0)

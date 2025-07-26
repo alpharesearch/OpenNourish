@@ -112,7 +112,7 @@
                                 <input type="hidden" name="target" value="diary">
                                 <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
                                 <input type="hidden" name="meal_name" value="Water">
-                                <input type="hidden" name="quantity" value="{{ amount }}">
+                                <input type="hidden" name="amount" value="{{ amount }}">
                                 <input type="hidden" name="portion_id" value="{{ ml_portion.id }}">
                                 <button type="submit" class="btn btn-outline-primary btn-sm">+{{ amount }} ml</button>
                             </form>
@@ -125,7 +125,7 @@
                                 <input type="hidden" name="target" value="diary">
                                 <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
                                 <input type="hidden" name="meal_name" value="Water">
-                                <input type="hidden" name="quantity" value="{{ amount }}">
+                                <input type="hidden" name="amount" value="{{ amount }}">
                                 <input type="hidden" name="portion_id" value="{{ floz_portion.id }}">
                                 <button type="submit" class="btn btn-outline-primary btn-sm">+{{ amount }} oz</button>
                             </form>

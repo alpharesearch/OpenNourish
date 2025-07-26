@@ -441,7 +441,7 @@ def search():
                 MyMeal.usage_count > 0
             ).order_by(MyMeal.usage_count.desc()).paginate(page=my_meals_page, per_page=per_page, error_out=False)
 
-    return render_template('search/index.html',
+    return render_template('search/search.html',
                            search_term=search_term,
                            usda_foods_pagination=usda_foods_pagination,
                            my_foods_pagination=my_foods_pagination,
@@ -475,7 +475,7 @@ def add_item():
     recipe_id = request.form.get('recipe_id')
     log_date_str = request.form.get('log_date')
     meal_name = request.form.get('meal_name')
-    amount = float(request.form.get('quantity', 1))
+    amount = float(request.form.get('amount', 1))
     portion_id_str = request.form.get('portion_id')
 
     # Ensure a 1-gram portion exists for USDA foods when they are added.

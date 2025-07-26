@@ -85,14 +85,8 @@
                 </div>
             {% elif last_completed_fast %}
                 <p>Your last fast ended on {{ last_completed_fast.end_time | localtime }} and lasted {{ '{:.2f}'.format((last_completed_fast.end_time - last_completed_fast.start_time).total_seconds() / 3600) }} hours.</p>
-                <form action="{{ url_for('fasting.start_fast') }}" method="POST" class="d-inline">
-                    <button type="submit" class="btn btn-primary">Start a New Fast</button>
-                </form>
             {% else %}
                 <p>You have no active or completed fasts.</p>
-                <form action="{{ url_for('fasting.start_fast') }}" method="POST" class="d-inline">
-                    <button type="submit" class="btn btn-primary">Start a New Fast</button>
-                </form>
             {% endif %}
         </div>
     </div>

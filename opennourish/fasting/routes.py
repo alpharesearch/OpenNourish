@@ -28,7 +28,7 @@ def index():
     forms = {fast.id: EditFastForm(obj=fast) for fast in completed_fasts_pagination.items}
 
     return render_template(
-        'fasting/index.html', 
+        'fasting/fasting.html', 
         active_fast=active_fast, 
         completed_fasts=completed_fasts_pagination, 
         now=datetime.utcnow(), 
