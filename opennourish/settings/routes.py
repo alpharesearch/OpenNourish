@@ -1,9 +1,21 @@
-from flask import render_template, flash, redirect, url_for, request, current_app
+from flask import render_template, flash, redirect, url_for, request, current_app, jsonify
 from flask_login import current_user, login_required, logout_user
 from models import User, db, MyFood, Recipe, UserGoal, CheckIn, DailyLog, ExerciseLog, Friendship, MyMeal
 from .forms import SettingsForm, ChangePasswordForm, DeleteAccountConfirmForm
 from opennourish.utils import ft_in_to_cm, cm_to_ft_in
 from . import settings_bp
+
+@settings_bp.route('/set-timezone', methods=['POST'])
+@login_required
+def set_timezone():
+    data = request.get_json()
+    timezone = data.get('timezone')
+    if timezone:
+        user = db.session.get(User, current_user.id)
+        user.timezone = timezone
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Timezone updated.'})
+    return jsonify({'status': 'error', 'message': 'Timezone not provided.'}), 400
 
 @settings_bp.route('/', methods=['GET', 'POST'])
 @login_required
@@ -41,6 +53,7 @@ def settings():
         user.theme_preference = settings_form.theme_preference.data
         user.meals_per_day = int(settings_form.meals_per_day.data)
         user.is_private = settings_form.is_private.data
+        user.timezone = settings_form.timezone.data
         
         db.session.commit()
         flash('Your settings have been updated.', 'success')

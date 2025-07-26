@@ -57,3 +57,4 @@ WTForms==3.2.1
 WTForms-SQLAlchemy==0.3
 zipp==3.23.0
 pytest-mock
+pytz

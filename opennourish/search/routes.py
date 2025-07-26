@@ -475,7 +475,7 @@ def add_item():
     recipe_id = request.form.get('recipe_id')
     log_date_str = request.form.get('log_date')
     meal_name = request.form.get('meal_name')
-    amount = float(request.form.get('amount', 1))
+    amount = float(request.form.get('quantity', 1))
     portion_id_str = request.form.get('portion_id')
 
     # Ensure a 1-gram portion exists for USDA foods when they are added.

@@ -2,7 +2,8 @@
 
 {% block content %}
 <div class="container">
-        <div class="d-sm-flex justify-content-between align-items-center mb-3 mt-4">
+    
+    <div class="d-sm-flex justify-content-between align-items-center mb-3 mt-4">
         <div class="d-flex justify-content-between mb-2 mb-sm-0">
         {% if is_read_only %}
             <a href="{{ url_for('profile.diary', username=username, log_date_str=prev_date.isoformat()) }}" class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
@@ -18,7 +19,16 @@
     <h1 class="mb-0 text-center">{% if is_read_only %}{{ username }}'s {% endif %}Food Diary</h1>
     <h2 class="mb-0 text-center h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
 </div>
-
+{% if is_fasting %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3>Fasting Log</h3>
+        </div>
+        <div class="card-body">
+            <p>You are currently fasting. You can log water intake below.</p>
+        </div>
+    </div>
+    {% else %}
     <div class="card mb-4">
         <div class="card-header">
             <h3>Daily Nutrition Summary</h3>
@@ -64,12 +74,23 @@
                 {% endfor %}
         </div>
     </div>
-
+    {% endif %}
     {% for meal_name in meal_names_to_render %}
     {% set items = meals.get(meal_name, []) %}
     <div class="card mb-3">
         <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
-            <h4 class="mb-2 mb-md-0">{{ meal_name }}</h4>
+            <h4 class="mb-2 mb-md-0">
+                {{ meal_name }}
+                {% if meal_name == 'Water' and water_total_grams > 0 %}
+                    <span class="text-muted h6">
+                        {% if current_user.measurement_system == 'metric' %}
+                            (Total: {{ "%.0f" | format(water_total_grams) }} ml)
+                        {% else %}
+                            (Total: {{ "%.1f" | format(water_total_grams * 0.033814) }} oz)
+                        {% endif %}
+                    </span>
+                {% endif %}
+            </h4>
             {% if is_read_only and items %}
                 <form action="{{ url_for('diary.copy_meal_from_friend') }}" method="post">
                     <input type="hidden" name="friend_username" value="{{ username }}">
@@ -79,6 +100,43 @@
                 </form>
             {% elif not is_read_only %}
             <div class="d-flex flex-column flex-md-row align-items-md-center">
+                {% if meal_name == 'Water' %}
+                    {% set ml_portion = water_food.portions | selectattr('portion_description', 'equalto', 'ml') | first %}
+                    {% set floz_portion = water_food.portions | selectattr('portion_description', 'equalto', 'fl oz') | first %}
+                    <div class="d-flex justify-content-end align-items-center">
+                        {% if current_user.measurement_system == 'metric' and ml_portion %}
+                            {% for amount in [100, 250, 500] %}
+                            <form action="{{ url_for('search.add_item') }}" method="post" class="ms-2">
+                                <input type="hidden" name="food_id" value="{{ water_food.id }}">
+                                <input type="hidden" name="food_type" value="my_food">
+                                <input type="hidden" name="target" value="diary">
+                                <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
+                                <input type="hidden" name="meal_name" value="Water">
+                                <input type="hidden" name="quantity" value="{{ amount }}">
+                                <input type="hidden" name="portion_id" value="{{ ml_portion.id }}">
+                                <button type="submit" class="btn btn-outline-primary btn-sm">+{{ amount }} ml</button>
+                            </form>
+                            {% endfor %}
+                        {% elif current_user.measurement_system == 'us' and floz_portion %}
+                            {% for amount in [8, 12, 16] %}
+                            <form action="{{ url_for('search.add_item') }}" method="post" class="ms-2">
+                                <input type="hidden" name="food_id" value="{{ water_food.id }}">
+                                <input type="hidden" name="food_type" value="my_food">
+                                <input type="hidden" name="target" value="diary">
+                                <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
+                                <input type="hidden" name="meal_name" value="Water">
+                                <input type="hidden" name="quantity" value="{{ amount }}">
+                                <input type="hidden" name="portion_id" value="{{ floz_portion.id }}">
+                                <button type="submit" class="btn btn-outline-primary btn-sm">+{{ amount }} oz</button>
+                            </form>
+                            {% endfor %}
+                        {% endif %}
+                         <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}" class="btn btn-outline-info btn-sm ms-2">
+                            <span class="d-none d-md-inline">Custom</span>
+                            <span class="d-inline d-md-none">+</span>
+                        </a>
+                    </div>
+                {% else %}
                 <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex me-md-2 mb-2 mb-md-0">
                     <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
                     <input type="hidden" name="meal_name" value="{{ meal_name }}">
@@ -95,6 +153,7 @@
                         <span class="d-inline d-md-none">Scan</span>
                     </a>
                 </div>
+                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -144,5 +203,5 @@
         </ul>
     </div>
     {% endfor %}
-</div>
+    </div>
 {% endblock %}

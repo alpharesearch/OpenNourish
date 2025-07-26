@@ -72,6 +72,33 @@
 
     <div class="card mb-4">
         <div class="card-header">
+            <h2 class="card-title mb-0">Fasting Status</h2>
+        </div>
+        <div class="card-body">
+            {% if active_fast %}
+                <p><strong>Fast Started:</strong> {{ active_fast.start_time | localtime }}</p>
+                <p><strong>Planned Duration:</strong> {{ active_fast.planned_duration_hours }} hours</p>
+                <div class="progress" style="height: 20px;">
+                    {% set elapsed_hours = (now - active_fast.start_time).total_seconds() / 3600 %}
+                    {% set percentage = (elapsed_hours / active_fast.planned_duration_hours) * 100 %}
+                    <div class="progress-bar" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ elapsed_hours }}" aria-valuemin="0" aria-valuemax="{{ active_fast.planned_duration_hours }}">{{ '%.1f'|format(percentage) }}%</div>
+                </div>
+            {% elif last_completed_fast %}
+                <p>Your last fast ended on {{ last_completed_fast.end_time | localtime }} and lasted {{ '{:.2f}'.format((last_completed_fast.end_time - last_completed_fast.start_time).total_seconds() / 3600) }} hours.</p>
+                <form action="{{ url_for('fasting.start_fast') }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-primary">Start a New Fast</button>
+                </form>
+            {% else %}
+                <p>You have no active or completed fasts.</p>
+                <form action="{{ url_for('fasting.start_fast') }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-primary">Start a New Fast</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
             <h2 class="card-title mb-0">Weekly Nutritional Goals</h2>
             <small class="text-muted">{{ start_of_week.strftime('%b %d, %Y') }} - {{ end_of_week.strftime('%b %d, %Y') }}</small>
         </div>

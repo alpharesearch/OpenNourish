@@ -50,6 +50,7 @@ def goals():
             user_goal.weight_goal_kg = form.weight_goal_kg.data
             user_goal.waist_cm_goal = form.waist_cm_goal.data
         user_goal.body_fat_percentage_goal = form.body_fat_percentage_goal.data
+        user_goal.default_fasting_hours = form.default_fasting_hours.data
         
         db.session.commit()
         flash('Goals updated!', 'success')

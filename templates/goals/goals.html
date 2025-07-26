@@ -89,6 +89,14 @@
             </div>
         </div>
 
+        <h2 class="mt-4 mb-3">4. Fasting</h2>
+        <div class="row">
+            <div class="col-lg-4 mb-3">
+                {{ form.default_fasting_hours.label(class="form-label") }}
+                {{ form.default_fasting_hours(class="form-control") }}
+            </div>
+        </div>
+
         <button type="submit" class="btn btn-outline-success">Save Goals</button>
     </form>
 </div>
@@ -131,6 +139,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let adjustedCalories;
         switch (goalModifier) {
+            case 'max_loss':
+                adjustedCalories = 1200;
+                break;
             case 'safe_max_loss':
                 adjustedCalories = bmr - 750;
                 break;

@@ -20,6 +20,7 @@ class GoalForm(FlaskForm):
     body_fat_percentage = FloatField('Body Fat % (optional)', validators=[Optional(), NumberRange(min=0, max=100)])
     goal_modifier = SelectField('Adjust Nutritional Goals', choices=[
         ('manual', 'Manual Entry'),
+        ('max_loss', 'Max Loss'),
         ('safe_max_loss', 'Safe Max Loss'),
         ('moderate_loss', 'Moderate Loss'),
         ('maintain', 'Maintain'),
@@ -45,6 +46,8 @@ class GoalForm(FlaskForm):
     # US Body Composition Fields
     weight_goal_lbs = FloatField('Target Weight (lbs)', validators=[Optional(), NumberRange(min=1, max=700)])
     waist_in_goal = FloatField('Target Waist Circumference (in)', validators=[Optional(), NumberRange(min=1, max=100)])
+
+    default_fasting_hours = IntegerField('Default Fasting Duration (hours)', validators=[Optional(), NumberRange(min=1, max=48)])
 
     submit = SubmitField('Save Goals')
 

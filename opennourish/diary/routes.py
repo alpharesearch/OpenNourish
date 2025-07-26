@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, current_app
 from flask_login import current_user, login_required
 from . import diary_bp
-from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog, UnifiedPortion, User, Friendship
+from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog, UnifiedPortion, User, Friendship, FastingSession
 from datetime import date, timedelta
 from opennourish.utils import calculate_nutrition_for_items, get_available_portions, remove_leading_one
 from .forms import MealForm, DailyLogForm, MealItemForm
@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from types import SimpleNamespace
 
-ALL_MEAL_TYPES = ['Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)', 'Unspecified']
+ALL_MEAL_TYPES = ['Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)', 'Unspecified', 'Water']
 
 @diary_bp.route('/diary/')
 @diary_bp.route('/diary/<string:log_date_str>')
@@ -22,6 +22,9 @@ def diary(log_date_str=None):
             log_date = date.today() - timedelta(days=1)
         else:
             log_date = date.today()
+
+    active_fast = FastingSession.query.filter_by(user_id=current_user.id, status='active').first()
+    is_fasting = active_fast is not None
 
     user_goal = db.session.get(UserGoal, current_user.id)
     if not user_goal:
@@ -36,7 +39,7 @@ def diary(log_date_str=None):
     meals = {
         'Breakfast': [], 'Snack (morning)': [], 'Lunch': [], 
         'Snack (afternoon)': [], 'Dinner': [], 'Snack (evening)': [],
-        'Unspecified': []
+        'Unspecified': [], 'Water': []
     }
     
     totals = calculate_nutrition_for_items(daily_logs)
@@ -95,9 +98,8 @@ def diary(log_date_str=None):
 
         # Assign to the correct meal category, defaulting to 'Unspecified'
         meal_key = log.meal_name or 'Unspecified'
-        #current_app.logger.debug(f"Processing log entry: meal_name={log.meal_name}, meal_key={meal_key}")
         if meal_key not in meals:
-            meals[meal_key] = [] # Initialize if not present
+            meals[meal_key] = []
         meals[meal_key].append({
             'log_id': log.id,
             'description': description_to_display,
@@ -109,26 +111,58 @@ def diary(log_date_str=None):
             'owner_id': food_item.user_id if hasattr(food_item, 'user_id') else None
         })
 
-    #current_app.logger.debug(f"Meals dictionary: {meals}")
-
     prev_date = log_date - timedelta(days=1)
     next_date = log_date + timedelta(days=1)
 
     # Determine the base meal names to always display based on user settings
+    base_meals_to_show = []
     if current_user.meals_per_day == 3:
         base_meals_to_show = ['Breakfast', 'Lunch', 'Dinner']
-    else: # meals_per_day == 6
+    elif current_user.meals_per_day == 4:
+        base_meals_to_show = ['Water', 'Breakfast', 'Lunch', 'Dinner']
+    elif current_user.meals_per_day == 6:
         base_meals_to_show = ['Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)']
+    elif current_user.meals_per_day == 7:
+        base_meals_to_show = ['Water', 'Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)']
+
+    # If fasting, only show water and hide other meals
+    if is_fasting:
+        base_meals_to_show = ['Water']
 
     # Collect all meal names that actually have items logged for the day
     logged_meal_names = {meal_name for meal_name, items in meals.items() if items}
 
     # Combine base meals with any other meals that have logged items
-    # Ensure 'Unspecified' is always included if it has items
     meal_names_to_render = sorted(list(set(base_meals_to_show) | logged_meal_names), key=ALL_MEAL_TYPES.index)
 
-    current_app.logger.debug(f"Meals dictionary: {meals}")
-    return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned, meal_names_to_render=meal_names_to_render)
+    # --- Water Quick-Add Setup ---
+    water_food = MyFood.query.filter_by(user_id=current_user.id, description="Water").first()
+    if not water_food:
+        water_food = MyFood(user_id=current_user.id, description="Water", food_group="Water", calories=0, protein=0, carbs=0, fat=0)
+        db.session.add(water_food)
+        # Create default portions right away
+        ml_portion = UnifiedPortion(my_food=water_food, portion_description="ml", gram_weight=1.0)
+        floz_portion = UnifiedPortion(my_food=water_food, portion_description="fl oz", gram_weight=29.5735)
+        db.session.add_all([ml_portion, floz_portion])
+        db.session.commit() # Commit to get IDs for the template
+    else:
+        # Check for and create missing portions if the water item already exists
+        existing_portions = {p.portion_description for p in water_food.portions}
+        if "ml" not in existing_portions:
+            ml_portion = UnifiedPortion(my_food=water_food, portion_description="ml", gram_weight=1.0)
+            db.session.add(ml_portion)
+        if "fl oz" not in existing_portions:
+            floz_portion = UnifiedPortion(my_food=water_food, portion_description="fl oz", gram_weight=29.5735)
+            db.session.add(floz_portion)
+        if db.session.dirty:
+            db.session.commit()
+
+
+    # Calculate total water intake in grams
+    water_total_grams = sum(log.amount_grams for log in daily_logs if log.meal_name == 'Water')
+
+    return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned, meal_names_to_render=meal_names_to_render, is_fasting=is_fasting, water_total_grams=water_total_grams, water_food=water_food)
+
 
 
 

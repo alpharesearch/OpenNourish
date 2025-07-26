@@ -130,6 +130,9 @@ def create_app(config_class=Config):
     from opennourish.admin import admin_bp
     app.register_blueprint(admin_bp)
 
+    from opennourish.fasting import fasting_bp
+    app.register_blueprint(fasting_bp, url_prefix='/fasting')
+
     @login_manager.user_loader
     def load_user(user_id):
         user = db.session.get(User, int(user_id))
@@ -140,6 +143,34 @@ def create_app(config_class=Config):
     @app.template_filter('nl2br')
     def nl2br_filter(s):
         return s.replace("\n", "<br>")
+
+    @app.template_filter('localtime')
+    def localtime_filter(utc_dt):
+        from flask_login import current_user
+        import pytz
+        if utc_dt is None:
+            return ""
+        if current_user.is_authenticated and hasattr(current_user, 'timezone'):
+            local_tz = pytz.timezone(current_user.timezone)
+        else:
+            local_tz = pytz.timezone('UTC')
+        
+        local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+        return local_dt.strftime('%Y-%m-%d %H:%M:%S')
+
+    @app.template_filter('datetime_local')
+    def datetime_local_filter(utc_dt):
+        from flask_login import current_user
+        import pytz
+        if utc_dt is None:
+            return ""
+        if current_user.is_authenticated and hasattr(current_user, 'timezone'):
+            local_tz = pytz.timezone(current_user.timezone)
+        else:
+            local_tz = pytz.timezone('UTC')
+        
+        local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+        return local_dt.strftime('%Y-%m-%dT%H:%M')
 
     @app.cli.command("init-user-db")
     def init_user_db_command():

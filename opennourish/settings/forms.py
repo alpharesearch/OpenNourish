@@ -3,6 +3,7 @@ from wtforms import StringField, PasswordField, SubmitField, BooleanField, Selec
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional
 from models import User
 from flask_login import current_user
+import pytz
 
 class SettingsForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -52,10 +53,16 @@ class SettingsForm(FlaskForm):
     )
     meals_per_day = SelectField(
         'Meals Per Day',
-        choices=[('3', '3 (Breakfast, Lunch, Dinner)'), ('6', '6 (Breakfast, Snacks, Lunch, Snacks, Dinner, Snacks)')],
+        choices=[
+            ('3', '3 (Breakfast, Lunch, Dinner)'),
+            ('4', '4 (3 meals + Water)'),
+            ('6', '6 (Breakfast, Snacks, Lunch, Snacks, Dinner, Snacks)'),
+            ('7', '7 (6 meals + Water)')
+        ],
         validators=[DataRequired()]
     )
     is_private = BooleanField('Enable Unlisted Mode')
+    timezone = SelectField('Timezone', choices=[(tz, tz) for tz in pytz.common_timezones])
     submit = SubmitField('Save Settings')
 
     def validate_email(self, email):

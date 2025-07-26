@@ -41,5 +41,32 @@
             }
         });
     </script>
+    {% if current_user.is_authenticated and current_user.timezone == 'UTC' %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (userTimezone) {
+                fetch("{{ url_for('settings.set_timezone') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ timezone: userTimezone }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('Timezone set to:', userTimezone);
+                        // Optionally, reload the page to apply the new timezone immediately
+                        // window.location.reload();
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error setting timezone:', error);
+                });
+            }
+        });
+    </script>
+    {% endif %}
   </body>
 </html>

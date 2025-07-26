@@ -1,12 +1,8 @@
-from flask import render_template
-from flask_login import login_required, current_user
-from . import dashboard_bp
-from models import db, DailyLog, Food, MyFood, UserGoal, CheckIn, ExerciseLog
-from datetime import date, timedelta
 from flask import render_template, request
 from flask_login import login_required, current_user
 from . import dashboard_bp
-from models import db, DailyLog, Food, MyFood, UserGoal, CheckIn, ExerciseLog
+from models import db, DailyLog, Food, MyFood, UserGoal, CheckIn, ExerciseLog, FastingSession
+from datetime import date, timedelta, datetime
 from opennourish.utils import calculate_nutrition_for_items, calculate_weekly_nutrition_summary, calculate_weight_projection
 from sqlalchemy import func
 from opennourish.decorators import onboarding_required
@@ -120,6 +116,10 @@ def index(log_date_str=None):
         days_to_goal = len(projected_dates) - 1
         goal_date = date.fromisoformat(projected_dates[-1])
         goal_date_str = goal_date.strftime('%B %d, %Y')
+    
+    # --- Fasting Status ---
+    active_fast = FastingSession.query.filter_by(user_id=current_user.id, status='active').first()
+    last_completed_fast = FastingSession.query.filter_by(user_id=current_user.id, status='completed').order_by(FastingSession.end_time.desc()).first()
 
 
     return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, 
@@ -134,5 +134,5 @@ def index(log_date_str=None):
                            days_elapsed_in_week=days_elapsed_in_week,
                            projected_dates=projected_dates, projected_weights=projected_weights,
                            trending_away=trending_away, days_to_goal=days_to_goal, goal_date_str=goal_date_str,
-                           at_goal_and_maintaining=at_goal_and_maintaining)
-
+                           at_goal_and_maintaining=at_goal_and_maintaining,
+                           active_fast=active_fast, last_completed_fast=last_completed_fast, now=datetime.utcnow())

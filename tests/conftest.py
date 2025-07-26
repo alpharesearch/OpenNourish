@@ -8,8 +8,10 @@ import shutil
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from opennourish import create_app
-from models import db, User
+from models import db, User, UserGoal, CheckIn
 from config import Config
+from models import UserGoal
+from datetime import date
 
 @pytest.fixture(scope='function')
 def app_with_db(mocker):
@@ -156,3 +158,37 @@ def auth_client_with_friendship(app_with_db):
             sess['_user_id'] = test_user.id
             sess['_fresh'] = True
         yield client, test_user, friend_user
+
+@pytest.fixture(scope='function')
+def auth_client_onboarded(app_with_db):
+    """A test client that is authenticated for a user who has completed onboarding."""
+    with app_with_db.test_client() as client:
+        with app_with_db.app_context():
+            user = User(
+                username='onboardeduser',
+                email='onboarded@example.com',
+                age=30,
+                gender='Female',
+                height_cm=165
+            )
+            user.onboarding_completed = True
+            user.set_password('password')
+            db.session.add(user)
+            db.session.commit()
+
+            user_goal = UserGoal(
+                user_id=user.id,
+                calories=2000,
+                protein=150,
+                carbs=200,
+                fat=70,
+                default_fasting_hours=16
+            )
+            db.session.add(user_goal)
+            db.session.commit()
+            user_id = user.id
+
+        with client.session_transaction() as sess:
+            sess['_user_id'] = user_id
+            sess['_fresh'] = True
+        yield client

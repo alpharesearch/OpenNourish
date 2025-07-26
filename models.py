@@ -35,6 +35,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     is_verified = db.Column(db.Boolean, nullable=False, default=False)
     is_private = db.Column(db.Boolean, nullable=False, default=False)
+    timezone = db.Column(db.String(100), nullable=False, default='UTC')
 
     # Relationships
     goals = db.relationship('UserGoal', backref='user', uselist=False, cascade="all, delete-orphan")
@@ -100,6 +101,17 @@ class Friendship(db.Model):
 
     __table_args__ = (db.UniqueConstraint('requester_id', 'receiver_id', name='uq_friendship'),)
 
+class FastingSession(db.Model):
+    __tablename__ = 'fasting_sessions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    end_time = db.Column(db.DateTime, nullable=True)
+    planned_duration_hours = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='active')  # e.g., 'active', 'completed'
+    user = db.relationship('User', backref=db.backref('fasting_sessions', lazy=True))
+
+
 class UserGoal(db.Model):
     __tablename__ = 'user_goals'
     id = db.Column(db.Integer, primary_key=True)
@@ -116,6 +128,7 @@ class UserGoal(db.Model):
     weight_goal_kg = db.Column(db.Float, nullable=True)
     body_fat_percentage_goal = db.Column(db.Float, nullable=True)
     waist_cm_goal = db.Column(db.Float, nullable=True)
+    default_fasting_hours = db.Column(db.Integer, default=16)
 
 class CheckIn(db.Model):
     __tablename__ = 'check_ins'

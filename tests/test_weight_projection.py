@@ -108,7 +108,7 @@ def test_projection_trending_away_from_loss_goal(user_with_projection_data, monk
 
     assert trending_away is True
     assert not at_goal_and_maintaining
-    assert len(dates) == 8 # Projects for today + 7 days
+    assert len(dates) == 1096 # Projects for today + 1095 days
     assert weights[0] < weights[-1] # Weight should increase
 
 def test_projection_with_exercise(user_with_projection_data, monkeypatch):

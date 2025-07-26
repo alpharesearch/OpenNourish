@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Intermittent Fasting</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card mb-4">
+        <div class="card-body">
+            {% if active_fast %}
+                <h5 class="card-title">Active Fast</h5>
+                <div class="d-flex align-items-center">
+                    <p class="mb-0"><strong>Start Time:</strong> {{ active_fast.start_time | localtime }}</p>
+                    <button id="edit-start-time-btn" class="btn btn-outline-primary btn-sm ms-3">Edit</button>
+                </div>
+
+                <div id="edit-start-time-form" class="mt-3" style="display: none;">
+                    <form action="{{ url_for('fasting.edit_start_time') }}" method="post">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ form.start_time.label(class="form-label") }}
+                            {{ form.start_time(class="form-control", value=active_fast.start_time | datetime_local) }}
+                        </div>
+                        <div class="d-flex">
+                            {{ form.submit(class="btn btn-outline-success") }}
+                            <button type="button" id="cancel-edit-btn" class="btn btn-outline-secondary ms-2">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <p class="mt-3"><strong>Planned Duration:</strong> {{ active_fast.planned_duration_hours }} hours</p>
+                <div class="progress-container position-relative mb-3" style="height: 30px;">
+                    {% set elapsed_hours = (now - active_fast.start_time).total_seconds() / 3600 %}
+                    {% set percentage = (elapsed_hours / active_fast.planned_duration_hours) * 100 %}
+                    <div class="progress" style="height: 100%;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ elapsed_hours }}" aria-valuemin="0" aria-valuemax="{{ active_fast.planned_duration_hours }}">{{ '%.1f'|format(percentage) }}%</div>
+                    </div>
+                    {% for i in range(1, (active_fast.planned_duration_hours // 24) + 1) %}
+                        {% set marker_percentage = (i * 24 / active_fast.planned_duration_hours) * 100 %}
+                        <div class="progress-marker" style="left: {{ marker_percentage }}%;" title="Day {{ i }}"></div>
+                    {% endfor %}
+                </div>
+                <div id="timer"></div>
+                <form action="{{ url_for('fasting.end_fast') }}" method="post" class="mt-3">
+                    <button type="submit" class="btn btn-danger">End Fast Now</button>
+                </form>
+            {% else %}
+                <h5 class="card-title">Start a New Fast</h5>
+                <form action="{{ url_for('fasting.start_fast') }}" method="post">
+                    <div class="mb-3">
+                        <label for="duration" class="form-label">Fasting Duration (hours)</label>
+                        <input type="number" class="form-control" id="duration" name="duration" value="{{ current_user.goals.default_fasting_hours if current_user.goals else 16 }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Start Fast</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Fasting History</h5>
+            <div class="table-responsive">
+                <!-- Header -->
+                <div class="row g-0 fw-bold border-bottom mb-2 pb-2 d-none d-lg-flex">
+                    <div class="col-lg-4">Start Time</div>
+                    <div class="col-lg-4">End Time</div>
+                    <div class="col-lg-2">Duration</div>
+                    <div class="col-lg-2">Actions</div>
+                </div>
+                <!-- Body -->
+                {% for fast in completed_fasts %}
+                <form method="POST" action="{{ url_for('fasting.update_fast', fast_id=fast.id) }}" class="row g-2 mb-3 align-items-center border-bottom pb-2">
+                    {{ forms[fast.id].hidden_tag() }}
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label d-lg-none">Start Time</label>
+                        {{ forms[fast.id].start_time(class="form-control", value=fast.start_time | datetime_local) }}
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label d-lg-none">End Time</label>
+                        {{ forms[fast.id].end_time(class="form-control", value=(fast.end_time | datetime_local) if fast.end_time else '') }}
+                    </div>
+                    <div class="col-12 col-lg-2">
+                        <label class="form-label d-lg-none">Duration</label>
+                        <p class="form-control-plaintext mb-0">
+                        {% if fast.end_time %}
+                            {{ '{:.2f}'.format((fast.end_time - fast.start_time).total_seconds() / 3600) }} hours
+                        {% else %}
+                            N/A
+                        {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-12 col-lg-1">
+                        <button type="submit" class="btn btn-sm btn-outline-success w-100">Save</button>
+                    </div>
+                    <div class="col-12 col-lg-1">
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100" form="delete-form-{{ fast.id }}">Delete</button>
+                    </div>
+                </form>
+                <form id="delete-form-{{ fast.id }}" action="{{ url_for('fasting.delete_fast', fast_id=fast.id) }}" method="POST" class="d-none"></form>
+                {% endfor %}
+            </div>
+
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    {% if completed_fasts.has_prev %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('.index', page=completed_fasts.prev_num) }}">Previous</a></li>
+                    {% endif %}
+                    {% for page_num in completed_fasts.iter_pages() %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == completed_fasts.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('.index', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if completed_fasts.has_next %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('.index', page=completed_fasts.next_num) }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+{% if active_fast %}
+<script>
+    // Timer logic
+    const startTime = new Date("{{ active_fast.start_time.isoformat() }}Z");
+    const plannedDuration = {{ active_fast.planned_duration_hours }};
+    const endTime = new Date(startTime.getTime() + plannedDuration * 60 * 60 * 1000);
+    const timerElement = document.getElementById('timer');
+
+    function updateTimer() {
+        const now = new Date();
+        const elapsed = now - startTime;
+        const remaining = endTime - now;
+
+        if (remaining < 0) {
+            timerElement.innerHTML = "<p><strong>Time Elapsed:</strong> " + formatDuration(elapsed) + "</p>" +
+                                     "<p class=\"text-success\"><strong>Fast Complete!</strong></p>";
+        } else {
+            timerElement.innerHTML = "<p><strong>Time Elapsed:</strong> " + formatDuration(elapsed) + "</p>" +
+                                     "<p><strong>Time Remaining:</strong> " + formatDuration(remaining) + "</p>";
+        }
+    }
+
+    function formatDuration(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return hours + "h " + minutes + "m " + seconds + "s";
+    }
+
+    setInterval(updateTimer, 1000);
+    updateTimer();
+
+    // Edit form toggle
+    const editBtn = document.getElementById('edit-start-time-btn');
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    const editForm = document.getElementById('edit-start-time-form');
+
+    editBtn.addEventListener('click', () => {
+        editForm.style.display = 'block';
+        editBtn.style.display = 'none';
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        editForm.style.display = 'none';
+        editBtn.style.display = 'block';
+    });
+</script>
+{% endif %}
+
+{% endblock %}

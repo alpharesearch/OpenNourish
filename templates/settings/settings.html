@@ -104,6 +104,14 @@
                                 {{ settings_form.navbar_preference(class="form-select") }}
                             </div>
                         </div>
+
+                        <!-- Timezone -->
+                        <div class="mb-3">
+                            {{ settings_form.timezone.label(class="form-label") }}
+                            {{ settings_form.timezone(class="form-select") }}
+                            <small class="form-text text-muted">Your timezone is usually detected automatically, but you can set it manually here.</small>
+                        </div>
+
                         <div class="mb-3 form-check">
                             {{ settings_form.is_private(class="form-check-input") }}
                             {{ settings_form.is_private.label(class="form-check-label") }}
