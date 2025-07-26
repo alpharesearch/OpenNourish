@@ -283,6 +283,47 @@ The following YAML configuration should be used when creating a "Custom App" in 
     *   **Certificate Paths for Nginx:** If you are using real SSL certificates managed by TrueNAS (e.g., from Let's Encrypt), you will need to update the `REAL_CERT_PATH` and `REAL_KEY_PATH` environment variables under the `nginx` service in the YAML. These paths should point to where TrueNAS stores your certificates. You can typically find these paths by navigating to **System Settings > Certificates** in the TrueNAS UI, selecting your certificate, and inspecting its details or by checking the `/etc/certificates` directory on your TrueNAS server via SSH. You can copy these values from your local `.env` file.
 4.  Deploy the application.
 
+### 4. Running Tests and Measuring Coverage
+
+The project uses the `pytest` framework for testing and the `coverage` package to measure how much of the code is exercised by the tests.
+
+#### 4.1. Running the Test Suite
+
+*   **Run All Fast Application Tests:** This is the most common command you will use. It runs all tests except for the slow integration tests.
+    ```bash
+    pytest -m "not integration"
+    ```
+
+*   **Run a Single Test File:** To focus on a specific feature you are working on.
+    ```bash
+    pytest tests/test_diary.py
+    ```
+
+*   **Run a Single Test Function:** For highly targeted debugging.
+    ```bash
+    pytest tests/test_diary.py::test_add_usda_food_to_diary -vvv
+    ```
+
+#### 4.2. Measuring Test Coverage
+
+To ensure your changes are well-tested, you should run a coverage analysis.
+
+1.  **Run Tests via Coverage:** This command runs the test suite while monitoring which lines of code are executed.
+    ```bash
+    coverage run -m pytest -m "not integration"
+    ```
+
+2.  **View a Quick Report:** To see a summary of coverage percentages directly in your terminal, use the `report` command. The `-m` flag will also highlight which line numbers are missing coverage.
+    ```bash
+    coverage report -m
+    ```
+
+3.  **Generate an Interactive HTML Report:** This is the most useful way to analyze coverage. It creates a detailed, clickable report.
+    ```bash
+    coverage html
+    ```
+    After the command finishes, open the `htmlcov/index.html` file in your web browser to explore which specific lines and branches of your code are not currently being tested.
+
 ## 5. Creating pip requirments.txt for deployment
 
 To create a `requirements.txt` file, run the following command in your virtual environment.
