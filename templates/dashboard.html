@@ -6,25 +6,30 @@
 <div class="container">
     {% if pending_received %}
     <div class="alert alert-info mt-3" role="alert">
-        You have pending friend requests! Visit your <a href="{{ url_for('friends.friends_page') }}" class="alert-link">Friends page</a> to accept or decline.
+        You have pending friend requests! Visit your <a href="{{ url_for('friends.friends_page') }}"
+            class="alert-link">Friends page</a> to accept or decline.
     </div>
     {% endif %}
     <div class="d-sm-flex justify-content-between align-items-center mb-3 mt-4">
-    <div class="d-flex justify-content-between mb-2 mb-sm-0">
-        {% if is_read_only %}
-            <a href="{{ url_for('profile.dashboard', username=username, log_date_str=prev_date.isoformat()) }}" class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
-        {% else %}
-            <a href="{{ url_for('dashboard.index', log_date_str=prev_date.isoformat()) }}" class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
-        {% endif %}
-        {% if is_read_only %}
-            <a href="{{ url_for('profile.dashboard', username=username, log_date_str=next_date.isoformat()) }}" class="btn btn-outline-secondary">Next Day &raquo;</a>
-        {% else %}
-            <a href="{{ url_for('dashboard.index', log_date_str=next_date.isoformat()) }}" class="btn btn-outline-secondary">Next Day &raquo;</a>
-        {% endif %}
+        <div class="d-flex justify-content-between mb-2 mb-sm-0">
+            {% if is_read_only %}
+            <a href="{{ url_for('profile.dashboard', username=username, log_date_str=prev_date.isoformat()) }}"
+                class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
+            {% else %}
+            <a href="{{ url_for('dashboard.index', log_date_str=prev_date.isoformat()) }}"
+                class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
+            {% endif %}
+            {% if is_read_only %}
+            <a href="{{ url_for('profile.dashboard', username=username, log_date_str=next_date.isoformat()) }}"
+                class="btn btn-outline-secondary">Next Day &raquo;</a>
+            {% else %}
+            <a href="{{ url_for('dashboard.index', log_date_str=next_date.isoformat()) }}"
+                class="btn btn-outline-secondary">Next Day &raquo;</a>
+            {% endif %}
+        </div>
+        <h1 class="mb-0 text-center">{% if is_read_only %}{{ username }}'s {% endif %}Dashboard</h1>
+        <h2 class="mb-0 text-center h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
     </div>
-    <h1 class="mb-0 text-center">{% if is_read_only %}{{ username }}'s {% endif %}Dashboard</h1>
-    <h2 class="mb-0 text-center h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
-</div>
 
     <div class="card mb-4">
         <div class="card-header">
@@ -35,7 +40,8 @@
                 <div class="col-lg-6 mb-3">
                     <h5 class="mb-1">Calories</h5>
                     <small class="text-muted d-block mb-1">
-                        Goal: {{ "%.1f" % goals.calories }} kcal | Consumed: {{ "%.1f" % totals.calories }} kcal | Burned: {{ "%.1f" % calories_burned }} kcal
+                        Goal: {{ "%.1f" % goals.calories }} kcal | Consumed: {{ "%.1f" % totals.calories }} kcal |
+                        Burned: {{ "%.1f" % calories_burned }} kcal
                     </small>
                     <p class="mb-2">
                         Remaining: {{ "%.1f" % remaining.calories }} kcal
@@ -43,7 +49,9 @@
                     <div class="progress" style="height: 15px;">
                         {% set net_calories = totals.calories - calories_burned %}
                         {% set percentage = (net_calories / goals.calories) * 100 if goals.calories > 0 else 0 %}
-                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ net_calories }}" aria-valuemin="0" aria-valuemax="{{ goals.calories }}">
+                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
+                            role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ net_calories }}"
+                            aria-valuemin="0" aria-valuemax="{{ goals.calories }}">
                             {{ "%.1f" % percentage }}%
                         </div>
                     </div>
@@ -60,7 +68,9 @@
                     </p>
                     <div class="progress" style="height: 15px;">
                         {% set percentage = (totals[key] / goals[key]) * 100 if goals[key] > 0 else 0 %}
-                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}" aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
+                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
+                            role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}"
+                            aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
                             {{ "%.1f" % percentage }}%
                         </div>
                     </div>
@@ -72,48 +82,35 @@
 
     <div class="card mb-4">
         <div class="card-header">
-            <h2 class="card-title mb-0">Fasting Status</h2>
-        </div>
-        <div class="card-body">
-            {% if active_fast %}
-                <p><strong>Fast Started:</strong> {{ active_fast.start_time | localtime }}</p>
-                <p><strong>Planned Duration:</strong> {{ active_fast.planned_duration_hours }} hours</p>
-                <div class="progress" style="height: 20px;">
-                    {% set elapsed_hours = (now - active_fast.start_time).total_seconds() / 3600 %}
-                    {% set percentage = (elapsed_hours / active_fast.planned_duration_hours) * 100 %}
-                    <div class="progress-bar" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ elapsed_hours }}" aria-valuemin="0" aria-valuemax="{{ active_fast.planned_duration_hours }}">{{ '%.1f'|format(percentage) }}%</div>
-                </div>
-            {% elif last_completed_fast %}
-                <p>Your last fast ended on {{ last_completed_fast.end_time | localtime }} and lasted {{ '{:.2f}'.format((last_completed_fast.end_time - last_completed_fast.start_time).total_seconds() / 3600) }} hours.</p>
-            {% else %}
-                <p>You have no active or completed fasts.</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-header">
             <h2 class="card-title mb-0">Weekly Nutritional Goals</h2>
-            <small class="text-muted">{{ start_of_week.strftime('%b %d, %Y') }} - {{ end_of_week.strftime('%b %d, %Y') }}</small>
+            <small class="text-muted">{{ start_of_week.strftime('%b %d, %Y') }} - {{ end_of_week.strftime('%b %d, %Y')
+                }}</small>
         </div>
         <div class="card-body">
             <div class="row">
-                {% set nutrients = [('Calories', 'calories', 'kcal'), ('Protein', 'protein', 'g'), ('Carbohydrates', 'carbs', 'g'), ('Fat', 'fat', 'g')] %}
+                {% set nutrients = [('Calories', 'calories', 'kcal'), ('Protein', 'protein', 'g'), ('Carbohydrates',
+                'carbs', 'g'), ('Fat', 'fat', 'g')] %}
                 {% for label, key, unit in nutrients %}
                 <div class="col-lg-6 mb-3">
                     <h5>{{ label }}</h5>
                     <small class="text-muted d-block mb-1">
-                        Goal: {{ "%.0f"|format(weekly_goals[key]) }} {{ unit }} | Consumed: {{ "%.0f"|format(weekly_totals[key]) }} {{ unit }}
+                        Goal: {{ "%.0f"|format(weekly_goals[key]) }} {{ unit }} | Consumed: {{
+                        "%.0f"|format(weekly_totals[key]) }} {{ unit }}
                     </small>
                     <div class="progress-container position-relative" style="height: 20px;">
-                        {% set percentage = (weekly_totals[key] / weekly_goals[key]) * 100 if weekly_goals[key] > 0 else 0 %}
+                        {% set percentage = (weekly_totals[key] / weekly_goals[key]) * 100 if weekly_goals[key] > 0 else
+                        0 %}
                         <div class="progress" style="height: 100%;">
-                            <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_totals[key] }}" aria-valuemin="0" aria-valuemax="{{ weekly_goals[key] }}">
+                            <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
+                                role="progressbar" style="width: {{ percentage }}%;"
+                                aria-valuenow="{{ weekly_totals[key] }}" aria-valuemin="0"
+                                aria-valuemax="{{ weekly_goals[key] }}">
                                 {{ "%.0f"|format(percentage) }}%
                             </div>
                         </div>
                         {% set expected_percentage = (days_elapsed_in_week / 7) * 100 %}
-                        <div class="progress-marker" style="left: {{ expected_percentage }}%;" title="Expected progress for today"></div>
+                        <div class="progress-marker" style="left: {{ expected_percentage }}%;"
+                            title="Expected progress for today"></div>
                     </div>
                 </div>
                 {% endfor %}
@@ -121,11 +118,13 @@
         </div>
     </div>
 
-    {% if goals and (goals.calories_burned_goal_weekly or goals.exercises_per_week_goal or goals.minutes_per_exercise_goal) %}
+    {% if goals and (goals.calories_burned_goal_weekly or goals.exercises_per_week_goal or
+    goals.minutes_per_exercise_goal) %}
     <div class="card mb-4">
         <div class="card-header">
             <h2 class="card-title mb-0">Weekly Exercise Goals</h2>
-            <small class="text-muted">{{ start_of_week.strftime('%b %d, %Y') }} - {{ end_of_week.strftime('%b %d, %Y') }}</small>
+            <small class="text-muted">{{ start_of_week.strftime('%b %d, %Y') }} - {{ end_of_week.strftime('%b %d, %Y')
+                }}</small>
         </div>
         <div class="card-body">
             <div class="row">
@@ -134,12 +133,16 @@
                     <small class="text-muted d-block mb-1">Goal: {{ goals.calories_burned_goal_weekly }} kcal</small>
                     <p class="mb-2">Progress: {{ weekly_progress.calories_burned|round|int }} kcal</p>
                     <div class="progress-container position-relative" style="height: 20px;">
-                        {% set percentage = (weekly_progress.calories_burned / goals.calories_burned_goal_weekly) * 100 if goals.calories_burned_goal_weekly > 0 else 0 %}
+                        {% set percentage = (weekly_progress.calories_burned / goals.calories_burned_goal_weekly) * 100
+                        if goals.calories_burned_goal_weekly > 0 else 0 %}
                         <div class="progress" style="height: 100%;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.calories_burned }}" aria-valuemin="0" aria-valuemax="{{ goals.calories_burned_goal_weekly }}">{{ "%.0f" % percentage }}%</div>
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;"
+                                aria-valuenow="{{ weekly_progress.calories_burned }}" aria-valuemin="0"
+                                aria-valuemax="{{ goals.calories_burned_goal_weekly }}">{{ "%.0f" % percentage }}%</div>
                         </div>
                         {% set expected_percentage = (days_elapsed_in_week / 7) * 100 %}
-                        <div class="progress-marker" style="left: {{ expected_percentage }}%;" title="Expected progress for today"></div>
+                        <div class="progress-marker" style="left: {{ expected_percentage }}%;"
+                            title="Expected progress for today"></div>
                     </div>
                 </div>
                 <div class="col-lg-4 mb-3">
@@ -147,12 +150,16 @@
                     <small class="text-muted d-block mb-1">Goal: {{ goals.exercises_per_week_goal }}</small>
                     <p class="mb-2">Progress: {{ weekly_progress.exercises }}</p>
                     <div class="progress-container position-relative" style="height: 20px;">
-                        {% set percentage = (weekly_progress.exercises / goals.exercises_per_week_goal) * 100 if goals.exercises_per_week_goal > 0 else 0 %}
+                        {% set percentage = (weekly_progress.exercises / goals.exercises_per_week_goal) * 100 if
+                        goals.exercises_per_week_goal > 0 else 0 %}
                         <div class="progress" style="height: 100%;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.exercises }}" aria-valuemin="0" aria-valuemax="{{ goals.exercises_per_week_goal }}">{{ "%.0f" % percentage }}%</div>
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;"
+                                aria-valuenow="{{ weekly_progress.exercises }}" aria-valuemin="0"
+                                aria-valuemax="{{ goals.exercises_per_week_goal }}">{{ "%.0f" % percentage }}%</div>
                         </div>
                         {% set expected_percentage = (days_elapsed_in_week / 7) * 100 %}
-                        <div class="progress-marker" style="left: {{ expected_percentage }}%;" title="Expected progress for today"></div>
+                        <div class="progress-marker" style="left: {{ expected_percentage }}%;"
+                            title="Expected progress for today"></div>
                     </div>
                 </div>
                 <div class="col-lg-4 mb-3">
@@ -161,12 +168,16 @@
                     <small class="text-muted d-block mb-1">Goal: {{ total_minutes_goal }} min</small>
                     <p class="mb-2">Progress: {{ weekly_progress.minutes }} min</p>
                     <div class="progress-container position-relative" style="height: 20px;">
-                        {% set percentage = (weekly_progress.minutes / total_minutes_goal) * 100 if total_minutes_goal > 0 else 0 %}
+                        {% set percentage = (weekly_progress.minutes / total_minutes_goal) * 100 if total_minutes_goal >
+                        0 else 0 %}
                         <div class="progress" style="height: 100%;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ weekly_progress.minutes }}" aria-valuemin="0" aria-valuemax="{{ total_minutes_goal }}">{{ "%.0f" % percentage }}%</div>
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%;"
+                                aria-valuenow="{{ weekly_progress.minutes }}" aria-valuemin="0"
+                                aria-valuemax="{{ total_minutes_goal }}">{{ "%.0f" % percentage }}%</div>
                         </div>
                         {% set expected_percentage = (days_elapsed_in_week / 7) * 100 %}
-                        <div class="progress-marker" style="left: {{ expected_percentage }}%;" title="Expected progress for today"></div>
+                        <div class="progress-marker" style="left: {{ expected_percentage }}%;"
+                            title="Expected progress for today"></div>
                     </div>
                 </div>
             </div>
@@ -178,92 +189,108 @@
         <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
             <h2 class="card-title mb-2 mb-md-0">Body Composition Progress</h2>
             <div class="btn-group" role="group" aria-label="Time Range">
-                <a href="{{ url_for('dashboard.index', time_range='1_month') }}" class="btn btn-sm {% if time_range == '1_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <a href="{{ url_for('dashboard.index', time_range='1_month') }}"
+                    class="btn btn-sm {% if time_range == '1_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                     <span class="d-none d-md-inline">1 Month</span>
                     <span class="d-inline d-md-none">1M</span>
                 </a>
-                <a href="{{ url_for('dashboard.index', time_range='3_month') }}" class="btn btn-sm {% if time_range == '3_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <a href="{{ url_for('dashboard.index', time_range='3_month') }}"
+                    class="btn btn-sm {% if time_range == '3_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                     <span class="d-none d-md-inline">3 Months</span>
                     <span class="d-inline d-md-none">3M</span>
                 </a>
-                <a href="{{ url_for('dashboard.index', time_range='6_month') }}" class="btn btn-sm {% if time_range == '6_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <a href="{{ url_for('dashboard.index', time_range='6_month') }}"
+                    class="btn btn-sm {% if time_range == '6_month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                     <span class="d-none d-md-inline">6 Months</span>
                     <span class="d-inline d-md-none">6M</span>
                 </a>
-                <a href="{{ url_for('dashboard.index', time_range='1_year') }}" class="btn btn-sm {% if time_range == '1_year' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <a href="{{ url_for('dashboard.index', time_range='1_year') }}"
+                    class="btn btn-sm {% if time_range == '1_year' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                     <span class="d-none d-md-inline">1 Year</span>
                     <span class="d-inline d-md-none">1Y</span>
                 </a>
-                <a href="{{ url_for('dashboard.index', time_range='all_time') }}" class="btn btn-sm {% if time_range == 'all_time' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <a href="{{ url_for('dashboard.index', time_range='all_time') }}"
+                    class="btn btn-sm {% if time_range == 'all_time' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                     <span class="d-none d-md-inline">All Time</span>
                     <span class="d-inline d-md-none">All</span>
                 </a>
             </div>
         </div>
         <div class="card-body">
-            {% if goals and (goals.weight_goal_kg or goals.body_fat_percentage_goal or goals.waist_cm_goal) and latest_checkin %}
+            {% if goals and (goals.weight_goal_kg or goals.body_fat_percentage_goal or goals.waist_cm_goal) and
+            latest_checkin %}
             <div class="row mb-4">
                 <div class="col-lg-4">
                     <h5>Target Weight</h5>
                     <small class="text-muted d-block mb-1">
-                        Goal: 
+                        Goal:
                         {% if current_user_measurement_system == 'us' %}
-                            {{ "%.1f" % (goals.weight_goal_kg * 2.20462) }} lbs
+                        {{ "%.1f" % (goals.weight_goal_kg * 2.20462) }} lbs
                         {% else %}
-                            {{ "%.1f" % goals.weight_goal_kg }} kg
+                        {{ "%.1f" % goals.weight_goal_kg }} kg
                         {% endif %}
-                        | Current: 
+                        | Current:
                         {% if current_user_measurement_system == 'us' %}
-                            {{ "%.1f" % (latest_checkin.weight_kg * 2.20462) }} lbs
+                        {{ "%.1f" % (latest_checkin.weight_kg * 2.20462) }} lbs
                         {% else %}
-                            {{ "%.1f" % latest_checkin.weight_kg }} kg
+                        {{ "%.1f" % latest_checkin.weight_kg }} kg
                         {% endif %}
                     </small>
                     <div class="progress" style="height: 15px;">
-                        {% set weight_progress = (latest_checkin.weight_kg / goals.weight_goal_kg) * 100 if goals.weight_goal_kg > 0 else 0 %}
-                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ weight_progress }}%;" aria-valuenow="{{ latest_checkin.weight_kg }}" aria-valuemin="0" aria-valuemax="{{ goals.weight_goal_kg }}">{{ "%.0f" % weight_progress }}%</div>
+                        {% set weight_progress = (latest_checkin.weight_kg / goals.weight_goal_kg) * 100 if
+                        goals.weight_goal_kg > 0 else 0 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ weight_progress }}%;"
+                            aria-valuenow="{{ latest_checkin.weight_kg }}" aria-valuemin="0"
+                            aria-valuemax="{{ goals.weight_goal_kg }}">{{ "%.0f" % weight_progress }}%</div>
                     </div>
                 </div>
                 <div class="col-lg-4">
                     <h5>Target Body Fat %</h5>
                     <small class="text-muted d-block mb-1">
-                        Goal: {{ "%.1f" % goals.body_fat_percentage_goal }}% | Current: {{ "%.1f" % latest_checkin.body_fat_percentage }}%
+                        Goal: {{ "%.1f" % goals.body_fat_percentage_goal }}% | Current: {{ "%.1f" %
+                        latest_checkin.body_fat_percentage }}%
                     </small>
                     <div class="progress" style="height: 15px;">
-                        {% set body_fat_progress = (latest_checkin.body_fat_percentage / goals.body_fat_percentage_goal) * 100 if goals.body_fat_percentage_goal > 0 else 0 %}
-                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ body_fat_progress }}%;" aria-valuenow="{{ latest_checkin.body_fat_percentage }}" aria-valuemin="0" aria-valuemax="{{ goals.body_fat_percentage_goal }}">{{ "%.0f" % body_fat_progress }}%</div>
+                        {% set body_fat_progress = (latest_checkin.body_fat_percentage / goals.body_fat_percentage_goal)
+                        * 100 if goals.body_fat_percentage_goal > 0 else 0 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ body_fat_progress }}%;"
+                            aria-valuenow="{{ latest_checkin.body_fat_percentage }}" aria-valuemin="0"
+                            aria-valuemax="{{ goals.body_fat_percentage_goal }}">{{ "%.0f" % body_fat_progress }}%</div>
                     </div>
                 </div>
                 <div class="col-lg-4">
                     <h5>Target Waist</h5>
                     <small class="text-muted d-block mb-1">
-                        Goal: 
+                        Goal:
                         {% if current_user_measurement_system == 'us' %}
-                            {{ "%.1f" % (goals.waist_cm_goal * 0.393701) }} in
+                        {{ "%.1f" % (goals.waist_cm_goal * 0.393701) }} in
                         {% else %}
-                            {{ "%.1f" % goals.waist_cm_goal }} cm
+                        {{ "%.1f" % goals.waist_cm_goal }} cm
                         {% endif %}
-                        | Current: 
+                        | Current:
                         {% if current_user_measurement_system == 'us' %}
-                            {{ "%.1f" % (latest_checkin.waist_cm * 0.393701) }} in
+                        {{ "%.1f" % (latest_checkin.waist_cm * 0.393701) }} in
                         {% else %}
-                            {{ "%.1f" % latest_checkin.waist_cm }} cm
+                        {{ "%.1f" % latest_checkin.waist_cm }} cm
                         {% endif %}
                     </small>
                     <div class="progress" style="height: 15px;">
-                        {% set waist_progress = (latest_checkin.waist_cm / goals.waist_cm_goal) * 100 if goals.waist_cm_goal > 0 else 0 %}
-                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ waist_progress }}%;" aria-valuenow="{{ latest_checkin.waist_cm }}" aria-valuemin="0" aria-valuemax="{{ goals.waist_cm_goal }}">{{ "%.0f" % waist_progress }}%</div>
+                        {% set waist_progress = (latest_checkin.waist_cm / goals.waist_cm_goal) * 100 if
+                        goals.waist_cm_goal > 0 else 0 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ waist_progress }}%;"
+                            aria-valuenow="{{ latest_checkin.waist_cm }}" aria-valuemin="0"
+                            aria-valuemax="{{ goals.waist_cm_goal }}">{{ "%.0f" % waist_progress }}%</div>
                     </div>
                 </div>
             </div>
             {% endif %}
 
             {% if chart_labels and (weight_data or body_fat_data or waist_data) %}
-                <div style="height: 600px;">
-                    <canvas id="weightChart"></canvas>
-                </div>
+            <div style="height: 600px;">
+                <canvas id="weightChart"></canvas>
+            </div>
             {% else %}
-                <p>Log a check-in to see your progress chart!</p>
+            <p>Log a check-in to see your progress chart!</p>
             {% endif %}
         </div>
     </div>
@@ -275,25 +302,25 @@
         </div>
         <div class="card-body">
             {% if trending_away %}
-                <div class="alert alert-warning" role="alert">
-                    Based on your recent activity, you are currently trending away from your weight goal.
-                </div>
+            <div class="alert alert-warning" role="alert">
+                Based on your recent activity, you are currently trending away from your weight goal.
+            </div>
             {% elif at_goal_and_maintaining %}
-                <div class="alert alert-info" role="alert">
-                    You are currently at your goal weight and maintaining. Keep up the great work!
-                </div>
+            <div class="alert alert-info" role="alert">
+                You are currently at your goal weight and maintaining. Keep up the great work!
+            </div>
             {% elif days_to_goal is not none %}
-                <div class="alert alert-success" role="alert">
-                    Based on your recent activity, you are projected to reach your goal of 
-                    <strong>
-                        {% if current_user_measurement_system == 'us' %}
-                            {{ "%.1f"|format(goals.weight_goal_kg * 2.20462) }} lbs
-                        {% else %}
-                            {{ "%.1f"|format(goals.weight_goal_kg) }} kg
-                        {% endif %}
-                    </strong> 
-                    in approximately <strong>{{ days_to_goal }}</strong> days, around <strong>{{ goal_date_str }}</strong>.
-                </div>
+            <div class="alert alert-success" role="alert">
+                Based on your recent activity, you are projected to reach your goal of
+                <strong>
+                    {% if current_user_measurement_system == 'us' %}
+                    {{ "%.1f"|format(goals.weight_goal_kg * 2.20462) }} lbs
+                    {% else %}
+                    {{ "%.1f"|format(goals.weight_goal_kg) }} kg
+                    {% endif %}
+                </strong>
+                in approximately <strong>{{ days_to_goal }}</strong> days, around <strong>{{ goal_date_str }}</strong>.
+            </div>
             {% endif %}
             <div style="height: 400px;">
                 <canvas id="projectionChart"></canvas>
@@ -302,189 +329,230 @@
     </div>
     {% endif %}
 
-    <h2 class="mt-4">Exercise History</h2>
-    <ul class="list-group">
-        {% for log in exercise_logs %}
-            <li class="list-group-item">
-                {% if log.activity %}{{ log.activity.name }}{% else %}{{ log.manual_description }}{% endif %} - 
-                {{ log.duration_minutes }} mins - {{ log.calories_burned }} kcal
-            </li>
-        {% else %}
-            <li class="list-group-item">No exercise logged for today.</li>
-        {% endfor %}
-    </ul>
-
-    <h2 class="mt-4">Food Log</h2>
-    <ul class="list-group">
-        {% for log in daily_logs %}
-            <li class="list-group-item">{{ food_names.get(log.id, 'Unknown Food') }} - {{ "%.1f" % log.amount_grams }}g</li>
-        {% else %}
-            <li class="list-group-item">No entries for today.</li>
-        {% endfor %}
-    </ul>
-    
-{% if chart_labels and (weight_data or body_fat_data or waist_data) %}
-<script>
-    const ctx = document.getElementById('weightChart');
-    const labels = {{ chart_labels|tojson }};
-    let weightData = {{ weight_data|tojson }};
-    const bodyFatData = {{ body_fat_data|tojson }};
-    let waistData = {{ waist_data|tojson }};
-    const measurementSystem = {{ current_user_measurement_system|tojson }};
-
-    // Convert data to US units if necessary
-    if (measurementSystem === 'us') {
-        weightData = weightData.map(kg => kg * 2.20462); // kg to lbs
-        waistData = waistData.map(cm => cm * 0.393701); // cm to inches
-    }
-
-    // Goal data - create arrays of the same length as labels
-    let weightGoal = {{ goals.weight_goal_kg|tojson }};
-    let waistGoal = {{ goals.waist_cm_goal|tojson }};
-
-    if (measurementSystem === 'us') {
-        weightGoal = weightGoal * 2.20462; // kg to lbs
-        waistGoal = waistGoal * 0.393701; // cm to inches
-    }
-
-    const weightGoalData = Array(labels.length).fill(weightGoal);
-    const bodyFatGoalData = Array(labels.length).fill({{ goals.body_fat_percentage_goal|tojson }});
-    const waistGoalData = Array(labels.length).fill(waistGoal);
-
-    const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
-    const waistUnit = measurementSystem === 'us' ? 'in' : 'cm';
-    const weightLabel = `Weight (${weightUnit})`;
-    const waistLabel = `Waist (${waistUnit})`;
-    const y1Title = `Body Fat (%) / Waist (${waistUnit})`;
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Fasting Status</h2>
+        </div>
+        <div class="card-body">
+            {% if active_fast %}
+            <p><strong>Fast Started:</strong> {{ active_fast.start_time | localtime }}</p>
+            <p><strong>Planned Duration:</strong> {{ active_fast.planned_duration_hours }} hours</p>
+            <div class="progress" style="height: 20px;">
+                {% set elapsed_hours = (now - active_fast.start_time).total_seconds() / 3600 %}
+                {% set percentage = (elapsed_hours / active_fast.planned_duration_hours) * 100 %}
+                <div class="progress-bar" role="progressbar" style="width: {{ percentage }}%;"
+                    aria-valuenow="{{ elapsed_hours }}" aria-valuemin="0"
+                    aria-valuemax="{{ active_fast.planned_duration_hours }}">{{ '%.1f'|format(percentage) }}%</div>
+            </div>
+            {% elif last_completed_fast %}
+            <p>Your last fast ended on {{ last_completed_fast.end_time | localtime }} and lasted {{
+                '{:.2f}'.format((last_completed_fast.end_time - last_completed_fast.start_time).total_seconds() / 3600)
+                }} hours.</p>
+            {% else %}
+            <p>You have no active or completed fasts.</p>
+            {% endif %}
+        </div>
+    </div>
 
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: weightLabel,
-                    data: weightData,
-                    borderColor: 'rgb(75, 192, 192)',
-                    yAxisID: 'y',
-                    fill: false
-                },
-                {
-                    label: `Weight Goal (${weightUnit})`,
-                    data: weightGoalData,
-                    borderColor: 'rgb(150, 192, 192)',
-                    borderDash: [5, 5],
-                    yAxisID: 'y',
-                    fill: false
-                },
-                {
-                    label: 'Body Fat (%)',
-                    data: bodyFatData,
-                    borderColor: 'rgb(255, 99, 132)',
-                    yAxisID: 'y1',
-                    fill: false
-                },
-                {
-                    label: 'Body Fat Goal (%)',
-                    data: bodyFatGoalData,
-                    borderColor: 'rgb(180, 160, 170)',
-                    borderDash: [5, 5],
-                    yAxisID: 'y1',
-                    fill: false
-                },
-                {
-                    label: waistLabel,
-                    data: waistData,
-                    borderColor: 'rgb(54, 162, 235)',
-                    yAxisID: 'y1',
-                    fill: false
-                },
-                {
-                    label: `Waist Goal (${waistUnit})`,
-                    data: waistGoalData,
-                    borderColor: 'rgb(120, 142, 158)',
-                    borderDash: [5, 5],
-                    yAxisID: 'y1',
-                    fill: false
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Progress (Last 30 entries)'
-                }
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Exercise History</h2>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for log in exercise_logs %}
+                <li class="list-group-item">
+                    {% if log.activity %}{{ log.activity.name }}{% else %}{{ log.manual_description }}{% endif %} -
+                    {{ log.duration_minutes }} mins - {{ log.calories_burned }} kcal
+                </li>
+                {% else %}
+                <li class="list-group-item">No exercise logged for today.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Food Log</h2>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for log in daily_logs %}
+                <li class="list-group-item">{{ food_names.get(log.id, 'Unknown Food') }} - {{ "%.1f" % log.amount_grams
+                    }}g</li>
+                {% else %}
+                <li class="list-group-item">No entries for today.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    {% if chart_labels and (weight_data or body_fat_data or waist_data) %}
+    <script>
+        const ctx = document.getElementById('weightChart');
+        const labels = {{ chart_labels| tojson }};
+        let weightData = {{ weight_data| tojson }};
+        const bodyFatData = {{ body_fat_data| tojson }};
+        let waistData = {{ waist_data| tojson }};
+        const measurementSystem = {{ current_user_measurement_system| tojson }};
+
+        // Convert data to US units if necessary
+        if (measurementSystem === 'us') {
+            weightData = weightData.map(kg => kg * 2.20462); // kg to lbs
+            waistData = waistData.map(cm => cm * 0.393701); // cm to inches
+        }
+
+        // Goal data - create arrays of the same length as labels
+        let weightGoal = {{ goals.weight_goal_kg| tojson }};
+        let waistGoal = {{ goals.waist_cm_goal| tojson }};
+
+        if (measurementSystem === 'us') {
+            weightGoal = weightGoal * 2.20462; // kg to lbs
+            waistGoal = waistGoal * 0.393701; // cm to inches
+        }
+
+        const weightGoalData = Array(labels.length).fill(weightGoal);
+        const bodyFatGoalData = Array(labels.length).fill({{ goals.body_fat_percentage_goal | tojson }});
+        const waistGoalData = Array(labels.length).fill(waistGoal);
+
+        const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
+        const waistUnit = measurementSystem === 'us' ? 'in' : 'cm';
+        const weightLabel = `Weight (${weightUnit})`;
+        const waistLabel = `Waist (${waistUnit})`;
+        const y1Title = `Body Fat (%) / Waist (${waistUnit})`;
+
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: weightLabel,
+                        data: weightData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        yAxisID: 'y',
+                        fill: false
+                    },
+                    {
+                        label: `Weight Goal (${weightUnit})`,
+                        data: weightGoalData,
+                        borderColor: 'rgb(150, 192, 192)',
+                        borderDash: [5, 5],
+                        yAxisID: 'y',
+                        fill: false
+                    },
+                    {
+                        label: 'Body Fat (%)',
+                        data: bodyFatData,
+                        borderColor: 'rgb(255, 99, 132)',
+                        yAxisID: 'y1',
+                        fill: false
+                    },
+                    {
+                        label: 'Body Fat Goal (%)',
+                        data: bodyFatGoalData,
+                        borderColor: 'rgb(180, 160, 170)',
+                        borderDash: [5, 5],
+                        yAxisID: 'y1',
+                        fill: false
+                    },
+                    {
+                        label: waistLabel,
+                        data: waistData,
+                        borderColor: 'rgb(54, 162, 235)',
+                        yAxisID: 'y1',
+                        fill: false
+                    },
+                    {
+                        label: `Waist Goal (${waistUnit})`,
+                        data: waistGoalData,
+                        borderColor: 'rgb(120, 142, 158)',
+                        borderDash: [5, 5],
+                        yAxisID: 'y1',
+                        fill: false
+                    }
+                ]
             },
-            scales: {
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    ticks: {
-                        beginAtZero: false,
-                        stepSize: 1
-                    },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
                     title: {
                         display: true,
-                        text: weightLabel
+                        text: 'Progress (Last 30 entries)'
                     }
                 },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    ticks: {
-                        beginAtZero: false,
-                        stepSize: 0.5
-                    },
-                    grid: {
-                        drawOnChartArea: false, // only want the grid lines for one axis to show up
-                    },
-                    title: {
+                scales: {
+                    y: {
+                        type: 'linear',
                         display: true,
-                        text: y1Title
+                        position: 'left',
+                        ticks: {
+                            beginAtZero: false,
+                            stepSize: 1
+                        },
+                        title: {
+                            display: true,
+                            text: weightLabel
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        ticks: {
+                            beginAtZero: false,
+                            stepSize: 0.5
+                        },
+                        grid: {
+                            drawOnChartArea: false, // only want the grid lines for one axis to show up
+                        },
+                        title: {
+                            display: true,
+                            text: y1Title
+                        }
                     }
                 }
             }
-        }
-    });
-</script>
-{% endif %}
-<script>
-    // Scroll to the chart if time_range parameter is present
-    document.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('time_range')) {
-            const chartElement = document.getElementById('bodyCompositionChart');
-            if (chartElement) {
-                chartElement.scrollIntoView({ behavior: 'smooth' });
+        });
+    </script>
+    {% endif %}
+    <script>
+        // Scroll to the chart if time_range parameter is present
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('time_range')) {
+                const chartElement = document.getElementById('bodyCompositionChart');
+                if (chartElement) {
+                    chartElement.scrollIntoView({ behavior: 'smooth' });
+                }
             }
-        }
-    });
-</script>
-{% if projected_dates %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('projectionChart');
-    if (!ctx) return;
+        });
+    </script>
+    {% if projected_dates %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('projectionChart');
+            if (!ctx) return;
 
-    const measurementSystem = {{ current_user_measurement_system|tojson }};
-    const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
-    const conversionFactor = measurementSystem === 'us' ? 2.20462 : 1;
+            const measurementSystem = {{ current_user_measurement_system| tojson
+        }};
+        const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
+        const conversionFactor = measurementSystem === 'us' ? 2.20462 : 1;
 
-    let projectedWeights = {{ projected_weights|tojson }}.map(w => w * conversionFactor);
-    let goalWeight = {{ goals.weight_goal_kg|tojson }} * conversionFactor;
+        let projectedWeights = {{ projected_weights| tojson }}.map(w => w * conversionFactor);
+        let goalWeight = {{ goals.weight_goal_kg| tojson }} * conversionFactor;
 
-    const goalData = Array(projectedWeights.length).fill(goalWeight);
+        const goalData = Array(projectedWeights.length).fill(goalWeight);
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {{ projected_dates|tojson }},
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ projected_dates| tojson }},
             datasets: [{
                 label: `Projected Weight (${weightUnit})`,
                 data: projectedWeights,
@@ -499,7 +567,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fill: false
             }]
         },
-        options: {
+            options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
@@ -509,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                             let label = context.dataset.label || '';
                             if (label) {
                                 label += ': ';
@@ -533,6 +601,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-</script>
-{% endif %}
-{% endblock %}
+    </script>
+    {% endif %}
+    {% endblock %}
