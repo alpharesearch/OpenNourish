@@ -448,10 +448,21 @@ def delete_recipe_portion(portion_id):
 @login_required
 def generate_label_pdf(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.user_id != current_user.id:
+    if not recipe.is_public and recipe.user_id != current_user.id:
         flash('You are not authorized to view this recipe.', 'danger')
         return redirect(url_for('recipes.recipes'))
-    return generate_recipe_label_pdf(recipe_id)
+    return generate_recipe_label_pdf(recipe_id, label_only=True)
+
+
+@recipes_bp.route('/<int:recipe_id>/generate_pdf_details')
+@login_required
+def generate_pdf_details(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if not recipe.is_public and recipe.user_id != current_user.id:
+        flash('You are not authorized to view this recipe.', 'danger')
+        return redirect(url_for('recipes.recipes'))
+    return generate_recipe_label_pdf(recipe_id, label_only=False)
+
 
 
 @recipes_bp.route('/<int:recipe_id>/copy', methods=['POST'])

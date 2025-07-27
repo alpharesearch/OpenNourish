@@ -1,6 +1,6 @@
 import pytest
 from datetime import date
-from models import db, DailyLog, MyMeal, MyMealItem, Food, MyFood, User
+from models import db, DailyLog, MyMeal, MyMealItem, Food, MyFood, User, UnifiedPortion
 
 def test_save_meal_from_diary(auth_client_with_user):
     """
@@ -76,3 +76,113 @@ def test_delete_my_meal(auth_client_with_user):
         assert deleted_meal is None
         deleted_item = MyMealItem.query.filter_by(my_meal_id=meal_id).first()
         assert deleted_item is None
+
+def test_delete_meal_item(auth_client_with_user):
+    """
+    Test deleting an item from a meal.
+    """
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        meal = MyMeal(user_id=user.id, name='Meal for item deletion')
+        db.session.add(meal)
+        db.session.commit()
+
+        item = MyMealItem(my_meal_id=meal.id, fdc_id=123, amount_grams=100)
+        db.session.add(item)
+        db.session.commit()
+        meal_id = meal.id
+        item_id = item.id
+
+    response = client.post(f'/my_meals/{meal_id}/delete_item/{item_id}', follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Meal item deleted.' in response.data
+
+    with client.application.app_context():
+        deleted_item = db.session.get(MyMealItem, item_id)
+        assert deleted_item is None
+
+def test_update_meal_item_portion(auth_client_with_user):
+    """
+    Test updating a meal item's quantity and portion.
+    """
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        my_food = MyFood(user_id=user.id, description='Food for meal item', calories_per_100g=100)
+        db.session.add(my_food)
+        db.session.commit()
+
+        portion1 = UnifiedPortion(my_food_id=my_food.id, portion_description='g', gram_weight=1.0)
+        portion2 = UnifiedPortion(my_food_id=my_food.id, portion_description='cup', gram_weight=150.0)
+        db.session.add_all([portion1, portion2])
+        db.session.commit()
+
+        meal = MyMeal(user_id=user.id, name='Meal for item update')
+        db.session.add(meal)
+        db.session.commit()
+
+        item = MyMealItem(
+            my_meal_id=meal.id,
+            my_food_id=my_food.id,
+            amount_grams=100, # 100g
+            portion_id_fk=portion1.id
+        )
+        db.session.add(item)
+        db.session.commit()
+        item_id = item.id
+        meal_id = meal.id
+        portion2_id = portion2.id
+
+    # Update to 0.5 cups
+    response = client.post(f'/my_meals/update_item/{item_id}', data={
+        'quantity': 0.5,
+        'portion_id': portion2_id
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b'Meal item updated.' in response.data
+    assert response.request.path == f'/my_meals/edit/{meal_id}'
+
+    with client.application.app_context():
+        updated_item = db.session.get(MyMealItem, item_id)
+        assert updated_item.amount_grams == 75.0 # 0.5 * 150.0
+        assert updated_item.portion_id_fk == portion2_id
+
+def test_edit_meal_item_get(auth_client_with_user):
+    """Test GET request for editing a meal item."""
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        meal = MyMeal(user_id=user.id, name='Meal for item edit GET')
+        db.session.add(meal)
+        db.session.commit()
+        item = MyMealItem(my_meal_id=meal.id, my_food_id=None, fdc_id=12345, amount_grams=150)
+        db.session.add(item)
+        db.session.commit()
+        meal_id = meal.id
+        item_id = item.id
+
+    response = client.get(f'/my_meals/{meal_id}/edit_item/{item_id}')
+    assert response.status_code == 200
+    assert b'Update Amount' in response.data
+    assert b'value="150.0"' in response.data
+
+def test_edit_meal_item_post(auth_client_with_user):
+    """Test POST request for editing a meal item."""
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        meal = MyMeal(user_id=user.id, name='Meal for item edit POST')
+        db.session.add(meal)
+        db.session.commit()
+        item = MyMealItem(my_meal_id=meal.id, my_food_id=None, fdc_id=12345, amount_grams=150)
+        db.session.add(item)
+        db.session.commit()
+        meal_id = meal.id
+        item_id = item.id
+
+    response = client.post(f'/my_meals/{meal_id}/edit_item/{item_id}', data={'amount': 200.5}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Meal item updated.' in response.data
+    assert response.request.path == f'/my_meals/edit/{meal_id}'
+
+    with client.application.app_context():
+        updated_item = db.session.get(MyMealItem, item_id)
+        assert updated_item.amount_grams == 200.5

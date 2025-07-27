@@ -513,9 +513,10 @@ def test_add_recipe_as_ingredient_and_prevent_self_nesting(auth_client_with_user
             'amount': 100, # grams
             'portion_id': gram_portion_id
         }, follow_redirects=True)
-        assert response.status_code == 200
-        assert b'Sub Recipe added as ingredient to recipe Main Recipe.' in response.data
+    assert response.status_code == 200
+    assert b'Sub Recipe added as ingredient to recipe Main Recipe.' in response.data
 
+    with client.application.app_context():
         # Verify Sub Recipe is an ingredient of Main Recipe
         main_recipe_ingredients = RecipeIngredient.query.filter_by(recipe_id=recipe_main.id).all()
         assert len(main_recipe_ingredients) == 1
@@ -683,3 +684,307 @@ def test_user_cannot_delete_other_users_recipe_unauthorized(auth_client_user_two
         recipe = db.session.get(Recipe, recipe_id)
         assert recipe is not None
         assert recipe.user_id == user_one.id
+
+def test_recipes_unauthenticated_access(client):
+    """
+    Tests that an unauthenticated user is redirected to the login page.
+    """
+    response = client.get(url_for('recipes.recipes'), follow_redirects=False)
+    assert response.status_code == 302
+    assert '/login' in response.headers['Location']
+
+def test_user_cannot_view_other_users_private_recipe(auth_client_user_two):
+    """
+    Tests that a user cannot view another user's private recipe.
+    """
+    client, user_one, user_two = auth_client_user_two
+
+    with client.application.app_context():
+        # Create a private recipe belonging to user_one
+        private_recipe = Recipe(user_id=user_one.id, name="User One's Private Recipe", is_public=False)
+        db.session.add(private_recipe)
+        db.session.commit()
+        recipe_id = private_recipe.id
+
+    # As user_two, attempt to view user_one's private recipe
+    response = client.get(url_for('recipes.view_recipe', recipe_id=recipe_id), follow_redirects=True)
+    assert response.status_code == 200
+    assert b'You are not authorized to view this recipe.' in response.data
+
+def test_user_cannot_delete_ingredient_from_other_users_recipe(auth_client_user_two):
+    """
+    Tests that a user cannot delete an ingredient from another user's recipe.
+    """
+    client, user_one, user_two = auth_client_user_two
+
+    with client.application.app_context():
+        # Create a recipe and ingredient belonging to user_one
+        recipe = Recipe(user_id=user_one.id, name="User One's Recipe")
+        db.session.add(recipe)
+        db.session.commit()
+        ingredient = RecipeIngredient(recipe_id=recipe.id, amount_grams=100)
+        db.session.add(ingredient)
+        db.session.commit()
+        ingredient_id = ingredient.id
+
+    # As user_two, attempt to delete the ingredient
+    response = client.post(url_for('recipes.delete_ingredient', ingredient_id=ingredient_id), follow_redirects=True)
+    assert response.status_code == 200
+    assert b'You are not authorized to modify this recipe.' in response.data
+    with client.application.app_context():
+        assert db.session.get(RecipeIngredient, ingredient_id) is not None
+
+def test_user_cannot_update_ingredient_in_other_users_recipe(auth_client_user_two):
+    """
+    Tests that a user cannot update an ingredient in another user's recipe.
+    """
+    client, user_one, user_two = auth_client_user_two
+
+    with client.application.app_context():
+        # Create a recipe, ingredient, and portion belonging to user_one
+        recipe = Recipe(user_id=user_one.id, name="User One's Recipe")
+        db.session.add(recipe)
+        db.session.commit()
+        portion = UnifiedPortion(recipe_id=recipe.id, gram_weight=1.0)
+        db.session.add(portion)
+        db.session.commit()
+        ingredient = RecipeIngredient(recipe_id=recipe.id, amount_grams=100, portion_id_fk=portion.id)
+        db.session.add(ingredient)
+        db.session.commit()
+        ingredient_id = ingredient.id
+        portion_id = portion.id
+
+    # As user_two, attempt to update the ingredient
+    response = client.post(url_for('recipes.update_ingredient', ingredient_id=ingredient_id), data={'amount': 200, 'portion_id': portion_id}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'You are not authorized to modify this recipe.' in response.data
+    with client.application.app_context():
+        ingredient = db.session.get(RecipeIngredient, ingredient_id)
+        assert ingredient.amount_grams == 100
+
+# region Portion Management Tests
+
+@pytest.fixture
+def recipe_with_portion(auth_client_with_user):
+    """Fixture to create a user, a recipe, and a portion for that recipe."""
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        recipe = Recipe(user_id=user.id, name='Recipe for Portion Test')
+        db.session.add(recipe)
+        db.session.commit()
+        recipe_id = recipe.id
+
+        portion = UnifiedPortion(
+            recipe_id=recipe_id,
+            portion_description='slice',
+            gram_weight=50.0,
+            amount=1.0,
+            measure_unit_description='slice'
+        )
+        db.session.add(portion)
+        db.session.commit()
+        portion_id = portion.id
+
+    return client, user.id, recipe_id, portion_id
+
+def test_add_recipe_portion_success(auth_client_with_user):
+    """
+    Tests successfully adding a new portion to a recipe.
+    """
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        # Create a recipe without any initial portions for a clean test
+        recipe = Recipe(user_id=user.id, name='Recipe for Portion Test')
+        db.session.add(recipe)
+        db.session.commit()
+        recipe_id = recipe.id
+
+    response = client.post(
+        url_for('recipes.add_recipe_portion', recipe_id=recipe_id),
+        data={
+            'portion_description': 'cup',
+            'gram_weight': 150.0,
+            'amount': 1.0,
+            'measure_unit_description': 'cup',
+            'modifier': ''
+        },
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'Recipe portion added.' in response.data
+
+    with client.application.app_context():
+        portions = UnifiedPortion.query.filter_by(recipe_id=recipe_id).all()
+        assert len(portions) == 1
+        new_portion = portions[0]
+        assert new_portion.portion_description == 'cup'
+        assert new_portion.gram_weight == 150.0
+
+def test_add_recipe_portion_invalid_data(auth_client_with_user):
+    """
+    Tests adding a new portion to a recipe with invalid data.
+    """
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        recipe = Recipe(user_id=user.id, name='Recipe for Portion Test')
+        db.session.add(recipe)
+        db.session.commit()
+        recipe_id = recipe.id
+
+    response = client.post(
+        url_for('recipes.add_recipe_portion', recipe_id=recipe_id),
+        data={
+            'portion_description': 'cup',
+            'gram_weight': -10, # Invalid
+            'amount': 1.0,
+            'measure_unit_description': 'cup',
+            'modifier': ''
+        },
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'Error in Gram Weight: Number must be at least 0.' in response.data
+
+    with client.application.app_context():
+        portions = UnifiedPortion.query.filter_by(recipe_id=recipe_id).all()
+        assert len(portions) == 0
+
+def test_add_recipe_portion_unauthorized(auth_client_user_two):
+    """
+    Tests that a user cannot add a portion to another user's recipe.
+    """
+    client, user_one, user_two = auth_client_user_two
+    with client.application.app_context():
+        recipe_user_one = Recipe(user_id=user_one.id, name="User One's Recipe")
+        db.session.add(recipe_user_one)
+        db.session.commit()
+        recipe_id = recipe_user_one.id
+
+    # As user_two, attempt to add a portion to user_one's recipe
+    response = client.post(
+        url_for('recipes.add_recipe_portion', recipe_id=recipe_id),
+        data={'portion_description': 'slice', 'gram_weight': 50.0, 'amount': 1.0, 'measure_unit_description': 'slice'},
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'You are not authorized to modify this recipe.' in response.data
+
+def test_update_recipe_portion_success(recipe_with_portion):
+    """
+    Tests successfully updating a recipe portion.
+    """
+    client, user_id, recipe_id, portion_id = recipe_with_portion
+
+    response = client.post(
+        url_for('recipes.update_recipe_portion', portion_id=portion_id),
+        data={
+            'portion_description': 'big slice',
+            'gram_weight': 75.0,
+            'amount': 1.0,
+            'measure_unit_description': 'slice',
+            'modifier': ''
+        },
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'Portion updated successfully!' in response.data
+
+    with client.application.app_context():
+        updated_portion = db.session.get(UnifiedPortion, portion_id)
+        assert updated_portion is not None
+        assert updated_portion.portion_description == 'big slice'
+        assert updated_portion.gram_weight == 75.0
+
+def test_update_recipe_portion_invalid_data(recipe_with_portion):
+    """
+    Tests updating a recipe portion with invalid data.
+    """
+    client, user_id, recipe_id, portion_id = recipe_with_portion
+
+    response = client.post(
+        url_for('recipes.update_recipe_portion', portion_id=portion_id),
+        data={
+            'portion_description': 'big slice',
+            'gram_weight': -75.0, # Invalid
+            'amount': 1.0,
+            'measure_unit_description': 'slice',
+            'modifier': ''
+        },
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'Error in Gram Weight: Number must be at least 0.' in response.data
+
+    with client.application.app_context():
+        portion = db.session.get(UnifiedPortion, portion_id)
+        assert portion.gram_weight == 50.0 # Should not have changed
+
+def test_update_recipe_portion_unauthorized(auth_client_user_two):
+    """
+    Tests that a user cannot update a portion on another user's recipe.
+    """
+    client, user_one, user_two = auth_client_user_two
+    with client.application.app_context():
+        # Create recipe and portion for user_one
+        recipe_user_one = Recipe(user_id=user_one.id, name="User One's Recipe")
+        db.session.add(recipe_user_one)
+        db.session.commit()
+        portion_user_one = UnifiedPortion(recipe_id=recipe_user_one.id, gram_weight=10, amount=1.0, measure_unit_description='g')
+        db.session.add(portion_user_one)
+        db.session.commit()
+        portion_id = portion_user_one.id
+
+    # As user_two, attempt to update the portion
+    response = client.post(
+        url_for('recipes.update_recipe_portion', portion_id=portion_id),
+        data={'gram_weight': 20, 'amount': 1.0, 'measure_unit_description': 'g'},
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'Portion not found or you do not have permission to edit it.' in response.data
+
+def test_delete_recipe_portion_success(recipe_with_portion):
+    """
+    Tests successfully deleting a recipe portion.
+    """
+    client, user_id, recipe_id, portion_id = recipe_with_portion
+
+    response = client.post(
+        url_for('recipes.delete_recipe_portion', portion_id=portion_id),
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'Recipe portion deleted.' in response.data
+
+    with client.application.app_context():
+        deleted_portion = db.session.get(UnifiedPortion, portion_id)
+        assert deleted_portion is None
+
+def test_delete_recipe_portion_unauthorized(auth_client_user_two):
+    """
+    Tests that a user cannot delete a portion from another user's recipe.
+    """
+    client, user_one, user_two = auth_client_user_two
+    with client.application.app_context():
+        # Create recipe and portion for user_one
+        recipe_user_one = Recipe(user_id=user_one.id, name="User One's Recipe")
+        db.session.add(recipe_user_one)
+        db.session.commit()
+        portion_user_one = UnifiedPortion(recipe_id=recipe_user_one.id, gram_weight=10)
+        db.session.add(portion_user_one)
+        db.session.commit()
+        portion_id = portion_user_one.id
+
+    # As user_two, attempt to delete the portion
+    response = client.post(
+        url_for('recipes.delete_recipe_portion', portion_id=portion_id),
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'Portion not found or you do not have permission to delete it.' in response.data
+
+    with client.application.app_context():
+        # Assert that the portion still exists
+        assert db.session.get(UnifiedPortion, portion_id) is not None
+
+# endregion

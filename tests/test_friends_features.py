@@ -3,14 +3,6 @@ from models import db, User, Recipe, MyFood, MyMeal, Friendship, RecipeIngredien
 from flask_login import login_user
 from datetime import date
 
-# Helper function to create users
-def create_test_user(username, password='password'):
-    user = User(username=username, email='testuser_friendship@example.com')
-    user.set_password(password)
-    db.session.add(user)
-    db.session.commit()
-    return user
-
 def setup_friend_data(friend_user):
     """Helper function to create test data for the friend user."""
     # Friend_user creates a recipe, a food, and a meal
@@ -204,3 +196,43 @@ def test_friends_diary_display_unspecified_meal(auth_client_with_friendship):
         response = client.get(f'/user/{friend_user.username}/diary/{date.today().strftime("%Y-%m-%d")}', follow_redirects=True)
         assert response.status_code == 200
         assert b'Unspecified' in response.data
+
+def test_copy_meal_from_friend_diary(auth_client_with_friendship):
+    """
+    Test copying a whole meal from a friend's diary to the current user's diary.
+    """
+    client, test_user, friend_user = auth_client_with_friendship
+    log_date = date.today()
+    meal_name = 'Lunch'
+
+    with client.application.app_context():
+        # Friend has two items for lunch
+        friend_log1 = DailyLog(user_id=friend_user.id, log_date=log_date, meal_name=meal_name, fdc_id=1, amount_grams=100)
+        friend_log2 = DailyLog(user_id=friend_user.id, log_date=log_date, meal_name=meal_name, fdc_id=2, amount_grams=200)
+        db.session.add_all([friend_log1, friend_log2])
+        db.session.commit()
+
+    response = client.post('/diary/copy_meal_from_friend', data={
+        'friend_username': friend_user.username,
+        'log_date': log_date.isoformat(),
+        'meal_name': meal_name
+    })
+
+    assert response.status_code == 302  # Check for redirect
+    with client.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == 'success'
+        assert flashes[0][1] == f"Successfully copied {meal_name} from {friend_user.username}'s diary."
+
+    # Follow redirect manually
+    response = client.get(response.headers['Location'])
+    assert response.status_code == 200
+    assert response.request.path == f'/diary/{log_date.isoformat()}'
+
+
+    with client.application.app_context():
+        user_logs = DailyLog.query.filter_by(user_id=test_user.id, log_date=log_date, meal_name=meal_name).all()
+        assert len(user_logs) == 2
+        fdc_ids = {log.fdc_id for log in user_logs}
+        assert fdc_ids == {1, 2}

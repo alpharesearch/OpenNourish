@@ -260,3 +260,47 @@ def test_diary_display_unspecified_meal(auth_client):
     response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
     assert response.status_code == 200
     assert b'Unspecified' in response.data
+
+def test_update_diary_entry(auth_client):
+    """
+    Tests updating a diary entry's amount and portion.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        my_food = MyFood(user_id=user.id, description='My Test Food', calories_per_100g=100)
+        db.session.add(my_food)
+        db.session.commit()
+
+        portion1 = UnifiedPortion(my_food_id=my_food.id, portion_description='g', gram_weight=1.0)
+        portion2 = UnifiedPortion(my_food_id=my_food.id, portion_description='serving', gram_weight=50.0)
+        db.session.add_all([portion1, portion2])
+        db.session.commit()
+
+        log_entry = DailyLog(
+            user_id=user.id,
+            log_date=date.today(),
+            meal_name='Breakfast',
+            my_food_id=my_food.id,
+            amount_grams=100, # Initially 100g
+            portion_id_fk=portion1.id,
+            serving_type='g'
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+        log_id = log_entry.id
+        portion2_id = portion2.id
+
+    # Update to 2 servings of 50g each
+    response = auth_client.post(f'/diary/update_entry/{log_id}', data={
+        'amount': 2,
+        'portion_id': portion2_id
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b'Entry updated successfully!' in response.data
+
+    with auth_client.application.app_context():
+        updated_log = db.session.get(DailyLog, log_id)
+        assert updated_log.amount_grams == 100.0 # 2 * 50.0
+        assert updated_log.portion_id_fk == portion2_id
+        assert updated_log.serving_type == 'serving'

@@ -11,16 +11,6 @@ def create_test_user(username, password='password', is_verified=True, is_private
     return user
 
 @pytest.fixture
-def auth_client_private_user(app_with_db):
-    with app_with_db.app_context():
-        user = create_test_user('private_user', is_private=True)
-        with app_with_db.test_client() as client:
-            with client.session_transaction() as sess:
-                sess['_user_id'] = user.id
-                sess['_fresh'] = True
-            yield client, user
-
-@pytest.fixture
 def auth_client_public_user(app_with_db):
     with app_with_db.app_context():
         user = create_test_user('public_user', is_private=False)

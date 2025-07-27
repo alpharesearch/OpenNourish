@@ -115,6 +115,36 @@ def test_add_item_to_diary(auth_client_with_data):
         assert daily_log is not None
         assert daily_log.amount_grams == 150
 
+def test_add_recipe_to_diary(auth_client_with_data):
+    auth_client = auth_client_with_data
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        recipe = Recipe.query.filter_by(name='Test Recipe').first()
+        log_date_str = date.today().isoformat()
+        portion = UnifiedPortion(recipe_id=recipe.id, portion_description='serving', gram_weight=125.0)
+        db.session.add(portion)
+        db.session.commit()
+        portion_id = portion.id
+        recipe_id = recipe.id
+        user_id = user.id
+
+    response = auth_client.post('/search/add_item', data={
+        'food_id': recipe_id,
+        'food_type': 'recipe',
+        'target': 'diary',
+        'log_date': log_date_str,
+        'meal_name': 'Dinner',
+        'amount': 1,
+        'portion_id': portion_id
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Test Recipe added to your diary.' in response.data
+
+    with auth_client.application.app_context():
+        daily_log = DailyLog.query.filter_by(user_id=user_id, recipe_id=recipe_id, log_date=date.today()).first()
+        assert daily_log is not None
+        assert daily_log.amount_grams == 125.0
+
 def test_add_item_to_recipe(auth_client_with_data):
     auth_client = auth_client_with_data
     with auth_client.application.app_context():
@@ -145,6 +175,62 @@ def test_add_item_to_recipe(auth_client_with_data):
         recipe_ingredient = RecipeIngredient.query.filter_by(recipe_id=target_recipe_id, my_food_id=my_food_id).first()
         assert recipe_ingredient is not None
         assert recipe_ingredient.amount_grams == 75
+
+def test_add_usda_food_to_meal(auth_client_with_data):
+    auth_client = auth_client_with_data
+    with auth_client.application.app_context():
+        usda_food = Food.query.filter_by(description='Test USDA Food').first()
+        target_meal = MyMeal.query.filter_by(name='Target Meal').first()
+        gram_portion = UnifiedPortion(fdc_id=usda_food.fdc_id, portion_description='gram', gram_weight=1.0)
+        db.session.add(gram_portion)
+        db.session.commit()
+        portion_id = gram_portion.id
+        usda_food_id = usda_food.fdc_id
+        target_meal_id = target_meal.id
+
+    response = auth_client.post('/search/add_item', data={
+        'food_id': usda_food_id,
+        'food_type': 'usda',
+        'target': 'meal',
+        'recipe_id': target_meal_id,
+        'amount': 50,
+        'portion_id': portion_id
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Test USDA Food added to meal Target Meal.' in response.data
+
+    with auth_client.application.app_context():
+        meal_item = MyMealItem.query.filter_by(my_meal_id=target_meal_id, fdc_id=usda_food_id).first()
+        assert meal_item is not None
+        assert meal_item.amount_grams == 50
+
+def test_add_my_food_to_meal(auth_client_with_data):
+    auth_client = auth_client_with_data
+    with auth_client.application.app_context():
+        my_food = MyFood.query.filter_by(description='Test My Food').first()
+        target_meal = MyMeal.query.filter_by(name='Target Meal').first()
+        gram_portion = UnifiedPortion(my_food_id=my_food.id, portion_description='gram', gram_weight=1.0)
+        db.session.add(gram_portion)
+        db.session.commit()
+        portion_id = gram_portion.id
+        my_food_id = my_food.id
+        target_meal_id = target_meal.id
+
+    response = auth_client.post('/search/add_item', data={
+        'food_id': my_food_id,
+        'food_type': 'my_food',
+        'target': 'meal',
+        'recipe_id': target_meal_id,
+        'amount': 80,
+        'portion_id': portion_id
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Test My Food added to meal Target Meal.' in response.data
+
+    with auth_client.application.app_context():
+        meal_item = MyMealItem.query.filter_by(my_meal_id=target_meal_id, my_food_id=my_food_id).first()
+        assert meal_item is not None
+        assert meal_item.amount_grams == 80
 
 def test_add_item_to_meal(auth_client_with_data):
     auth_client = auth_client_with_data

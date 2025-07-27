@@ -146,6 +146,29 @@ def test_search_by_upc_friend_food(auth_client, app_with_db):
     assert json_data['food']['description'] == "Friend's Food"
     assert json_data['food']['id'] == friend_food_id
 
+def test_search_by_upc_friend_recipe(auth_client_with_friendship):
+    """
+    GIVEN a user has a friend who has a public Recipe with a specific UPC,
+    WHEN the user searches for that UPC,
+    THEN the friend's Recipe item should be returned.
+    """
+    client, test_user, friend_user = auth_client_with_friendship
+    upc = "444555666777"
+    with client.application.app_context():
+        friend_recipe = Recipe(user_id=friend_user.id, name="Friend's Public Recipe", upc=upc, is_public=True)
+        db.session.add(friend_recipe)
+        db.session.commit()
+        friend_recipe_id = friend_recipe.id
+
+    response = client.get(f'/search/by_upc?upc={upc}')
+    
+    assert response.status_code == 200
+    json_data = response.get_json()
+    assert json_data['status'] == 'found'
+    assert json_data['source'] == 'friend_recipe'
+    assert json_data['food']['description'] == "Friend's Public Recipe"
+    assert json_data['food']['id'] == friend_recipe_id
+
 def test_search_by_upc_no_upc_provided(auth_client, app_with_db):
     """
     GIVEN a user is logged in,

@@ -308,12 +308,21 @@ The project uses the `pytest` framework for testing and the `coverage` package t
 
 To ensure your changes are well-tested, you should run a coverage analysis.
 
+    If something like the dev seed function should not count towards the production code we can remove it from coverage:
+    ```
+    # no cover: start
+    ...
+    ...
+    ...
+    # no cover: stop
+    ```
+
 1.  **Run Tests via Coverage:** This command runs the test suite while monitoring which lines of code are executed.
     ```bash
     coverage run -m pytest -m "not integration"
     ```
 
-2.  **View a Quick Report:** To see a summary of coverage percentages directly in your terminal, use the `report` command. The `-m` flag will also highlight which line numbers are missing coverage.
+2.  **View a Quick Report:** To see a summary of coverage percentages directly in your terminal, use the `report` command. The `-m` flag will also highlight which line numbers are missing coverage. Gemini understands markdown tables better than clear text.
     ```bash
     coverage report -m --skip-covered --format=markdown --omit="test*"
     ```
@@ -323,9 +332,15 @@ To ensure your changes are well-tested, you should run a coverage analysis.
     coverage html
     ```
     After the command finishes, open the `htmlcov/index.html` file in your web browser to explore which specific lines and branches of your code are not currently being tested.
-4.  **All in one**
+
+4.  **All in one** 
+    Without integration
     ```bash
-    coverage run -m pytest -m "not integration" && coverage html && coverage report -m --skip-covered --format=markdown --omit="test*","opennourish/__init__.py"
+    coverage run -m pytest -m "not integration" && coverage html && coverage report -m --skip-covered --format=markdown --omit="test*","/tmp/*"
+    ```
+    Full
+    ```bash
+    coverage run -m pytest && coverage html && coverage report -m --skip-covered --format=markdown --omit="test*","/tmp/*"
     ```
 
 

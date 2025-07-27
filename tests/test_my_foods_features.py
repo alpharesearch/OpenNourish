@@ -44,9 +44,9 @@ def test_create_my_food(auth_client):
         gram_portion = UnifiedPortion.query.filter_by(my_food_id=my_food.id, gram_weight=1.0).first()
         assert gram_portion is not None
 
-def test_copy_usda_food(auth_client):
+def test_copy_usda_food_from_search(auth_client):
     """
-    Tests copying a USDA food to My Foods.
+    Tests copying a USDA food to My Foods from the search/add_item endpoint.
     """
     with auth_client.application.app_context():
         # Create a sample USDA Food and Nutrients
@@ -91,6 +91,114 @@ def test_copy_usda_food(auth_client):
         assert my_food.protein_per_100g == 0.3
         assert my_food.carbs_per_100g == 13.8
         assert my_food.fat_per_100g == 0.2
+
+def test_copy_usda_food_direct(auth_client):
+    """
+    Tests copying a USDA food to My Foods using the dedicated copy route.
+    """
+    with auth_client.application.app_context():
+        # Setup USDA food with nutrients and portions
+        usda_food = Food(fdc_id=54321, description='USDA Direct Copy')
+        db.session.add(usda_food)
+        db.session.add(Nutrient(id=1008, name='Energy', unit_name='kcal'))
+        db.session.add(FoodNutrient(fdc_id=54321, nutrient_id=1008, amount=150.0))
+        db.session.add(UnifiedPortion(fdc_id=54321, portion_description='slice', gram_weight=30.0))
+        db.session.commit()
+
+    response = auth_client.post('/my_foods/copy_usda', data={'fdc_id': 54321})
+    assert response.status_code == 302 # Redirect
+
+    with auth_client.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == 'success'
+        assert flashes[0][1] == "Successfully created 'USDA Direct Copy' from USDA data."
+
+    with auth_client.application.app_context():
+        my_food = MyFood.query.filter_by(description='USDA Direct Copy').first()
+        assert my_food is not None
+        assert my_food.calories_per_100g == 150.0
+        assert len(my_food.portions) == 1
+        assert my_food.portions[0].portion_description == 'slice'
+
+def test_update_my_food_portion(auth_client):
+    """
+    Tests updating an existing portion on a MyFood item.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        my_food = MyFood(user_id=user.id, description='Food with Portions')
+        db.session.add(my_food)
+        db.session.commit()
+        portion = UnifiedPortion(my_food_id=my_food.id, portion_description='piece', gram_weight=25.0)
+        db.session.add(portion)
+        db.session.commit()
+        portion_id = portion.id
+
+    update_data = {
+        'portion_description': 'large piece',
+        'gram_weight': 40.0,
+        'amount': 1.0,
+        'measure_unit_description': 'unit'
+    }
+    response = auth_client.post(f'/my_foods/portion/{portion_id}/update', data=update_data, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Portion updated successfully!' in response.data
+
+    with auth_client.application.app_context():
+        updated_portion = db.session.get(UnifiedPortion, portion_id)
+        assert updated_portion.portion_description == 'large piece'
+        assert updated_portion.gram_weight == 40.0
+
+def test_add_my_food_portion(auth_client):
+    """
+    Tests adding a new portion to an existing MyFood item.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        my_food = MyFood(user_id=user.id, description='Food for Portions')
+        db.session.add(my_food)
+        db.session.commit()
+        food_id = my_food.id
+
+    portion_data = {
+        'portion_description': 'new portion',
+        'amount': 0.5,
+        'measure_unit_description': 'cup',
+        'modifier': 'chopped',
+        'gram_weight': 75.0
+    }
+    response = auth_client.post(f'/my_foods/{food_id}/add_portion', data=portion_data, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Portion added successfully!' in response.data
+
+    with auth_client.application.app_context():
+        added_portion = UnifiedPortion.query.filter_by(my_food_id=food_id, portion_description='new portion').first()
+        assert added_portion is not None
+        assert added_portion.gram_weight == 75.0
+
+def test_delete_my_food_portion(auth_client):
+    """
+    Tests deleting a portion from a MyFood item.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        my_food = MyFood(user_id=user.id, description='Food to Delete Portion From')
+        db.session.add(my_food)
+        db.session.commit()
+        food_id = my_food.id
+        portion_to_delete = UnifiedPortion(my_food_id=my_food.id, portion_description='portion to delete', gram_weight=10.0)
+        db.session.add(portion_to_delete)
+        db.session.commit()
+        portion_id = portion_to_delete.id
+
+    response = auth_client.post(f'/my_foods/portion/{portion_id}/delete', follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Portion deleted.' in response.data
+
+    with auth_client.application.app_context():
+        deleted_portion = db.session.get(UnifiedPortion, portion_id)
+        assert deleted_portion is None
 
 def test_edit_my_food(auth_client):
     """

@@ -1,6 +1,7 @@
 import pytest
 from models import db, User, FastingSession, UserGoal
 from datetime import datetime, timedelta
+import pytz
 
 def test_fasting_index_no_active_fast(auth_client):
     """
@@ -182,3 +183,68 @@ def test_user_can_set_default_fasting_duration(auth_client_onboarded):
     assert response.status_code == 200
     assert b'value="18"' in response.data
 
+def test_delete_fast(auth_client):
+    """
+    Tests deleting a completed fast entry.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        fast = FastingSession(
+            user_id=user.id,
+            start_time=datetime.utcnow() - timedelta(hours=24),
+            end_time=datetime.utcnow() - timedelta(hours=8),
+            status='completed',
+            planned_duration_hours=16
+        )
+        db.session.add(fast)
+        db.session.commit()
+        fast_id = fast.id
+
+    response = auth_client.post(f'/fasting/delete_fast/{fast_id}', follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Fast entry deleted.' in response.data
+
+    with auth_client.application.app_context():
+        deleted_fast = db.session.get(FastingSession, fast_id)
+        assert deleted_fast is None
+
+def test_update_completed_fast(auth_client):
+    """
+    Tests updating the start and end times of a completed fast.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        user.timezone = 'America/New_York'  # Set a non-UTC timezone
+        fast = FastingSession(
+            user_id=user.id,
+            start_time=datetime.utcnow() - timedelta(days=2),
+            end_time=datetime.utcnow() - timedelta(days=1),
+            status='completed',
+            planned_duration_hours=24
+        )
+        db.session.add(fast)
+        db.session.commit()
+        fast_id = fast.id
+
+    # New naive times to be submitted, representing America/New_York time
+    new_start_time_naive = datetime(2023, 10, 26, 10, 0)
+    new_end_time_naive = datetime(2023, 10, 27, 6, 0)
+
+    response = auth_client.post(f'/fasting/update_fast/{fast_id}', data={
+        'start_time': new_start_time_naive.strftime('%Y-%m-%dT%H:%M'),
+        'end_time': new_end_time_naive.strftime('%Y-%m-%dT%H:%M')
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b'Fast updated successfully.' in response.data
+
+    with auth_client.application.app_context():
+        updated_fast = db.session.get(FastingSession, fast_id)
+        
+        # Convert naive form times to expected UTC for comparison
+        user_tz = pytz.timezone('America/New_York')
+        expected_start_utc = user_tz.localize(new_start_time_naive).astimezone(pytz.utc).replace(tzinfo=None)
+        expected_end_utc = user_tz.localize(new_end_time_naive).astimezone(pytz.utc).replace(tzinfo=None)
+
+        assert updated_fast.start_time == expected_start_utc
+        assert updated_fast.end_time == expected_end_utc

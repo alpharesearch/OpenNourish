@@ -703,41 +703,6 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 """
 
     return typst_content
-
-def generate_myfood_label_pdf(my_food_id, label_only=False):
-    """
-    Generates a PDF nutrition label for a MyFood item.
-    Can generate a label-only PDF or a full-page PDF with additional details.
-    """
-    my_food, nutrients_for_label = _get_nutrition_label_data_myfood(my_food_id)
-    if not my_food:
-        return "Food not found", 404
-
-    typst_content = _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=label_only)
-    current_app.logger.debug(f"typst_content: {typst_content}")
-    with tempfile.TemporaryDirectory() as tmpdir:
-        file_suffix = "label_only" if label_only else "details"
-        typ_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.typ")
-        pdf_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.pdf")
-
-        with open(typ_file_path, "w", encoding="utf-8") as f:
-            f.write(typst_content)
-
-        try:
-            # Run Typst command
-            subprocess.run(
-                ["typst", "compile", os.path.basename(typ_file_path), "--pages", "1", os.path.basename(pdf_file_path)],
-                capture_output=True, text=True, check=True, cwd=tmpdir
-            )
-
-            download_name = f"{my_food.description}_{file_suffix}.pdf"
-            return send_file(pdf_file_path, as_attachment=False, download_name=download_name, mimetype='application/pdf')
-        except subprocess.CalledProcessError as e:
-            current_app.logger.error(f"Typst compilation failed for my_food_id {my_food_id}: {e.stderr}")
-            return f"Error generating PDF: {e.stderr}", 500
-        except FileNotFoundError:
-            current_app.logger.error("Typst executable not found.")
-            return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
         
 def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False):
     def _sanitize_for_typst(text):

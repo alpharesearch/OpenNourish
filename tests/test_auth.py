@@ -1,5 +1,6 @@
 import pytest
 from flask import url_for
+from models import db, User
 
 def test_registration(client):
     """
@@ -116,3 +117,67 @@ def test_registration_disabled(client, mocker):
         assert len(flashes) > 0
         assert flashes[0][0] == 'danger'
         assert flashes[0][1] == 'New user registration is currently disabled.'
+
+def test_password_reset_request(client, mocker):
+    """
+    Tests the password reset request functionality.
+    """
+    client.application.config['ENABLE_PASSWORD_RESET'] = True
+    mock_send_email = mocker.patch('opennourish.auth.routes.send_password_reset_email')
+    with client.application.app_context():
+        user = User(username='resetuser', email='reset@example.com')
+        user.set_password('password')
+        db.session.add(user)
+        db.session.commit()
+
+    # Test with a valid email
+    response = client.post(url_for('auth.reset_password_request'), data={'email': 'reset@example.com'}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Check your email for the instructions to reset your password' in response.data
+    mock_send_email.assert_called_once()
+
+    # Test with an invalid email
+    response = client.post(url_for('auth.reset_password_request'), data={'email': 'nonexistent@example.com'}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Email address not found.' in response.data
+
+def test_password_reset(client):
+    """
+    Tests the password reset functionality with a valid and invalid token.
+    """
+    client.application.config['ENABLE_PASSWORD_RESET'] = True
+    with client.application.app_context():
+        user = User(username='resetuser', email='reset@example.com')
+        user.set_password('oldpassword')
+        db.session.add(user)
+        db.session.commit()
+        token = user.get_token(purpose='reset-password')
+        invalid_token = 'invalidtoken'
+
+    # Test GET with a valid token
+    response = client.get(url_for('auth.reset_password', token=token))
+    assert response.status_code == 200
+    assert b'Reset Password' in response.data
+
+    # Test POST with a valid token and new password
+    response = client.post(url_for('auth.reset_password', token=token), data={'password': 'newpassword', 'password2': 'newpassword'}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Your password has been reset.' in response.data
+
+    # Verify login with the new password
+    response = client.post(url_for('auth.login'), data={'username_or_email': 'resetuser', 'password': 'newpassword'}, follow_redirects=True)
+    assert any(s in response.request.path for s in ['/dashboard', '/onboarding'])
+
+
+    # Test with an invalid token
+    response = client.get('/auth/logout', follow_redirects=False)
+    assert response.status_code == 302
+
+    # Test GET with a valid token
+    response = client.get(url_for('auth.reset_password', token=token))
+    assert response.status_code == 200
+    assert b'Reset Password' in response.data
+
+    response = client.post(url_for('auth.reset_password', token=invalid_token), data={'password': 'newpassword', 'password2': 'newpassword'}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'That is an invalid or expired token' in response.data

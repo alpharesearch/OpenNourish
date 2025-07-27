@@ -2,7 +2,8 @@ import pytest
 from flask import url_for, current_app
 from flask_login import current_user
 from models import db, User, SystemSetting
-from opennourish.utils import mail
+from opennourish.utils import mail, send_password_reset_email
+
 
 @pytest.fixture
 def enable_email_verification(app_with_db):
@@ -209,3 +210,29 @@ def test_verify_email_already_verified_user(app_with_db, verified_user_client, c
         assert updated_user.is_verified # Should remain verified
     with client.session_transaction() as sess:
         assert '_user_id' in sess
+
+# --- Part 3: Password Reset Email Test ---
+
+def test_send_password_reset_email_success(app_with_db, mocker):
+    """
+    GIVEN a user
+    WHEN send_password_reset_email is called
+    THEN it should call the mail.send_message function once
+    """
+    mocker.patch('opennourish.utils.mail.send_message', return_value=None)
+    with app_with_db.app_context():
+        user = User(username='resetme', email='reset@example.com')
+        db.session.add(user)
+        db.session.commit()
+        token = user.get_token(purpose='reset-password')
+
+        send_password_reset_email(user, token)
+
+        mail.send_message.assert_called_once()
+        # Optional: More detailed assertion on the call arguments
+        args, kwargs = mail.send_message.call_args
+        sent_msg = args[0]
+        assert sent_msg.subject == "Password Reset Request"
+        assert sent_msg.recipients == [user.email]
+        assert "To reset your password" in sent_msg.html
+        assert token in sent_msg.html
