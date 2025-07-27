@@ -602,6 +602,7 @@ def _get_nutrition_label_data_myfood(my_food_id):
         'Potassium': my_food.potassium_mg_per_100g or 0,
     }
     return my_food, nutrients_for_label
+
 def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=False):
     def _sanitize_for_typst(text):
         """Sanitizes text to be safely included in Typst markup by escaping special characters."""
@@ -703,7 +704,42 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 """
 
     return typst_content
-        
+
+def generate_myfood_label_pdf(my_food_id, label_only=False):
+    """
+    Generates a PDF nutrition label for a MyFood item.
+    Can generate a label-only PDF or a full-page PDF with additional details.
+    """
+    my_food, nutrients_for_label = _get_nutrition_label_data_myfood(my_food_id)
+    if not my_food:
+        return "Food not found", 404
+
+    typst_content = _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=label_only)
+    current_app.logger.debug(f"typst_content: {typst_content}")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        file_suffix = "label_only" if label_only else "details"
+        typ_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.typ")
+        pdf_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.pdf")
+
+        with open(typ_file_path, "w", encoding="utf-8") as f:
+            f.write(typst_content)
+
+        try:
+            # Run Typst command
+            subprocess.run(
+                ["typst", "compile", os.path.basename(typ_file_path), "--pages", "1", os.path.basename(pdf_file_path)],
+                capture_output=True, text=True, check=True, cwd=tmpdir
+            )
+
+            download_name = f"{my_food.description}_{file_suffix}.pdf"
+            return send_file(pdf_file_path, as_attachment=False, download_name=download_name, mimetype='application/pdf')
+        except subprocess.CalledProcessError as e:
+            current_app.logger.error(f"Typst compilation failed for my_food_id {my_food_id}: {e.stderr}")
+            return f"Error generating PDF: {e.stderr}", 500
+        except FileNotFoundError:
+            current_app.logger.error("Typst executable not found.")
+            return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
+
 def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False):
     def _sanitize_for_typst(text):
         """Sanitizes text to be safely included in Typst markup by escaping special characters."""
@@ -717,25 +753,49 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
     # Create a string of ingredients for the recipe
     ingredients_str = ""
     if recipe.ingredients:
-        ingredient_names = []
         for ing in recipe.ingredients:
             if ing.fdc_id:
-                food = db.session.get(Food, ing.fdc_id)
-                if food:
-                    ingredient_names.append(food.description)
-            elif ing.my_food_id:
-                my_food = db.session.get(MyFood, ing.my_food_id)
-                if my_food:
-                    ingredient_names.append(my_food.description)
-            elif ing.recipe_id_link:
-                linked_recipe = db.session.get(Recipe, ing.recipe_id_link)
-                if linked_recipe:
-                    ingredient_names.append(linked_recipe.name)
-        ingredients_str = ", ".join(ingredient_names)
+                ing.usda_food = usda_foods_map.get(ing.fdc_id)
+            
+            # Calculate nutrition for each individual ingredient
+            ingredient_nutrition = calculate_nutrition_for_items([ing])
+            ing.calories = ingredient_nutrition['calories']
+            ing.protein = ingredient_nutrition['protein']
+            ing.carbs = ingredient_nutrition['carbs']
+            ing.fat = ingredient_nutrition['fat']
+
+            # Calculate quantity and portion description
+            food_object = None
+            if hasattr(ing, 'usda_food') and ing.usda_food:
+                food_object = ing.usda_food
+                ing.description = food_object.description
+            elif ing.my_food:
+                food_object = ing.my_food
+                ing.description = food_object.description
+            elif ing.linked_recipe:
+                food_object = ing.linked_recipe
+                ing.description = food_object.name
+
+            ing.quantity = ing.amount_grams
+            ing.portion_description = "g"
+
+            if food_object:
+                available_portions = get_available_portions(food_object)
+                available_portions.sort(key=lambda p: p.gram_weight, reverse=True)
+                
+                for p in available_portions:
+                    if p.gram_weight > 0.1:
+                        if abs(ing.amount_grams % p.gram_weight) < 0.01 or abs(p.gram_weight - (ing.amount_grams % p.gram_weight)) < 0.01:
+                            ing.quantity = round(ing.amount_grams / p.gram_weight, 2)
+                            ing.portion_description = p.full_description_str
+                            break
+            ingredients_str = ingredients_str + _sanitize_for_typst("{:.2f}".format(ing.quantity) + " " + ing.portion_description + " " + ing.description) + "\\ "
     else:
         ingredients_str = "N/A"
-    ingredients_str = _sanitize_for_typst(ingredients_str)
     
+    # Sanitize all user-provided strings
+    sanitized_recipe_instructions = _sanitize_for_typst(recipe.instructions)
+
     # Prepare UPC for EAN-13. The typst ean13 function takes the first 12 digits.
     current_app.logger.debug(f"recipe.upc from DB: {recipe.upc}")
     upc_str = "0" # Default
@@ -796,14 +856,6 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
 
     if label_only:
         typst_content = typst_content_data + f"""
-#set page(width: 2in, height: 1in)
-#set page(margin: (x: 0.1cm, y: 0.1cm))
-#set text(font: "Liberation Sans", size: 8pt)
-#ean13(scale:(1.6, .5), "{upc_str}")
-{sanitized_recipe_name}
-"""
-    else:
-        typst_content = typst_content_data + f"""
 #set page(width: 6in, height: 4in, columns: 2)
 #set page(margin: (x: 0.2in, y: 0.05in))
 #set text(font: "Liberation Sans", size: 8pt)
@@ -820,44 +872,29 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
 #set align(right)
 #show: nutrition-label-nam(data, scale-percent: 75%, show-footnote: false,)
 """
+    else:
+        typst_content = typst_content_data + f"""
+#set page(paper: "us-letter", columns: 2)
+#set page(margin: (x: 0.75in, y: 0.75in))
+#set text(font: "Liberation Sans", size: 10pt)
 
+#box(width: 4.25in, height: 8in, clip: true, 
+[= {sanitized_recipe_name}
+== Ingredients: 
+{ingredients_str}
+== Instructions: 
+{sanitized_recipe_instructions}])
+#colbreak()
+#set align(right)
+#ean13(scale:(2.0, .5), "{upc_str}")
+== Portion Sizes: 
+{portions_str}
+== Label:
+#show: nutrition-label-nam(data, scale-percent: 75%)
+"""
+    
     return typst_content
 
-def generate_myfood_label_pdf(my_food_id, label_only=False):
-    """
-    Generates a PDF nutrition label for a MyFood item.
-    Can generate a label-only PDF or a full-page PDF with additional details.
-    """
-    my_food, nutrients_for_label = _get_nutrition_label_data_myfood(my_food_id)
-    if not my_food:
-        return "Food not found", 404
-
-    typst_content = _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=label_only)
-    current_app.logger.debug(f"typst_content: {typst_content}")
-    with tempfile.TemporaryDirectory() as tmpdir:
-        file_suffix = "label_only" if label_only else "details"
-        typ_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.typ")
-        pdf_file_path = os.path.join(tmpdir, f"myfood_label_{my_food.id}_{file_suffix}.pdf")
-
-        with open(typ_file_path, "w", encoding="utf-8") as f:
-            f.write(typst_content)
-
-        try:
-            # Run Typst command
-            subprocess.run(
-                ["typst", "compile", os.path.basename(typ_file_path), "--pages", "1", os.path.basename(pdf_file_path)],
-                capture_output=True, text=True, check=True, cwd=tmpdir
-            )
-
-            download_name = f"{my_food.description}_{file_suffix}.pdf"
-            return send_file(pdf_file_path, as_attachment=False, download_name=download_name, mimetype='application/pdf')
-        except subprocess.CalledProcessError as e:
-            current_app.logger.error(f"Typst compilation failed for my_food_id {my_food_id}: {e.stderr}")
-            return f"Error generating PDF: {e.stderr}", 500
-        except FileNotFoundError:
-            current_app.logger.error("Typst executable not found.")
-            return "Typst executable not found. Please ensure Typst is installed and in your system's PATH.", 500
-        
 def _get_nutrition_label_data_recipe(recipe_id):
     """
     Fetches a Recipe item and its nutritional data, formatted for the Typst label generator.

@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: 16ecd221bbfc
+Revision ID: 43446f2609ad
 Revises: 
-Create Date: 2025-07-20 21:43:36.312787
+Create Date: 2025-07-27 14:27:59.988825
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '16ecd221bbfc'
+revision = '43446f2609ad'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -55,6 +55,7 @@ def upgrade():
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('is_verified', sa.Boolean(), nullable=False),
     sa.Column('is_private', sa.Boolean(), nullable=False),
+    sa.Column('timezone', sa.String(length=100), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('username')
@@ -78,6 +79,16 @@ def upgrade():
     sa.Column('duration_minutes', sa.Integer(), nullable=False),
     sa.Column('calories_burned', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['activity_id'], ['exercise_activities.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('fasting_sessions',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('start_time', sa.DateTime(), nullable=False),
+    sa.Column('end_time', sa.DateTime(), nullable=True),
+    sa.Column('planned_duration_hours', sa.Integer(), nullable=False),
+    sa.Column('status', sa.String(length=20), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -159,6 +170,8 @@ def upgrade():
     op.create_table('user_goals',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('goal_modifier', sa.String(length=50), nullable=True),
+    sa.Column('diet_preset', sa.String(length=50), nullable=True),
     sa.Column('calories', sa.Float(), nullable=True),
     sa.Column('protein', sa.Float(), nullable=True),
     sa.Column('carbs', sa.Float(), nullable=True),
@@ -169,6 +182,7 @@ def upgrade():
     sa.Column('weight_goal_kg', sa.Float(), nullable=True),
     sa.Column('body_fat_percentage_goal', sa.Float(), nullable=True),
     sa.Column('waist_cm_goal', sa.Float(), nullable=True),
+    sa.Column('default_fasting_hours', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -257,6 +271,7 @@ def downgrade():
     op.drop_table('my_meals')
     op.drop_table('my_foods')
     op.drop_table('friendships')
+    op.drop_table('fasting_sessions')
     op.drop_table('exercise_logs')
     op.drop_table('check_ins')
     op.drop_table('users')
