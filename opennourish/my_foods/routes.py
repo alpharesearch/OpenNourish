@@ -285,6 +285,7 @@ def copy_my_food(food_id):
         sodium_mg_per_100g=original_food.sodium_mg_per_100g,
         fiber_per_100g=original_food.fiber_per_100g,
         sugars_per_100g=original_food.sugars_per_100g,
+        added_sugars_per_100g=original_food.added_sugars_per_100g,
         vitamin_d_mcg_per_100g=original_food.vitamin_d_mcg_per_100g,
         calcium_mg_per_100g=original_food.calcium_mg_per_100g,
         iron_mg_per_100g=original_food.iron_mg_per_100g,

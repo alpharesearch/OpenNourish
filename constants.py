@@ -15,6 +15,7 @@ CORE_NUTRIENT_IDS = {
     'sodium': 1093,
     'fiber': 1079,
     'sugars': 2000,
+    #'added_sugars': 1235,
     'vitamin_d': 1110,
     'calcium': 1087,
     'iron': 1089,

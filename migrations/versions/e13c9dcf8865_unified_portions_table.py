@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: 43446f2609ad
+Revision ID: e13c9dcf8865
 Revises: 
-Create Date: 2025-07-27 14:27:59.988825
+Create Date: 2025-07-27 16:53:10.808131
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '43446f2609ad'
+revision = 'e13c9dcf8865'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -121,6 +121,7 @@ def upgrade():
     sa.Column('sodium_mg_per_100g', sa.Float(), nullable=False),
     sa.Column('fiber_per_100g', sa.Float(), nullable=False),
     sa.Column('sugars_per_100g', sa.Float(), nullable=False),
+    sa.Column('added_sugars_per_100g', sa.Float(), nullable=False),
     sa.Column('vitamin_d_mcg_per_100g', sa.Float(), nullable=False),
     sa.Column('calcium_mg_per_100g', sa.Float(), nullable=False),
     sa.Column('iron_mg_per_100g', sa.Float(), nullable=False),
@@ -156,6 +157,7 @@ def upgrade():
     sa.Column('sodium_mg_per_100g', sa.Float(), nullable=False),
     sa.Column('fiber_per_100g', sa.Float(), nullable=False),
     sa.Column('sugars_per_100g', sa.Float(), nullable=False),
+    sa.Column('added_sugars_per_100g', sa.Float(), nullable=False),
     sa.Column('vitamin_d_mcg_per_100g', sa.Float(), nullable=False),
     sa.Column('calcium_mg_per_100g', sa.Float(), nullable=False),
     sa.Column('iron_mg_per_100g', sa.Float(), nullable=False),

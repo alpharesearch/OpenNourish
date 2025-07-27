@@ -594,7 +594,7 @@ def _get_nutrition_label_data_myfood(my_food_id):
         'Carbohydrate, by difference': my_food.carbs_per_100g or 0,
         'Fiber, total dietary': my_food.fiber_per_100g or 0,
         'Sugars, total including NLEA': my_food.sugars_per_100g or 0,
-        'Sugars, added': 0,  # MyFood model does not have 'added sugars'
+        'Sugars, added': my_food.added_sugars_per_100g or 0,
         'Protein': my_food.protein_per_100g or 0,
         'Vitamin D': my_food.vitamin_d_mcg_per_100g or 0,
         'Calcium': my_food.calcium_mg_per_100g or 0,
@@ -751,6 +751,11 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
     sanitized_recipe_name = _sanitize_for_typst(recipe.name)
 
     # Create a string of ingredients for the recipe
+    #Manually fetch USDA food data
+    usda_food_ids = [ing.fdc_id for ing in recipe.ingredients if ing.fdc_id]
+    if usda_food_ids:
+        usda_foods = Food.query.filter(Food.fdc_id.in_(usda_food_ids)).all()
+        usda_foods_map = {food.fdc_id: food for food in usda_foods}
     ingredients_str = ""
     if recipe.ingredients:
         for ing in recipe.ingredients:
@@ -915,7 +920,7 @@ def _get_nutrition_label_data_recipe(recipe_id):
         'Carbohydrate, by difference': recipe.carbs_per_100g or 0,
         'Fiber, total dietary': recipe.fiber_per_100g or 0,
         'Sugars, total including NLEA': recipe.sugars_per_100g or 0,
-        'Sugars, added': 0,  # Recipe model does not have 'added sugars'
+        'Sugars, added': recipe.added_sugars_per_100g or 0,
         'Protein': recipe.protein_per_100g or 0,
         'Vitamin D': recipe.vitamin_d_mcg_per_100g or 0,
         'Calcium': recipe.calcium_mg_per_100g or 0,

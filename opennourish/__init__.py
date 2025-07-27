@@ -324,6 +324,7 @@ def create_app(config_class=Config):
                                 sodium_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1093), 0.0),
                                 fiber_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1079), 0.0),
                                 sugars_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 2000), 0.0),
+                                added_sugars_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1235), 0.0),
                                 vitamin_d_mcg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1110), 0.0),
                                 calcium_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1087), 0.0),
                                 iron_mg_per_100g=next((fn.amount for fn in usda_food.nutrients if fn.nutrient.id == 1089), 0.0),

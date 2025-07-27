@@ -66,13 +66,20 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo -e "\n--- Tagging images for private registry: ${REGISTRY_URL} ---"
+IMAGE_VERSION="V1.0.0"
+echo -e "\n--- Tagging ${IMAGE_VERSION} images for private registry: ${REGISTRY_URL} ---"
 docker tag opennourish-opennourish-app:latest ${REGISTRY_URL}/opennourish-app:latest
+docker tag opennourish-opennourish-app:latest opennourish-opennourish-app:${IMAGE_VERSION}
+docker tag opennourish-opennourish-app:${IMAGE_VERSION} ${REGISTRY_URL}/opennourish-app:${IMAGE_VERSION}
 docker tag opennourish-nginx:latest ${REGISTRY_URL}/opennourish-nginx:latest
+docker tag opennourish-nginx:latest opennourish-nginx:${IMAGE_VERSION}
+docker tag opennourish-nginx:${IMAGE_VERSION} ${REGISTRY_URL}/opennourish-nginx:${IMAGE_VERSION}
 
 echo -e "\n--- Pushing images to private registry: ${REGISTRY_URL} ---"
 docker push ${REGISTRY_URL}/opennourish-app:latest
+docker push ${REGISTRY_URL}/opennourish-app:${IMAGE_VERSION}
 docker push ${REGISTRY_URL}/opennourish-nginx:latest
+docker push ${REGISTRY_URL}/opennourish-nginx:${IMAGE_VERSION}
 
 if [ $? -ne 0 ]; then
     echo -e "\nDocker image push failed. Ensure your registry URL is correct and your Docker daemon trusts the registry."
