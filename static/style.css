@@ -27,13 +27,18 @@ a {
     min-width: 300px; /* Ensures forms don't get too small */
 }
 
-input[name="amount"],
-input[name="quantity"] {
-  width: 60px;
+#upc {
+    min-width: 180px;
 }
 
+/* Standardized input field widths for consistency */
+input[name="amount"], input[name="quantity"] {
+    width: 90px;
+}
+
+
 select[name="portion_id"] {
-    width: 80px;
+    width: 90px;
 }
 
 .progress-marker {

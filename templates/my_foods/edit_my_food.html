@@ -34,7 +34,14 @@
                         <div class="input-group">
                             {{ form.upc(class="form-control", id="upc") }}
                             {% if my_food %}
-                            <button type="button" class="btn btn-outline-secondary" onclick="generateUpc()">Generate Internal UPC</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="generateUpc()">
+                                <span class="d-none d-sm-inline">Generate Internal UPC</span>
+                                <span class="d-inline d-sm-none">Generate</span>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="scan-barcode-btn">
+                                <span class="d-none d-sm-inline">Scan UPC</span>
+                                <span class="d-inline d-sm-none">Scan</span>
+                            </button>
                             {% endif %}
                         </div>
                     </div>
@@ -199,32 +206,58 @@
 
             <hr>
             <h6>Add New Portion</h6>
-            <form method="POST" action="{{ url_for('my_foods.add_my_food_portion', food_id=my_food.id) }}" class="d-flex flex-column flex-sm-row align-items-center gap-2">
+            <form method="POST" action="{{ url_for('my_foods.add_my_food_portion', food_id=my_food.id) }}">
                 {{ portion_form.hidden_tag() }}
-                <div class="row g-2 flex-grow-1 me-sm-2 w-100">
-                    <div class="col-lg-3">
-                        {{ portion_form.amount(class="form-control form-control-sm", placeholder="Amount") }}
+                <div class="row g-2 align-items-center">
+                    <div class="col-sm">
+                        <div class="row g-2">
+                            <div class="col-lg-3">
+                                {{ portion_form.amount(class="form-control form-control-sm", placeholder="Amount") }}
+                            </div>
+                            <div class="col-lg-3">
+                                {{ portion_form.measure_unit_description(class="form-control form-control-sm", placeholder="Unit") }}
+                            </div>
+                            <div class="col-lg-3">
+                                {{ portion_form.portion_description(class="form-control form-control-sm", placeholder="Description") }}
+                            </div>
+                            <div class="col-lg-3">
+                                {{ portion_form.modifier(class="form-control form-control-sm", placeholder="Modifier") }}
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-lg-3">
-                        {{ portion_form.measure_unit_description(class="form-control form-control-sm", placeholder="Unit") }}
+                    <div class="col-sm-3 mt-2 mt-sm-0">
+                        {{ portion_form.gram_weight(class="form-control form-control-sm", placeholder="Gram Weight") }}
                     </div>
-                    <div class="col-lg-3">
-                        {{ portion_form.portion_description(class="form-control form-control-sm", placeholder="Description") }}
-                    </div>
-                    <div class="col-lg-3">
-                        {{ portion_form.modifier(class="form-control form-control-sm", placeholder="Modifier") }}
+                    <div class="col-sm-auto mt-2 mt-sm-0">
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add</button>
                     </div>
                 </div>
-                <div class="col-lg-2 w-100 w-sm-auto mt-2 mt-sm-0">
-                    {{ portion_form.gram_weight(class="form-control form-control-sm", placeholder="Gram Weight") }}
-                </div>
-                <button type="submit" class="btn btn-sm btn-outline-primary mt-2 mt-sm-0">Add</button>
             </form>
         </div>
     </div>
     {% endif %}
 </div>
+
+<!-- Barcode Scanner Modal -->
+<div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-labelledby="barcodeScannerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="barcodeScannerModalLabel">Scan Barcode</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="reader" style="width: 100%;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% if my_food %}
+<script src="{{ url_for('static', filename='html5-qrcode.min.js') }}"></script>
 <script>
     /**
      * Calculates the EAN-13 check digit for a 12-digit base.
@@ -273,6 +306,72 @@
         // 4. Populate the input field
         document.getElementById("upc").value = fullUpc;
     }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const scanButton = document.getElementById('scan-barcode-btn');
+        if (!scanButton) return;
+
+        const scannerModalElement = document.getElementById('barcodeScannerModal');
+        const scannerModal = new bootstrap.Modal(scannerModalElement);
+        let html5QrCode;
+
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`Scan result: ${decodedText}`);
+            document.getElementById("upc").value = decodedText;
+
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(ignore => {
+                    scannerModal.hide();
+                }).catch(err => {
+                    console.error("Error stopping scanner:", err);
+                    scannerModal.hide();
+                });
+            } else {
+                scannerModal.hide();
+            }
+        }
+
+        function onScanFailure(error) {
+            // This callback is called frequently, ignore it.
+        }
+
+        scanButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const readerElement = document.getElementById('reader');
+            if (readerElement) {
+                readerElement.innerHTML = ''; // Clear previous errors
+            }
+            scannerModal.show();
+        });
+
+        scannerModalElement.addEventListener('shown.bs.modal', function () {
+            const formatsToSupport = [
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128,
+            ];
+            html5QrCode = new Html5Qrcode("reader", { formatsToSupport: formatsToSupport, verbose: false });
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+                .catch((err) => {
+                    const readerElement = document.getElementById('reader');
+                    if (readerElement) {
+                        readerElement.innerHTML = `<div class="alert alert-danger">Error starting scanner: ${err}</div>`;
+                    }
+                    console.error("Error starting scanner:", err);
+                });
+        });
+
+        scannerModalElement.addEventListener('hidden.bs.modal', function () {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().catch(err => console.log("Ignoring error on stop: ", err));
+            }
+        });
+    });
 </script>
 {% endif %}
 {% endblock %}
+
