@@ -9,7 +9,7 @@
             {% if active_fast %}
                 <h5 class="card-title">Active Fast</h5>
                 <div class="d-flex align-items-center">
-                    <p class="mb-0"><strong>Start Time:</strong> {{ active_fast.start_time | localtime }}</p>
+                    <p class="mb-0"><strong>Start Time:</strong> {{ active_fast.start_time | user_time }}</p>
                     <button id="edit-start-time-btn" class="btn btn-outline-primary btn-sm ms-3">Edit</button>
                 </div>
 
@@ -18,7 +18,7 @@
                         {{ form.hidden_tag() }}
                         <div class="mb-3">
                             {{ form.start_time.label(class="form-label") }}
-                            {{ form.start_time(class="form-control", value=active_fast.start_time | datetime_local) }}
+                            {{ form.start_time(class="form-control", value=active_fast.start_time | user_time(format='%Y-%m-%dT%H:%M')) }}
                         </div>
                         <div class="d-flex">
                             {{ form.submit(class="btn btn-outline-success") }}
@@ -68,16 +68,16 @@
                     <div class="col-lg-2">Actions</div>
                 </div>
                 <!-- Body -->
-                {% for fast in completed_fasts %}
+                {% for fast in completed_fasts.items %}
                 <form method="POST" action="{{ url_for('fasting.update_fast', fast_id=fast.id) }}" class="row g-2 mb-3 align-items-center border-bottom pb-2">
                     {{ forms[fast.id].hidden_tag() }}
                     <div class="col-12 col-lg-4">
                         <label class="form-label d-lg-none">Start Time</label>
-                        {{ forms[fast.id].start_time(class="form-control", value=fast.start_time | datetime_local) }}
+                        {{ forms[fast.id].start_time(class="form-control", value=fast.start_time | user_time(format='%Y-%m-%dT%H:%M')) }}
                     </div>
                     <div class="col-12 col-lg-4">
                         <label class="form-label d-lg-none">End Time</label>
-                        {{ forms[fast.id].end_time(class="form-control", value=(fast.end_time | datetime_local) if fast.end_time else '') }}
+                        {{ forms[fast.id].end_time(class="form-control", value=(fast.end_time | user_time(format='%Y-%m-%dT%H:%M')) if fast.end_time else '') }}
                     </div>
                     <div class="col-12 col-lg-2">
                         <label class="form-label d-lg-none">Duration</label>

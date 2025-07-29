@@ -4,6 +4,7 @@ from . import dashboard_bp
 from models import db, DailyLog, Food, MyFood, UserGoal, CheckIn, ExerciseLog, FastingSession
 from datetime import date, timedelta, datetime
 from opennourish.utils import calculate_nutrition_for_items, calculate_weekly_nutrition_summary, calculate_weight_projection
+from opennourish.time_utils import get_user_today
 from sqlalchemy import func
 from opennourish.decorators import onboarding_required
 
@@ -17,7 +18,7 @@ def index(log_date_str=None):
     if log_date_str:
         date_obj = date.fromisoformat(log_date_str)
     else:
-        date_obj = date.today()
+        date_obj = get_user_today()
 
     prev_date = date_obj - timedelta(days=1)
     next_date = date_obj + timedelta(days=1)
@@ -56,16 +57,16 @@ def index(log_date_str=None):
     check_ins_query = CheckIn.query.filter_by(user_id=current_user.id)
 
     if time_range == '1_month':
-        start_date = date.today() - timedelta(days=30)
+        start_date = date_obj - timedelta(days=30)
         check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
     elif time_range == '3_month':
-        start_date = date.today() - timedelta(days=90)
+        start_date = date_obj - timedelta(days=90)
         check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
     elif time_range == '6_month':
-        start_date = date.today() - timedelta(days=180)
+        start_date = date_obj - timedelta(days=180)
         check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
     elif time_range == '1_year':
-        start_date = date.today() - timedelta(days=365)
+        start_date = date_obj - timedelta(days=365)
         check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
     # 'all_time' doesn't need a filter
 

@@ -335,7 +335,7 @@
         </div>
         <div class="card-body">
             {% if active_fast %}
-            <p><strong>Fast Started:</strong> {{ active_fast.start_time | localtime }}</p>
+            <p><strong>Fast Started:</strong> {{ active_fast.start_time | user_time }}</p>
             <p><strong>Planned Duration:</strong> {{ active_fast.planned_duration_hours }} hours</p>
             <div class="progress" style="height: 20px;">
                 {% set elapsed_hours = (now - active_fast.start_time).total_seconds() / 3600 %}
@@ -345,7 +345,7 @@
                     aria-valuemax="{{ active_fast.planned_duration_hours }}">{{ '%.1f'|format(percentage) }}%</div>
             </div>
             {% elif last_completed_fast %}
-            <p>Your last fast ended on {{ last_completed_fast.end_time | localtime }} and lasted {{
+            <p>Your last fast ended on {{ last_completed_fast.end_time | user_time }} and lasted {{
                 '{:.2f}'.format((last_completed_fast.end_time - last_completed_fast.start_time).total_seconds() / 3600)
                 }} hours.</p>
             {% else %}

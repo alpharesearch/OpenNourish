@@ -3,6 +3,7 @@ from . import search_bp
 from models import db, Food, MyFood, Recipe, MyMeal, DailyLog, RecipeIngredient, MyMealItem, UnifiedPortion, FoodNutrient, FoodCategory
 from flask_login import login_required, current_user
 from datetime import date
+from opennourish.time_utils import get_user_today
 from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload, selectinload
 import math
@@ -513,7 +514,7 @@ def add_item():
             return redirect(request.referrer or url_for('diary.diary'))
 
         if target == 'diary':
-            log_date = date.fromisoformat(log_date_str) if log_date_str else date.today()
+            log_date = date.fromisoformat(log_date_str) if log_date_str else get_user_today()
             my_meal.usage_count += 1
             for item in my_meal.items:
                 daily_log = DailyLog(

@@ -4,6 +4,7 @@ from models import db, User, UserGoal, CheckIn # Import CheckIn model
 from .forms import MeasurementSystemForm, PersonalInfoForm, InitialGoalsForm
 from opennourish.utils import ft_in_to_cm, lbs_to_kg, kg_to_lbs, cm_to_ft_in, calculate_bmr, calculate_goals_from_preset, in_to_cm, cm_to_in
 from datetime import date # Import date
+from opennourish.time_utils import get_user_today
 from . import onboarding_bp # Import the blueprint from __init__.py
 from config import Config # Import Config
 
@@ -56,7 +57,7 @@ def step2():
             # Create a new CheckIn entry for the initial weight and body fat
             new_checkin = CheckIn(
                 user_id=current_user.id,
-                checkin_date=date.today(),
+                checkin_date=get_user_today(),
                 weight_kg=weight_kg_from_form,
                 body_fat_percentage=form.body_fat_percentage.data or 0.0, # Default to 0.0 if not provided
                 waist_cm=in_to_cm(form.waist_in.data) if current_user.measurement_system == 'us' else form.waist_cm.data or 0.0 # Handle waist

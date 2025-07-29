@@ -5,6 +5,7 @@ from .forms import CheckInForm
 from models import db, CheckIn, UserGoal
 from opennourish.utils import lbs_to_kg, in_to_cm, kg_to_lbs, cm_to_in
 from datetime import date
+from opennourish.time_utils import get_user_today
 
 @tracking_bp.route('/progress', methods=['GET', 'POST'])
 @login_required
@@ -32,6 +33,9 @@ def progress():
         flash('Your check-in has been recorded.', 'success')
         return redirect(url_for('tracking.progress'))
 
+    if request.method == 'GET':
+        form.checkin_date.data = get_user_today()
+        
     page = request.args.get('page', 1, type=int)
     check_ins_pagination = CheckIn.query.filter_by(user_id=current_user.id).order_by(CheckIn.checkin_date.desc()).paginate(page=page, per_page=10)
     

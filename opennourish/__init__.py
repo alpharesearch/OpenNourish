@@ -13,6 +13,7 @@ import random
 from datetime import date, timedelta
 import csv
 from werkzeug.middleware.proxy_fix import ProxyFix
+from opennourish.time_utils import register_template_filters
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
@@ -144,33 +145,7 @@ def create_app(config_class=Config):
     def nl2br_filter(s):
         return s.replace("\n", "<br>")
 
-    @app.template_filter('localtime')
-    def localtime_filter(utc_dt):
-        from flask_login import current_user
-        import pytz
-        if utc_dt is None:
-            return ""
-        if current_user.is_authenticated and hasattr(current_user, 'timezone'):
-            local_tz = pytz.timezone(current_user.timezone)
-        else:
-            local_tz = pytz.timezone('UTC')
-        
-        local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
-        return local_dt.strftime('%Y-%m-%d %H:%M:%S')
-
-    @app.template_filter('datetime_local')
-    def datetime_local_filter(utc_dt):
-        from flask_login import current_user
-        import pytz
-        if utc_dt is None:
-            return ""
-        if current_user.is_authenticated and hasattr(current_user, 'timezone'):
-            local_tz = pytz.timezone(current_user.timezone)
-        else:
-            local_tz = pytz.timezone('UTC')
-        
-        local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
-        return local_dt.strftime('%Y-%m-%dT%H:%M')
+    register_template_filters(app)
 
     @app.cli.command("init-user-db")
     def init_user_db_command():

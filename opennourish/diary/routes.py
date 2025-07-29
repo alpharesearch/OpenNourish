@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 from . import diary_bp
 from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog, UnifiedPortion, User, Friendship, FastingSession
 from datetime import date, timedelta
+from opennourish.time_utils import get_user_today
 from opennourish.utils import calculate_nutrition_for_items, get_available_portions, remove_leading_one
 from .forms import MealForm, DailyLogForm, MealItemForm
 from sqlalchemy.orm import joinedload, selectinload
@@ -19,9 +20,9 @@ def diary(log_date_str=None):
         log_date = date.fromisoformat(log_date_str)
     else:
         if current_user.diary_default_view == 'yesterday':
-            log_date = date.today() - timedelta(days=1)
+            log_date = get_user_today() - timedelta(days=1)
         else:
-            log_date = date.today()
+            log_date = get_user_today()
 
     active_fast = FastingSession.query.filter_by(user_id=current_user.id, status='active').first()
     is_fasting = active_fast is not None

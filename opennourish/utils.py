@@ -12,6 +12,7 @@ from cryptography.fernet import Fernet
 from flask_mailing import Message
 from opennourish import mail
 from datetime import date, timedelta
+from opennourish.time_utils import get_user_today
 from models import db, User, UserGoal, CheckIn, DailyLog, ExerciseLog, Food, MyFood, Recipe, UnifiedPortion, FoodNutrient
 
 def encrypt_value(value, key):
@@ -968,7 +969,7 @@ def calculate_weight_projection(user):
     """
     Projects a user's weight over time based on recent activity and goals.
     """
-    today = date.today()
+    today = get_user_today()
     
     # 1. Fetch latest check-in and goal
     latest_checkin = CheckIn.query.filter_by(user_id=user.id).order_by(CheckIn.checkin_date.desc()).first()
