@@ -105,11 +105,17 @@
                             </div>
                         </div>
 
-                        <!-- Timezone -->
-                        <div class="mb-3">
-                            {{ settings_form.timezone.label(class="form-label") }}
-                            {{ settings_form.timezone(class="form-select") }}
-                            <small class="form-text text-muted">Your timezone is usually detected automatically, but you can set it manually here.</small>
+                        <!-- Timezone and Week Start Day -->
+                        <div class="row">
+                            <div class="col-lg-6 mb-3">
+                                {{ settings_form.timezone.label(class="form-label") }}
+                                {{ settings_form.timezone(class="form-select") }}
+                                <small class="form-text text-muted">Your timezone is usually detected automatically.</small>
+                            </div>
+                            <div class="col-lg-6 mb-3">
+                                {{ settings_form.week_start_day.label(class="form-label") }}
+                                {{ settings_form.week_start_day(class="form-select") }}
+                            </div>
                         </div>
 
                         <div class="mb-3 form-check">

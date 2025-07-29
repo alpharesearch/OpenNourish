@@ -53,6 +53,7 @@ def settings():
         user.theme_preference = settings_form.theme_preference.data
         user.meals_per_day = int(settings_form.meals_per_day.data)
         user.is_private = settings_form.is_private.data
+        user.week_start_day = settings_form.week_start_day.data
         user.timezone = settings_form.timezone.data
         
         db.session.commit()

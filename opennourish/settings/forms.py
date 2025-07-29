@@ -62,6 +62,15 @@ class SettingsForm(FlaskForm):
         validators=[DataRequired()]
     )
     is_private = BooleanField('Enable Unlisted Mode')
+    week_start_day = SelectField(
+        'Start of the Week',
+        choices=[
+            ('Monday', 'Monday'),
+            ('Sunday', 'Sunday'),
+            ('Saturday', 'Saturday')
+        ],
+        validators=[DataRequired()]
+    )
     timezone = SelectField('Timezone', choices=[(tz, tz) for tz in pytz.common_timezones])
     submit = SubmitField('Save Settings')
 

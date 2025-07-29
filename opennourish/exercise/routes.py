@@ -5,7 +5,7 @@ from .forms import ExerciseLogForm
 from .utils import get_user_weight_kg, calculate_calories_burned
 from models import db, ExerciseLog, UserGoal, ExerciseActivity
 from datetime import date, timedelta
-from opennourish.time_utils import get_user_today
+from opennourish.time_utils import get_user_today, get_start_of_week
 
 @exercise_bp.route('/log', methods=['GET', 'POST'])
 @login_required
@@ -66,7 +66,7 @@ def log_exercise():
     start_of_week, end_of_week = None, None
     if user_goal:
         today = get_user_today()
-        start_of_week = today - timedelta(days=today.weekday())
+        start_of_week = get_start_of_week(today, current_user.week_start_day)
         end_of_week = start_of_week + timedelta(days=6)
 
         weekly_logs = ExerciseLog.query.filter(

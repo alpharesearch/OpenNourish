@@ -170,6 +170,7 @@ def test_update_theme_preference(client, auth_client):
         'diary_default_view': 'today',
         'theme_preference': 'dark',
         'meals_per_day': '3',
+        'week_start_day': 'Sunday',
         'submit_settings': 'Save Settings'
     }, follow_redirects=True)
     assert b"Your settings have been updated." in response.data
@@ -178,6 +179,26 @@ def test_update_theme_preference(client, auth_client):
             user_id = sess['_user_id']
         user = db.session.get(User, user_id)
         assert user.theme_preference == 'dark'
+
+def test_update_week_start_day(client, auth_client):
+    response = auth_client.post('/settings/', data={
+        'age': '30',
+        'gender': 'Male',
+        'measurement_system': 'metric',
+        'height_cm': '180',
+        'navbar_preference': 'bg-dark navbar-dark',
+        'diary_default_view': 'today',
+        'theme_preference': 'light',
+        'meals_per_day': '3',
+        'week_start_day': 'Sunday',
+        'submit_settings': 'Save Settings'
+    }, follow_redirects=True)
+    assert b"Your settings have been updated." in response.data
+    with auth_client.application.app_context():
+        with auth_client.session_transaction() as sess:
+            user_id = sess['_user_id']
+        user = db.session.get(User, user_id)
+        assert user.week_start_day == 'Sunday'
 
 def test_change_password(client, auth_client):
     response = auth_client.post('/settings/', data={

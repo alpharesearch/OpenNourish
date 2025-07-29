@@ -9,12 +9,28 @@ from opennourish.time_utils import (
     to_utc,
     user_time_format,
     user_date_format,
+    get_start_of_week,
 )
 from models import User, db
 
 # ---
 # Tests for Pure Functions
 # ---
+
+def test_get_start_of_week():
+    """Test the get_start_of_week function."""
+    # Test with a Wednesday
+    wednesday = date(2025, 7, 30)
+
+    # Test with Monday as the start of the week
+    assert get_start_of_week(wednesday, 'Monday') == date(2025, 7, 28)
+
+    # Test with Sunday as the start of the week
+    assert get_start_of_week(wednesday, 'Sunday') == date(2025, 7, 27)
+
+    # Test with Saturday as the start of the week
+    assert get_start_of_week(wednesday, 'Saturday') == date(2025, 7, 26)
+
 
 def test_get_user_today_with_timezone(monkeypatch):
     """Test get_user_today with a specific timezone."""

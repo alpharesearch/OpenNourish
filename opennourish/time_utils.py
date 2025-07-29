@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import pytz
 from flask_login import current_user
 from flask import current_app
@@ -40,6 +40,18 @@ def to_utc(naive_dt, user_timezone_str='UTC'):
         
     local_dt = local_tz.localize(naive_dt)
     return local_dt.astimezone(pytz.utc)
+
+def get_start_of_week(today, start_day='Monday'):
+    """Calculates the start of the week for a given date."""
+    if start_day == 'Sunday':
+        # In Python, Sunday is 6, but we want it to be the start.
+        start_of_week_offset = (today.weekday() + 1) % 7
+    elif start_day == 'Saturday':
+        start_of_week_offset = (today.weekday() + 2) % 7
+    else: # Default to Monday
+        start_of_week_offset = today.weekday()
+    
+    return today - timedelta(days=start_of_week_offset)
 
 
 # --- Flask-aware Jinja Filters ---

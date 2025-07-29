@@ -4,7 +4,7 @@ from . import dashboard_bp
 from models import db, DailyLog, Food, MyFood, UserGoal, CheckIn, ExerciseLog, FastingSession
 from datetime import date, timedelta, datetime
 from opennourish.utils import calculate_nutrition_for_items, calculate_weekly_nutrition_summary, calculate_weight_projection
-from opennourish.time_utils import get_user_today
+from opennourish.time_utils import get_user_today, get_start_of_week
 from sqlalchemy import func
 from opennourish.decorators import onboarding_required
 
@@ -79,9 +79,9 @@ def index(log_date_str=None):
 
     # --- Weekly Goal Progress ---
     # Calculate start and end of the week based on the currently viewed date (date_obj)
-    start_of_week = date_obj - timedelta(days=date_obj.weekday())
+    start_of_week = get_start_of_week(date_obj, current_user.week_start_day)
     end_of_week = start_of_week + timedelta(days=6)
-    days_elapsed_in_week = date_obj.weekday() + 1
+    days_elapsed_in_week = (date_obj - start_of_week).days + 1
 
     weekly_exercise_logs = ExerciseLog.query.filter(
         ExerciseLog.user_id == current_user.id,
