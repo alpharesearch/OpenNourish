@@ -34,7 +34,7 @@
                     <div class="progress" style="height: 100%;">
                         <div class="progress-bar" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ elapsed_hours }}" aria-valuemin="0" aria-valuemax="{{ active_fast.planned_duration_hours }}">{{ '%.1f'|format(percentage) }}%</div>
                     </div>
-                    {% for i in range(1, (active_fast.planned_duration_hours // 24) + 1) %}
+                    {% for i in range(1, ((active_fast.planned_duration_hours // 24) + 1)|int) %}
                         {% set marker_percentage = (i * 24 / active_fast.planned_duration_hours) * 100 %}
                         <div class="progress-marker" style="left: {{ marker_percentage }}%;" title="Day {{ i }}"></div>
                     {% endfor %}

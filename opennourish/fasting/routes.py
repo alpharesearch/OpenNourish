@@ -44,7 +44,12 @@ def start_fast():
         flash('You already have an active fast.', 'warning')
         return redirect(url_for('fasting.index'))
 
-    duration_hours = request.form.get('duration', type=int, default=current_user.goals.default_fasting_hours if current_user.goals else 16)
+    duration_str = request.form.get('duration')
+    try:
+        # Convert to float first to handle inputs like '16.5', then to int to truncate
+        duration_hours = int(float(duration_str))
+    except (ValueError, TypeError):
+        duration_hours = current_user.goals.default_fasting_hours if current_user.goals else 16
 
     new_fast = FastingSession(
         user_id=current_user.id,
