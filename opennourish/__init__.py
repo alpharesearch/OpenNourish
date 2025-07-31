@@ -746,6 +746,13 @@ def create_app(config_class=Config):
                 reader = csv.reader(f)
                 next(reader)  # Skip header
                 for row in reader:
+                    # Sanitize the modifier: if it's a number, discard it.
+                    modifier_val = row[6]
+                    if modifier_val.isdigit():
+                        modifier_val = None
+                    else:
+                        modifier_val = modifier_val or None
+
                     # Create a UnifiedPortion object for each row in the CSV
                     portion = UnifiedPortion(
                         fdc_id=int(row[1]),
@@ -753,7 +760,7 @@ def create_app(config_class=Config):
                         amount=float(row[3]) if row[3] else None,
                         measure_unit_description=measure_units.get(row[4], "") if row[4] != '9999' else "",
                         portion_description=row[5] or None, # Handle empty strings
-                        modifier=row[6] or None, # Handle empty strings
+                        modifier=modifier_val, # Use sanitized value
                         gram_weight=float(row[7])
                     )
                     portions_to_add.append(portion)
