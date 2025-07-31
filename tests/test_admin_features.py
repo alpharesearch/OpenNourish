@@ -103,3 +103,35 @@ def test_manage_admin_cli_command(app_with_db):
     # Test with a non-existent user
     result = runner.invoke(args=['user', 'manage-admin', 'no_such_user', '--action', 'grant'])
     assert "Error: User 'no_such_user' not found" in result.output
+
+def test_manage_key_user_cli_command(app_with_db):
+    """
+    Tests the 'flask user manage-key-user' CLI command for granting and revoking key user rights.
+    """
+    runner = app_with_db.test_cli_runner()
+
+    with app_with_db.app_context():
+        # Create a user to test with
+        user = User(username='cli_key_user', email='clikey@example.com')
+        user.set_password('password')
+        db.session.add(user)
+        db.session.commit()
+        assert user.is_key_user is False
+
+    # Test granting key user rights
+    result = runner.invoke(args=['user', 'manage-key-user', 'cli_key_user', '--action', 'grant'])
+    assert 'Successfully granted' in result.output
+    with app_with_db.app_context():
+        user = User.query.filter_by(username='cli_key_user').first()
+        assert user.is_key_user is True
+
+    # Test revoking key user rights
+    result = runner.invoke(args=['user', 'manage-key-user', 'cli_key_user', '--action', 'revoke'])
+    assert 'Successfully revoked' in result.output
+    with app_with_db.app_context():
+        user = User.query.filter_by(username='cli_key_user').first()
+        assert user.is_key_user is False
+
+    # Test with a non-existent user
+    result = runner.invoke(args=['user', 'manage-key-user', 'no_such_user', '--action', 'grant'])
+    assert "Error: User 'no_such_user' not found" in result.output

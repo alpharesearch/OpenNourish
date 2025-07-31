@@ -194,8 +194,36 @@ def email_settings():
 @login_required
 @admin_required
 def users():
-    users = User.query.all()
+    page = request.args.get('page', 1, type=int)
+    users = User.query.paginate(page=page, per_page=20)
     return render_template('admin/users.html', users=users, title='User Management')
+
+@admin_bp.route('/users/<int:user_id>/make-key-user', methods=['POST'])
+@login_required
+@admin_required
+def make_key_user(user_id):
+    user = db.session.get(User, user_id)
+    if user:
+        user.is_key_user = True
+        db.session.commit()
+        flash(f'User {user.username} has been made a key user.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/users/<int:user_id>/remove-key-user', methods=['POST'])
+@login_required
+@admin_required
+def remove_key_user(user_id):
+    user = db.session.get(User, user_id)
+    if user:
+        user.is_key_user = False
+        db.session.commit()
+        flash(f'User {user.username} is no longer a key user.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('admin.users'))
+
 
 @admin_bp.route('/users/<int:user_id>/disable', methods=['POST'])
 @login_required

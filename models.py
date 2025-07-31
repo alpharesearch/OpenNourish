@@ -35,6 +35,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     is_verified = db.Column(db.Boolean, nullable=False, default=False)
     is_private = db.Column(db.Boolean, nullable=False, default=False)
+    is_key_user = db.Column(db.Boolean, nullable=False, default=False)
     week_start_day = db.Column(db.String(10), nullable=False, default='Monday') # Monday, Sunday, or Saturday
     timezone = db.Column(db.String(100), nullable=False, default='UTC')
 

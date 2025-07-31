@@ -105,6 +105,32 @@ def test_reset_onboarding(admin_client, users):
         reset_user = db.session.get(User, user_to_reset_id)
         assert not reset_user.has_completed_onboarding
 
+def test_make_key_user(admin_client, users):
+    client, _, _ = admin_client
+    user_to_make_key_id = users[0]
+    with client.application.app_context():
+        user_to_make_key = db.session.get(User, user_to_make_key_id)
+        assert not user_to_make_key.is_key_user
+    response = client.post(url_for('admin.make_key_user', user_id=user_to_make_key_id), follow_redirects=True)
+    assert response.status_code == 200
+    with client.application.app_context():
+        key_user = db.session.get(User, user_to_make_key_id)
+        assert key_user.is_key_user
+
+def test_remove_key_user(admin_client, users):
+    client, _, _ = admin_client
+    user_to_remove_key_id = users[1]
+    with client.application.app_context():
+        user_to_remove_key = db.session.get(User, user_to_remove_key_id)
+        user_to_remove_key.is_key_user = True
+        db.session.commit()
+        assert user_to_remove_key.is_key_user
+    response = client.post(url_for('admin.remove_key_user', user_id=user_to_remove_key_id), follow_redirects=True)
+    assert response.status_code == 200
+    with client.application.app_context():
+        not_key_user = db.session.get(User, user_to_remove_key_id)
+        assert not not_key_user.is_key_user
+
 def test_list_users_not_admin(auth_client_with_user):
     client, _ = auth_client_with_user
     response = client.get(url_for('admin.users'), follow_redirects=False)

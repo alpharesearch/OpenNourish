@@ -131,6 +131,9 @@ def create_app(config_class=Config):
     from opennourish.admin import admin_bp
     app.register_blueprint(admin_bp)
 
+    from opennourish.usda_admin import usda_admin_bp
+    app.register_blueprint(usda_admin_bp)
+
     from opennourish.fasting import fasting_bp
     app.register_blueprint(fasting_bp, url_prefix='/fasting')
 
@@ -826,5 +829,31 @@ def create_app(config_class=Config):
                     user.is_admin = False
                     db.session.commit()
                     print(f"Successfully revoked admin privileges from '{username}'.")
+
+    @user_cli.command('manage-key-user')
+    @click.argument('username')
+    @click.option('--action', type=click.Choice(['grant', 'revoke']), required=True, help='Action to perform: grant or revoke key user rights.')
+    def manage_key_user(username, action):
+        """Grant or revoke key user privileges for a user."""
+        with app.app_context():
+            user = User.query.filter_by(username=username).first()
+            if not user:
+                print(f"Error: User '{username}' not found.")
+                return
+
+            if action == 'grant':
+                if user.is_key_user:
+                    print(f"User '{username}' already has key user privileges.")
+                else:
+                    user.is_key_user = True
+                    db.session.commit()
+                    print(f"Successfully granted key user privileges to '{username}'.")
+            elif action == 'revoke':
+                if not user.is_key_user:
+                    print(f"User '{username}' does not have key user privileges.")
+                else:
+                    user.is_key_user = False
+                    db.session.commit()
+                    print(f"Successfully revoked key user privileges from '{username}'.")
 
     return app

@@ -63,7 +63,10 @@ Follow these steps to make non-destructive schema changes:
     ```bash
     flask db upgrade
     ```
-
+    or better run that creates a backup
+    ```bash
+    ./safe_upgrade.sh
+    ```
 By following this process, you can safely evolve your database schema as you develop the application, without worrying about losing your data.
 
 ## 3. Database Seeding for Development
