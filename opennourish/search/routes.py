@@ -211,9 +211,11 @@ def search():
 
         if search_usda:
             # Step 1: Get all matching food IDs from the USDA database first.
-            usda_query = Food.query.filter(
-                Food.description.ilike(f'%{search_term}%')
-            )
+            usda_query = Food.query
+            search_words = search_term.split()
+            for word in search_words:
+                usda_query = usda_query.filter(Food.description.ilike(f'%{word}%'))
+
             if selected_category_id:
                 usda_query = usda_query.filter(Food.food_category_id == selected_category_id)
             
@@ -303,26 +305,29 @@ def search():
 
         if search_my_foods:
             my_foods_query = MyFood.query.filter(
-                MyFood.description.ilike(f'%{search_term}%'),
                 or_(MyFood.user_id.in_(user_ids_to_search), MyFood.user_id == None)
             )
+            search_words = search_term.split()
+            for word in search_words:
+                my_foods_query = my_foods_query.filter(MyFood.description.ilike(f'%{word}%'))
+
             if selected_category_id:
                 my_foods_query = my_foods_query.filter(MyFood.food_category_id == selected_category_id)
             my_foods_pagination = my_foods_query.paginate(page=my_foods_page, per_page=per_page, error_out=False)
 
         if search_recipes:
-            recipe_query_filter = [Recipe.name.ilike(f'%{search_term}%')]
-            
-            # Construct the part of the query that handles ownership and public status
             user_and_public_filter = []
             user_and_public_filter.append(Recipe.user_id.in_(user_ids_to_search))
             user_and_public_filter.append(Recipe.user_id == None) # Include orphaned recipes
             if search_public:
                 user_and_public_filter.append(Recipe.is_public == True)
             
-            recipe_query_filter.append(or_(*user_and_public_filter))
+            recipes_query = Recipe.query.filter(or_(*user_and_public_filter))
 
-            recipes_query = Recipe.query.filter(*recipe_query_filter)
+            search_words = search_term.split()
+            for word in search_words:
+                recipes_query = recipes_query.filter(Recipe.name.ilike(f'%{word}%'))
+
             if selected_category_id:
                 recipes_query = recipes_query.filter(Recipe.food_category_id == selected_category_id)
             recipes_pagination = recipes_query.paginate(page=recipes_page, per_page=per_page, error_out=False)
