@@ -162,7 +162,15 @@
             <li class="list-group-item">
                 <div class="row align-items-center">
                     <div class="col-md-7">
-                        {{ item.description }}
+                        {% if item.food_type == 'usda' and item.food_id %}
+                            <a href="{{ url_for('main.food_detail', fdc_id=item.food_id) }}">{{ item.description }}</a>
+                        {% elif item.food_type == 'my_food' and item.food_id %}
+                            <a href="{{ url_for('my_foods.edit_my_food', food_id=item.food_id) }}">{{ item.description }}</a>
+                        {% elif item.food_type == 'recipe' and item.food_id %}
+                            <a href="{{ url_for('recipes.view_recipe', recipe_id=item.food_id) }}">{{ item.description }}</a>
+                        {% else %}
+                            {{ item.description }}
+                        {% endif %}
                         <br>
                         <small class="text-muted">
                             Calories: {{ item.nutrition.calories|round(0) }} kcal |

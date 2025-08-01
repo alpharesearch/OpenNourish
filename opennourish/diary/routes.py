@@ -53,18 +53,26 @@ def diary(log_date_str=None):
         selected_portion_id = None # Initialize with default
         nutrition = calculate_nutrition_for_items([log]) # Initialize with default
         available_portions = [] # Initialize with default
+        food_type = None
+        food_id = None
 
         if log.fdc_id:
             food_item = db.session.get(Food, log.fdc_id)
             owner_username = None
+            food_type = 'usda'
+            food_id = log.fdc_id
         elif log.my_food_id:
             food_item = db.session.get(MyFood, log.my_food_id)
             if food_item and food_item.user_id != current_user.id:
                 is_own_food_item = False
+            food_type = 'my_food'
+            food_id = log.my_food_id
         elif log.recipe_id:
             food_item = db.session.get(Recipe, log.recipe_id)
             if food_item and food_item.user_id != current_user.id:
                 is_own_food_item = False
+            food_type = 'recipe'
+            food_id = log.recipe_id
 
         if food_item:
             available_portions = get_available_portions(food_item)
@@ -109,7 +117,9 @@ def diary(log_date_str=None):
             'portions': available_portions,
             'serving_type': log.serving_type,
             'selected_portion_id': selected_portion_id,
-            'owner_id': food_item.user_id if hasattr(food_item, 'user_id') else None
+            'owner_id': food_item.user_id if hasattr(food_item, 'user_id') else None,
+            'food_type': food_type,
+            'food_id': food_id
         })
 
     prev_date = log_date - timedelta(days=1)
