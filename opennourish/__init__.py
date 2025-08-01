@@ -718,10 +718,11 @@ def create_app(config_class=Config):
         with app.app_context():
             print("Seeding USDA portions...")
 
-            # 1. Delete existing USDA-linked portions to ensure idempotency.
-            deleted_count = UnifiedPortion.query.filter(UnifiedPortion.fdc_id.isnot(None)).delete()
+            # 1. Delete existing imported USDA portions to ensure idempotency.
+            # This leaves user-added or user-modified portions (where was_imported=False) intact.
+            deleted_count = UnifiedPortion.query.filter_by(was_imported=True).delete()
             db.session.commit()
-            print(f"Deleted {deleted_count} existing USDA-linked portions from user_data.db.")
+            print(f"Deleted {deleted_count} existing imported USDA portions from user_data.db.")
 
             usda_data_dir = os.path.join(current_app.root_path, '..', 'persistent', 'usda_data')
             measure_unit_csv_path = os.path.join(usda_data_dir, 'measure_unit.csv')
@@ -761,7 +762,8 @@ def create_app(config_class=Config):
                         measure_unit_description=measure_units.get(row[4], "") if row[4] != '9999' else "",
                         portion_description=row[5] or None, # Handle empty strings
                         modifier=modifier_val, # Use sanitized value
-                        gram_weight=float(row[7])
+                        gram_weight=float(row[7]),
+                        was_imported=True # Mark as imported
                     )
                     portions_to_add.append(portion)
             print(f"Loaded {len(portions_to_add)} portions from food_portion.csv.")

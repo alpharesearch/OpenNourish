@@ -96,14 +96,16 @@ def test_seed_usda_portions_command(app_with_db, tmp_path, monkeypatch):
         assert portion.gram_weight == 25.0
         assert portion.portion_description == 'slice'
         assert portion.modifier is None
+        assert portion.was_imported is True
 
     # Test idempotency (deletes old portions and re-seeds)
     result = runner.invoke(args=['seed-usda-portions'])
-    assert 'Deleted 1 existing USDA-linked portions' in result.output
+    assert 'Deleted 1 existing imported USDA portions' in result.output
     assert 'Successfully seeded 1 total USDA portions' in result.output
 
     with app_with_db.app_context():
         assert UnifiedPortion.query.count() == 1
+
 
 def test_exercise_seed_activities_command(app_with_db):
     """

@@ -157,6 +157,7 @@ class UnifiedPortion(db.Model):
     portion_description = db.Column(db.String)
     modifier = db.Column(db.String)
     gram_weight = db.Column(db.Float, nullable=False)
+    was_imported = db.Column(db.Boolean, nullable=False, default=False)
 
     @property
     def full_description_str(self):

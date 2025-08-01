@@ -1,8 +1,8 @@
 """Unified portions table
 
-Revision ID: e13c9dcf8865
+Revision ID: cb243cbec50e
 Revises: 
-Create Date: 2025-07-27 16:53:10.808131
+Create Date: 2025-07-31 20:26:19.117491
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'e13c9dcf8865'
+revision = 'cb243cbec50e'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -55,6 +55,8 @@ def upgrade():
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('is_verified', sa.Boolean(), nullable=False),
     sa.Column('is_private', sa.Boolean(), nullable=False),
+    sa.Column('is_key_user', sa.Boolean(), nullable=False),
+    sa.Column('week_start_day', sa.String(length=10), nullable=False),
     sa.Column('timezone', sa.String(length=100), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
@@ -199,6 +201,7 @@ def upgrade():
     sa.Column('portion_description', sa.String(), nullable=True),
     sa.Column('modifier', sa.String(), nullable=True),
     sa.Column('gram_weight', sa.Float(), nullable=False),
+    sa.Column('was_imported', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['my_food_id'], ['my_foods.id'], ),
     sa.ForeignKeyConstraint(['recipe_id'], ['recipes.id'], ),
     sa.PrimaryKeyConstraint('id')

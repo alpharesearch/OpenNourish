@@ -30,8 +30,8 @@
                     {% for portion in portions %}
                         <form action="{{ url_for('usda_admin.edit_usda_portion', portion_id=portion.id) }}" method="POST" class="mb-2">
                             <div class="input-group">
-                                <input type="number" step="any" name="amount" class="form-control" value="{{ portion.amount }}" required style="max-width: 80px;">
-                                <input type="text" name="measure_unit_description" class="form-control" value="{{ portion.measure_unit_description }}" required>
+                                <input type="number" step="any" name="amount" class="form-control" value="{{ portion.amount }}" style="max-width: 80px;">
+                                <input type="text" name="measure_unit_description" class="form-control" value="{{ portion.measure_unit_description }}">
                                 <input type="text" name="portion_description" class="form-control" value="{{ portion.portion_description or '' }}">
                                 <input type="text" name="modifier" class="form-control" value="{{ portion.modifier or '' }}">
                                 <input type="number" step="any" name="gram_weight" class="form-control" value="{{ portion.gram_weight }}" required style="max-width: 100px;">
@@ -47,8 +47,8 @@
                     <form action="{{ url_for('usda_admin.add_usda_portion') }}" method="POST">
                         <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
                         <div class="input-group">
-                            <input type="number" step="any" name="amount" class="form-control" placeholder="e.g., 1" required style="max-width: 80px;">
-                            <input type="text" name="measure_unit_description" class="form-control" placeholder="e.g., cup" required>
+                            <input type="number" step="any" name="amount" class="form-control" placeholder="e.g., 1" style="max-width: 80px;">
+                            <input type="text" name="measure_unit_description" class="form-control" placeholder="e.g., cup">
                             <input type="text" name="portion_description" class="form-control" placeholder="e.g., chopped">
                             <input type="text" name="modifier" class="form-control" placeholder="e.g., raw">
                             <input type="number" step="any" name="gram_weight" class="form-control" placeholder="Grams" required style="max-width: 100px;">
@@ -71,11 +71,12 @@
             <img src="{{ url_for('main.nutrition_label_svg', fdc_id=food.fdc_id) }}" alt="Nutrition Label" class="img-fluid" >
         </div>
     </div>
-
+    {% if current_user.is_authenticated %}
     <a href="{{ url_for('search.search', search_term=search_term) }}" class="btn btn-outline-secondary">Back to search</a>
     <form method="post" action="{{ url_for('my_foods.copy_usda_food') }}" class="d-inline">
         <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
         <button type="submit" class="btn btn-outline-primary">Add to My Foods</button>
     </form>
     <a href="{{ url_for('main.generate_nutrition_label', fdc_id=food.fdc_id) }}" class="btn btn-outline-info" target="_blank">Download Nutrition Label (PDF)</a>
+    {% endif %}
 {% endblock %}

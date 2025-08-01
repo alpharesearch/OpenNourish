@@ -15,8 +15,8 @@ def add_usda_portion():
     modifier = request.form.get('modifier')
     gram_weight = request.form.get('gram_weight', type=float)
 
-    if not all([fdc_id, amount, measure_unit, gram_weight]):
-        flash('All fields are required.', 'danger')
+    if not all([fdc_id, gram_weight]):
+        flash('Gram weight is a required field.', 'danger')
         return redirect(url_for('main.food_detail', fdc_id=fdc_id))
 
     food = db.session.get(Food, fdc_id)
@@ -51,9 +51,10 @@ def edit_usda_portion(portion_id):
     portion.portion_description = request.form.get('portion_description')
     portion.modifier = request.form.get('modifier')
     portion.gram_weight = request.form.get('gram_weight', type=float)
+    portion.was_imported = False # Mark as user-modified
 
-    if not all([portion.amount, portion.measure_unit_description, portion.gram_weight]):
-        flash('All fields are required.', 'danger')
+    if not portion.gram_weight:
+        flash('Gram weight is a required field.', 'danger')
         return redirect(url_for('main.food_detail', fdc_id=portion.fdc_id))
     
     db.session.commit()
