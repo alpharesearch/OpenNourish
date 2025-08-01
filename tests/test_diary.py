@@ -177,12 +177,12 @@ def test_diary_display_3_meals_empty_day(auth_client):
 
     response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
     assert response.status_code == 200
-    assert b'Breakfast' in response.data
-    assert b'Lunch' in response.data
-    assert b'Dinner' in response.data
-    assert b'Snack (morning)' not in response.data
-    assert b'Snack (afternoon)' not in response.data
-    assert b'Snack (evening)' not in response.data
+    assert b'Breakfast\n' in response.data
+    assert b'Lunch\n' in response.data
+    assert b'Dinner\n' in response.data
+    assert b'Snack (morning)\n' not in response.data
+    assert b'Snack (afternoon)\n' not in response.data
+    assert b'Snack (evening)\n' not in response.data
     assert b'Unspecified' not in response.data
 
 def test_diary_display_6_meals_empty_day(auth_client):

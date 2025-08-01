@@ -42,7 +42,7 @@
                         </small>
                         <br>
                         <small class="text-muted">
-                            {{ recipe.instructions|truncate(150) }}
+                            {{ recipe.instructions|default('', true)|truncate(150) }}
                         </small>
                     </div>
                     <div class="btn-group mt-2 mt-md-0 flex-shrink-0" role="group" aria-label="Recipe Actions">

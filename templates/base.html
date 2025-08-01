@@ -25,6 +25,7 @@
         {% block content %}{% endblock %}
     </div>
 
+    {% if not is_read_only %}
     <!-- Add to Diary Modal -->
     <div class="modal fade" id="addToDiaryModal" tabindex="-1" aria-labelledby="addToDiaryModalLabel" aria-hidden="true">
       <div class="modal-dialog">
@@ -80,11 +81,13 @@
         </div>
       </div>
     </div>
+    {% endif %}
 
     <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
     {% block scripts %}{% endblock %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            {% if not is_read_only %}
             const addToDiaryModal = new bootstrap.Modal(document.getElementById('addToDiaryModal'));
             const addToDiaryForm = document.getElementById('addToDiaryForm');
             const modalFoodName = document.getElementById('modalFoodName');
@@ -191,6 +194,7 @@
 
                 addToDiaryModal.hide();
             });
+            {% endif %}
 
             const htmlTag = document.documentElement;
             const userThemePreference = htmlTag.getAttribute('data-bs-theme');

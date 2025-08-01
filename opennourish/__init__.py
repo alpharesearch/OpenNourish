@@ -142,7 +142,7 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_user_settings():
         from flask_login import current_user
-        if current_user.is_authenticated:
+        if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
             return {
                 'meals_per_day': current_user.meals_per_day,
                 'standard_meal_names': MEAL_NAMES

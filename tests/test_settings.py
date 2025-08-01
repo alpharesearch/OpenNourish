@@ -25,12 +25,12 @@ def test_update_meals_per_day(client, auth_client):
 
     # Verify diary page shows all 6 meal types
     response = auth_client.get('/diary/')
-    assert b"Breakfast" in response.data
-    assert b"Snack (morning)" in response.data
-    assert b"Lunch" in response.data
-    assert b"Snack (afternoon)" in response.data
-    assert b"Dinner" in response.data
-    assert b"Snack (evening)" in response.data
+    assert b"Breakfast\n" in response.data
+    assert b"Snack (morning)\n" in response.data
+    assert b"Lunch\n" in response.data
+    assert b"Snack (afternoon)\n" in response.data
+    assert b"Dinner\n" in response.data
+    assert b"Snack (evening)\n" in response.data
 
     # Test setting meals_per_day to 3
     response = auth_client.post('/settings/', data={
@@ -53,12 +53,12 @@ def test_update_meals_per_day(client, auth_client):
 
     # Verify diary page shows only 3 meal types
     response = auth_client.get('/diary/')
-    assert b"Breakfast" in response.data
-    assert b"Snack (morning)" not in response.data
-    assert b"Lunch" in response.data
-    assert b"Snack (afternoon)" not in response.data
-    assert b"Dinner" in response.data
-    assert b"Snack (evening)" not in response.data
+    assert b"Breakfast\n" in response.data
+    assert b"Snack (morning)\n" not in response.data
+    assert b"Lunch\n" in response.data
+    assert b"Snack (afternoon)\n" not in response.data
+    assert b"Dinner\n" in response.data
+    assert b"Snack (evening)\n" not in response.data
 
 def test_update_age_and_gender(client, auth_client):
     response = auth_client.post('/settings/', data={

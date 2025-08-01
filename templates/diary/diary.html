@@ -83,7 +83,7 @@
                 {{ meal_name }}
                 {% if meal_name == 'Water' and water_total_grams > 0 %}
                     <span class="text-muted h6">
-                        {% if current_user.measurement_system == 'metric' %}
+                        {% if (user.measurement_system if user else current_user.measurement_system) == 'metric' %}
                             (Total: {{ "%.0f" | format(water_total_grams) }} ml)
                         {% else %}
                             (Total: {{ "%.1f" | format(water_total_grams * 0.033814) }} oz)
@@ -211,5 +211,5 @@
         </ul>
     </div>
     {% endfor %}
-    </div>
+</div>
 {% endblock %}

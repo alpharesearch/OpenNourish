@@ -215,16 +215,20 @@ def diary(username, log_date_str=None):
     next_date = log_date + timedelta(days=1)
 
     # Determine the base meal names to always display based on user settings
+    base_meals_to_show = []
     if friend_user.meals_per_day == 3:
         base_meals_to_show = ['Breakfast', 'Lunch', 'Dinner']
-    else: # meals_per_day == 6
+    elif friend_user.meals_per_day == 4:
+        base_meals_to_show = ['Water', 'Breakfast', 'Lunch', 'Dinner']
+    elif friend_user.meals_per_day == 6:
         base_meals_to_show = ['Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)']
+    elif friend_user.meals_per_day == 7:
+        base_meals_to_show = ['Water', 'Breakfast', 'Snack (morning)', 'Lunch', 'Snack (afternoon)', 'Dinner', 'Snack (evening)']
 
     # Collect all meal names that actually have items logged for the day
     logged_meal_names = {meal_name for meal_name, items in meals.items() if items}
 
     # Combine base meals with any other meals that have logged items
-    # Ensure 'Unspecified' is always included if it has items
     meal_names_to_render = sorted(list(set(base_meals_to_show) | logged_meal_names), key=ALL_MEAL_TYPES.index)
 
-    return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned, is_read_only=True, username=username, meal_names_to_render=meal_names_to_render)
+    return render_template('diary/diary.html', date=log_date, meals=meals, totals=totals, prev_date=prev_date, next_date=next_date, goals=user_goal, calories_burned=calories_burned, is_read_only=True, username=username, meal_names_to_render=meal_names_to_render, user=friend_user)
