@@ -137,6 +137,21 @@ def create_app(config_class=Config):
     from opennourish.fasting import fasting_bp
     app.register_blueprint(fasting_bp, url_prefix='/fasting')
 
+    MEAL_NAMES = ["Breakfast", "Snack (morning)", "Lunch", "Snack (afternoon)", "Dinner", "Snack (evening)"]
+
+    @app.context_processor
+    def inject_user_settings():
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            return {
+                'meals_per_day': current_user.meals_per_day,
+                'standard_meal_names': MEAL_NAMES
+            }
+        return {
+            'meals_per_day': 6,  # Default for anonymous users
+            'standard_meal_names': MEAL_NAMES
+        }
+
     @login_manager.user_loader
     def load_user(user_id):
         user = db.session.get(User, int(user_id))

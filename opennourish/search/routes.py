@@ -870,3 +870,34 @@ def add_item():
         db.session.rollback()
         flash(f'An error occurred: {e}', 'danger')
         return redirect(url_for('search.search', target=target, recipe_id=recipe_id))
+
+@search_bp.route('/api/get-portions/<food_type>/<int:food_id>', methods=['GET'])
+@login_required
+def get_portions(food_type, food_id):
+    portions = []
+    if food_type == 'my_food':
+        # Ensure the user has access to this MyFood item
+        my_food = db.session.get(MyFood, food_id)
+        if not my_food or (my_food.user_id != current_user.id and my_food.user_id not in [friend.id for friend in current_user.friends]):
+            return jsonify({'error': 'Not Found or Unauthorized'}), 404
+        portions = UnifiedPortion.query.filter_by(my_food_id=food_id).all()
+    elif food_type == 'recipe':
+        # Ensure the user has access to this recipe
+        recipe = db.session.get(Recipe, food_id)
+        if not recipe or (not recipe.is_public and recipe.user_id != current_user.id and recipe.user_id not in [friend.id for friend in current_user.friends]):
+             return jsonify({'error': 'Not Found or Unauthorized'}), 404
+        portions = UnifiedPortion.query.filter_by(recipe_id=food_id).all()
+    elif food_type == 'usda':
+        # USDA foods are public
+        portions = UnifiedPortion.query.filter_by(fdc_id=food_id).all()
+    elif food_type == 'my_meal':
+        # MyMeals are consumed as a whole. Return a single, default "serving" portion.
+        # The add_item endpoint logic for my_meal ignores portion/amount, but we provide this for UI consistency.
+        return jsonify([{'id': -1, 'description': '1 serving', 'gram_weight': 1.0}])
+
+    if not portions:
+        # Always return at least a 1-gram portion if none exist
+        return jsonify([{'id': -1, 'description': 'g', 'gram_weight': 1.0}])
+
+    portions_data = [{'id': p.id, 'description': p.full_description_str, 'gram_weight': p.gram_weight} for p in portions]
+    return jsonify(portions_data)
