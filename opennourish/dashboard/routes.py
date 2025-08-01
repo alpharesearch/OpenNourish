@@ -122,6 +122,8 @@ def index(log_date_str=None):
     active_fast = FastingSession.query.filter_by(user_id=current_user.id, status='active').first()
     last_completed_fast = FastingSession.query.filter_by(user_id=current_user.id, status='completed').order_by(FastingSession.end_time.desc()).first()
 
+    latest_checkin = CheckIn.query.filter_by(user_id=current_user.id).order_by(CheckIn.checkin_date.desc()).first()
+
 
     return render_template('dashboard.html', date=date_obj, prev_date=prev_date, next_date=next_date, 
                            daily_logs=daily_logs, food_names=food_names, goals=user_goal, totals=totals, 
@@ -136,4 +138,4 @@ def index(log_date_str=None):
                            projected_dates=projected_dates, projected_weights=projected_weights,
                            trending_away=trending_away, days_to_goal=days_to_goal, goal_date_str=goal_date_str,
                            at_goal_and_maintaining=at_goal_and_maintaining,
-                           active_fast=active_fast, last_completed_fast=last_completed_fast, now=datetime.utcnow())
+                           active_fast=active_fast, last_completed_fast=last_completed_fast, now=datetime.utcnow(), latest_checkin=latest_checkin)

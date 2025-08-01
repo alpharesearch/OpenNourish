@@ -64,4 +64,9 @@ class InitialGoalsForm(FlaskForm):
     weight_goal_kg = FloatField('Weight Goal (kg)', validators=[Optional(), NumberRange(min=20, max=600)])
     weight_goal_lbs = FloatField('Weight Goal (lbs)', validators=[Optional(), NumberRange(min=40, max=1300)])
 
+    # Body Composition Goals
+    body_fat_percentage_goal = FloatField('Body Fat % Goal (Optional)', validators=[Optional(), NumberRange(min=1, max=60)])
+    waist_cm_goal = FloatField('Waist Goal (cm) (Optional)', validators=[Optional(), NumberRange(min=30, max=200)])
+    waist_in_goal = FloatField('Waist Goal (in) (Optional)', validators=[Optional(), NumberRange(min=10, max=80)])
+
     submit = SubmitField('Finish Setup')

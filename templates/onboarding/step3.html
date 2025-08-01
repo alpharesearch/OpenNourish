@@ -59,6 +59,23 @@
                             {% endif %}
                         </div>
 
+                        <h5 class="mt-4 mb-3">Body Composition Goals (Optional)</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.body_fat_percentage_goal.label(class="form-label") }}
+                                {{ form.body_fat_percentage_goal(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {% if measurement_system == 'us' %}
+                                {{ form.waist_in_goal.label(class="form-label") }}
+                                {{ form.waist_in_goal(class="form-control") }}
+                                {% else %}
+                                {{ form.waist_cm_goal.label(class="form-label") }}
+                                {{ form.waist_cm_goal(class="form-control") }}
+                                {% endif %}
+                            </div>
+                        </div>
+
                         <div class="d-grid">
                             {{ form.submit(class="btn btn-outline-success") }}
                         </div>

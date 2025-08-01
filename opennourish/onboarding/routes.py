@@ -55,12 +55,20 @@ def step2():
 
         if weight_kg_from_form is not None:
             # Create a new CheckIn entry for the initial weight and body fat
+            waist_cm_from_form = None
+            if current_user.measurement_system == 'us':
+                if form.waist_in.data:
+                    waist_cm_from_form = in_to_cm(form.waist_in.data)
+            else:
+                if form.waist_cm.data:
+                    waist_cm_from_form = form.waist_cm.data
+
             new_checkin = CheckIn(
                 user_id=current_user.id,
                 checkin_date=get_user_today(),
                 weight_kg=weight_kg_from_form,
                 body_fat_percentage=form.body_fat_percentage.data or 0.0, # Default to 0.0 if not provided
-                waist_cm=in_to_cm(form.waist_in.data) if current_user.measurement_system == 'us' else form.waist_cm.data or 0.0 # Handle waist
+                waist_cm=waist_cm_from_form or 0.0 # Handle waist
             )
             db.session.add(new_checkin)
 
@@ -139,8 +147,12 @@ def step3():
 
         if current_user.measurement_system == 'us':
             user_goal.weight_goal_kg = lbs_to_kg(form.weight_goal_lbs.data)
+            user_goal.waist_cm_goal = in_to_cm(form.waist_in_goal.data)
         else:
             user_goal.weight_goal_kg = form.weight_goal_kg.data
+            user_goal.waist_cm_goal = form.waist_cm_goal.data
+
+        user_goal.body_fat_percentage_goal = form.body_fat_percentage_goal.data
 
         current_user.has_completed_onboarding = True
         db.session.commit()

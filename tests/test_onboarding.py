@@ -223,7 +223,9 @@ def test_full_onboarding_workflow(client):
             'protein': 120,
             'carbs': 180,
             'fat': 60,
-            'weight_goal_lbs': 140
+            'weight_goal_lbs': 140,
+            'body_fat_percentage_goal': 20,
+            'waist_in_goal': 30
         },
         follow_redirects=False  # Do not follow redirect
     )
