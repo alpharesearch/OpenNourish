@@ -83,7 +83,7 @@
                 {{ meal_name }}
                 {% if meal_name == 'Water' and water_total_grams > 0 %}
                     <span class="text-muted h6">
-                        {% if (user.measurement_system if user else current_user.measurement_system) == 'metric' %}
+                        {% if current_user.measurement_system == 'metric' %}
                             (Total: {{ "%.0f" | format(water_total_grams) }} ml)
                         {% else %}
                             (Total: {{ "%.1f" | format(water_total_grams * 0.033814) }} oz)
@@ -101,8 +101,8 @@
             {% elif not is_read_only %}
             <div class="d-flex flex-column flex-md-row align-items-md-center">
                 {% if meal_name == 'Water' %}
-                    {% set ml_portion = water_food.portions | selectattr('portion_description', 'equalto', 'ml') | first %}
-                    {% set floz_portion = water_food.portions | selectattr('portion_description', 'equalto', 'fl oz') | first %}
+                    {% set ml_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'ml') | first %}
+                    {% set floz_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'fl oz') | first %}
                     <div class="d-flex justify-content-end align-items-center">
                         {% if current_user.measurement_system == 'metric' and ml_portion %}
                             {% for amount in [100, 250, 500] %}

@@ -137,19 +137,30 @@ def create_app(config_class=Config):
     from opennourish.fasting import fasting_bp
     app.register_blueprint(fasting_bp, url_prefix='/fasting')
 
-    MEAL_NAMES = ["Breakfast", "Snack (morning)", "Lunch", "Snack (afternoon)", "Dinner", "Snack (evening)"]
+    # Centralized meal configuration based on user settings
+    MEAL_CONFIG = {
+        3: ["Breakfast", "Lunch", "Dinner"],
+        4: ["Water", "Breakfast", "Lunch", "Dinner"],
+        6: ["Breakfast", "Snack (morning)", "Lunch", "Snack (afternoon)", "Dinner", "Snack (evening)"],
+        7: ["Water", "Breakfast", "Snack (morning)", "Lunch", "Snack (afternoon)", "Dinner", "Snack (evening)"]
+    }
+    DEFAULT_MEAL_NAMES = MEAL_CONFIG[6]
 
     @app.context_processor
     def inject_user_settings():
         from flask_login import current_user
         if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+            # Get the user's meal setting, default to 6 if not set
+            user_meals_per_day = current_user.meals_per_day or 6
+            # Get the corresponding meal names, fall back to default if the key is invalid
+            standard_meal_names = MEAL_CONFIG.get(user_meals_per_day, DEFAULT_MEAL_NAMES)
             return {
-                'meals_per_day': current_user.meals_per_day,
-                'standard_meal_names': MEAL_NAMES
+                'meals_per_day': user_meals_per_day,
+                'standard_meal_names': standard_meal_names
             }
         return {
             'meals_per_day': 6,  # Default for anonymous users
-            'standard_meal_names': MEAL_NAMES
+            'standard_meal_names': DEFAULT_MEAL_NAMES
         }
 
     @login_manager.user_loader
