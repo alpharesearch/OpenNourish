@@ -147,29 +147,42 @@ def diary(log_date_str=None):
     meal_names_to_render = sorted(list(set(base_meals_to_show) | logged_meal_names), key=ALL_MEAL_TYPES.index)
 
     # --- Water Quick-Add Setup ---
-    # Ensure a "Water" food item exists for the user to log against
+    # Ensure a "Water" food item exists for the user to log against, with all standard portions.
     water_food = MyFood.query.filter_by(user_id=current_user.id, description="Water").first()
+
+    # Define standard water portions and their gram weights
+    standard_water_portions = {
+        'ml': 1.0,
+        'fl oz': 29.5735,
+        'cup': 236.59,
+        'L': 1000.0,
+        'gal': 3785.41
+    }
+
     if not water_food:
         # Create the water food item if it doesn't exist
         water_food = MyFood(user_id=current_user.id, description="Water", calories_per_100g=0, protein_per_100g=0, carbs_per_100g=0, fat_per_100g=0)
         db.session.add(water_food)
-        # We need to flush to get an ID for the portions
-        db.session.flush()
-        # Create default portions right away
-        ml_portion = UnifiedPortion(my_food_id=water_food.id, measure_unit_description="ml", gram_weight=1.0, amount=1.0)
-        floz_portion = UnifiedPortion(my_food_id=water_food.id, measure_unit_description="fl oz", gram_weight=29.5735, amount=1.0)
-        db.session.add_all([ml_portion, floz_portion])
-        db.session.commit() # Commit to save water food and portions
+        db.session.flush()  # Flush to get an ID for the portions
+        
+        # Create all standard portions
+        portions_to_add = [
+            UnifiedPortion(my_food_id=water_food.id, measure_unit_description=unit, gram_weight=gram_weight, amount=1.0)
+            for unit, gram_weight in standard_water_portions.items()
+        ]
+        db.session.add_all(portions_to_add)
+        db.session.commit()
     else:
-        # If water food exists, check for and create missing portions
+        # If water food exists, check for and create any missing standard portions
         existing_portions = {p.measure_unit_description for p in water_food.portions}
-        if "ml" not in existing_portions:
-            ml_portion = UnifiedPortion(my_food_id=water_food.id, measure_unit_description="ml", gram_weight=1.0, amount=1.0)
-            db.session.add(ml_portion)
-        if "fl oz" not in existing_portions:
-            floz_portion = UnifiedPortion(my_food_id=water_food.id, measure_unit_description="fl oz", gram_weight=29.5735, amount=1.0)
-            db.session.add(floz_portion)
-        if db.session.dirty:
+        portions_to_add = [
+            UnifiedPortion(my_food_id=water_food.id, measure_unit_description=unit, gram_weight=gram_weight, amount=1.0)
+            for unit, gram_weight in standard_water_portions.items()
+            if unit not in existing_portions
+        ]
+        
+        if portions_to_add:
+            db.session.add_all(portions_to_add)
             db.session.commit()
 
     # Calculate total water intake in grams

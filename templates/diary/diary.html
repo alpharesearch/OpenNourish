@@ -75,7 +75,17 @@
         </div>
     </div>
     {% endif %}
+    {% set ordered_meal_names = [] %}
+    {% if 'Water' in meal_names_to_render %}
+        {% do ordered_meal_names.append('Water') %}
+    {% endif %}
     {% for meal_name in meal_names_to_render %}
+        {% if meal_name != 'Water' %}
+            {% do ordered_meal_names.append(meal_name) %}
+        {% endif %}
+    {% endfor %}
+
+    {% for meal_name in ordered_meal_names %}
     {% set items = meals.get(meal_name, []) %}
     <div class="card mb-3">
         <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
