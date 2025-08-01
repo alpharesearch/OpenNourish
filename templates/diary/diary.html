@@ -113,10 +113,11 @@
                 {% if meal_name == 'Water' %}
                     {% set ml_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'ml') | first %}
                     {% set floz_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'fl oz') | first %}
-                    <div class="d-flex justify-content-end align-items-center">
+                    <div class="d-flex justify-content-end align-items-center flex-wrap-nowrap">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Water quick add">
                         {% if current_user.measurement_system == 'metric' and ml_portion %}
                             {% for amount in [100, 250, 500] %}
-                            <form action="{{ url_for('search.add_item') }}" method="post" class="ms-2">
+                            <form action="{{ url_for('search.add_item') }}" method="post" class="d-inline">
                                 <input type="hidden" name="food_id" value="{{ water_food.id }}">
                                 <input type="hidden" name="food_type" value="my_food">
                                 <input type="hidden" name="target" value="diary">
@@ -124,12 +125,12 @@
                                 <input type="hidden" name="meal_name" value="Water">
                                 <input type="hidden" name="amount" value="{{ amount }}">
                                 <input type="hidden" name="portion_id" value="{{ ml_portion.id }}">
-                                <button type="submit" class="btn btn-outline-primary btn-sm">+{{ amount }} ml</button>
+                                <button type="submit" class="btn btn-outline-primary">{{ amount }} ml</button>
                             </form>
                             {% endfor %}
                         {% elif current_user.measurement_system == 'us' and floz_portion %}
                             {% for amount in [8, 12, 16] %}
-                            <form action="{{ url_for('search.add_item') }}" method="post" class="ms-2">
+                            <form action="{{ url_for('search.add_item') }}" method="post" class="d-inline">
                                 <input type="hidden" name="food_id" value="{{ water_food.id }}">
                                 <input type="hidden" name="food_type" value="my_food">
                                 <input type="hidden" name="target" value="diary">
@@ -137,10 +138,11 @@
                                 <input type="hidden" name="meal_name" value="Water">
                                 <input type="hidden" name="amount" value="{{ amount }}">
                                 <input type="hidden" name="portion_id" value="{{ floz_portion.id }}">
-                                <button type="submit" class="btn btn-outline-primary btn-sm">+{{ amount }} oz</button>
+                                <button type="submit" class="btn btn-outline-primary">{{ amount }} oz</button>
                             </form>
                             {% endfor %}
                         {% endif %}
+                        </div>
                          <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}" class="btn btn-outline-info btn-sm ms-2">
                             <span class="d-none d-md-inline">Custom</span>
                             <span class="d-inline d-md-none">+</span>

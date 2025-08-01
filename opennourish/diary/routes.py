@@ -156,7 +156,15 @@ def diary(log_date_str=None):
         'fl oz': 29.5735,
         'cup': 236.59,
         'L': 1000.0,
-        'gal': 3785.41
+        'gal': 3785.41,
+        'Small Water Bottle (16.9oz)': 500.0,
+        'Large "Smart" Bottle (1L)': 1000.0,
+        'Standard Can (12oz)': 355.0,
+        'Small Can (330ml)': 330.0,
+        'Glass of Water (8oz)': 240.0,
+        'Large Glass (16oz)': 475.0,
+        'Coffee Mug (12oz)': 355.0,
+        'Reusable Bottle (32oz)': 950.0
     }
 
     if not water_food:
