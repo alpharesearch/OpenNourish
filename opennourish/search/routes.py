@@ -4,7 +4,7 @@ from models import db, Food, MyFood, Recipe, MyMeal, DailyLog, RecipeIngredient,
 from flask_login import login_required, current_user
 from datetime import date
 from opennourish.time_utils import get_user_today
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, and_
 from sqlalchemy.orm import joinedload, selectinload
 import math
 from opennourish.utils import calculate_recipe_nutrition_per_100g, remove_leading_one
@@ -305,7 +305,7 @@ def search():
 
         if search_my_foods:
             my_foods_query = MyFood.query.filter(
-                or_(MyFood.user_id.in_(user_ids_to_search), MyFood.user_id == None)
+                MyFood.user_id.in_(user_ids_to_search)
             )
             search_words = search_term.split()
             for word in search_words:
@@ -316,20 +316,36 @@ def search():
             my_foods_pagination = my_foods_query.paginate(page=my_foods_page, per_page=per_page, error_out=False)
 
         if search_recipes:
-            user_and_public_filter = []
-            user_and_public_filter.append(Recipe.user_id.in_(user_ids_to_search))
-            user_and_public_filter.append(Recipe.user_id == None) # Include orphaned recipes
-            if search_public:
-                user_and_public_filter.append(Recipe.is_public == True)
-            
-            recipes_query = Recipe.query.filter(or_(*user_and_public_filter))
+            # Define a list to hold the different OR conditions for recipe visibility
+            recipe_visibility_filters = []
 
+            # Condition 1: Recipes belonging to the current user or their friends
+            recipe_visibility_filters.append(Recipe.user_id.in_(user_ids_to_search))
+
+            # Condition 2: Handle public recipes
+            if search_public:
+                # If searching public, include ALL public recipes (owned, and orphaned)
+                recipe_visibility_filters.append(Recipe.is_public == True)
+            else:
+                # If not searching public, ONLY include orphaned public recipes.
+                # This allows finding a former friend's public recipe after they delete their account.
+                recipe_visibility_filters.append(
+                    and_(Recipe.user_id.is_(None), Recipe.is_public == True)
+                )
+
+            # Combine the visibility filters with OR
+            recipes_query = Recipe.query.filter(or_(*recipe_visibility_filters))
+
+            # Apply the search term filter
             search_words = search_term.split()
             for word in search_words:
                 recipes_query = recipes_query.filter(Recipe.name.ilike(f'%{word}%'))
-
+            
+            # Apply category filter if any
             if selected_category_id:
                 recipes_query = recipes_query.filter(Recipe.food_category_id == selected_category_id)
+            
+            # Paginate
             recipes_pagination = recipes_query.paginate(page=recipes_page, per_page=per_page, error_out=False)
 
         if search_my_meals:
