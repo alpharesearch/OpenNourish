@@ -142,18 +142,18 @@ def diary(log_date_str=None):
         water_food = MyFood(user_id=current_user.id, description="Water", calories_per_100g=0, protein_per_100g=0, carbs_per_100g=0, fat_per_100g=0)
         db.session.add(water_food)
         # Create default portions right away
-        ml_portion = UnifiedPortion(my_food=water_food, portion_description="ml", gram_weight=1.0)
-        floz_portion = UnifiedPortion(my_food=water_food, portion_description="fl oz", gram_weight=29.5735)
+        ml_portion = UnifiedPortion(my_food=water_food, measure_unit_description="ml", gram_weight=1.0, amount=1.0)
+        floz_portion = UnifiedPortion(my_food=water_food, measure_unit_description="fl oz", gram_weight=29.5735, amount=1.0)
         db.session.add_all([ml_portion, floz_portion])
         db.session.commit() # Commit to get IDs for the template
     else:
         # Check for and create missing portions if the water item already exists
-        existing_portions = {p.portion_description for p in water_food.portions}
+        existing_portions = {p.measure_unit_description for p in water_food.portions}
         if "ml" not in existing_portions:
-            ml_portion = UnifiedPortion(my_food=water_food, portion_description="ml", gram_weight=1.0)
+            ml_portion = UnifiedPortion(my_food=water_food, measure_unit_description="ml", gram_weight=1.0, amount=1.0)
             db.session.add(ml_portion)
         if "fl oz" not in existing_portions:
-            floz_portion = UnifiedPortion(my_food=water_food, portion_description="fl oz", gram_weight=29.5735)
+            floz_portion = UnifiedPortion(my_food=water_food, measure_unit_description="fl oz", gram_weight=29.5735, amount=1.0)
             db.session.add(floz_portion)
         if db.session.dirty:
             db.session.commit()
