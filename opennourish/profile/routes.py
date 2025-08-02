@@ -42,7 +42,7 @@ def dashboard(username, log_date_str=None):
     if log_date_str:
         date_obj = date.fromisoformat(log_date_str)
     else:
-        date_obj = get_user_today()
+        date_obj = get_user_today(current_user.timezone)
 
     prev_date = date_obj - timedelta(days=1)
     next_date = date_obj + timedelta(days=1)
@@ -81,16 +81,16 @@ def dashboard(username, log_date_str=None):
     check_ins_query = CheckIn.query.filter_by(user_id=friend_user.id)
 
     if time_range == '1_month':
-        start_date = get_user_today() - timedelta(days=30)
+        start_date = get_user_today(current_user.timezone) - timedelta(days=30)
         check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
     elif time_range == '3_month':
-        start_date = get_user_today() - timedelta(days=90)
+        start_date = get_user_today(current_user.timezone) - timedelta(days=90)
         check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
     elif time_range == '6_month':
-        start_date = get_user_today() - timedelta(days=180)
+        start_date = get_user_today(current_user.timezone) - timedelta(days=180)
         check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
     elif time_range == '1_year':
-        start_date = get_user_today() - timedelta(days=365)
+        start_date = get_user_today(current_user.timezone) - timedelta(days=365)
         check_ins_query = check_ins_query.filter(CheckIn.checkin_date >= start_date)
     # 'all_time' doesn't need a filter
 
@@ -146,7 +146,7 @@ def diary(username, log_date_str=None):
     if log_date_str:
         log_date = date.fromisoformat(log_date_str)
     else:
-        log_date = get_user_today()
+        log_date = get_user_today(current_user.timezone)
 
     user_goal = db.session.get(UserGoal, friend_user.id)
     if not user_goal:

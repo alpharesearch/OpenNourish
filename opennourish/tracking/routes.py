@@ -34,7 +34,7 @@ def progress():
         return redirect(url_for('tracking.progress'))
 
     if request.method == 'GET':
-        form.checkin_date.data = get_user_today()
+        form.checkin_date.data = get_user_today(current_user.timezone)
         
     page = request.args.get('page', 1, type=int)
     check_ins_pagination = CheckIn.query.filter_by(user_id=current_user.id).order_by(CheckIn.checkin_date.desc()).paginate(page=page, per_page=10)

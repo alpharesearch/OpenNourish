@@ -65,7 +65,7 @@ def step2():
 
             new_checkin = CheckIn(
                 user_id=current_user.id,
-                checkin_date=get_user_today(),
+                checkin_date=get_user_today(current_user.timezone),
                 weight_kg=weight_kg_from_form,
                 body_fat_percentage=form.body_fat_percentage.data or 0.0, # Default to 0.0 if not provided
                 waist_cm=waist_cm_from_form or 0.0 # Handle waist

@@ -18,7 +18,7 @@ def index(log_date_str=None):
     if log_date_str:
         date_obj = date.fromisoformat(log_date_str)
     else:
-        date_obj = get_user_today()
+        date_obj = get_user_today(current_user.timezone)
 
     prev_date = date_obj - timedelta(days=1)
     next_date = date_obj + timedelta(days=1)

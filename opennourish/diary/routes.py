@@ -20,9 +20,9 @@ def diary(log_date_str=None):
         log_date = date.fromisoformat(log_date_str)
     else:
         if current_user.diary_default_view == 'yesterday':
-            log_date = get_user_today() - timedelta(days=1)
+            log_date = get_user_today(current_user.timezone) - timedelta(days=1)
         else:
-            log_date = get_user_today()
+            log_date = get_user_today(current_user.timezone)
 
     active_fast = FastingSession.query.filter_by(user_id=current_user.id, status='active').first()
     is_fasting = active_fast is not None

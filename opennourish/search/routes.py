@@ -535,7 +535,7 @@ def add_item():
             return redirect(request.referrer or url_for('diary.diary'))
 
         if target == 'diary':
-            log_date = date.fromisoformat(log_date_str) if log_date_str else get_user_today()
+            log_date = date.fromisoformat(log_date_str) if log_date_str else get_user_today(current_user.timezone)
             my_meal.usage_count += 1
             for item in my_meal.items:
                 daily_log = DailyLog(

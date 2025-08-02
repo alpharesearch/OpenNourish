@@ -45,7 +45,7 @@ def log_exercise():
         return redirect(url_for('.log_exercise'))
 
     if request.method == 'GET':
-        form.log_date.data = get_user_today()
+        form.log_date.data = get_user_today(current_user.timezone)
 
     page = request.args.get('page', 1, type=int)
     logs = ExerciseLog.query.filter_by(user_id=current_user.id).order_by(ExerciseLog.log_date.desc()).paginate(page=page, per_page=10)
@@ -65,7 +65,7 @@ def log_exercise():
     }
     start_of_week, end_of_week = None, None
     if user_goal:
-        today = get_user_today()
+        today = get_user_today(current_user.timezone)
         start_of_week = get_start_of_week(today, current_user.week_start_day)
         end_of_week = start_of_week + timedelta(days=6)
 

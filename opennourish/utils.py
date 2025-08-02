@@ -969,7 +969,7 @@ def calculate_weight_projection(user):
     """
     Projects a user's weight over time based on recent activity and goals.
     """
-    today = get_user_today()
+    today = get_user_today(user.timezone)
     
     # 1. Fetch latest check-in and goal
     latest_checkin = CheckIn.query.filter_by(user_id=user.id).order_by(CheckIn.checkin_date.desc()).first()
