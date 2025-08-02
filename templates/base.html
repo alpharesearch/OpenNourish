@@ -110,7 +110,7 @@
                     modalFoodType.value = foodType;
 
                     // 2. Set date to today
-                    modalLogDate.value = new Date().toISOString().split('T')[0];
+                    modalLogDate.value = new Date().toLocaleDateString('en-CA', { timeZone: '{{ current_user.timezone }}' });
 
                     // 3. Build meal dropdown
                     modalMealName.innerHTML = '';
