@@ -147,42 +147,37 @@ def test_update_meal_item_portion(auth_client_with_user):
         assert updated_item.amount_grams == 75.0 # 0.5 * 150.0
         assert updated_item.portion_id_fk == portion2_id
 
-def test_edit_meal_item_get(auth_client_with_user):
-    """Test GET request for editing a meal item."""
+def test_edit_meal_page_shows_item_data(auth_client_with_user):
+    """Test that the edit meal page correctly displays data for an item."""
     client, user = auth_client_with_user
     with client.application.app_context():
+        # A USDA food item for the meal
+        food = Food(fdc_id=12345, description='Test USDA Food')
+        db.session.add(food)
+        db.session.commit()
+
+        # A portion for that food
+        portion = UnifiedPortion(fdc_id=food.fdc_id, measure_unit_description='g', gram_weight=1.0, amount=1.0)
+        db.session.add(portion)
+        db.session.commit()
+
         meal = MyMeal(user_id=user.id, name='Meal for item edit GET')
         db.session.add(meal)
         db.session.commit()
-        item = MyMealItem(my_meal_id=meal.id, my_food_id=None, fdc_id=12345, amount_grams=150)
+
+        item = MyMealItem(
+            my_meal_id=meal.id,
+            fdc_id=food.fdc_id,
+            amount_grams=150.555,
+            portion_id_fk=portion.id
+        )
         db.session.add(item)
         db.session.commit()
         meal_id = meal.id
-        item_id = item.id
 
-    response = client.get(f'/my_meals/{meal_id}/edit_item/{item_id}')
+    response = client.get(f'/my_meals/edit/{meal_id}')
     assert response.status_code == 200
-    assert b'Update Amount' in response.data
-    assert b'value="150.0"' in response.data
-
-def test_edit_meal_item_post(auth_client_with_user):
-    """Test POST request for editing a meal item."""
-    client, user = auth_client_with_user
-    with client.application.app_context():
-        meal = MyMeal(user_id=user.id, name='Meal for item edit POST')
-        db.session.add(meal)
-        db.session.commit()
-        item = MyMealItem(my_meal_id=meal.id, my_food_id=None, fdc_id=12345, amount_grams=150)
-        db.session.add(item)
-        db.session.commit()
-        meal_id = meal.id
-        item_id = item.id
-
-    response = client.post(f'/my_meals/{meal_id}/edit_item/{item_id}', data={'amount': 200.5}, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'Meal item updated.' in response.data
-    assert response.request.path == f'/my_meals/edit/{meal_id}'
-
-    with client.application.app_context():
-        updated_item = db.session.get(MyMealItem, item_id)
-        assert updated_item.amount_grams == 200.5
+    assert b'Edit Meal: Meal for item edit GET' in response.data
+    assert b'Test USDA Food' in response.data
+    # display_amount = 150.555 / 1.0 = 150.555. The template rounds this to 2 decimal places.
+    assert b'value="150.56"' in response.data

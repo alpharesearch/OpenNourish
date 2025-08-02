@@ -344,27 +344,7 @@ def edit_meal(meal_id):
         item.nutrition_summary = calculate_nutrition_for_items([temp_item_for_nutrition])
     return render_template('diary/edit_meal.html', meal=meal, form=form)
 
-@diary_bp.route('/my_meals/<int:meal_id>/edit_item/<int:item_id>', methods=['GET', 'POST'])
-@login_required
-def edit_meal_item(meal_id, item_id):
-    meal = db.session.get(MyMeal, meal_id)
-    item = db.session.get(MyMealItem, item_id)
 
-    if not meal or meal.user_id != current_user.id or not item or item.my_meal_id != meal.id:
-        flash('Item not found or you do not have permission to edit it.', 'danger')
-        return redirect(url_for('diary.edit_meal', meal_id=meal_id))
-
-    form = MealItemForm(obj=item)
-
-    if form.validate_on_submit():
-        item.amount_grams = form.amount.data
-        db.session.commit()
-        flash('Meal item updated.', 'success')
-        return redirect(url_for('diary.edit_meal', meal_id=meal_id))
-    elif request.method == 'GET':
-        form.amount.data = item.amount_grams
-
-    return render_template('diary/edit_meal_item.html', meal=meal, item=item, form=form)
 
 @diary_bp.route('/my_meals/<int:meal_id>/delete_item/<int:item_id>', methods=['POST'])
 @login_required
