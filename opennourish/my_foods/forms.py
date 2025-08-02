@@ -10,7 +10,7 @@ class MyFoodForm(FlaskForm):
     fdc_id = StringField('USDA FDC ID', validators=[Optional()])
     upc = StringField('UPC Code', validators=[Optional()])
     ingredients = TextAreaField('Ingredients', validators=[Optional()])
-    calories_per_100g = FloatField('Calories (per 100g)', validators=[Optional(), NumberRange(min=0)], default=0.0)
+    calories_per_100g = FloatField('Calories (cal per 100g)', validators=[Optional(), NumberRange(min=0)], default=0.0)
     protein_per_100g = FloatField('Protein (g per 100g)', validators=[Optional(), NumberRange(min=0)], default=0.0)
     carbs_per_100g = FloatField('Carbohydrates (g per 100g)', validators=[Optional(), NumberRange(min=0)], default=0.0)
     fat_per_100g = FloatField('Fat (g per 100g)', validators=[Optional(), NumberRange(min=0)], default=0.0)
