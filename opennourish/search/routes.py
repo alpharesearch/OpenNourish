@@ -210,11 +210,19 @@ def search():
                 user_ids_to_search.extend(friend_ids)
 
         if search_usda:
-            # Step 1: Get all matching food IDs from the USDA database first.
             usda_query = Food.query
-            search_words = search_term.split()
-            for word in search_words:
-                usda_query = usda_query.filter(Food.description.ilike(f'%{word}%'))
+            
+            # Handle numeric search as potential UPC
+            if search_term.isdigit() and len(search_term) > 5:
+                usda_query = usda_query.filter(or_(
+                    Food.description.ilike(f'%{search_term}%'),
+                    Food.upc == search_term
+                ))
+            else:
+                # Standard description search
+                search_words = search_term.split()
+                for word in search_words:
+                    usda_query = usda_query.filter(Food.description.ilike(f'%{word}%'))
 
             if selected_category_id:
                 usda_query = usda_query.filter(Food.food_category_id == selected_category_id)
@@ -307,9 +315,15 @@ def search():
             my_foods_query = MyFood.query.filter(
                 MyFood.user_id.in_(user_ids_to_search)
             )
-            search_words = search_term.split()
-            for word in search_words:
-                my_foods_query = my_foods_query.filter(MyFood.description.ilike(f'%{word}%'))
+            if search_term.isdigit() and len(search_term) > 5:
+                my_foods_query = my_foods_query.filter(or_(
+                    MyFood.description.ilike(f'%{search_term}%'),
+                    MyFood.upc == search_term
+                ))
+            else:
+                search_words = search_term.split()
+                for word in search_words:
+                    my_foods_query = my_foods_query.filter(MyFood.description.ilike(f'%{word}%'))
 
             if selected_category_id:
                 my_foods_query = my_foods_query.filter(MyFood.food_category_id == selected_category_id)
@@ -337,9 +351,15 @@ def search():
             recipes_query = Recipe.query.filter(or_(*recipe_visibility_filters))
 
             # Apply the search term filter
-            search_words = search_term.split()
-            for word in search_words:
-                recipes_query = recipes_query.filter(Recipe.name.ilike(f'%{word}%'))
+            if search_term.isdigit() and len(search_term) > 5:
+                recipes_query = recipes_query.filter(or_(
+                    Recipe.name.ilike(f'%{search_term}%'),
+                    Recipe.upc == search_term
+                ))
+            else:
+                search_words = search_term.split()
+                for word in search_words:
+                    recipes_query = recipes_query.filter(Recipe.name.ilike(f'%{word}%'))
             
             # Apply category filter if any
             if selected_category_id:
