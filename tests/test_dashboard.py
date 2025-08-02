@@ -1,6 +1,9 @@
 import pytest
 from models import db, User, UserGoal, ExerciseLog, ExerciseActivity, CheckIn, DailyLog, Food, MyFood, FastingSession
 from datetime import date, timedelta, datetime
+from opennourish.time_utils import get_user_today
+
+
 
 def test_dashboard_exercise_goals_display(auth_client_onboarded):
     """
@@ -29,7 +32,7 @@ def test_dashboard_exercise_goals_display(auth_client_onboarded):
         db.session.commit()
 
         # Log exercises for the current week
-        today = date.today()
+        today = get_user_today(user.timezone)
         start_of_week = today - timedelta(days=today.weekday())
 
         # Log 1: Running, 40 mins, 400 kcal (example values)
@@ -95,7 +98,7 @@ def test_dashboard_weight_projection_display(auth_client_onboarded):
         db.session.commit()
 
         # Create a series of check-ins showing weight loss
-        today = date.today()
+        today = get_user_today(user.timezone)
         # Add more check-ins to ensure projection is calculated
         checkin1 = CheckIn(user_id=user.id, checkin_date=today - timedelta(weeks=8), weight_kg=82.0, body_fat_percentage=22.0, waist_cm=92.0)
         checkin2 = CheckIn(user_id=user.id, checkin_date=today - timedelta(weeks=6), weight_kg=80.0, body_fat_percentage=21.0, waist_cm=91.0)
@@ -129,7 +132,9 @@ def test_dashboard_with_specific_date(auth_client_onboarded):
     THEN the page should display that date.
     """
     client = auth_client_onboarded
-    target_date = date.today() - timedelta(days=5)
+    with client.application.app_context():
+        user = User.query.filter_by(username='onboardeduser').first()
+        target_date = get_user_today(user.timezone) - timedelta(days=5)
     target_date_str = target_date.isoformat()
     
     response = client.get(f'/dashboard/{target_date_str}')
@@ -177,7 +182,7 @@ def test_dashboard_food_names_display(auth_client_onboarded):
         db.session.commit()
 
         # Log both items in the diary for today
-        today = date.today()
+        today = get_user_today(user.timezone)
         log1 = DailyLog(user_id=user.id, log_date=today, my_food_id=my_food.id, amount_grams=100)
         log2 = DailyLog(user_id=user.id, log_date=today, fdc_id=usda_food.fdc_id, amount_grams=150)
         db.session.add_all([log1, log2])
@@ -190,7 +195,8 @@ def test_dashboard_food_names_display(auth_client_onboarded):
 
 def _create_checkin_data(user_id, num_days_step, count):
     """Helper function to create check-in data for a user."""
-    today = date.today()
+    user = db.session.get(User, user_id)
+    today = get_user_today(user.timezone)
     for i in range(count):
         checkin_date = today - timedelta(days=i * num_days_step)
         db.session.add(CheckIn(user_id=user_id, checkin_date=checkin_date, weight_kg=80 - i, body_fat_percentage=20 - i, waist_cm=90 - i))
