@@ -1,10 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container mt-4">
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Progress Tracking</h1>
+    </div>
+
+    <!-- Progress Overview Card -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h2 class="card-title mb-0">Progress Overview</h2>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Progress Overview</h2>
         </div>
         <div class="card-body">
             <div class="row">
@@ -53,119 +59,135 @@
         </div>
     </div>
 
-    <h2 class="mb-4">New Check-In</h2>
-    <form method="POST" action="{{ url_for('tracking.progress') }}" class="mb-5">
-        {{ form.hidden_tag() }}
-        <div class="row align-items-end">
-            <div class="col-lg-3">
-                {{ form.checkin_date.label(class="form-label") }}
-                {{ form.checkin_date(class="form-control") }}
-            </div>
-            {% if current_user.measurement_system == 'us' %}
-            <div class="col-lg-2">
-                {{ form.weight_lbs.label(class="form-label") }}
-                {{ form.weight_lbs(class="form-control") }}
-            </div>
-            <div class="col-lg-2">
-                {{ form.waist_in.label(class="form-label") }}
-                {{ form.waist_in(class="form-control") }}
-            </div>
-            {% else %}
-            <div class="col-lg-2">
-                {{ form.weight_kg.label(class="form-label") }}
-                {{ form.weight_kg(class="form-control") }}
-            </div>
-            <div class="col-lg-2">
-                {{ form.waist_cm.label(class="form-label") }}
-                {{ form.waist_cm(class="form-control") }}
-            </div>
-            {% endif %}
-            <div class="col-lg-2">
-                {{ form.body_fat_percentage.label(class="form-label") }}
-                {{ form.body_fat_percentage(class="form-control") }}
-            </div>
-            <div class="col-lg-2">
-                {{ form.submit(class="btn btn-outline-primary w-100") }}
-            </div>
+    <!-- New Check-In Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">New Check-In</h2>
         </div>
-    </form>
-
-    <h2 class="mb-4">History</h2>
-    <div class="table-responsive">
-        <!-- Header -->
-        <div class="row g-0 fw-bold border-bottom mb-2 pb-2 d-none d-lg-flex">
-            <div class="col-lg-3">Date</div>
-            {% if current_user.measurement_system == 'us' %}
-            <div class="col-lg-2">Weight (lbs)</div>
-            <div class="col-lg-2">Waist (in)</div>
-            {% else %}
-            <div class="col-lg-2">Weight (kg)</div>
-            <div class="col-lg-2">Waist (cm)</div>
-            {% endif %}
-            <div class="col-lg-2">Body Fat %</div>
-            <div class="col-lg-3">Actions</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('tracking.progress') }}">
+                {{ form.hidden_tag() }}
+                <div class="row align-items-end">
+                    <div class="col-lg-3">
+                        {{ form.checkin_date.label(class="form-label") }}
+                        {{ form.checkin_date(class="form-control") }}
+                    </div>
+                    {% if current_user.measurement_system == 'us' %}
+                    <div class="col-lg-2">
+                        {{ form.weight_lbs.label(class="form-label") }}
+                        {{ form.weight_lbs(class="form-control") }}
+                    </div>
+                    <div class="col-lg-2">
+                        {{ form.waist_in.label(class="form-label") }}
+                        {{ form.waist_in(class="form-control") }}
+                    </div>
+                    {% else %}
+                    <div class="col-lg-2">
+                        {{ form.weight_kg.label(class="form-label") }}
+                        {{ form.weight_kg(class="form-control") }}
+                    </div>
+                    <div class="col-lg-2">
+                        {{ form.waist_cm.label(class="form-label") }}
+                        {{ form.waist_cm(class="form-control") }}
+                    </div>
+                    {% endif %}
+                    <div class="col-lg-2">
+                        {{ form.body_fat_percentage.label(class="form-label") }}
+                        {{ form.body_fat_percentage(class="form-control") }}
+                    </div>
+                    <div class="col-lg-2">
+                        {{ form.submit(class="btn btn-outline-primary w-100") }}
+                    </div>
+                </div>
+            </form>
         </div>
-        <!-- Body -->
-        {% for item in check_ins.items %}
-        <form method="POST" action="{{ url_for('tracking.update_check_in', check_in_id=item.id) }}" class="row g-2 mb-3 align-items-center border-bottom pb-2">
-            {{ forms[item.id].hidden_tag() }}
-            <div class="col-12 col-lg-3">
-                <label class="form-label d-lg-none">Date</label>
-                {{ forms[item.id].checkin_date(class="form-control") }}
-            </div>
-            {% if current_user.measurement_system == 'us' %}
-            <div class="col-12 col-lg-2">
-                <label class="form-label d-lg-none">Weight (lbs)</label>
-                {{ forms[item.id].weight_lbs(class="form-control") }}
-            </div>
-            <div class="col-12 col-lg-2">
-                <label class="form-label d-lg-none">Waist (in)</label>
-                {{ forms[item.id].waist_in(class="form-control") }}
-            </div>
-            {% else %}
-            <div class="col-12 col-lg-2">
-                <label class="form-label d-lg-none">Weight (kg)</label>
-                {{ forms[item.id].weight_kg(class="form-control") }}
-            </div>
-            <div class="col-12 col-lg-2">
-                <label class="form-label d-lg-none">Waist (cm)</label>
-                {{ forms[item.id].waist_cm(class="form-control") }}
-            </div>
-            {% endif %}
-            <div class="col-12 col-lg-2">
-                <label class="form-label d-lg-none">Body Fat %</label>
-                {{ forms[item.id].body_fat_percentage(class="form-control") }}
-            </div>
-            <div class="col-12 col-lg-1">
-                <button type="submit" class="btn btn-sm btn-outline-success w-100">Save</button>
-            </div>
-            <div class="col-12 col-lg-1">
-                <button type="submit" class="btn btn-sm btn-outline-danger w-100" form="delete-form-{{ item.id }}">Delete</button>
-            </div>
-        </form>
-        <form id="delete-form-{{ item.id }}" action="{{ url_for('tracking.delete_check_in', check_in_id=item.id) }}" method="POST" class="d-none"></form>
-        {% endfor %}
     </div>
 
-    <nav aria-label="Page navigation">
-        <ul class="pagination">
-            {% if check_ins.has_prev %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=check_ins.prev_num) }}">Previous</a></li>
+    <!-- History Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">History</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <!-- Header -->
+                <div class="row g-0 fw-bold border-bottom mb-2 pb-2 d-none d-lg-flex">
+                    <div class="col-lg-3">Date</div>
+                    {% if current_user.measurement_system == 'us' %}
+                    <div class="col-lg-2">Weight (lbs)</div>
+                    <div class="col-lg-2">Waist (in)</div>
+                    {% else %}
+                    <div class="col-lg-2">Weight (kg)</div>
+                    <div class="col-lg-2">Waist (cm)</div>
+                    {% endif %}
+                    <div class="col-lg-2">Body Fat %</div>
+                    <div class="col-lg-3">Actions</div>
+                </div>
+                <!-- Body -->
+                {% for item in check_ins.items %}
+                <form method="POST" action="{{ url_for('tracking.update_check_in', check_in_id=item.id) }}" class="row g-2 mb-3 align-items-center border-bottom pb-2">
+                    {{ forms[item.id].hidden_tag() }}
+                    <div class="col-12 col-lg-3">
+                        <label class="form-label d-lg-none">Date</label>
+                        {{ forms[item.id].checkin_date(class="form-control") }}
+                    </div>
+                    {% if current_user.measurement_system == 'us' %}
+                    <div class="col-12 col-lg-2">
+                        <label class="form-label d-lg-none">Weight (lbs)</label>
+                        {{ forms[item.id].weight_lbs(class="form-control") }}
+                    </div>
+                    <div class="col-12 col-lg-2">
+                        <label class="form-label d-lg-none">Waist (in)</label>
+                        {{ forms[item.id].waist_in(class="form-control") }}
+                    </div>
+                    {% else %}
+                    <div class="col-12 col-lg-2">
+                        <label class="form-label d-lg-none">Weight (kg)</label>
+                        {{ forms[item.id].weight_kg(class="form-control") }}
+                    </div>
+                    <div class="col-12 col-lg-2">
+                        <label class="form-label d-lg-none">Waist (cm)</label>
+                        {{ forms[item.id].waist_cm(class="form-control") }}
+                    </div>
+                    {% endif %}
+                    <div class="col-12 col-lg-2">
+                        <label class="form-label d-lg-none">Body Fat %</label>
+                        {{ forms[item.id].body_fat_percentage(class="form-control") }}
+                    </div>
+                    <div class="col-12 col-lg-1">
+                        <button type="submit" class="btn btn-sm btn-outline-success w-100">Save</button>
+                    </div>
+                    <div class="col-12 col-lg-1">
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100" form="delete-form-{{ item.id }}">Delete</button>
+                    </div>
+                </form>
+                <form id="delete-form-{{ item.id }}" action="{{ url_for('tracking.delete_check_in', check_in_id=item.id) }}" method="POST" class="d-none"></form>
+                {% endfor %}
+            </div>
+
+            {% if check_ins.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    {% if check_ins.has_prev %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=check_ins.prev_num) }}">Previous</a></li>
+                    {% endif %}
+                    {% for page_num in check_ins.iter_pages() %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == check_ins.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('tracking.progress', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if check_ins.has_next %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=check_ins.next_num) }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
             {% endif %}
-            {% for page_num in check_ins.iter_pages() %}
-            {% if page_num %}
-            <li class="page-item {% if page_num == check_ins.page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('tracking.progress', page=page_num) }}">{{ page_num }}</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled"><span class="page-link">...</span></li>
-            {% endif %}
-            {% endfor %}
-            {% if check_ins.has_next %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('tracking.progress', page=check_ins.next_num) }}">Next</a></li>
-            {% endif %}
-        </ul>
-    </nav>
+        </div>
+    </div>
 </div>
 
 {% if chart_labels and weight_data %}

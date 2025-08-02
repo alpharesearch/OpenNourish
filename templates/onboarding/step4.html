@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4>Welcome to OpenNourish!</h4>
+                    <p class="mb-0">Here are some tips to get started.</p>
+                </div>
+                <div class="card-body">
+                    <p>Congratulations on completing the setup! OpenNourish is ready to help you track your nutrition
+                        and achieve your health goals.</p>
+
+                    <h5>Quick Tips:</h5>
+                    <ul>
+                        <li><strong>Log Your Food Daily:</strong> Consistency is key! Use the "Diary" section to log
+                            everything you eat and drink.</li>
+                        <li><strong>Search for Foods:</strong> Use the search bar to find USDA foods, or create your own
+                            custom "My Foods" and "Recipes".</li>
+                        <li><strong>Create Custom Recipes:</strong> Combine multiple ingredients into a single recipe to
+                            easily log meals you eat often.</li>
+                        <li><strong>Set and Track Goals:</strong> Monitor your progress towards your nutritional and
+                            weight goals on the Dashboard.</li>
+                        <li><strong>Explore Reports:</strong> Dive into detailed reports to understand your eating
+                            patterns and make informed decisions.</li>
+                        <li><strong>Stay Hydrated:</strong> Don't forget to log your water intake!</li>
+                        <li><strong>Adjust as Needed:</strong> Your goals can be updated anytime in the "Settings"
+                            section.</li>
+                    </ul>
+
+                    <p>We recommend exploring the application to familiarize yourself with all its capabilities.</p>
+
+                    <div class="d-grid mt-4">
+                        <a href="{{ url_for('onboarding.finish_onboarding') }}" class="btn btn-outline-success">Start
+                            Using OpenNourish</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

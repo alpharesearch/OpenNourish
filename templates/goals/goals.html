@@ -3,101 +3,132 @@
 {% block title %}Set Goals{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mb-4">Set Your Goals</h1>
+<div class="container mt-4">
     <form method="POST" action="{{ url_for('goals.goals') }}">
+        <!-- PAGE HEADER -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">Set Your Goals</h1>
+            <button type="submit" class="btn btn-outline-primary">Save Goals</button>
+        </div>
+
         {{ form.hidden_tag() }}
 
-        <div class="alert alert-info mt-4" id="bmr-display" {% if not bmr %}style="display: none;"{% endif %} role="alert">
+        <div class="alert alert-info mb-4" id="bmr-display" {% if not bmr %}style="display: none;"{% endif %} role="alert">
             Your estimated Basal Metabolic Rate (BMR) is: <strong id="bmr-value">{{ "%.0f"|format(bmr) if bmr else '' }}</strong> kcal/day.
             <small class="d-block">Calculated using the <strong id="bmr-formula">{{ formula_name if formula_name else '' }}</strong> formula.</small>
         </div>
 
-        <h2 class="mt-4 mb-3">1. Body Composition Goals</h2>
-        <div class="row">
-            {% if current_user.measurement_system == 'us' %}
-            <div class="col-lg-4 mb-3">
-                {{ form.weight_goal_lbs.label(class="form-label") }}
-                {{ form.weight_goal_lbs(class="form-control", value=(form.weight_goal_lbs.data | round(2)) if form.weight_goal_lbs.data else '') }}
+        <!-- CARD 1: Body Composition Goals -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Body Composition Goals</h2>
             </div>
-            {% else %}
-            <div class="col-lg-4 mb-3">
-                {{ form.weight_goal_kg.label(class="form-label") }}
-                {{ form.weight_goal_kg(class="form-control", value=(form.weight_goal_kg.data | round(2)) if form.weight_goal_kg.data else '') }}
-            </div>
-            {% endif %}
-            <div class="col-lg-4 mb-3">
-                {{ form.body_fat_percentage_goal.label(class="form-label") }}
-                {{ form.body_fat_percentage_goal(class="form-control", value=(form.body_fat_percentage_goal.data | round(2)) if form.body_fat_percentage_goal.data else '') }}
-            </div>
-            {% if current_user.measurement_system == 'us' %}
-            <div class="col-lg-4 mb-3">
-                {{ form.waist_in_goal.label(class="form-label") }}
-                {{ form.waist_in_goal(class="form-control", value=(form.waist_in_goal.data | round(2)) if form.waist_in_goal.data else '') }}
-            </div>
-            {% else %}
-            <div class="col-lg-4 mb-3">
-                {{ form.waist_cm_goal.label(class="form-label") }}
-                {{ form.waist_cm_goal(class="form-control", value=(form.waist_cm_goal.data | round(2)) if form.waist_cm_goal.data else '') }}
-            </div>
-            {% endif %}
-        </div>
-
-        <h2 class="mt-4 mb-3">2. Nutritional Goals</h2>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                {{ form.goal_modifier.label(class="form-label") }}
-                {{ form.goal_modifier(class="form-select") }}
-            </div>
-            <div class="col-md-6 mb-3">
-                {{ form.diet_preset.label(class="form-label") }}
-                {{ form.diet_preset(class="form-select") }}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-3 mb-3">
-                {{ form.calories.label(class="form-label") }}
-                {{ form.calories(class="form-control") }}
-            </div>
-            <div class="col-lg-3 mb-3">
-                {{ form.protein.label(class="form-label") }}
-                {{ form.protein(class="form-control") }}
-            </div>
-            <div class="col-lg-3 mb-3">
-                {{ form.carbs.label(class="form-label") }}
-                {{ form.carbs(class="form-control") }}
-            </div>
-            <div class="col-lg-3 mb-3">
-                {{ form.fat.label(class="form-label") }}
-                {{ form.fat(class="form-control") }}
+            <div class="card-body">
+                <div class="row">
+                    {% if current_user.measurement_system == 'us' %}
+                    <div class="col-lg-4 mb-3">
+                        {{ form.weight_goal_lbs.label(class="form-label") }}
+                        {{ form.weight_goal_lbs(class="form-control", value=(form.weight_goal_lbs.data | round(2)) if form.weight_goal_lbs.data else '') }}
+                    </div>
+                    {% else %}
+                    <div class="col-lg-4 mb-3">
+                        {{ form.weight_goal_kg.label(class="form-label") }}
+                        {{ form.weight_goal_kg(class="form-control", value=(form.weight_goal_kg.data | round(2)) if form.weight_goal_kg.data else '') }}
+                    </div>
+                    {% endif %}
+                    <div class="col-lg-4 mb-3">
+                        {{ form.body_fat_percentage_goal.label(class="form-label") }}
+                        {{ form.body_fat_percentage_goal(class="form-control", value=(form.body_fat_percentage_goal.data | round(2)) if form.body_fat_percentage_goal.data else '') }}
+                    </div>
+                    {% if current_user.measurement_system == 'us' %}
+                    <div class="col-lg-4 mb-3">
+                        {{ form.waist_in_goal.label(class="form-label") }}
+                        {{ form.waist_in_goal(class="form-control", value=(form.waist_in_goal.data | round(2)) if form.waist_in_goal.data else '') }}
+                    </div>
+                    {% else %}
+                    <div class="col-lg-4 mb-3">
+                        {{ form.waist_cm_goal.label(class="form-label") }}
+                        {{ form.waist_cm_goal(class="form-control", value=(form.waist_cm_goal.data | round(2)) if form.waist_cm_goal.data else '') }}
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
-        <h2 class="mt-4 mb-3">3. Exercise Goals</h2>
-        <div class="row">
-            <div class="col-lg-4 mb-3">
-                {{ form.calories_burned_goal_weekly.label(class="form-label") }}
-                {{ form.calories_burned_goal_weekly(class="form-control") }}
+        <!-- CARD 2: Nutritional Goals -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Nutritional Goals</h2>
             </div>
-            <div class="col-lg-4 mb-3">
-                {{ form.exercises_per_week_goal.label(class="form-label") }}
-                {{ form.exercises_per_week_goal(class="form-control") }}
-            </div>
-            <div class="col-lg-4 mb-3">
-                {{ form.minutes_per_exercise_goal.label(class="form-label") }}
-                {{ form.minutes_per_exercise_goal(class="form-control") }}
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.goal_modifier.label(class="form-label") }}
+                        {{ form.goal_modifier(class="form-select") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.diet_preset.label(class="form-label") }}
+                        {{ form.diet_preset(class="form-select") }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-3 mb-3">
+                        {{ form.calories.label(class="form-label") }}
+                        {{ form.calories(class="form-control") }}
+                    </div>
+                    <div class="col-lg-3 mb-3">
+                        {{ form.protein.label(class="form-label") }}
+                        {{ form.protein(class="form-control") }}
+                    </div>
+                    <div class="col-lg-3 mb-3">
+                        {{ form.carbs.label(class="form-label") }}
+                        {{ form.carbs(class="form-control") }}
+                    </div>
+                    <div class="col-lg-3 mb-3">
+                        {{ form.fat.label(class="form-label") }}
+                        {{ form.fat(class="form-control") }}
+                    </div>
+                </div>
             </div>
         </div>
 
-        <h2 class="mt-4 mb-3">4. Fasting</h2>
-        <div class="row">
-            <div class="col-lg-4 mb-3">
-                {{ form.default_fasting_hours.label(class="form-label") }}
-                {{ form.default_fasting_hours(class="form-control") }}
+        <!-- CARD 3: Exercise Goals -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Exercise Goals</h2>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
+                        {{ form.calories_burned_goal_weekly.label(class="form-label") }}
+                        {{ form.calories_burned_goal_weekly(class="form-control") }}
+                    </div>
+                    <div class="col-lg-4 mb-3">
+                        {{ form.exercises_per_week_goal.label(class="form-label") }}
+                        {{ form.exercises_per_week_goal(class="form-control") }}
+                    </div>
+                    <div class="col-lg-4 mb-3">
+                        {{ form.minutes_per_exercise_goal.label(class="form-label") }}
+                        {{ form.minutes_per_exercise_goal(class="form-control") }}
+                    </div>
+                </div>
             </div>
         </div>
 
-        <button type="submit" class="btn btn-outline-success">Save Goals</button>
+        <!-- CARD 4: Fasting -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Fasting</h2>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
+                        {{ form.default_fasting_hours.label(class="form-label") }}
+                        {{ form.default_fasting_hours(class="form-control") }}
+                    </div>
+                </div>
+            </div>
+        </div>
     </form>
 </div>
 {% endblock %}

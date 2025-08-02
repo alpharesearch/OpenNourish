@@ -1,116 +1,128 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mb-4">Email Settings</h1>
-    <form method="POST" action="{{ url_for('admin.email_settings') }}">
-        {{ form.hidden_tag() }}
-        <div class="mb-3">
-            {{ form.MAIL_CONFIG_SOURCE.label(class="form-label") }}
-            {% for subfield in form.MAIL_CONFIG_SOURCE %}
-            <div class="form-check">
-                {{ subfield(class="form-check-input mail-config-source-radio") }}
-                {{ subfield.label(class="form-check-label") }}
-            </div>
-            {% endfor %}
-            {% if form.MAIL_CONFIG_SOURCE.errors %}
-                <div class="alert alert-danger mt-1">{{ form.MAIL_CONFIG_SOURCE.errors|join(', ') }}</div>
-            {% endif %}
-        </div>
+<div class="container mt-4">
+    <!-- 1. PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Email Settings</h1>
+    </div>
 
-        <div id="database-settings-fields">
-            <div class="mb-3 form-check">
-                {{ form.ENABLE_PASSWORD_RESET(class="form-check-input") }}
-                {{ form.ENABLE_PASSWORD_RESET.label(class="form-check-label") }}
-                {% if form.ENABLE_PASSWORD_RESET.errors %}
-                    <div class="alert alert-danger mt-1">{{ form.ENABLE_PASSWORD_RESET.errors|join(', ') }}</div>
-                {% endif %}
-            </div>
-            <div class="mb-3 form-check">
-                {{ form.ENABLE_EMAIL_VERIFICATION(class="form-check-input") }}
-                {{ form.ENABLE_EMAIL_VERIFICATION.label(class="form-check-label") }}
-                {% if form.ENABLE_EMAIL_VERIFICATION.errors %}
-                    <div class="alert alert-danger mt-1">{{ form.ENABLE_EMAIL_VERIFICATION.errors|join(', ') }}</div>
-                {% endif %}
-            </div>
-            <div class="mb-3">
-                {{ form.MAIL_SERVER.label(class="form-label") }}
-                {{ form.MAIL_SERVER(class="form-control") }}
-                {% if form.MAIL_SERVER.errors %}
-                    <div class="alert alert-danger mt-1">{{ form.MAIL_SERVER.errors|join(', ') }}</div>
-                {% endif %}
-            </div>
-            <div class="mb-3">
-                {{ form.MAIL_PORT.label(class="form-label") }}
-                {{ form.MAIL_PORT(class="form-control") }}
-                {% if form.MAIL_PORT.errors %}
-                    <div class="alert alert-danger mt-1">{{ form.MAIL_PORT.errors|join(', ') }}</div>
-                {% endif %}
-            </div>
-            <div class="mb-3">
-                {{ form.MAIL_SECURITY_PROTOCOL.label(class="form-label") }}
-                {% for subfield in form.MAIL_SECURITY_PROTOCOL %}
-                <div class="form-check">
-                    {{ subfield(class="form-check-input mail-security-protocol-radio") }}
-                    {{ subfield.label(class="form-check-label") }}
-                </div>
-                {% endfor %}
-                {% if form.MAIL_SECURITY_PROTOCOL.errors %}
-                    <div class="alert alert-danger mt-1">{{ form.MAIL_SECURITY_PROTOCOL.errors|join(', ') }}</div>
-                {% endif %}
-            </div>
-            <div class="mb-3">
-                {{ form.MAIL_USERNAME.label(class="form-label") }}
-                {{ form.MAIL_USERNAME(class="form-control") }}
-                {% if form.MAIL_USERNAME.errors %}
-                    <div class="alert alert-danger mt-1">{{ form.MAIL_USERNAME.errors|join(', ') }}</div>
-                {% endif %}
-            </div>
-            <div class="mb-3">
-                {{ form.MAIL_PASSWORD.label(class="form-label") }}
-                {{ form.MAIL_PASSWORD(class="form-control") }}
-                {% if form.MAIL_PASSWORD.errors %}
-                    <div class="alert alert-danger mt-1">{{ form.MAIL_PASSWORD.errors|join(', ') }}</div>
-                {% endif %}
-            </div>
-            <div class="mb-3">
-                {{ form.MAIL_FROM.label(class="form-label") }}
-                {{ form.MAIL_FROM(class="form-control") }}
-                {% if form.MAIL_FROM.errors %}
-                    <div class="alert alert-danger mt-1">{{ form.MAIL_FROM.errors|join(', ') }}</div>
-                {% endif %}
-            </div>
-            <div class="mb-3 form-check">
-                {{ form.MAIL_SUPPRESS_SEND(class="form-check-input") }}
-                {{ form.MAIL_SUPPRESS_SEND.label(class="form-check-label") }}
-                {% if form.MAIL_SUPPRESS_SEND.errors %}
-                    <div class="alert alert-danger mt-1">{{ form.MAIL_SUPPRESS_SEND.errors|join(', ') }}</div>
-                {% endif %}
-            </div>
+    <!-- 2. STANDARD CONTENT CARD -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Configuration</h2>
         </div>
-
-        <div id="environment-settings-display" style="display: none;">
-            <p>Email settings are currently configured via environment variables. To change these, please modify your application's environment.</p>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Environment Variable</th>
-                        <th>Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for key, value in env_vars.items() %}
-                    <tr>
-                        <td><code>{{ key }}</code></td>
-                        <td>{{ value }}</td>
-                    </tr>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.email_settings') }}">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.MAIL_CONFIG_SOURCE.label(class="form-label") }}
+                    {% for subfield in form.MAIL_CONFIG_SOURCE %}
+                    <div class="form-check">
+                        {{ subfield(class="form-check-input mail-config-source-radio") }}
+                        {{ subfield.label(class="form-check-label") }}
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                    {% if form.MAIL_CONFIG_SOURCE.errors %}
+                        <div class="alert alert-danger mt-1">{{ form.MAIL_CONFIG_SOURCE.errors|join(', ') }}</div>
+                    {% endif %}
+                </div>
 
-        {{ form.submit(class="btn btn-outline-primary") }}
-    </form>
+                <div id="database-settings-fields">
+                    <div class="mb-3 form-check">
+                        {{ form.ENABLE_PASSWORD_RESET(class="form-check-input") }}
+                        {{ form.ENABLE_PASSWORD_RESET.label(class="form-check-label") }}
+                        {% if form.ENABLE_PASSWORD_RESET.errors %}
+                            <div class="alert alert-danger mt-1">{{ form.ENABLE_PASSWORD_RESET.errors|join(', ') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3 form-check">
+                        {{ form.ENABLE_EMAIL_VERIFICATION(class="form-check-input") }}
+                        {{ form.ENABLE_EMAIL_VERIFICATION.label(class="form-check-label") }}
+                        {% if form.ENABLE_EMAIL_VERIFICATION.errors %}
+                            <div class="alert alert-danger mt-1">{{ form.ENABLE_EMAIL_VERIFICATION.errors|join(', ') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.MAIL_SERVER.label(class="form-label") }}
+                        {{ form.MAIL_SERVER(class="form-control") }}
+                        {% if form.MAIL_SERVER.errors %}
+                            <div class="alert alert-danger mt-1">{{ form.MAIL_SERVER.errors|join(', ') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.MAIL_PORT.label(class="form-label") }}
+                        {{ form.MAIL_PORT(class="form-control") }}
+                        {% if form.MAIL_PORT.errors %}
+                            <div class="alert alert-danger mt-1">{{ form.MAIL_PORT.errors|join(', ') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.MAIL_SECURITY_PROTOCOL.label(class="form-label") }}
+                        {% for subfield in form.MAIL_SECURITY_PROTOCOL %}
+                        <div class="form-check">
+                            {{ subfield(class="form-check-input mail-security-protocol-radio") }}
+                            {{ subfield.label(class="form-check-label") }}
+                        </div>
+                        {% endfor %}
+                        {% if form.MAIL_SECURITY_PROTOCOL.errors %}
+                            <div class="alert alert-danger mt-1">{{ form.MAIL_SECURITY_PROTOCOL.errors|join(', ') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.MAIL_USERNAME.label(class="form-label") }}
+                        {{ form.MAIL_USERNAME(class="form-control") }}
+                        {% if form.MAIL_USERNAME.errors %}
+                            <div class="alert alert-danger mt-1">{{ form.MAIL_USERNAME.errors|join(', ') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.MAIL_PASSWORD.label(class="form-label") }}
+                        {{ form.MAIL_PASSWORD(class="form-control") }}
+                        {% if form.MAIL_PASSWORD.errors %}
+                            <div class="alert alert-danger mt-1">{{ form.MAIL_PASSWORD.errors|join(', ') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.MAIL_FROM.label(class="form-label") }}
+                        {{ form.MAIL_FROM(class="form-control") }}
+                        {% if form.MAIL_FROM.errors %}
+                            <div class="alert alert-danger mt-1">{{ form.MAIL_FROM.errors|join(', ') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3 form-check">
+                        {{ form.MAIL_SUPPRESS_SEND(class="form-check-input") }}
+                        {{ form.MAIL_SUPPRESS_SEND.label(class="form-check-label") }}
+                        {% if form.MAIL_SUPPRESS_SEND.errors %}
+                            <div class="alert alert-danger mt-1">{{ form.MAIL_SUPPRESS_SEND.errors|join(', ') }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div id="environment-settings-display" style="display: none;">
+                    <p>Email settings are currently configured via environment variables. To change these, please modify your application's environment.</p>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Environment Variable</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key, value in env_vars.items() %}
+                            <tr>
+                                <td><code>{{ key }}</code></td>
+                                <td>{{ value }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {{ form.submit(class="btn btn-outline-primary") }}
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>

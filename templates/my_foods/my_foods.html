@@ -2,64 +2,77 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">
             {% if view_mode == 'friends' %}
                 Friends' Foods
             {% else %}
                 My Foods
             {% endif %}
         </h1>
-        <a href="{{ url_for('my_foods.new_my_food') }}" class="btn btn-outline-primary">Add New Food</a>
+        <a href="{{ url_for('my_foods.new_my_food') }}" class="btn btn-primary">Create New Food</a>
     </div>
 
-    <div class="btn-group mb-4" role="group">
-        <a href="{{ url_for('my_foods.my_foods') }}" class="btn {% if view_mode == 'user' %}btn-primary{% else %}btn-outline-primary{% endif %}">My Foods</a>
-        <a href="{{ url_for('my_foods.my_foods', view='friends') }}" class="btn {% if view_mode == 'friends' %}btn-primary{% else %}btn-outline-primary{% endif %}">Friends' Foods</a>
-    </div>
-
-    <div class="list-group">
-        {% if my_foods.items %}
-            {% for food in my_foods.items %}
-            <div class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                <div class="flex-grow-1 me-md-3">
-                    <h5>{{ food.description }}</h5>
-                    {% if view_mode == 'friends' %}
-                        {% if food.user %}
-                            <p class="mb-1 text-muted"><em>by {{ food.user.username }}</em></p>
-                        {% else %}
-                            <p class="mb-1 text-muted"><em>by (deleted)</em></p>
-                        {% endif %}
-                    {% endif %}
-                    <small class="text-muted">
-                        Calories: {{ food.calories_per_100g|default(0)|round(0) }} kcal/100g |
-                        Protein: {{ food.protein_per_100g|default(0)|round(1) }}g |
-                        Carbs: {{ food.carbs_per_100g|default(0)|round(1) }}g |
-                        Fat: {{ food.fat_per_100g|default(0)|round(1) }}g
-                    </small>
-                </div>
-                <div class="mt-2 mt-md-0 flex-shrink-0">
-                    <button type="button" class="btn btn-outline-success btn-sm add-to-diary-btn"
-                            data-food-id="{{ food.id }}"
-                            data-food-type="my_food"
-                            data-food-name="{{ food.description }}">
-                        Add to Diary
-                    </button>
-                    {% if food.user_id == current_user.id %}
-                        <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
-                        <form action="{{ url_for('my_foods.delete_my_food', food_id=food.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-                        </form>
-                    {% else %}
-                        <form action="{{ url_for('my_foods.copy_my_food', food_id=food.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-outline-success btn-sm">Copy</button>
-                        </form>
-                    {% endif %}
-                </div>
+    <!-- FOODS LIST CARD -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">
+                {% if view_mode == 'friends' %}
+                    Viewing foods shared by friends
+                {% else %}
+                    Your Custom Foods
+                {% endif %}
+            </h2>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('my_foods.my_foods') }}" class="btn btn-sm {% if view_mode == 'user' %}btn-primary{% else %}btn-outline-primary{% endif %}">My Foods</a>
+                <a href="{{ url_for('my_foods.my_foods', view='friends') }}" class="btn btn-sm {% if view_mode == 'friends' %}btn-primary{% else %}btn-outline-primary{% endif %}">Friends' Foods</a>
             </div>
-            {% endfor %}
+        </div>
+
+        {% if my_foods.items %}
+            <div class="list-group list-group-flush">
+                {% for food in my_foods.items %}
+                <div class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div class="flex-grow-1 me-md-3">
+                        <h5>{{ food.description }}</h5>
+                        {% if view_mode == 'friends' %}
+                            {% if food.user %}
+                                <p class="mb-1 text-muted"><em>by {{ food.user.username }}</em></p>
+                            {% else %}
+                                <p class="mb-1 text-muted"><em>by (deleted)</em></p>
+                            {% endif %}
+                        {% endif %}
+                        <small class="text-muted">
+                            Calories: {{ food.calories_per_100g|default(0)|round(0) }} kcal/100g |
+                            Protein: {{ food.protein_per_100g|default(0)|round(1) }}g |
+                            Carbs: {{ food.carbs_per_100g|default(0)|round(1) }}g |
+                            Fat: {{ food.fat_per_100g|default(0)|round(1) }}g
+                        </small>
+                    </div>
+                    <div class="mt-2 mt-md-0 flex-shrink-0">
+                        <button type="button" class="btn btn-outline-success btn-sm add-to-diary-btn"
+                                data-food-id="{{ food.id }}"
+                                data-food-type="my_food"
+                                data-food-name="{{ food.description }}">
+                            Add
+                        </button>
+                        {% if food.user_id == current_user.id %}
+                            <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+                            <form action="{{ url_for('my_foods.delete_my_food', food_id=food.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
+                        {% else %}
+                            <form action="{{ url_for('my_foods.copy_my_food', food_id=food.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-outline-success btn-sm">Copy</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         {% else %}
-            <div class="list-group-item text-center py-5">
+            <div class="card-body text-center py-5">
                 <h4>
                     {% if view_mode == 'friends' %}
                         No custom foods found from your friends.
@@ -73,28 +86,30 @@
                 {% endif %}
             </div>
         {% endif %}
-    </div>
 
-    {% if my_foods.items %}
-    <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination">
-            {% if my_foods.has_prev %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('my_foods.my_foods', page=my_foods.prev_num, view=view_mode) }}">Previous</a></li>
-            {% endif %}
-            {% for page_num in my_foods.iter_pages() %}
-            {% if page_num %}
-            <li class="page-item {% if page_num == my_foods.page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('my_foods.my_foods', page=page_num, view=view_mode) }}">{{ page_num }}</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled"><span class="page-link">...</span></li>
-            {% endif %}
-            {% endfor %}
-            {% if my_foods.has_next %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('my_foods.my_foods', page=my_foods.next_num, view=view_mode) }}">Next</a></li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
+        {% if my_foods.pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if my_foods.has_prev %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('my_foods.my_foods', page=my_foods.prev_num, view=view_mode) }}">Previous</a></li>
+                    {% endif %}
+                    {% for page_num in my_foods.iter_pages() %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == my_foods.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('my_foods.my_foods', page=page_num, view=view_mode) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if my_foods.has_next %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('my_foods.my_foods', page=my_foods.next_num, view=view_mode) }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

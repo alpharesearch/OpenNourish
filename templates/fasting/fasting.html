@@ -2,82 +2,97 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">Intermittent Fasting</h1>
-
-    <div class="card mb-4">
-        <div class="card-body">
-            {% if active_fast %}
-                <h5 class="card-title">Active Fast</h5>
-                <div class="d-flex align-items-center">
-                    <p class="mb-0"><strong>Start Time:</strong> {{ active_fast.start_time | user_time }}</p>
-                    <button id="edit-start-time-btn" class="btn btn-outline-primary btn-sm ms-3">Edit</button>
-                </div>
-
-                <div id="edit-start-time-form" class="mt-3" style="display: none;">
-                    <form action="{{ url_for('fasting.edit_start_time') }}" method="post">
-                        {{ form.hidden_tag() }}
-                        <div class="mb-3">
-                            {{ form.start_time.label(class="form-label") }}
-                            {{ form.start_time(class="form-control", value=active_fast.start_time | user_time(format='%Y-%m-%dT%H:%M')) }}
-                        </div>
-                        <div class="d-flex">
-                            {{ form.submit(class="btn btn-outline-success") }}
-                            <button type="button" id="cancel-edit-btn" class="btn btn-outline-secondary ms-2">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-
-                <p class="mt-3"><strong>Planned Duration:</strong> {{ active_fast.planned_duration_hours }} hours</p>
-                <div class="progress-container position-relative mb-3" style="height: 30px;">
-                    {% set elapsed_hours = (now - active_fast.start_time).total_seconds() / 3600 %}
-                    {% set percentage = (elapsed_hours / active_fast.planned_duration_hours) * 100 %}
-                    <div class="progress" style="height: 100%;">
-                        <div class="progress-bar" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ elapsed_hours }}" aria-valuemin="0" aria-valuemax="{{ active_fast.planned_duration_hours }}">{{ '%.1f'|format(percentage) }}%</div>
-                    </div>
-                    {% for i in range(1, ((active_fast.planned_duration_hours // 24) + 1)|int) %}
-                        {% set marker_percentage = (i * 24 / active_fast.planned_duration_hours) * 100 %}
-                        <div class="progress-marker" style="left: {{ marker_percentage }}%;" title="Day {{ i }}"></div>
-                    {% endfor %}
-                </div>
-                <div id="timer"></div>
-                <form action="{{ url_for('fasting.end_fast') }}" method="post" class="mt-3">
-                    <button type="submit" class="btn btn-danger">End Fast Now</button>
-                </form>
-            {% else %}
-                <h5 class="card-title">Start a New Fast</h5>
-                <form action="{{ url_for('fasting.start_fast') }}" method="post">
-                    <div class="mb-3">
-                        <label for="duration" class="form-label">Fasting Duration (hours)</label>
-                        <input type="number" class="form-control" id="duration" name="duration" value="{{ current_user.goals.default_fasting_hours if current_user.goals else 16 }}">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Start Fast</button>
-                </form>
-            {% endif %}
-        </div>
+    <!-- 1. PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Intermittent Fasting</h1>
     </div>
 
-    <div class="card">
+    <!-- 2. ACTIVE FAST or START FAST CARD -->
+    <div class="card mb-4">
+        {% if active_fast %}
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Active Fast</h2>
+            <form action="{{ url_for('fasting.end_fast') }}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-danger">End Fast Now</button>
+            </form>
+        </div>
         <div class="card-body">
-            <h5 class="card-title">Fasting History</h5>
+            <div class="d-flex align-items-center">
+                <p class="mb-0"><strong>Start Time:</strong> {{ active_fast.start_time | user_time }}</p>
+                <button id="edit-start-time-btn" class="btn btn-outline-primary btn-sm ms-3">Edit</button>
+            </div>
+
+            <div id="edit-start-time-form" class="mt-3" style="display: none;">
+                <form action="{{ url_for('fasting.edit_start_time') }}" method="post">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.start_time.label(class="form-label") }}
+                        {{ form.start_time(class="form-control", value=active_fast.start_time | user_time(format='%Y-%m-%dT%H:%M')) }}
+                    </div>
+                    <div class="d-flex">
+                        {{ form.submit(class="btn btn-outline-success") }}
+                        <button type="button" id="cancel-edit-btn" class="btn btn-outline-secondary ms-2">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <p class="mt-3"><strong>Planned Duration:</strong> {{ active_fast.planned_duration_hours }} hours</p>
+            <div class="progress-container position-relative mb-3" style="height: 30px;">
+                {% set elapsed_hours = (now - active_fast.start_time).total_seconds() / 3600 %}
+                {% set percentage = (elapsed_hours / active_fast.planned_duration_hours) * 100 %}
+                <div class="progress" style="height: 100%;">
+                    <div class="progress-bar" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ elapsed_hours }}" aria-valuemin="0" aria-valuemax="{{ active_fast.planned_duration_hours }}">{{ '%.1f'|format(percentage) }}%</div>
+                </div>
+                {% for i in range(1, ((active_fast.planned_duration_hours // 24) + 1)|int) %}
+                    {% set marker_percentage = (i * 24 / active_fast.planned_duration_hours) * 100 %}
+                    <div class="progress-marker" style="left: {{ marker_percentage }}%;" title="Day {{ i }}"></div>
+                {% endfor %}
+            </div>
+            <div id="timer"></div>
+        </div>
+        {% else %}
+        <div class="card-header">
+            <h2 class="h5 mb-0">Start a New Fast</h2>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('fasting.start_fast') }}" method="post">
+                <div class="mb-3">
+                    <label for="duration" class="form-label">Fasting Duration (hours)</label>
+                    <input type="number" class="form-control" id="duration" name="duration" value="{{ current_user.goals.default_fasting_hours if current_user.goals else 16 }}">
+                </div>
+                <button type="submit" class="btn btn-outline-primary">Start Fast</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 3. FASTING HISTORY CARD -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Fasting History</h2>
+        </div>
+        <div class="card-body">
             <div class="table-responsive">
                 <!-- Header -->
                 <div class="row g-0 fw-bold border-bottom mb-2 pb-2 d-none d-lg-flex">
                     <div class="col-lg-4">Start Time</div>
                     <div class="col-lg-4">End Time</div>
                     <div class="col-lg-2">Duration</div>
-                    <div class="col-lg-2">Actions</div>
+                    <div class="col-lg-2 text-center">Actions</div>
                 </div>
                 <!-- Body -->
                 {% for fast in completed_fasts.items %}
-                <form method="POST" action="{{ url_for('fasting.update_fast', fast_id=fast.id) }}" class="row g-2 mb-3 align-items-center border-bottom pb-2">
-                    {{ forms[fast.id].hidden_tag() }}
+                <div class="row g-2 mb-3 align-items-center border-bottom pb-2">
                     <div class="col-12 col-lg-4">
                         <label class="form-label d-lg-none">Start Time</label>
-                        {{ forms[fast.id].start_time(class="form-control", value=fast.start_time | user_time(format='%Y-%m-%dT%H:%M')) }}
+                        <form method="POST" action="{{ url_for('fasting.update_fast', fast_id=fast.id) }}" id="update-form-{{ fast.id }}">
+                             {{ forms[fast.id].hidden_tag() }}
+                             {{ forms[fast.id].start_time(class="form-control", value=fast.start_time | user_time(format='%Y-%m-%dT%H:%M')) }}
+                        </form>
                     </div>
                     <div class="col-12 col-lg-4">
                         <label class="form-label d-lg-none">End Time</label>
-                        {{ forms[fast.id].end_time(class="form-control", value=(fast.end_time | user_time(format='%Y-%m-%dT%H:%M')) if fast.end_time else '') }}
+                        {{ forms[fast.id].end_time(class="form-control", value=(fast.end_time | user_time(format='%Y-%m-%dT%H:%M')) if fast.end_time else '', form="update-form-" ~ fast.id) }}
                     </div>
                     <div class="col-12 col-lg-2">
                         <label class="form-label d-lg-none">Duration</label>
@@ -89,14 +104,13 @@
                         {% endif %}
                         </p>
                     </div>
-                    <div class="col-12 col-lg-1">
-                        <button type="submit" class="btn btn-sm btn-outline-success w-100">Save</button>
+                    <div class="col-12 col-lg-2 d-flex justify-content-center gap-2">
+                        <button type="submit" class="btn btn-sm btn-outline-success" form="update-form-{{ fast.id }}">Save</button>
+                        <form action="{{ url_for('fasting.delete_fast', fast_id=fast.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
                     </div>
-                    <div class="col-12 col-lg-1">
-                        <button type="submit" class="btn btn-sm btn-outline-danger w-100" form="delete-form-{{ fast.id }}">Delete</button>
-                    </div>
-                </form>
-                <form id="delete-form-{{ fast.id }}" action="{{ url_for('fasting.delete_fast', fast_id=fast.id) }}" method="POST" class="d-none"></form>
+                </div>
                 {% endfor %}
             </div>
 

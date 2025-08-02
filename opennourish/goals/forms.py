@@ -47,7 +47,7 @@ class GoalForm(FlaskForm):
     weight_goal_lbs = FloatField('Target Weight (lbs)', validators=[Optional(), NumberRange(min=1, max=700)])
     waist_in_goal = FloatField('Target Waist Circumference (in)', validators=[Optional(), NumberRange(min=1, max=100)])
 
-    default_fasting_hours = IntegerField('Default Fasting Duration (hours)', validators=[Optional(), NumberRange(min=1, max=48)])
+    default_fasting_hours = IntegerField('Default Fasting Duration (hours)', validators=[Optional(), NumberRange(min=1, max=960)])
 
     submit = SubmitField('Save Goals')
 

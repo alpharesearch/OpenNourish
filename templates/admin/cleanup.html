@@ -1,13 +1,17 @@
 {% extends "admin/dashboard.html" %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mt-4">Orphaned Records Cleanup</h1>
-    <p class="lead">This page identifies orphaned MyFood and Recipe records (where the owner has been deleted) and allows for their permanent removal if they are no longer referenced anywhere in the application.</p>
+<div class="container mt-4">
+    <!-- 1. PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Orphaned Records Cleanup</h1>
+    </div>
+    <p class="lead mb-4">This page identifies orphaned MyFood and Recipe records (where the owner has been deleted) and allows for their permanent removal if they are no longer referenced anywhere in the application.</p>
 
+    <!-- 2. STANDARD CONTENT CARD: In-Use Orphans -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h3 class="mb-0">Orphaned Items (In Use)</h3>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Orphaned Items (In Use)</h2>
         </div>
         <div class="card-body">
             <p>These items have no owner but are still referenced in a user's diary, a recipe, or a meal. They will not be deleted.</p>
@@ -23,9 +27,15 @@
         </div>
     </div>
 
+    <!-- 3. DESTRUCTIVE ACTION CARD: Safe to Delete Orphans -->
     <div class="card border-danger mb-4">
-        <div class="card-header bg-danger text-white">
-            <h3 class="mb-0">Orphaned Items (Safe to Delete)</h3>
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Orphaned Items (Safe to Delete)</h2>
+            {% if safe_to_delete_orphans %}
+            <form action="{{ url_for('admin.run_cleanup') }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-light">Run Cleanup Now</button>
+            </form>
+            {% endif %}
         </div>
         <div class="card-body">
             <p>These items have no owner and are not referenced anywhere. They can be safely deleted.</p>
@@ -35,9 +45,6 @@
                         <li class="list-group-item">{{ item.description or item.name }} (ID: {{ item.id }}, Type: {{ item.__class__.__name__ }})</li>
                     {% endfor %}
                 </ul>
-                <form action="{{ url_for('admin.run_cleanup') }}" method="POST" class="mt-3">
-                    <button type="submit" class="btn btn-outline-danger">Run Cleanup Now</button>
-                </form>
             {% else %}
                 <p class="text-muted">No orphaned items found that are safe to delete.</p>
             {% endif %}

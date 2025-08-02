@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container mt-4">
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Exercise Log</h1>
+    </div>
+
+    <!-- "This Week's Progress" Card -->
     {% if user_goal and (user_goal.calories_burned_goal_weekly or user_goal.exercises_per_week_goal or user_goal.minutes_per_exercise_goal) %}
     <div class="card mb-4">
-        <div class="card-header">
-            <h3 class="card-title mb-0">This Week's Progress</h3>
-            <small class="text-muted">{{ start_of_week.strftime('%b %d, %Y') }} - {{ end_of_week.strftime('%b %d, %Y') }}</small>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">This Week's Progress <small class="text-muted fw-normal">({{ start_of_week.strftime('%b %d') }} - {{ end_of_week.strftime('%b %d, %Y') }})</small></h2>
         </div>
         <div class="card-body">
             <div class="row text-center">
@@ -27,179 +32,195 @@
     </div>
     {% endif %}
 
-    <h2 class="mb-4">New Exercise Log</h2>
-    <form method="POST" action="{{ url_for('.log_exercise') }}" class="mb-5">
-        {{ form.hidden_tag() }}
-        <div class="row align-items-end">
-            <div class="col-lg-3">
-                {{ form.log_date.label(class="form-label") }}
-                {{ form.log_date(class="form-control") }}
-            </div>
-            <div class="col-lg-3">
-                {{ form.activity.label(class="form-label") }}
-                <select name="{{ form.activity.name }}" id="activity" class="form-select">
-                    <option value="__None">-- Manual Entry --</option>
-                    {% for activity_choice in form.activity.query %}
-                        <option value="{{ activity_choice.id }}">{{ activity_choice.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-lg-2">
-                {{ form.duration_minutes.label(class="form-label") }}
-                {{ form.duration_minutes(class="form-control") }}
-            </div>
-            <div class="col-md-2" id="manual-calories-burned-new" style="display: none;">
-                {{ form.calories_burned.label(class="form-label") }}
-                {{ form.calories_burned(class="form-control") }}
-            </div>
-            <div class="col-lg-2 align-self-end">
-                {{ form.submit(class="btn btn-outline-primary w-100") }}
-            </div>
+    <!-- "New Exercise Log" Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">New Exercise Log</h2>
         </div>
-        <div class="row mt-3" id="manual-description-new" style="display: none;">
-            <div class="col-lg-6">
-                {{ form.manual_description.label(class="form-label") }}
-                {{ form.manual_description(class="form-control") }}
-            </div>
-        </div>
-    </form>
-
-    <h2 class="mb-4">History</h2>
-    <div class="table-responsive">
-        <!-- Header -->
-        <div class="row g-0 fw-bold border-bottom mb-2 pb-2 d-none d-lg-flex">
-            <div class="col-lg-2">Date</div>
-            <div class="col-lg-4">Activity/Description</div>
-            <div class="col-lg-2">Duration (min)</div>
-            <div class="col-lg-2">Calories Burned</div>
-            <div class="col-lg-2">Actions</div>
-        </div>
-        <!-- Body -->
-        {% for item in logs.items %}
-        <form method="POST" action="{{ url_for('.edit_exercise', log_id=item.id) }}" class="row g-2 mb-3 align-items-center border-bottom pb-2 edit-form">
-            {{ forms[item.id].hidden_tag() }}
-            <div class="col-12 col-lg-2">
-                <label class="form-label d-lg-none">Date</label>
-                {{ forms[item.id].log_date(class="form-control") }}
-            </div>
-            <div class="col-12 col-lg-4">
-                <label class="form-label d-lg-none">Activity/Description</label>
-                {% if item.activity %}
-                    <select name="{{ forms[item.id].activity.name }}" class="form-select activity-select">
-                        <option value="__None">-- Manual Entry --</option>
-                        {% for activity_choice in forms[item.id].activity.query %}
-                            <option value="{{ activity_choice.id }}" {% if item.activity_id == activity_choice.id %}selected{% endif %}>
-                                {{ activity_choice.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                {% else %}
-                    {{ forms[item.id].manual_description(class="form-control") }}
-                {% endif %}
-            </div>
-            <div class="col-12 col-lg-2">
-                <label class="form-label d-lg-none">Duration (min)</label>
-                {{ forms[item.id].duration_minutes(class="form-control duration-input") }}
-            </div>
-            <div class="col-12 col-lg-2">
-                <label class="form-label d-lg-none">Calories Burned</label>
-                {% if item.activity %}
-                    <span class="calories-display">{{ item.calories_burned|round|int }}</span>
-                {% else %}
-                    {{ forms[item.id].calories_burned(class="form-control") }}
-                {% endif %}
-            </div>
-            <div class="col-12 col-lg-2">
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-outline-success w-100">Save</button>
-                    <button type="submit" class="btn btn-sm btn-outline-danger w-100" form="delete-form-{{ item.id }}">Delete</button>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('.log_exercise') }}">
+                {{ form.hidden_tag() }}
+                <div class="row align-items-end">
+                    <div class="col-lg-3">
+                        {{ form.log_date.label(class="form-label") }}
+                        {{ form.log_date(class="form-control") }}
+                    </div>
+                    <div class="col-lg-3">
+                        {{ form.activity.label(class="form-label") }}
+                        <select name="{{ form.activity.name }}" id="activity" class="form-select">
+                            <option value="__None">-- Manual Entry --</option>
+                            {% for activity_choice in form.activity.query %}
+                            <option value="{{ activity_choice.id }}">{{ activity_choice.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-lg-2">
+                        {{ form.duration_minutes.label(class="form-label") }}
+                        {{ form.duration_minutes(class="form-control") }}
+                    </div>
+                    <div class="col-md-2" id="manual-calories-burned-new" style="display: none;">
+                        {{ form.calories_burned.label(class="form-label") }}
+                        {{ form.calories_burned(class="form-control") }}
+                    </div>
+                    <div class="col-lg-2 align-self-end">
+                        {{ form.submit(class="btn btn-outline-primary w-100") }}
+                    </div>
                 </div>
-            </div>
-        </form>
-        <form id="delete-form-{{ item.id }}" action="{{ url_for('.delete_exercise', log_id=item.id) }}" method="POST" class="d-none"></form>
-        {% endfor %}
+                <div class="row mt-3" id="manual-description-new" style="display: none;">
+                    <div class="col-lg-6">
+                        {{ form.manual_description.label(class="form-label") }}
+                        {{ form.manual_description(class="form-control") }}
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <nav aria-label="Page navigation">
-        <ul class="pagination">
-            {% if logs.has_prev %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('.log_exercise', page=logs.prev_num) }}">Previous</a></li>
+    <!-- "History" Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">History</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <!-- Header -->
+                <div class="row g-0 fw-bold border-bottom mb-2 pb-2 d-none d-lg-flex">
+                    <div class="col-lg-2">Date</div>
+                    <div class="col-lg-4">Activity/Description</div>
+                    <div class="col-lg-2">Duration (min)</div>
+                    <div class="col-lg-2">Calories Burned</div>
+                    <div class="col-lg-2">Actions</div>
+                </div>
+                <!-- Body -->
+                {% for item in logs.items %}
+                <form method="POST" action="{{ url_for('.edit_exercise', log_id=item.id) }}" class="row g-2 mb-3 align-items-center border-bottom pb-2 edit-form">
+                    {{ forms[item.id].hidden_tag() }}
+                    <div class="col-12 col-lg-2">
+                        <label class="form-label d-lg-none">Date</label>
+                        {{ forms[item.id].log_date(class="form-control") }}
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label d-lg-none">Activity/Description</label>
+                        {% if item.activity %}
+                        <select name="{{ forms[item.id].activity.name }}" class="form-select activity-select">
+                            <option value="__None">-- Manual Entry --</option>
+                            {% for activity_choice in forms[item.id].activity.query %}
+                            <option value="{{ activity_choice.id }}" {% if item.activity_id==activity_choice.id %}selected{% endif %}>
+                                {{ activity_choice.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        {{ forms[item.id].manual_description(class="form-control") }}
+                        {% endif %}
+                    </div>
+                    <div class="col-12 col-lg-2">
+                        <label class="form-label d-lg-none">Duration (min)</label>
+                        {{ forms[item.id].duration_minutes(class="form-control duration-input") }}
+                    </div>
+                    <div class="col-12 col-lg-2">
+                        <label class="form-label d-lg-none">Calories Burned</label>
+                        {% if item.activity %}
+                        <span class="calories-display">{{ item.calories_burned|round|int }}</span>
+                        {% else %}
+                        {{ forms[item.id].calories_burned(class="form-control") }}
+                        {% endif %}
+                    </div>
+                    <div class="col-12 col-lg-2">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-sm btn-outline-success w-100">Save</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100" form="delete-form-{{ item.id }}">Delete</button>
+                        </div>
+                    </div>
+                </form>
+                <form id="delete-form-{{ item.id }}" action="{{ url_for('.delete_exercise', log_id=item.id) }}" method="POST" class="d-none"></form>
+                {% endfor %}
+            </div>
+
+            {% if logs.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    {% if logs.has_prev %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('.log_exercise', page=logs.prev_num) }}">Previous</a></li>
+                    {% endif %}
+                    {% for page_num in logs.iter_pages() %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == logs.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('.log_exercise', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if logs.has_next %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('.log_exercise', page=logs.next_num) }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
             {% endif %}
-            {% for page_num in logs.iter_pages() %}
-            {% if page_num %}
-            <li class="page-item {% if page_num == logs.page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('.log_exercise', page=page_num) }}">{{ page_num }}</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled"><span class="page-link">...</span></li>
-            {% endif %}
-            {% endfor %}
-            {% if logs.has_next %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('.log_exercise', page=logs.next_num) }}">Next</a></li>
-            {% endif %}
-        </ul>
-    </nav>
+        </div>
+    </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // --- Script for the 'New Exercise Log' form ---
-    const activityField = document.getElementById('activity');
-    const manualCaloriesDiv = document.getElementById('manual-calories-burned-new');
-    const manualDescriptionDiv = document.getElementById('manual-description-new');
-    const manualDescriptionField = document.querySelector('input[name="manual_description"]');
-    const caloriesBurnedField = document.querySelector('input[name="calories_burned"]');
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Script for the 'New Exercise Log' form ---
+        const activityField = document.getElementById('activity');
+        const manualCaloriesDiv = document.getElementById('manual-calories-burned-new');
+        const manualDescriptionDiv = document.getElementById('manual-description-new');
+        const manualDescriptionField = document.querySelector('input[name="manual_description"]');
+        const caloriesBurnedField = document.querySelector('input[name="calories_burned"]');
 
-    function toggleManualEntry() {
-        if (activityField.value === '__None' || activityField.value === '') {
-            manualCaloriesDiv.style.display = 'block';
-            manualDescriptionDiv.style.display = 'block';
-            if(manualDescriptionField) manualDescriptionField.required = true;
-            if(caloriesBurnedField) caloriesBurnedField.required = true;
-        } else {
-            manualCaloriesDiv.style.display = 'none';
-            manualDescriptionDiv.style.display = 'none';
-            if(manualDescriptionField) manualDescriptionField.required = false;
-            if(caloriesBurnedField) caloriesBurnedField.required = false;
-        }
-    }
-
-    if(activityField) {
-        activityField.addEventListener('change', toggleManualEntry);
-        toggleManualEntry();
-    }
-
-    // --- Script for the 'History' table ---
-    const userWeightKg = {{ user_weight_kg|tojson }};
-    const metValues = {{ activity_met_values|tojson }};
-
-    if (userWeightKg && metValues) {
-        document.querySelectorAll('form[action*="/exercise/edit/"]').forEach(form => {
-            const logId = form.action.split('/').slice(-2)[0];
-            const activitySelect = form.querySelector('select[name*="-activity"]');
-            const durationInput = form.querySelector('input[name*="duration_minutes"]');
-            const caloriesDisplay = document.getElementById(`calories-burned-${logId}`);
-
-            function updateCalories() {
-                if (!activitySelect || !durationInput || !caloriesDisplay) return;
-
-                const activityId = activitySelect.value;
-                const duration = parseFloat(durationInput.value);
-                const met = metValues[activityId];
-
-                if (activityId && duration > 0 && met) {
-                    const calories = Math.round((met * 3.5 * userWeightKg / 200) * duration);
-                    caloriesDisplay.textContent = calories;
-                } else if (caloriesDisplay) {
-                    // If duration is invalid or activity not found, clear the display or show 0
-                    caloriesDisplay.textContent = '0';
-                }
+        function toggleManualEntry() {
+            if (activityField.value === '__None' || activityField.value === '') {
+                manualCaloriesDiv.style.display = 'block';
+                manualDescriptionDiv.style.display = 'block';
+                if (manualDescriptionField) manualDescriptionField.required = true;
+                if (caloriesBurnedField) caloriesBurnedField.required = true;
+            } else {
+                manualCaloriesDiv.style.display = 'none';
+                manualDescriptionDiv.style.display = 'none';
+                if (manualDescriptionField) manualDescriptionField.required = false;
+                if (caloriesBurnedField) caloriesBurnedField.required = false;
             }
+        }
 
-            if (activitySelect) activitySelect.addEventListener('change', updateCalories);
-            if (durationInput) durationInput.addEventListener('input', updateCalories);
-        });
-    }
-});
+        if (activityField) {
+            activityField.addEventListener('change', toggleManualEntry);
+            toggleManualEntry();
+        }
+
+        // --- Script for the 'History' table ---
+        const userWeightKg = {{ user_weight_kg|tojson }};
+        const metValues = {{ activity_met_values|tojson }};
+
+        if (userWeightKg && metValues) {
+            document.querySelectorAll('form[action*="/exercise/edit/"]').forEach(form => {
+                const logId = form.action.split('/').slice(-2)[0];
+                const activitySelect = form.querySelector('select[name*="-activity"]');
+                const durationInput = form.querySelector('input[name*="duration_minutes"]');
+                const caloriesDisplay = document.getElementById(`calories-burned-${logId}`);
+
+                function updateCalories() {
+                    if (!activitySelect || !durationInput || !caloriesDisplay) return;
+
+                    const activityId = activitySelect.value;
+                    const duration = parseFloat(durationInput.value);
+                    const met = metValues[activityId];
+
+                    if (activityId && duration > 0 && met) {
+                        const calories = Math.round((met * 3.5 * userWeightKg / 200) * duration);
+                        caloriesDisplay.textContent = calories;
+                    } else if (caloriesDisplay) {
+                        // If duration is invalid or activity not found, clear the display or show 0
+                        caloriesDisplay.textContent = '0';
+                    }
+                }
+
+                if (activitySelect) activitySelect.addEventListener('change', updateCalories);
+                if (durationInput) durationInput.addEventListener('input', updateCalories);
+            });
+        }
+    });
 </script>
 {% endblock %}

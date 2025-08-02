@@ -157,7 +157,7 @@ def step3():
         current_user.has_completed_onboarding = True
         db.session.commit()
         flash('Onboarding complete! Welcome to OpenNourish.', 'success')
-        return redirect(url_for('dashboard.index'))
+        return redirect(url_for('onboarding.step4'))
 
     # Pre-populate form for GET requests
     user_goal = UserGoal.query.filter_by(user_id=current_user.id).first()
@@ -170,8 +170,11 @@ def step3():
         form.fat.data = user_goal.fat
         if current_user.measurement_system == 'us':
             form.weight_goal_lbs.data = kg_to_lbs(user_goal.weight_goal_kg)
+            form.waist_in_goal.data = cm_to_in(user_goal.waist_cm_goal)
         else:
             form.weight_goal_kg.data = user_goal.weight_goal_kg
+            form.waist_cm_goal.data = user_goal.waist_cm_goal
+        form.body_fat_percentage_goal.data = user_goal.body_fat_percentage_goal
     elif initial_goals: # Pre-populate with calculated initial goals if no existing user_goal
         form.calories.data = initial_goals['calories']
         form.protein.data = initial_goals['protein']
@@ -179,3 +182,24 @@ def step3():
         form.fat.data = initial_goals['fat']
 
     return render_template('onboarding/step3.html', form=form, measurement_system=current_user.measurement_system, bmr=bmr, formula_name=formula_name, diet_presets=Config.DIET_PRESETS, initial_goals=initial_goals)
+
+@onboarding_bp.route('/step4')
+@login_required
+def step4():
+    """
+    Renders the final onboarding step, providing tips and a link to complete onboarding.
+    """
+    return render_template('onboarding/step4.html')
+
+
+@onboarding_bp.route('/finish_onboarding')
+@login_required
+def finish_onboarding():
+    """
+    Marks onboarding as complete and redirects to the dashboard with a welcome message.
+    """
+    if not current_user.has_completed_onboarding:
+        current_user.has_completed_onboarding = True
+        db.session.commit()
+        flash('Onboarding complete! Welcome to OpenNourish.', 'success')
+    return redirect(url_for('dashboard.index'))

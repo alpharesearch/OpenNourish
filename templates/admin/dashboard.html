@@ -2,121 +2,125 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">Admin Dashboard</h1>
-
-    <div class="row mb-4">
-        <div class="col-lg-4 mb-3">
-            <div class="card text-white bg-primary h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="card-title">Total Users</h5>
-                            <h1 class="display-4">{{ total_users }}</h1>
-                        </div>
-                        <i class="bi bi-people-fill" style="font-size: 3rem;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 mb-3">
-            <div class="card text-white bg-success h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="card-title">Total Recipes</h5>
-                            <h1 class="display-4">{{ total_recipes }}</h1>
-                        </div>
-                        <i class="bi bi-book-fill" style="font-size: 3rem;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 mb-3">
-            <div class="card text-white bg-info h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="card-title">Public Recipes</h5>
-                            <h1 class="display-4">{{ public_recipes }}</h1>
-                        </div>
-                        <i class="bi bi-globe" style="font-size: 3rem;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 mb-3">
-            <div class="card text-white bg-warning h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="card-title">My Foods Entries</h5>
-                            <h1 class="display-4">{{ total_my_foods }}</h1>
-                        </div>
-                        <i class="bi bi-egg-fill" style="font-size: 3rem;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 mb-3">
-            <div class="card text-white bg-danger h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="card-title">Daily Log Entries</h5>
-                            <h1 class="display-4">{{ total_daily_logs }}</h1>
-                        </div>
-                        <i class="bi bi-journal-text" style="font-size: 3rem;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 mb-3">
-            <div class="card text-white bg-secondary h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="card-title">Exercise Log Entries</h5>
-                            <h1 class="display-4">{{ total_exercise_logs }}</h1>
-                        </div>
-                        <i class="bi bi-activity" style="font-size: 3rem;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 mb-3">
-            <div class="card text-white bg-dark h-100">
-                <a href="{{ url_for('admin.cleanup') }}" class="card-body text-decoration-none text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="card-title">Cleanup</h5>
-                            <p>Cleanup orphaned data</p>
-                        </div>
-                        <i class="bi bi-trash-fill" style="font-size: 3rem;"></i>
-                    </div>
-                </a>
-            </div>
-        </div>
-        
+    <!-- 1. PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Admin Dashboard</h1>
     </div>
 
-    <h2 class="mb-3">Recent Registrations</h2>
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in recent_users %}
-                <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.username }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Statistics Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Statistics</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-4 mb-3">
+                    <div class="card text-white bg-primary h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">Total Users</h5>
+                                    <h1 class="display-4">{{ total_users }}</h1>
+                                </div>
+                                <i class="bi bi-people-fill" style="font-size: 3rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-3">
+                    <div class="card text-white bg-success h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">Total Recipes</h5>
+                                    <h1 class="display-4">{{ total_recipes }}</h1>
+                                </div>
+                                <i class="bi bi-book-fill" style="font-size: 3rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-3">
+                    <div class="card text-white bg-info h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">Public Recipes</h5>
+                                    <h1 class="display-4">{{ public_recipes }}</h1>
+                                </div>
+                                <i class="bi bi-globe" style="font-size: 3rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-3">
+                    <div class="card text-white bg-warning h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">My Foods Entries</h5>
+                                    <h1 class="display-4">{{ total_my_foods }}</h1>
+                                </div>
+                                <i class="bi bi-egg-fill" style="font-size: 3rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-3">
+                    <div class="card text-white bg-danger h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">Daily Log Entries</h5>
+                                    <h1 class="display-4">{{ total_daily_logs }}</h1>
+                                </div>
+                                <i class="bi bi-journal-text" style="font-size: 3rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-3">
+                    <div class="card text-white bg-secondary h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">Exercise Log Entries</h5>
+                                    <h1 class="display-4">{{ total_exercise_logs }}</h1>
+                                </div>
+                                <i class="bi bi-activity" style="font-size: 3rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Registrations Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Recent Registrations</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in recent_users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.username }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

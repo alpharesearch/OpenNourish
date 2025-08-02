@@ -170,7 +170,7 @@ def test_onboarding_step3_post(client):
     # Now follow the redirect
     response = client.get(response.headers['Location'], follow_redirects=True)
     assert response.status_code == 200
-    assert '/dashboard' in response.request.path
+    assert '/onboarding/step4' in response.request.path
 
     db.session.refresh(user)
     assert user.has_completed_onboarding is True
@@ -240,7 +240,7 @@ def test_full_onboarding_workflow(client):
     # Follow redirect
     response = client.get(response.headers['Location'], follow_redirects=True)
     assert response.status_code == 200
-    assert '/dashboard' in response.request.path
+    assert '/onboarding/step4' in response.request.path
 
     # Verify user state
     user = User.query.filter_by(username='full_workflow_user').first()

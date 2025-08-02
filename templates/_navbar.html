@@ -115,7 +115,7 @@
             {% endif %}
 
             {# --- Exercise & Progress Sub-Menu --- #}
-            {% if request.blueprint == 'tracking' or request.blueprint == 'exercise' %}
+            {% if request.blueprint == 'tracking' or request.blueprint == 'exercise' or request.blueprint == 'fasting' %}
                 <li class="nav-item">
                     <a class="nav-link px-2 {% if request.endpoint == 'exercise.log_exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise Log</a>
                 </li>

@@ -112,6 +112,56 @@ To maintain a consistent and professional look and feel, all generated HTML temp
 *   **Render New Item Form (GET):** `/recipes/new`
 *   **Process New Item Form (POST):** `/recipes/new`
 
+### 7.3. Standard Page and Card Layout
+To ensure a consistent and semantically correct structure across all pages, new and updated templates should follow this standard layout. This structure separates the main page title from content cards and uses flexbox to align titles and action buttons.
+
+**Standard Layout Example:**
+```html
+<div class="container mt-4">
+    <!-- 1. PAGE HEADER: Main title and primary action for the page -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Page Title</h1>
+        <a href="..." class="btn btn-primary">Primary Page Action</a>
+    </div>
+
+    <!-- 2. STANDARD CONTENT CARD: For displaying information or forms -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Card Title</h2>
+            <!-- Optional: Card-specific action buttons -->
+            <div>
+                <a href="..." class="btn btn-sm btn-outline-primary">Edit</a>
+                <form action="..." method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            <p>Card content, such as text, forms, or tables, goes here.</p>
+        </div>
+    </div>
+</div>
+```
+
+**Key Improvements:**
+
+1.  **Page Header:** A dedicated header for the page's `<h1>` title improves structure and provides a consistent location for primary page-level actions (e.g., "Add New Recipe").
+2.  **Flexbox Headers:** Using `d-flex justify-content-between align-items-center` in both page and card headers provides a robust way to align titles to the left and action buttons to the right.
+3.  **Semantic & Visual Headings:** Card titles use a semantic `<h2>` tag but are visually styled smaller with the `.h5` class for a balanced appearance. The `mb-0` class removes unwanted bottom margin.
+4.  **Button Sizing:** Card-specific action buttons are sized down with `btn-sm` to fit cleanly within the card header.
+5.  **Consistent Spacing:** `mt-4` on the main container and `mb-4` on headers and cards ensure predictable vertical spacing throughout the application.
+
+### 7.4. Frontend Display Conventions
+
+#### Formatting Numbers to Two Decimal Places
+To ensure that all floating-point numbers (e.g., nutritional values, weights) are displayed consistently with two decimal places, use the Jinja2 `format` filter directly within the template.
+
+-   **Directive:** When rendering a floating-point number in an HTML input field or as text, apply the `%.2f` format specifier.
+-   **Example:**
+    ```jinja
+    {{ form.calories_per_100g(class="form-control", value="%.2f"|format(my_food.calories_per_100g)) }}
+    ```
+-   **Note:** This approach is suitable for display purposes. For data integrity, server-side validation and rounding should still be implemented in the relevant form or route logic to ensure the data is stored correctly, regardless of the frontend presentation.
 
 ## 8. Testing
 - **Framework:** Testing is done using the **pytest** framework.
@@ -193,7 +243,7 @@ To avoid common pitfalls and ensure tests are robust and maintainable, follow th
     from models import db, User
     from opennourish.utils import some_function_to_test
 
-    @pytest.fixture
+    (at symbol)pytest.fixture
     def my_fixture(auth_client):
         with auth_client.application.app_context():
             user = User.query.filter_by(username='testuser').first()

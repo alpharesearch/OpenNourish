@@ -181,3 +181,28 @@ def test_edit_meal_page_shows_item_data(auth_client_with_user):
     assert b'Test USDA Food' in response.data
     # display_amount = 150.555 / 1.0 = 150.555. The template rounds this to 2 decimal places.
     assert b'value="150.56"' in response.data
+
+def test_create_new_meal(auth_client_with_user):
+    """
+    Test creating a new meal, which should create a meal and redirect to the edit page.
+    """
+    client, user = auth_client_with_user
+
+    # GET request to create a new meal
+    response = client.get('/my_meals/new')
+
+    # Assert that a new meal was created and we are redirected
+    assert response.status_code == 302 
+
+    with client.application.app_context():
+        # Find the newly created meal
+        new_meal = MyMeal.query.filter_by(user_id=user.id, name="New Meal").first()
+        assert new_meal is not None
+        
+        # Check if the redirect is to the correct edit page
+        assert response.location == f'/my_meals/edit/{new_meal.id}'
+
+        # Follow the redirect
+        redirect_response = client.get(response.location)
+        assert redirect_response.status_code == 200
+        assert b'Edit Meal: New Meal' in redirect_response.data

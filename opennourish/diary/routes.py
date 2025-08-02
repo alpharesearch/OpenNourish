@@ -293,6 +293,16 @@ def update_entry(log_id):
     return redirect(url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()))
 
 
+@diary_bp.route('/my_meals/new', methods=['GET', 'POST'])
+@login_required
+def new_meal():
+    new_meal = MyMeal(user_id=current_user.id, name="New Meal")
+    db.session.add(new_meal)
+    db.session.commit()
+    flash('New meal created. You can now add items to it.', 'success')
+    return redirect(url_for('diary.edit_meal', meal_id=new_meal.id))
+
+
 @diary_bp.route('/my_meals/edit/<int:meal_id>', methods=['GET', 'POST'])
 @login_required
 def edit_meal(meal_id):

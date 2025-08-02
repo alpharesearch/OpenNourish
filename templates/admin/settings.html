@@ -1,16 +1,48 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Admin Settings</h1>
-    <form action="" method="post">
-        {{ form.hidden_tag() }}
-        <div class="form-check mb-3">
-            {{ form.allow_registration(class="form-check-input") }}
-            {{ form.allow_registration.label(class="form-check-label") }}
-        </div>
-        {{ form.submit(class="btn btn-outline-primary") }}
-    </form>
+<div class="container mt-4">
+    <!-- 1. PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Admin Settings</h1>
+    </div>
 
-    <h2 class="mt-4">Email Configuration</h2>
-    <p>Manage your email server settings for features like password reset.</p>
-    <a href="{{ url_for('admin.email_settings') }}" class="btn btn-outline-info">Configure Email Settings</a>
+    <!-- 2. REGISTRATION SETTINGS CARD -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Application Settings</h2>
+        </div>
+        <div class="card-body">
+            <form action="" method="post">
+                {{ form.hidden_tag() }}
+                <div class="form-check mb-3">
+                    {{ form.allow_registration(class="form-check-input") }}
+                    {{ form.allow_registration.label(class="form-check-label") }}
+                </div>
+                {{ form.submit(class="btn btn-outline-primary") }}
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Tools Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Admin Tools</h2>
+        </div>
+        <div class="card-body">
+            <p>Perform administrative actions on the database.</p>
+            <a href="{{ url_for('admin.cleanup') }}" class="btn btn-outline-danger">Cleanup Orphaned Data</a>
+        </div>
+    </div>
+
+    <!-- 3. EMAIL CONFIGURATION CARD -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Email Configuration</h2>
+        </div>
+        <div class="card-body">
+            <p class="card-text">Manage your email server settings for features like password reset.</p>
+            <a href="{{ url_for('admin.email_settings') }}" class="btn btn-sm btn-outline-primary">Configure</a>
+        </div>
+    </div>
+</div>
 {% endblock %}
