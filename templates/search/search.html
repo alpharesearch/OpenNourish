@@ -159,178 +159,38 @@
         </div>
     </div>
 
-
     {% if search_term %}
         <h2>Search Results</h2>
+        {% set has_results = (my_foods_pagination and my_foods_pagination.items) or 
+                             (recipes_pagination and recipes_pagination.items) or 
+                             (usda_foods_pagination and usda_foods_pagination.items) or 
+                             (my_meals_pagination and my_meals_pagination.items) %}
+        {% if not has_results %}
+            <p>No results found for "{{ search_term }}".</p>
+        {% endif %}
     {% else %}
         <h2>Frequently Used Items</h2>
     {% endif %}
 
-    {% if my_foods_pagination.items or recipes_pagination.items or usda_foods_pagination.items or my_meals_pagination.items %}
-        {% if my_foods_pagination and my_foods_pagination.items %}
-            <div class="card mb-3" id="my_foods_section">
-                <div class="card-header">Foods</div>
-                <ul class="list-group list-group-flush">
-                    {% for food in my_foods_pagination.items %}
-                        <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                            <div class="flex-grow-1 me-md-3">
-                                <strong>{{ food.description }}</strong>
-                                {% if food.user %}
-                                    {% if food.user.username != current_user.username %}
-                                        <span class="badge bg-secondary">by {{ food.user.username }}</span>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="badge bg-secondary">(deleted)</span>
-                                {% endif %}
-                                <small class="d-block text-muted">
-                                    {% if food.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P{{ food.portions|length }}</span>{% endif %}
-                                    {% if food.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
-                                </small>
-                            </div>
-                            <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
-                                {% if target %}
-                                    <form method="post" action="{{ url_for('search.add_item') }}" class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center me-sm-2">
-                                        <input type="hidden" name="target" value="{{ target }}">
-                                        <input type="hidden" name="log_date" value="{{ log_date }}">
-                                        <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                        <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                                        <input type="hidden" name="food_type" value="my_food">
-                                        <input type="hidden" name="food_id" value="{{ food.id }}">
-                                        <div class="d-flex">
-                                            <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
-                                            <select name="portion_id" class="form-select form-select-sm">
-                                                {% for portion in food.portions %}
-                                                    <option value="{{ portion.id }}">{{ portion.full_description_str}}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <button type="submit" class="btn btn-sm btn-outline-success mt-2 mt-sm-0 ms-sm-2">Add</button>
-                                    </form>
-                                {% endif %}
-                                <div class="btn-group flex-shrink-0">
-                                    {% if food.user_id == current_user.id %}
-                                        <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
-                                    {% else %}
-                                        <form method="post" action="{{ url_for('my_foods.copy_my_food', food_id=food.id) }}" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-outline-success">Copy</button>
-                                        </form>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </li>
-                    {% endfor %}
-                </ul>
-                {{ render_pagination(my_foods_pagination, 'search.search', 'my_foods_section', 'my_foods_page') }}
-            </div>
-        {% endif %}
-
-        {% if my_meals_pagination and my_meals_pagination.items %}
-            <div class="card mb-3" id="my_meals_section">
-                <div class="card-header">Meals</div>
-                <ul class="list-group list-group-flush">
-                    {% for searched_meal in my_meals_pagination.items %}
-                        <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                            <div class="flex-grow-1 me-md-3">
-                                <strong>{{ searched_meal.name }}</strong>
-                                <small class="d-block text-muted">
-                                    <span class="me-2 fw-bold text-info" title="Contains items">M</span>
-                                </small>
-                            </div>
-                            <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
-                                {% if target %}
-                                <form method="post" action="{{ url_for('search.add_item') }}" class="d-inline-flex align-items-center me-2">
-                                    <input type="hidden" name="target" value="{{ target }}">
-                                    <input type="hidden" name="log_date" value="{{ log_date }}">
-                                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                    <input type="hidden" name="food_type" value="my_meal">
-                                    <input type="hidden" name="food_id" value="{{ searched_meal.id }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
-                                </form>
-                                {% endif %}
-                                <a href="{{ url_for('diary.edit_meal', meal_id=searched_meal.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
-                            </div>
-                        </li>
-                    {% endfor %}
-                </ul>
-                {{ render_pagination(my_meals_pagination, 'search.search', 'my_meals_section', 'my_meals_page') }}
-            </div>
-        {% endif %}
-
-        {% if recipes_pagination and recipes_pagination.items %}
-            <div class="card mb-3" id="recipes_section">
-                <div class="card-header">Recipes</div>
-                <ul class="list-group list-group-flush">
-                    {% for recipe in recipes_pagination.items %}
-                        <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                            <div class="flex-grow-1 me-md-3">
-                                <strong>{{ recipe.name }}</strong>
-                                {% if recipe.user %}
-                                    {% if recipe.user.username != current_user.username %}
-                                        <span class="badge bg-secondary">by {{ recipe.user.username }}</span>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="badge bg-secondary">(deleted)</span>
-                                {% endif %}
-                                {% if recipe.is_public %}
-                                    <span class="badge bg-info text-dark">Public</span>
-                                {% endif %}
-                                <small class="d-block text-muted">
-                                    {% if recipe.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P{{ recipe.portions|length }}</span>{% endif %}
-                                    {% if recipe.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
-                                </small>
-                            </div>
-                            <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
-                                {% if target %}
-                                <form method="post" action="{{ url_for('search.add_item') }}" class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center me-sm-2">
-                                    <input type="hidden" name="target" value="{{ target }}">
-                                    <input type="hidden" name="log_date" value="{{ log_date }}">
-                                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                    <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                                    <input type="hidden" name="food_type" value="recipe">
-                                    <input type="hidden" name="food_id" value="{{ recipe.id }}">
-                                    <div class="d-flex">
-                                        <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
-                                        <select name="portion_id" class="form-select form-select-sm">
-                                            {% for portion in recipe.portions %}
-                                                <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <button type="submit" class="btn btn-sm btn-outline-success mt-2 mt-sm-0 ms-sm-2">Add</button>
-                                </form>
-                                {% endif %}
-                                <div class="btn-group flex-shrink-0">
-                                    {% if recipe.user_id == current_user.id %}
-                                        <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    {% endif %}
-                                    <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-info">View</a>
-                                    {% if recipe.user_id != current_user.id %}
-                                        <form method="post" action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-outline-success">Copy</button>
-                                        </form>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </li>
-                    {% endfor %}
-                </ul>
-                {{ render_pagination(recipes_pagination, 'search.search', 'recipes_section', 'recipes_page') }}
-            </div>
-        {% endif %}
-
-        {% if usda_foods_pagination and usda_foods_pagination.items %}
-            <div class="card mb-3" id="usda_foods_section">
-                <div class="card-header">USDA Foods</div>
-                <ul class="list-group list-group-flush">
-                    {% for food in usda_foods_pagination.items %}
+    {% if my_foods_pagination and my_foods_pagination.items %}
+        <div class="card mb-3" id="my_foods_section">
+            <div class="card-header">Foods</div>
+            <ul class="list-group list-group-flush">
+                {% for food in my_foods_pagination.items %}
                     <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                         <div class="flex-grow-1 me-md-3">
                             <strong>{{ food.description }}</strong>
-                            <div class="text-muted small">
+                            {% if food.user %}
+                                {% if food.user.username != current_user.username %}
+                                    <span class="badge bg-secondary">by {{ food.user.username }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">(deleted)</span>
+                            {% endif %}
+                            <small class="d-block text-muted">
                                 {% if food.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P{{ food.portions|length }}</span>{% endif %}
                                 {% if food.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
-                                {% if food.nutrients %}<span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>{% endif %}
-                            </div>
+                            </small>
                         </div>
                         <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
                             {% if target %}
@@ -339,36 +199,176 @@
                                     <input type="hidden" name="log_date" value="{{ log_date }}">
                                     <input type="hidden" name="meal_name" value="{{ meal_name }}">
                                     <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                                    <input type="hidden" name="food_type" value="usda">
-                                    <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
+                                    <input type="hidden" name="food_type" value="my_food">
+                                    <input type="hidden" name="food_id" value="{{ food.id }}">
                                     <div class="d-flex">
                                         <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
                                         <select name="portion_id" class="form-select form-select-sm">
-                                                {% for portion in food.portions %}
-                                                    <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {% for portion in food.portions %}
+                                                <option value="{{ portion.id }}">{{ portion.full_description_str}}</option>
+                                            {% endfor %}
+                                        </select>
                                     </div>
                                     <button type="submit" class="btn btn-sm btn-outline-success mt-2 mt-sm-0 ms-sm-2">Add</button>
                                 </form>
-                            {% else %}
-                                <form method="post" action="{{ url_for('my_foods.copy_usda_food') }}" class="d-inline">
-                                    <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">Copy</button>
-                                </form>
                             {% endif %}
-                            <a href="{{ food.detail_url }}" class="btn btn-sm btn-outline-info">View</a>
+                            <div class="btn-group flex-shrink-0">
+                                {% if food.user_id == current_user.id %}
+                                    <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
+                                {% else %}
+                                    <form method="post" action="{{ url_for('my_foods.copy_my_food', food_id=food.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Copy</button>
+                                    </form>
+                                {% endif %}
+                            </div>
                         </div>
                     </li>
                 {% endfor %}
             </ul>
-            {{ render_pagination(usda_foods_pagination, 'search.search', 'usda_foods_section', 'usda_page') }}
-            </div>
-        {% endif %}
+            {{ render_pagination(my_foods_pagination, 'search.search', 'my_foods_section', 'my_foods_page') }}
+        </div>
+    {% endif %}
 
-        {% if not my_foods_pagination.items and not recipes_pagination.items and not usda_foods_pagination.items and not my_meals_pagination.items %}
-            <p>No results found for "{{ search_term }}".</p>
-        {% endif %}
+    {% if my_meals_pagination and my_meals_pagination.items %}
+        <div class="card mb-3" id="my_meals_section">
+            <div class="card-header">Meals</div>
+            <ul class="list-group list-group-flush">
+                {% for searched_meal in my_meals_pagination.items %}
+                    <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                        <div class="flex-grow-1 me-md-3">
+                            <strong>{{ searched_meal.name }}</strong>
+                            <small class="d-block text-muted">
+                                <span class="me-2 fw-bold text-info" title="Contains items">M</span>
+                            </small>
+                        </div>
+                        <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
+                            {% if target %}
+                            <form method="post" action="{{ url_for('search.add_item') }}" class="d-inline-flex align-items-center me-2">
+                                <input type="hidden" name="target" value="{{ target }}">
+                                <input type="hidden" name="log_date" value="{{ log_date }}">
+                                <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                                <input type="hidden" name="food_type" value="my_meal">
+                                <input type="hidden" name="food_id" value="{{ searched_meal.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
+                            </form>
+                            {% endif %}
+                            <a href="{{ url_for('diary.edit_meal', meal_id=searched_meal.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+            {{ render_pagination(my_meals_pagination, 'search.search', 'my_meals_section', 'my_meals_page') }}
+        </div>
+    {% endif %}
+
+    {% if recipes_pagination and recipes_pagination.items %}
+        <div class="card mb-3" id="recipes_section">
+            <div class="card-header">Recipes</div>
+            <ul class="list-group list-group-flush">
+                {% for recipe in recipes_pagination.items %}
+                    <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                        <div class="flex-grow-1 me-md-3">
+                            <strong>{{ recipe.name }}</strong>
+                            {% if recipe.user %}
+                                {% if recipe.user.username != current_user.username %}
+                                    <span class="badge bg-secondary">by {{ recipe.user.username }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">(deleted)</span>
+                            {% endif %}
+                            {% if recipe.is_public %}
+                                <span class="badge bg-info text-dark">Public</span>
+                            {% endif %}
+                            <small class="d-block text-muted">
+                                {% if recipe.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P{{ recipe.portions|length }}</span>{% endif %}
+                                {% if recipe.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
+                            </small>
+                        </div>
+                        <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
+                            {% if target %}
+                            <form method="post" action="{{ url_for('search.add_item') }}" class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center me-sm-2">
+                                <input type="hidden" name="target" value="{{ target }}">
+                                <input type="hidden" name="log_date" value="{{ log_date }}">
+                                <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                                <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+                                <input type="hidden" name="food_type" value="recipe">
+                                <input type="hidden" name="food_id" value="{{ recipe.id }}">
+                                <div class="d-flex">
+                                    <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
+                                    <select name="portion_id" class="form-select form-select-sm">
+                                        {% for portion in recipe.portions %}
+                                            <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-outline-success mt-2 mt-sm-0 ms-sm-2">Add</button>
+                            </form>
+                            {% endif %}
+                            <div class="btn-group flex-shrink-0">
+                                {% if recipe.user_id == current_user.id %}
+                                    <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                {% endif %}
+                                <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                                {% if recipe.user_id != current_user.id %}
+                                    <form method="post" action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Copy</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+            {{ render_pagination(recipes_pagination, 'search.search', 'recipes_section', 'recipes_page') }}
+        </div>
+    {% endif %}
+
+    {% if usda_foods_pagination and usda_foods_pagination.items %}
+        <div class="card mb-3" id="usda_foods_section">
+            <div class="card-header">USDA Foods</div>
+            <ul class="list-group list-group-flush">
+                {% for food in usda_foods_pagination.items %}
+                <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div class="flex-grow-1 me-md-3">
+                        <strong>{{ food.description }}</strong>
+                        <div class="text-muted small">
+                            {% if food.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P{{ food.portions|length }}</span>{% endif %}
+                            {% if food.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
+                            {% if food.nutrients %}<span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
+                        {% if target %}
+                            <form method="post" action="{{ url_for('search.add_item') }}" class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center me-sm-2">
+                                <input type="hidden" name="target" value="{{ target }}">
+                                <input type="hidden" name="log_date" value="{{ log_date }}">
+                                <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                                <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+                                <input type="hidden" name="food_type" value="usda">
+                                <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
+                                <div class="d-flex">
+                                    <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
+                                    <select name="portion_id" class="form-select form-select-sm">
+                                            {% for portion in food.portions %}
+                                                <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
+                                            {% endfor %}
+                                        </select>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-outline-success mt-2 mt-sm-0 ms-sm-2">Add</button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{{ url_for('my_foods.copy_usda_food') }}" class="d-inline">
+                                <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Copy</button>
+                            </form>
+                        {% endif %}
+                        <a href="{{ food.detail_url }}" class="btn btn-sm btn-outline-info">View</a>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+        {{ render_pagination(usda_foods_pagination, 'search.search', 'usda_foods_section', 'usda_page') }}
+        </div>
     {% endif %}
 {% endblock %}
 
@@ -379,7 +379,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const scanButton = document.getElementById('scan-barcode-btn');
     const scannerModalElement = document.getElementById('barcodeScannerModal');
     const resultDisplay = document.getElementById('scanner-result-display');
-    const modalBody = scannerModalElement.querySelector('.modal-body');
     const scannerModal = new bootstrap.Modal(scannerModalElement);
     let html5QrCode;
 
@@ -388,90 +387,31 @@ document.addEventListener('DOMContentLoaded', function () {
         
         if (html5QrCode && html5QrCode.isScanning) {
             html5QrCode.stop().then(ignore => {
-                lookupBarcode(decodedText);
+                // Hide the modal
+                scannerModal.hide();
+                
+                // Find the main search form and its input field
+                const searchForm = document.querySelector('form[action="{{ url_for('search.search') }}"]');
+                const searchInput = searchForm.querySelector('input[name="search_term"]');
+
+                if (searchForm && searchInput) {
+                    // Populate the search field with the barcode and submit the form
+                    searchInput.value = decodedText;
+                    searchForm.submit();
+                }
+
             }).catch(err => {
                 console.error("Error stopping scanner:", err);
-                lookupBarcode(decodedText); // Proceed anyway
-            });
-        } else {
-            lookupBarcode(decodedText);
-        }
-    }
-
-    function lookupBarcode(barcode) {
-        resultDisplay.innerHTML = `<div class="alert alert-info">Found barcode: ${barcode}. Looking up...</div>`;
-
-        fetch(`/search/by_upc?upc=${barcode}`)
-            .then(response => {
-                if (response.status === 404) {
-                    throw new Error(`Could not find a product with UPC ${barcode}.`);
+                // Still try to submit even if stopping fails
+                scannerModal.hide();
+                const searchForm = document.querySelector('form[action="{{ url_for('search.search') }}"]');
+                const searchInput = searchForm.querySelector('input[name="search_term"]');
+                if (searchForm && searchInput) {
+                    searchInput.value = decodedText;
+                    searchForm.submit();
                 }
-                if (!response.ok) { 
-                    throw new Error('An error occurred during lookup.'); 
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === 'found') {
-                    const target = modalBody.dataset.target;
-                    if (target) {
-                        displayFoodForAdding(data.food, data.source);
-                    } else {
-                        // If no target, redirect to a relevant page
-                        if (data.source === 'usda') {
-                            window.location.href = `/food/${data.food.fdc_id}`;
-                        } else if (data.food.type === 'recipe') {
-                            window.location.href = `/recipes/${data.food.id}`;
-                        } else { // my_food or friend_food
-                            window.location.href = `/my_foods/${data.food.id}/edit`;
-                        }
-                    }
-                } else { // status === 'not_found'
-                     resultDisplay.innerHTML = `<div class="alert alert-warning">Could not find a product with UPC ${barcode}.</div>`;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                resultDisplay.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
-            });
-    }
-
-    function displayFoodForAdding(food, source) {
-        let portionsOptions = '';
-        if (food.portions && Array.isArray(food.portions)) {
-            food.portions.forEach(p => {
-                portionsOptions += `<option value="${p.id}">${p.description}</option>`;
             });
         }
-
-        const target = modalBody.dataset.target;
-        const logDate = modalBody.dataset.logDate;
-        const mealName = modalBody.dataset.mealName;
-        const recipeId = modalBody.dataset.recipeId;
-
-        const formHtml = `
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">${food.description}</h5>
-                    <form method="post" action="{{ url_for('search.add_item') }}" class="d-flex align-items-center">
-                        <input type="hidden" name="target" value="${target}">
-                        <input type="hidden" name="log_date" value="${logDate}">
-                        <input type="hidden" name="meal_name" value="${mealName}">
-                        <input type="hidden" name="recipe_id" value="${recipeId}">
-                        <input type="hidden" name="food_type" value="${food.type}">
-                        <input type="hidden" name="food_id" value="${food.type === 'usda' ? food.fdc_id : food.id}">
-                        
-                        <input type="number" name="amount" class="form-control form-control-sm" value="100">
-                        <select name="portion_id" class="form-select form-select-sm mx-2">
-                            ${portionsOptions}
-                        </select>
-                        <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
-                    </form>
-                </div>
-                ${food.nutrition_label_svg_url ? `<img src="${food.nutrition_label_svg_url}" alt="Nutrition Label" class="img-fluid mt-2">` : ''}
-            </div>
-        `;
-        resultDisplay.innerHTML = formHtml;
     }
 
     function onScanFailure(error) {
@@ -532,4 +472,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 {% endblock %}
-
