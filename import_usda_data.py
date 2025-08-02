@@ -5,6 +5,14 @@ import csv
 import os
 import sys
 import time
+import string
+import re
+
+def intelligent_capwords(s):
+    if not s:
+        return s
+    # Capitalize words, respecting parentheses.
+    return re.sub(r"[A-Za-z]+('[A-Za-z]+)?", lambda mo: mo.group(0).capitalize(), s)
 
 def import_usda_data(db_file=None, keep_newest_upc_only=False):
     """
@@ -154,7 +162,12 @@ def import_usda_data(db_file=None, keep_newest_upc_only=False):
                             # No extra data to pull for survey_fndds_food yet
                             pass
 
-                        foods_to_insert_chunk.append((fdc_id, description, data_type, food_category_id, upc, ingredients))
+                        # Capitalize the description here
+                        formatted_description = intelligent_capwords(description)
+                        # Capitalize ingredients if they exist
+                        formatted_ingredients = intelligent_capwords(ingredients) if ingredients else None
+
+                        foods_to_insert_chunk.append((fdc_id, formatted_description, data_type, food_category_id, upc, formatted_ingredients))
                         
                         if len(foods_to_insert_chunk) >= CHUNK_SIZE:
                             cursor.executemany(

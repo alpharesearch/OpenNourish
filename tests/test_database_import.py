@@ -39,7 +39,7 @@ def test_full_usda_data_import(real_database):
     db_path = real_database # Get the temporary database path from the fixture
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT description FROM foods WHERE description = ?", ('Butter, salted',))
+        cursor.execute("SELECT description FROM foods WHERE description = ?", ('Butter, Salted',))
         food_result = cursor.fetchone()
         assert food_result is not None
 
