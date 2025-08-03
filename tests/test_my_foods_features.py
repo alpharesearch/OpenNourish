@@ -1,5 +1,5 @@
-import pytest
 from models import db, User, MyFood, Food, FoodNutrient, Nutrient, UnifiedPortion
+
 
 def test_create_my_food(auth_client):
     """
@@ -8,26 +8,28 @@ def test_create_my_food(auth_client):
     """
     # User provides nutrition facts for a 50g serving
     food_data = {
-        'description': 'Homemade Granola',
+        "description": "Homemade Granola",
         # Nutrition for a 50g serving
-        'calories_per_100g': 225.0,  # In the form, this field is now just 'Calories'
-        'protein_per_100g': 5.0,     # 'Protein (g)'
-        'carbs_per_100g': 30.0,      # 'Carbohydrates (g)'
-        'fat_per_100g': 10.0,        # 'Fat (g)'
+        "calories_per_100g": 225.0,  # In the form, this field is now just 'Calories'
+        "protein_per_100g": 5.0,  # 'Protein (g)'
+        "carbs_per_100g": 30.0,  # 'Carbohydrates (g)'
+        "fat_per_100g": 10.0,  # 'Fat (g)'
         # Portion form data
-        'amount': 1,
-        'measure_unit_description': 'cup',
-        'portion_description': '',
-        'modifier': '',
-        'gram_weight': 50.0  # The gram weight of the '1 cup' serving
+        "amount": 1,
+        "measure_unit_description": "cup",
+        "portion_description": "",
+        "modifier": "",
+        "gram_weight": 50.0,  # The gram weight of the '1 cup' serving
     }
-    response = auth_client.post('/my_foods/new', data=food_data, follow_redirects=True)
+    response = auth_client.post("/my_foods/new", data=food_data, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Custom food added successfully!' in response.data
+    assert b"Custom food added successfully!" in response.data
 
     with auth_client.application.app_context():
-        user = User.query.filter_by(username='testuser').first()
-        my_food = MyFood.query.filter_by(user_id=user.id, description='Homemade Granola').first()
+        user = User.query.filter_by(username="testuser").first()
+        my_food = MyFood.query.filter_by(
+            user_id=user.id, description="Homemade Granola"
+        ).first()
         assert my_food is not None
         # Verify that the values have been correctly scaled to 100g (doubled in this case)
         assert my_food.calories_per_100g == 450.0
@@ -36,13 +38,18 @@ def test_create_my_food(auth_client):
         assert my_food.fat_per_100g == 20.0
 
         # Verify the user-defined portion was created
-        user_portion = UnifiedPortion.query.filter_by(my_food_id=my_food.id, gram_weight=50.0).first()
+        user_portion = UnifiedPortion.query.filter_by(
+            my_food_id=my_food.id, gram_weight=50.0
+        ).first()
         assert user_portion is not None
-        assert user_portion.measure_unit_description == 'cup'
+        assert user_portion.measure_unit_description == "cup"
 
         # Verify the automatic 1g portion was also created
-        gram_portion = UnifiedPortion.query.filter_by(my_food_id=my_food.id, gram_weight=1.0).first()
+        gram_portion = UnifiedPortion.query.filter_by(
+            my_food_id=my_food.id, gram_weight=1.0
+        ).first()
         assert gram_portion is not None
+
 
 def test_copy_usda_food_from_search(auth_client):
     """
@@ -50,47 +57,58 @@ def test_copy_usda_food_from_search(auth_client):
     """
     with auth_client.application.app_context():
         # Create a sample USDA Food and Nutrients
-        test_food = Food(fdc_id=12345, description='USDA Test Apple')
+        test_food = Food(fdc_id=12345, description="USDA Test Apple")
         db.session.add(test_food)
 
         # Nutrient IDs: calories=1008, protein=1003, carbs=1005, fat=1004
-        db.session.add(Nutrient(id=1008, name='Energy', unit_name='kcal'))
-        db.session.add(Nutrient(id=1003, name='Protein', unit_name='g'))
-        db.session.add(Nutrient(id=1005, name='Carbohydrate, by difference', unit_name='g'))
-        db.session.add(Nutrient(id=1004, name='Total lipid (fat)', unit_name='g'))
+        db.session.add(Nutrient(id=1008, name="Energy", unit_name="kcal"))
+        db.session.add(Nutrient(id=1003, name="Protein", unit_name="g"))
+        db.session.add(
+            Nutrient(id=1005, name="Carbohydrate, by difference", unit_name="g")
+        )
+        db.session.add(Nutrient(id=1004, name="Total lipid (fat)", unit_name="g"))
 
         db.session.add(FoodNutrient(fdc_id=12345, nutrient_id=1008, amount=52.0))
         db.session.add(FoodNutrient(fdc_id=12345, nutrient_id=1003, amount=0.3))
         db.session.add(FoodNutrient(fdc_id=12345, nutrient_id=1005, amount=13.8))
         db.session.add(FoodNutrient(fdc_id=12345, nutrient_id=1004, amount=0.2))
-        
+
         # Add the mandatory 1-gram portion for the test
-        gram_portion = UnifiedPortion(fdc_id=12345, portion_description='gram', gram_weight=1.0)
+        gram_portion = UnifiedPortion(
+            fdc_id=12345, portion_description="gram", gram_weight=1.0
+        )
         db.session.add(gram_portion)
         db.session.commit()
         fdc_id = test_food.fdc_id
         gram_portion_id = gram_portion.id
 
-    response = auth_client.post('/search/add_item', data={
-        'food_id': fdc_id,
-        'food_type': 'usda',
-        'target': 'my_foods',
-        'amount': 100, # Amount is required by the form
-        'portion_id': gram_portion_id
-    }, follow_redirects=True)
+    response = auth_client.post(
+        "/search/add_item",
+        data={
+            "food_id": fdc_id,
+            "food_type": "usda",
+            "target": "my_foods",
+            "amount": 100,  # Amount is required by the form
+            "portion_id": gram_portion_id,
+        },
+        follow_redirects=True,
+    )
     assert response.status_code == 200
-    
+
     # Using response.data to check for flash messages is more reliable in tests
-    assert b'USDA Test Apple has been added to your foods.' in response.data
+    assert b"USDA Test Apple has been added to your foods." in response.data
 
     with auth_client.application.app_context():
-        user = User.query.filter_by(username='testuser').first()
-        my_food = MyFood.query.filter_by(user_id=user.id, description='USDA Test Apple').first()
+        user = User.query.filter_by(username="testuser").first()
+        my_food = MyFood.query.filter_by(
+            user_id=user.id, description="USDA Test Apple"
+        ).first()
         assert my_food is not None
         assert my_food.calories_per_100g == 52.0
         assert my_food.protein_per_100g == 0.3
         assert my_food.carbs_per_100g == 13.8
         assert my_food.fat_per_100g == 0.2
+
 
 def test_copy_usda_food_direct(auth_client):
     """
@@ -98,168 +116,195 @@ def test_copy_usda_food_direct(auth_client):
     """
     with auth_client.application.app_context():
         # Setup USDA food with nutrients and portions
-        usda_food = Food(fdc_id=54321, description='USDA Direct Copy')
+        usda_food = Food(fdc_id=54321, description="USDA Direct Copy")
         db.session.add(usda_food)
-        db.session.add(Nutrient(id=1008, name='Energy', unit_name='kcal'))
+        db.session.add(Nutrient(id=1008, name="Energy", unit_name="kcal"))
         db.session.add(FoodNutrient(fdc_id=54321, nutrient_id=1008, amount=150.0))
-        db.session.add(UnifiedPortion(fdc_id=54321, portion_description='slice', gram_weight=30.0))
+        db.session.add(
+            UnifiedPortion(fdc_id=54321, portion_description="slice", gram_weight=30.0)
+        )
         db.session.commit()
 
-    response = auth_client.post('/my_foods/copy_usda', data={'fdc_id': 54321})
-    assert response.status_code == 302 # Redirect
+    response = auth_client.post("/my_foods/copy_usda", data={"fdc_id": 54321})
+    assert response.status_code == 302  # Redirect
 
     with auth_client.session_transaction() as session:
-        flashes = session.get('_flashes', [])
+        flashes = session.get("_flashes", [])
         assert len(flashes) > 0
-        assert flashes[0][0] == 'success'
-        assert flashes[0][1] == "Successfully created 'USDA Direct Copy' from USDA data."
+        assert flashes[0][0] == "success"
+        assert (
+            flashes[0][1] == "Successfully created 'USDA Direct Copy' from USDA data."
+        )
 
     with auth_client.application.app_context():
-        my_food = MyFood.query.filter_by(description='USDA Direct Copy').first()
+        my_food = MyFood.query.filter_by(description="USDA Direct Copy").first()
         assert my_food is not None
         assert my_food.calories_per_100g == 150.0
         assert len(my_food.portions) == 1
-        assert my_food.portions[0].portion_description == 'slice'
+        assert my_food.portions[0].portion_description == "slice"
+
 
 def test_update_my_food_portion(auth_client):
     """
     Tests updating an existing portion on a MyFood item.
     """
     with auth_client.application.app_context():
-        user = User.query.filter_by(username='testuser').first()
-        my_food = MyFood(user_id=user.id, description='Food with Portions')
+        user = User.query.filter_by(username="testuser").first()
+        my_food = MyFood(user_id=user.id, description="Food with Portions")
         db.session.add(my_food)
         db.session.commit()
-        portion = UnifiedPortion(my_food_id=my_food.id, portion_description='piece', gram_weight=25.0)
+        portion = UnifiedPortion(
+            my_food_id=my_food.id, portion_description="piece", gram_weight=25.0
+        )
         db.session.add(portion)
         db.session.commit()
         portion_id = portion.id
 
     update_data = {
-        'portion_description': 'large piece',
-        'gram_weight': 40.0,
-        'amount': 1.0,
-        'measure_unit_description': 'unit'
+        "portion_description": "large piece",
+        "gram_weight": 40.0,
+        "amount": 1.0,
+        "measure_unit_description": "unit",
     }
-    response = auth_client.post(f'/my_foods/portion/{portion_id}/update', data=update_data, follow_redirects=True)
+    response = auth_client.post(
+        f"/my_foods/portion/{portion_id}/update",
+        data=update_data,
+        follow_redirects=True,
+    )
     assert response.status_code == 200
-    assert b'Portion updated successfully!' in response.data
+    assert b"Portion updated successfully!" in response.data
 
     with auth_client.application.app_context():
         updated_portion = db.session.get(UnifiedPortion, portion_id)
-        assert updated_portion.portion_description == 'large piece'
+        assert updated_portion.portion_description == "large piece"
         assert updated_portion.gram_weight == 40.0
+
 
 def test_add_my_food_portion(auth_client):
     """
     Tests adding a new portion to an existing MyFood item.
     """
     with auth_client.application.app_context():
-        user = User.query.filter_by(username='testuser').first()
-        my_food = MyFood(user_id=user.id, description='Food for Portions')
+        user = User.query.filter_by(username="testuser").first()
+        my_food = MyFood(user_id=user.id, description="Food for Portions")
         db.session.add(my_food)
         db.session.commit()
         food_id = my_food.id
 
     portion_data = {
-        'portion_description': 'new portion',
-        'amount': 0.5,
-        'measure_unit_description': 'cup',
-        'modifier': 'chopped',
-        'gram_weight': 75.0
+        "portion_description": "new portion",
+        "amount": 0.5,
+        "measure_unit_description": "cup",
+        "modifier": "chopped",
+        "gram_weight": 75.0,
     }
-    response = auth_client.post(f'/my_foods/{food_id}/add_portion', data=portion_data, follow_redirects=True)
+    response = auth_client.post(
+        f"/my_foods/{food_id}/add_portion", data=portion_data, follow_redirects=True
+    )
     assert response.status_code == 200
-    assert b'Portion added successfully!' in response.data
+    assert b"Portion added successfully!" in response.data
 
     with auth_client.application.app_context():
-        added_portion = UnifiedPortion.query.filter_by(my_food_id=food_id, portion_description='new portion').first()
+        added_portion = UnifiedPortion.query.filter_by(
+            my_food_id=food_id, portion_description="new portion"
+        ).first()
         assert added_portion is not None
         assert added_portion.gram_weight == 75.0
+
 
 def test_delete_my_food_portion(auth_client):
     """
     Tests deleting a portion from a MyFood item.
     """
     with auth_client.application.app_context():
-        user = User.query.filter_by(username='testuser').first()
-        my_food = MyFood(user_id=user.id, description='Food to Delete Portion From')
+        user = User.query.filter_by(username="testuser").first()
+        my_food = MyFood(user_id=user.id, description="Food to Delete Portion From")
         db.session.add(my_food)
         db.session.commit()
-        food_id = my_food.id
-        portion_to_delete = UnifiedPortion(my_food_id=my_food.id, portion_description='portion to delete', gram_weight=10.0)
+        portion_to_delete = UnifiedPortion(
+            my_food_id=my_food.id,
+            portion_description="portion to delete",
+            gram_weight=10.0,
+        )
         db.session.add(portion_to_delete)
         db.session.commit()
         portion_id = portion_to_delete.id
 
-    response = auth_client.post(f'/my_foods/portion/{portion_id}/delete', follow_redirects=True)
+    response = auth_client.post(
+        f"/my_foods/portion/{portion_id}/delete", follow_redirects=True
+    )
     assert response.status_code == 200
-    assert b'Portion deleted.' in response.data
+    assert b"Portion deleted." in response.data
 
     with auth_client.application.app_context():
         deleted_portion = db.session.get(UnifiedPortion, portion_id)
         assert deleted_portion is None
+
 
 def test_edit_my_food(auth_client):
     """
     Tests editing an existing custom food.
     """
     with auth_client.application.app_context():
-        user = User.query.filter_by(username='testuser').first()
+        user = User.query.filter_by(username="testuser").first()
         initial_food = MyFood(
             user_id=user.id,
-            description='Old Food',
+            description="Old Food",
             calories_per_100g=100.0,
             protein_per_100g=1.0,
             carbs_per_100g=10.0,
-            fat_per_100g=5.0
+            fat_per_100g=5.0,
         )
         db.session.add(initial_food)
         db.session.commit()
         food_id = initial_food.id
 
     updated_food_data = {
-        'description': 'Updated Food',
-        'calories_per_100g': 150.0,
-        'protein_per_100g': 2.0,
-        'carbs_per_100g': 15.0,
-        'fat_per_100g': 7.0
+        "description": "Updated Food",
+        "calories_per_100g": 150.0,
+        "protein_per_100g": 2.0,
+        "carbs_per_100g": 15.0,
+        "fat_per_100g": 7.0,
     }
-    response = auth_client.post(f'/my_foods/{food_id}/edit', data=updated_food_data, follow_redirects=True)
+    response = auth_client.post(
+        f"/my_foods/{food_id}/edit", data=updated_food_data, follow_redirects=True
+    )
     assert response.status_code == 200
-    assert b'Food updated successfully!' in response.data
+    assert b"Food updated successfully!" in response.data
 
     with auth_client.application.app_context():
         updated_food = db.session.get(MyFood, food_id)
         assert updated_food is not None
-        assert updated_food.description == 'Updated Food'
+        assert updated_food.description == "Updated Food"
         assert updated_food.calories_per_100g == 150.0
+
 
 def test_delete_my_food(auth_client):
     """
     Tests deleting a custom food.
     """
     with auth_client.application.app_context():
-        user = User.query.filter_by(username='testuser').first()
+        user = User.query.filter_by(username="testuser").first()
         food_to_delete = MyFood(
             user_id=user.id,
-            description='Food to Delete',
+            description="Food to Delete",
             calories_per_100g=200.0,
             protein_per_100g=5.0,
             carbs_per_100g=20.0,
-            fat_per_100g=10.0
+            fat_per_100g=10.0,
         )
         db.session.add(food_to_delete)
         db.session.commit()
         food_id = food_to_delete.id
 
-    response = auth_client.post(f'/my_foods/{food_id}/delete', follow_redirects=True)
+    response = auth_client.post(f"/my_foods/{food_id}/delete", follow_redirects=True)
     assert response.status_code == 200
-    assert b'Food deleted successfully!' in response.data
+    assert b"Food deleted successfully!" in response.data
 
     with auth_client.application.app_context():
         deleted_food = db.session.get(MyFood, food_id)
         assert deleted_food.user_id is None
+
 
 def test_user_cannot_delete_another_users_food(client):
     """
@@ -267,26 +312,32 @@ def test_user_cannot_delete_another_users_food(client):
     """
     with client.application.app_context():
         # Create two users
-        user_a = User(username='user_a', email='a@a.com')
-        user_a.set_password('password_a')
-        user_b = User(username='user_b', email='b@b.com')
-        user_b.set_password('password_b')
+        user_a = User(username="user_a", email="a@a.com")
+        user_a.set_password("password_a")
+        user_b = User(username="user_b", email="b@b.com")
+        user_b.set_password("password_b")
         db.session.add_all([user_a, user_b])
         db.session.commit()
 
         # User A creates a food item
-        food_a = MyFood(user_id=user_a.id, description='Food A', calories_per_100g=100)
+        food_a = MyFood(user_id=user_a.id, description="Food A", calories_per_100g=100)
         db.session.add(food_a)
         db.session.commit()
         food_a_id = food_a.id
 
     # Log in as User B
-    login_response = client.post('/auth/login', data={'username_or_email': 'user_b', 'password': 'password_b'}, follow_redirects=True)
+    login_response = client.post(
+        "/auth/login",
+        data={"username_or_email": "user_b", "password": "password_b"},
+        follow_redirects=True,
+    )
     assert login_response.status_code == 200
-    assert b'Dashboard' in login_response.data # Confirm login success
+    assert b"Dashboard" in login_response.data  # Confirm login success
 
     # User B attempts to delete User A's food
-    response = client.post(f'/my_foods/{food_a_id}/delete', follow_redirects=False) # Test the direct response
+    response = client.post(
+        f"/my_foods/{food_a_id}/delete", follow_redirects=False
+    )  # Test the direct response
 
     # Assert that the action is not found
     assert response.status_code == 404
@@ -296,17 +347,16 @@ def test_user_cannot_delete_another_users_food(client):
         food_still_exists = db.session.get(MyFood, food_a_id)
         assert food_still_exists is not None
 
+
 def test_edit_my_food_with_invalid_data_type(auth_client):
     """
     Tests that submitting a non-numeric value to a numeric field during
     an edit fails validation gracefully.
     """
     with auth_client.application.app_context():
-        user = User.query.filter_by(username='testuser').first()
+        user = User.query.filter_by(username="testuser").first()
         initial_food = MyFood(
-            user_id=user.id,
-            description='Test Food',
-            calories_per_100g=100.0
+            user_id=user.id, description="Test Food", calories_per_100g=100.0
         )
         db.session.add(initial_food)
         db.session.commit()
@@ -314,20 +364,22 @@ def test_edit_my_food_with_invalid_data_type(auth_client):
 
     # Attempt to update with a non-numeric value for calories
     invalid_data = {
-        'description': 'Updated Food Name',
-        'calories_per_100g': 'not-a-number'
+        "description": "Updated Food Name",
+        "calories_per_100g": "not-a-number",
     }
-    response = auth_client.post(f'/my_foods/{food_id}/edit', data=invalid_data, follow_redirects=True)
+    response = auth_client.post(
+        f"/my_foods/{food_id}/edit", data=invalid_data, follow_redirects=True
+    )
 
     # The form should fail validation and re-render the page
     assert response.status_code == 200
     # Check for the standard WTForms error message for an invalid float
-    assert b'Not a valid float value.' in response.data
+    assert b"Not a valid float value." in response.data
     # Check that the success message is NOT present
-    assert b'Food updated successfully!' not in response.data
+    assert b"Food updated successfully!" not in response.data
 
     # Verify that the original food data was not changed in the database
     with auth_client.application.app_context():
         food_in_db = db.session.get(MyFood, food_id)
-        assert food_in_db.description == 'Test Food'
+        assert food_in_db.description == "Test Food"
         assert food_in_db.calories_per_100g == 100.0

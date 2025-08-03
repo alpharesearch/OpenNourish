@@ -1,6 +1,5 @@
-import pytest
 from models import db, FoodCategory, UnifiedPortion, ExerciseActivity
-import os
+
 
 def test_seed_exercise_activities_command(app_with_db):
     """
@@ -12,18 +11,19 @@ def test_seed_exercise_activities_command(app_with_db):
         assert ExerciseActivity.query.count() == 0
 
     # Run the seeder for the first time
-    result = runner.invoke(args=['seed-exercise-activities'])
-    assert 'Default exercise activities added.' in result.output
+    result = runner.invoke(args=["seed-exercise-activities"])
+    assert "Default exercise activities added." in result.output
 
     with app_with_db.app_context():
         assert ExerciseActivity.query.count() > 0
-        activity = ExerciseActivity.query.filter_by(name='Walking').first()
+        activity = ExerciseActivity.query.filter_by(name="Walking").first()
         assert activity is not None
         assert activity.met_value == 3.5
 
     # Run the seeder again to test idempotency
-    result = runner.invoke(args=['seed-exercise-activities'])
-    assert 'Exercise activities already exist. Skipping.' in result.output
+    result = runner.invoke(args=["seed-exercise-activities"])
+    assert "Exercise activities already exist. Skipping." in result.output
+
 
 def test_seed_usda_categories_command(app_with_db, tmp_path, monkeypatch):
     """
@@ -39,10 +39,12 @@ def test_seed_usda_categories_command(app_with_db, tmp_path, monkeypatch):
     usda_data_dir.mkdir(parents=True)
 
     # Create a dummy CSV file
-    (usda_data_dir / "food_category.csv").write_text('id,code,description\n1,1100,"Vegetables and Vegetable Products"\n')
+    (usda_data_dir / "food_category.csv").write_text(
+        'id,code,description\n1,1100,"Vegetables and Vegetable Products"\n'
+    )
 
     # Monkeypatch the app's root_path to make the command find our temp file
-    monkeypatch.setattr(app_with_db, 'root_path', str(opennourish_dir))
+    monkeypatch.setattr(app_with_db, "root_path", str(opennourish_dir))
 
     runner = app_with_db.test_cli_runner()
 
@@ -50,8 +52,8 @@ def test_seed_usda_categories_command(app_with_db, tmp_path, monkeypatch):
         assert FoodCategory.query.count() == 0
 
     # Run the seeder
-    result = runner.invoke(args=['seed-usda-categories'])
-    assert 'Successfully seeded 1 food categories.' in result.output
+    result = runner.invoke(args=["seed-usda-categories"])
+    assert "Successfully seeded 1 food categories." in result.output
 
     with app_with_db.app_context():
         assert FoodCategory.query.count() == 1
@@ -61,8 +63,9 @@ def test_seed_usda_categories_command(app_with_db, tmp_path, monkeypatch):
         assert category.description == "Vegetables and Vegetable Products"
 
     # Run again to test idempotency
-    result = runner.invoke(args=['seed-usda-categories'])
-    assert 'Food categories already exist. Skipping.' in result.output
+    result = runner.invoke(args=["seed-usda-categories"])
+    assert "Food categories already exist. Skipping." in result.output
+
 
 def test_seed_usda_portions_command(app_with_db, tmp_path, monkeypatch):
     """
@@ -75,10 +78,12 @@ def test_seed_usda_portions_command(app_with_db, tmp_path, monkeypatch):
     usda_data_dir.mkdir(parents=True)
 
     # Create dummy CSV files
-    (usda_data_dir / "measure_unit.csv").write_text('id,name\n9999,g\n')
-    (usda_data_dir / "food_portion.csv").write_text('id,fdc_id,seq_num,amount,measure_unit_id,portion_description,modifier,gram_weight\n1,123456,1,1.0,9999,slice,,25.0\n')
+    (usda_data_dir / "measure_unit.csv").write_text("id,name\n9999,g\n")
+    (usda_data_dir / "food_portion.csv").write_text(
+        "id,fdc_id,seq_num,amount,measure_unit_id,portion_description,modifier,gram_weight\n1,123456,1,1.0,9999,slice,,25.0\n"
+    )
 
-    monkeypatch.setattr(app_with_db, 'root_path', str(opennourish_dir))
+    monkeypatch.setattr(app_with_db, "root_path", str(opennourish_dir))
 
     runner = app_with_db.test_cli_runner()
 
@@ -86,22 +91,22 @@ def test_seed_usda_portions_command(app_with_db, tmp_path, monkeypatch):
         assert UnifiedPortion.query.count() == 0
 
     # Run the seeder
-    result = runner.invoke(args=['seed-usda-portions'])
-    assert 'Successfully seeded 1 total USDA portions' in result.output
+    result = runner.invoke(args=["seed-usda-portions"])
+    assert "Successfully seeded 1 total USDA portions" in result.output
 
     with app_with_db.app_context():
         assert UnifiedPortion.query.count() == 1
         portion = UnifiedPortion.query.first()
         assert portion.fdc_id == 123456
         assert portion.gram_weight == 25.0
-        assert portion.portion_description == 'slice'
+        assert portion.portion_description == "slice"
         assert portion.modifier is None
         assert portion.was_imported is True
 
     # Test idempotency (deletes old portions and re-seeds)
-    result = runner.invoke(args=['seed-usda-portions'])
-    assert 'Deleted 1 existing imported USDA portions' in result.output
-    assert 'Successfully seeded 1 total USDA portions' in result.output
+    result = runner.invoke(args=["seed-usda-portions"])
+    assert "Deleted 1 existing imported USDA portions" in result.output
+    assert "Successfully seeded 1 total USDA portions" in result.output
 
     with app_with_db.app_context():
         assert UnifiedPortion.query.count() == 1
@@ -120,18 +125,18 @@ def test_exercise_seed_activities_command(app_with_db):
         assert ExerciseActivity.query.count() == 0
 
     # Run the seeder for the first time
-    result = runner.invoke(args=['exercise', 'seed-activities'])
+    result = runner.invoke(args=["exercise", "seed-activities"])
     assert result.exit_code == 0
 
     with app_with_db.app_context():
         assert ExerciseActivity.query.count() > 0
-        activity = ExerciseActivity.query.filter_by(name='Running').first()
+        activity = ExerciseActivity.query.filter_by(name="Running").first()
         assert activity is not None
         assert activity.met_value == 9.8
         initial_count = ExerciseActivity.query.count()
 
     # Run the seeder again to test idempotency
-    result = runner.invoke(args=['exercise', 'seed-activities'])
+    result = runner.invoke(args=["exercise", "seed-activities"])
     assert result.exit_code == 0
 
     with app_with_db.app_context():

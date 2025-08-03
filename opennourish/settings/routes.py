@@ -1,48 +1,72 @@
-from flask import render_template, flash, redirect, url_for, request, current_app, jsonify
+from flask import (
+    render_template,
+    flash,
+    redirect,
+    url_for,
+    request,
+    current_app,
+    jsonify,
+)
 from flask_login import current_user, login_required, logout_user
-from models import User, db, MyFood, Recipe, UserGoal, CheckIn, DailyLog, ExerciseLog, Friendship, MyMeal
+from models import (
+    User,
+    db,
+    MyFood,
+    Recipe,
+    UserGoal,
+    CheckIn,
+    DailyLog,
+    ExerciseLog,
+    Friendship,
+    MyMeal,
+)
 from .forms import SettingsForm, ChangePasswordForm, DeleteAccountConfirmForm
 from opennourish.utils import ft_in_to_cm, cm_to_ft_in
 from . import settings_bp
 
-@settings_bp.route('/set-timezone', methods=['POST'])
+
+@settings_bp.route("/set-timezone", methods=["POST"])
 @login_required
 def set_timezone():
     data = request.get_json()
-    timezone = data.get('timezone')
+    timezone = data.get("timezone")
     if timezone:
         user = db.session.get(User, current_user.id)
         user.timezone = timezone
         db.session.commit()
-        return jsonify({'status': 'success', 'message': 'Timezone updated.'})
-    return jsonify({'status': 'error', 'message': 'Timezone not provided.'}), 400
+        return jsonify({"status": "success", "message": "Timezone updated."})
+    return jsonify({"status": "error", "message": "Timezone not provided."}), 400
 
-@settings_bp.route('/', methods=['GET', 'POST'])
+
+@settings_bp.route("/", methods=["GET", "POST"])
 @login_required
 def settings():
     settings_form = SettingsForm(obj=current_user)
     password_form = ChangePasswordForm()
 
-    if settings_form.validate_on_submit() and 'submit_settings' in request.form:
+    if settings_form.validate_on_submit() and "submit_settings" in request.form:
         user = db.session.get(User, current_user.id)
-        
+
         # Check if email has changed and unverify if so
         if user.email != settings_form.email.data:
             user.email = settings_form.email.data
             user.is_verified = False
-            flash('Your email address has been changed and your email verification status has been reset. Please verify your new email.', 'warning')
-        
+            flash(
+                "Your email address has been changed and your email verification status has been reset. Please verify your new email.",
+                "warning",
+            )
+
         # Handle measurement system first
         system = settings_form.measurement_system.data
         user.measurement_system = system
 
         # Handle height conversion
-        if system == 'us':
+        if system == "us":
             feet = settings_form.height_ft.data
             inches = settings_form.height_in.data
             if feet is not None and inches is not None:
                 user.height_cm = ft_in_to_cm(feet, inches)
-        else: # metric
+        else:  # metric
             if settings_form.height_cm.data is not None:
                 user.height_cm = settings_form.height_cm.data
 
@@ -55,27 +79,27 @@ def settings():
         user.is_private = settings_form.is_private.data
         user.week_start_day = settings_form.week_start_day.data
         user.timezone = settings_form.timezone.data
-        
-        db.session.commit()
-        flash('Your settings have been updated.', 'success')
-        return redirect(url_for('settings.settings'))
 
-    if password_form.validate_on_submit() and 'submit_password' in request.form:
+        db.session.commit()
+        flash("Your settings have been updated.", "success")
+        return redirect(url_for("settings.settings"))
+
+    if password_form.validate_on_submit() and "submit_password" in request.form:
         user = db.session.get(User, current_user.id)
         user.set_password(password_form.password.data)
         db.session.commit()
-        flash('Your password has been changed.', 'success')
-        return redirect(url_for('settings.settings'))
+        flash("Your password has been changed.", "success")
+        return redirect(url_for("settings.settings"))
 
     # Pre-populate form fields for GET request
-    if request.method == 'GET':
+    if request.method == "GET":
         settings_form.email.data = current_user.email
         settings_form.age.data = current_user.age
         settings_form.gender.data = current_user.gender
         settings_form.measurement_system.data = current_user.measurement_system
-        
+
         if current_user.height_cm is not None:
-            if current_user.measurement_system == 'us':
+            if current_user.measurement_system == "us":
                 feet, inches = cm_to_ft_in(current_user.height_cm)
                 settings_form.height_ft.data = feet
                 settings_form.height_in.data = inches
@@ -83,30 +107,33 @@ def settings():
                 settings_form.height_cm.data = round(current_user.height_cm, 1)
 
     return render_template(
-        'settings/settings.html',
-        title='Settings',
+        "settings/settings.html",
+        title="Settings",
         settings_form=settings_form,
         password_form=password_form,
-        current_app=current_app
+        current_app=current_app,
     )
 
-@settings_bp.route('/restart-onboarding', methods=['POST'])
+
+@settings_bp.route("/restart-onboarding", methods=["POST"])
 @login_required
 def restart_onboarding():
     current_user.has_completed_onboarding = False
     db.session.commit()
-    flash('You have restarted the onboarding wizard.', 'info')
-    return redirect(url_for('onboarding.step1'))
+    flash("You have restarted the onboarding wizard.", "info")
+    return redirect(url_for("onboarding.step1"))
 
 
-@settings_bp.route('/delete_confirm')
+@settings_bp.route("/delete_confirm")
 @login_required
 def delete_confirm():
     form = DeleteAccountConfirmForm()
-    return render_template('settings/delete_confirm.html', title='Confirm Deletion', form=form)
+    return render_template(
+        "settings/delete_confirm.html", title="Confirm Deletion", form=form
+    )
 
 
-@settings_bp.route('/delete', methods=['POST'])
+@settings_bp.route("/delete", methods=["POST"])
 @login_required
 def delete_account():
     form = DeleteAccountConfirmForm()
@@ -115,15 +142,15 @@ def delete_account():
         if user.check_password(form.password.data):
             try:
                 # Anonymize MyFood and Recipe records
-                MyFood.query.filter_by(user_id=user.id).update({'user_id': None})
-                Recipe.query.filter_by(user_id=user.id).update({'user_id': None})
+                MyFood.query.filter_by(user_id=user.id).update({"user_id": None})
+                Recipe.query.filter_by(user_id=user.id).update({"user_id": None})
 
                 # Delete direct personal data
                 UserGoal.query.filter_by(user_id=user.id).delete()
                 CheckIn.query.filter_by(user_id=user.id).delete()
                 DailyLog.query.filter_by(user_id=user.id).delete()
                 ExerciseLog.query.filter_by(user_id=user.id).delete()
-                
+
                 # Fetch and delete MyMeal records to trigger cascade deletion of MyMealItems
                 my_meals_to_delete = MyMeal.query.filter_by(user_id=user.id).all()
                 for meal in my_meals_to_delete:
@@ -131,8 +158,8 @@ def delete_account():
 
                 # Delete social connections
                 Friendship.query.filter(
-                    (Friendship.requester_id == user.id) |
-                    (Friendship.receiver_id == user.id)
+                    (Friendship.requester_id == user.id)
+                    | (Friendship.receiver_id == user.id)
                 ).delete()
 
                 # Delete the user
@@ -140,13 +167,18 @@ def delete_account():
 
                 db.session.commit()
                 logout_user()
-                flash('Your account has been permanently deleted.', 'success')
-                return redirect(url_for('main.index'))
+                flash("Your account has been permanently deleted.", "success")
+                return redirect(url_for("main.index"))
             except Exception as e:
                 db.session.rollback()
                 current_app.logger.error(f"Error deleting user account: {e}")
-                flash('An error occurred during account deletion. Please try again.', 'danger')
-                return redirect(url_for('settings.delete_confirm'))
+                flash(
+                    "An error occurred during account deletion. Please try again.",
+                    "danger",
+                )
+                return redirect(url_for("settings.delete_confirm"))
         else:
-            flash('Incorrect password.', 'danger')
-    return render_template('settings/delete_confirm.html', title='Confirm Deletion', form=form)
+            flash("Incorrect password.", "danger")
+    return render_template(
+        "settings/delete_confirm.html", title="Confirm Deletion", form=form
+    )

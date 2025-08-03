@@ -2,24 +2,28 @@ import pytest
 from models import db, Recipe, RecipeIngredient, MyFood, User
 from opennourish.utils import update_recipe_nutrition
 
+
 @pytest.fixture
 def client_with_recipe(client):
     recipe_id = None
     with client.application.app_context():
-        user = User(username='testuser_recipe_nutrition', email='testuser@example.com')
-        user.set_password('password')
+        user = User(username="testuser_recipe_nutrition", email="testuser@example.com")
+        user.set_password("password")
         db.session.add(user)
         db.session.commit()
 
-        client.post('/auth/login', data={'username': 'testuser_recipe_nutrition', 'password': 'password'})
+        client.post(
+            "/auth/login",
+            data={"username": "testuser_recipe_nutrition", "password": "password"},
+        )
 
-        recipe = Recipe(user_id=user.id, name='Test Recipe', servings=2)
+        recipe = Recipe(user_id=user.id, name="Test Recipe", servings=2)
         db.session.add(recipe)
         db.session.commit()
 
         my_food1 = MyFood(
             user_id=user.id,
-            description='Chicken Breast',
+            description="Chicken Breast",
             calories_per_100g=165,
             protein_per_100g=31,
             carbs_per_100g=0,
@@ -29,7 +33,7 @@ def client_with_recipe(client):
 
         my_food2 = MyFood(
             user_id=user.id,
-            description='Broccoli',
+            description="Broccoli",
             calories_per_100g=55,
             protein_per_100g=3.7,
             carbs_per_100g=11.2,
@@ -38,13 +42,18 @@ def client_with_recipe(client):
         db.session.add(my_food2)
         db.session.commit()
 
-        ingredient1 = RecipeIngredient(recipe_id=recipe.id, my_food_id=my_food1.id, amount_grams=200)
-        ingredient2 = RecipeIngredient(recipe_id=recipe.id, my_food_id=my_food2.id, amount_grams=150)
+        ingredient1 = RecipeIngredient(
+            recipe_id=recipe.id, my_food_id=my_food1.id, amount_grams=200
+        )
+        ingredient2 = RecipeIngredient(
+            recipe_id=recipe.id, my_food_id=my_food2.id, amount_grams=150
+        )
         db.session.add_all([ingredient1, ingredient2])
         db.session.commit()
         recipe_id = recipe.id
 
     return client, recipe_id
+
 
 def test_update_recipe_nutrition(client_with_recipe):
     client, recipe_id = client_with_recipe

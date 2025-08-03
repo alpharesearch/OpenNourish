@@ -1,0 +1,5 @@
+# Ruff configuration file
+[lint]
+# Ignore E402 (module level import not at top of file) in __init__.py files
+[lint.per-file-ignores]
+"__init__.py" = ["E402", "F401"]
