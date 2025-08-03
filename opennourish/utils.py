@@ -638,12 +638,18 @@ def generate_nutrition_label_pdf(fdc_id):
                 cwd=tmpdir,
             )
 
-            return send_file(
+            response = send_file(
                 pdf_file_path,
                 as_attachment=False,
                 download_name=f"nutrition_label_{fdc_id}.pdf",
                 mimetype="application/pdf",
             )
+            # Add headers to prevent caching
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            return response
+
         except subprocess.CalledProcessError as e:
             print(f"Typst compilation failed: {e}")
             print(f"Stdout: {e.stdout}")
@@ -687,12 +693,18 @@ def generate_nutrition_label_svg(fdc_id):
                 cwd=tmpdir,
             )
 
-            return send_file(
+            response = send_file(
                 svg_file_path,
                 as_attachment=False,
                 download_name=f"nutrition_label_{fdc_id}.svg",
                 mimetype="image/svg+xml",
             )
+            # Add headers to prevent caching
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            return response
+
         except subprocess.CalledProcessError as e:
             print(f"Typst compilation failed: {e}")
             print(f"Stdout: {e.stdout}")
@@ -963,12 +975,18 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
             )
 
             download_name = f"{my_food.description}_{file_suffix}.pdf"
-            return send_file(
+            response = send_file(
                 pdf_file_path,
                 as_attachment=False,
                 download_name=download_name,
                 mimetype="application/pdf",
             )
+            # Add headers to prevent caching
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            return response
+
         except subprocess.CalledProcessError as e:
             current_app.logger.error(
                 f"Typst compilation failed for my_food_id {my_food_id}: {e.stderr}"
@@ -1243,12 +1261,18 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
             )
 
             download_name = f"{recipe.name}_{file_suffix}.pdf"
-            return send_file(
+            response = send_file(
                 pdf_file_path,
                 as_attachment=False,
                 download_name=download_name,
                 mimetype="application/pdf",
             )
+            # Add headers to prevent caching
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            return response
+
         except subprocess.CalledProcessError as e:
             current_app.logger.error(
                 f"Typst compilation failed for recipe_id {recipe_id}: {e.stderr}"
