@@ -24,7 +24,7 @@ from models import (
 from flask_login import login_required, current_user
 from datetime import date
 from opennourish.time_utils import get_user_today
-from opennourish.utils import ensure_portion_sequence
+from opennourish.utils import ensure_portion_sequence, update_recipe_nutrition
 from sqlalchemy import or_, func, and_
 import math
 
@@ -581,6 +581,7 @@ def add_item():
                     portion_id_fk=item.portion_id_fk,
                 )
                 db.session.add(ingredient)
+            update_recipe_nutrition(target_recipe)
             db.session.commit()
             flash(
                 f'"{my_meal.name}" (expanded) added to recipe {target_recipe.name}.',
@@ -734,6 +735,7 @@ def add_item():
                         portion_id_fk=portion_id_fk_value,
                     )
                     db.session.add(ingredient)
+                    update_recipe_nutrition(target_recipe)
                     db.session.commit()
                     flash(
                         f"{food.description} added to recipe {target_recipe.name}.",
@@ -760,6 +762,7 @@ def add_item():
                         portion_id_fk=portion_id_fk_value,
                     )
                     db.session.add(ingredient)
+                    update_recipe_nutrition(target_recipe)
                     db.session.commit()
                     flash(
                         f"{food.description} added to recipe {target_recipe.name}.",
@@ -797,6 +800,7 @@ def add_item():
                     portion_id_fk=portion_id_fk_value,
                 )
                 db.session.add(ingredient)
+                update_recipe_nutrition(target_recipe)
                 db.session.commit()
                 flash(
                     f"{sub_recipe.name} added as ingredient to recipe {target_recipe.name}.",

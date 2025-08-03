@@ -2,16 +2,25 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>{% if my_food %}Edit Custom Food{% else %}Add New Custom Food{% endif %}</h2>
-
-    
-
-    <div class="card mb-4">
-        <div class="card-header">
-            Food Details
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">{% if my_food %}Edit Custom Food{% else %}Add New Custom Food{% endif %}</h1>
+        <div class="d-flex gap-2">
+            {% if my_food %}
+            <a href="{{ url_for('my_foods.generate_pdf_label', food_id=my_food.id) }}" class="btn btn-outline-info" target="_blank">1x2 UPC Label</a>
+            <a href="{{ url_for('my_foods.generate_pdf_details', food_id=my_food.id) }}" class="btn btn-outline-info" target="_blank">6x4 Detail Label</a>
+            {% endif %}
+            <a href="{{ url_for('my_foods.my_foods') }}" class="btn btn-outline-secondary">Back to List</a>
         </div>
-        <div class="card-body">
-            <form method="POST" action="{{ url_for('my_foods.new_my_food') if not my_food else url_for('my_foods.edit_my_food', food_id=my_food.id) }}">
+    </div>
+
+    <form method="POST" action="{{ url_for('my_foods.new_my_food') if not my_food else url_for('my_foods.edit_my_food', food_id=my_food.id) }}">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">Food Details</h2>
+                {{ form.submit(class="btn btn-sm btn-outline-primary") }}
+            </div>
+            <div class="card-body">
                 {{ form.hidden_tag() }}
                 <div class="mb-3">
                     {{ form.description.label(class="form-label") }}
@@ -156,13 +165,9 @@
                         {% endfor %}
                     </div>
                 </div>
-                {{ form.submit(class="btn btn-outline-primary") }}
-                <a href="{{ url_for('my_foods.my_foods') }}" class="btn btn-outline-secondary">Cancel</a>
-                <a href="{{ url_for('my_foods.generate_pdf_label', food_id=my_food.id) }}" class="btn btn-outline-info" target="_blank">Print Label</a>
-                <a href="{{ url_for('my_foods.generate_pdf_details', food_id=my_food.id) }}" class="btn btn-outline-info" target="_blank">Print Details</a>
-            </form>
+            </div>
         </div>
-    </div>
+    </form>
 
     {% if my_food %}
     <div class="card mt-4" id="portions-table">

@@ -308,6 +308,7 @@ def delete_ingredient(ingredient_id):
         return redirect(url_for("recipes.recipes"))
 
     db.session.delete(ingredient)
+    update_recipe_nutrition(recipe)
     db.session.commit()
     flash("Ingredient removed.", "success")
     return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
@@ -341,6 +342,7 @@ def update_ingredient(ingredient_id):
     ingredient.amount_grams = amount * portion_obj.gram_weight
     ingredient.serving_type = portion_obj.full_description_str
     ingredient.portion_id_fk = portion_obj.id
+    update_recipe_nutrition(recipe)
     db.session.commit()
     flash("Ingredient updated successfully.", "success")
     return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))

@@ -10,8 +10,8 @@
         <div>
             {% if recipe.user_id == current_user.id %}
             <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary">Edit Recipe</a>
-            <a href="{{ url_for('recipes.generate_label_pdf', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank">Download Label (PDF)</a>
-            <a href="{{ url_for('recipes.generate_pdf_details', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank">Download full Label (PDF)</a>
+            <a href="{{ url_for('recipes.generate_label_pdf', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank">6x4 Lable</a>
+            <a href="{{ url_for('recipes.generate_pdf_details', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank">1 Page PDF</a>
             {% endif %}
             <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary">Back to List</a>
         </div>
@@ -55,7 +55,7 @@
                 </div>
                 <ul class="list-group list-group-flush">
                     {% for portion in recipe.portions %}
-                        <li class="list-group-item">{{ portion.portion_description }} - {{ '%.2f'|format(portion.gram_weight) }}g</li>
+                        <li class="list-group-item">{{ portion.full_description_str_1 }} - {{ '%.2f'|format(portion.gram_weight) }}g</li>
                     {% else %}
                         <li class="list-group-item">No custom portions defined.</li>
                     {% endfor %}

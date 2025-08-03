@@ -2,17 +2,29 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>{% if recipe %}{{ recipe.name }}{% else %}Create Recipe{% endif %}</h2>
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">{% if recipe %}{{ recipe.name }}{% else %}Create Recipe{% endif %}</h1>
+        {% if recipe and recipe.id %}
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info">View Recipe</a>
+            <a href="{{ url_for('recipes.generate_label_pdf', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank">6x4 Label</a>
+            <a href="{{ url_for('recipes.generate_pdf_details', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank">1 Page PDF</a>
+            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary">Back to List</a>
+        </div>
+        {% endif %}
+    </div>
 
     <div class="row">
         <!-- Left Column: Recipe Details -->
         <div class="col-lg-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    Recipe Details
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) if recipe else url_for('recipes.new_recipe') }}" id="recipe-details-form">
+            <form method="POST" action="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) if recipe else url_for('recipes.new_recipe') }}" id="recipe-details-form">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h2 class="h5 mb-0">Recipe Details</h2>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Save Recipe</button>
+                    </div>
+                    <div class="card-body">
                         {{ form.hidden_tag() }}
                         <div class="mb-3">
                             {{ form.name.label(class="form-label") }}
@@ -59,24 +71,16 @@
                             {{ form.is_public(class="form-check-input") }}
                             {{ form.is_public.label(class="form-check-label") }}
                         </div>
-                        
-                        <!-- Action Buttons -->
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-outline-primary">Save Recipe</button>
-                            {% if recipe and recipe.id %}
-                            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info ms-auto">View Recipe</a>
-                            {% endif %}
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
 
         <!-- Right Column: Portions Section -->
         <div class="col-lg-6">
             <div class="card mb-4" id="portions-table">
                 <div class="card-header">
-                    Custom Portions
+                    <h2 class="h5 mb-0">Custom Portions</h2>
                 </div>
                 <div class="card-body">
                     <p>Define custom serving sizes for this recipe (e.g., "1 bowl", "1 slice").</p>

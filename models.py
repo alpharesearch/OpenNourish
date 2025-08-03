@@ -211,7 +211,26 @@ class UnifiedPortion(db.Model):
         if self.modifier:
             parts.append(f"{self.modifier}")
         ret = remove_leading_one(" ".join(parts).strip() or "g")
+        return ret
 
+    @property
+    def full_description_str_1(self):
+        parts = []
+        if self.amount:
+            # Format amount to avoid trailing .0 if it's a whole number
+            amount_str = (
+                f"{self.amount:.0f}"
+                if self.amount == int(self.amount)
+                else f"{self.amount:.2f}"
+            )
+            parts.append(amount_str)
+        if self.measure_unit_description:
+            parts.append(self.measure_unit_description)
+        if self.portion_description:
+            parts.append(self.portion_description)
+        if self.modifier:
+            parts.append(f"{self.modifier}")
+        ret = " ".join(parts).strip() or "g"
         return ret
 
 
