@@ -10,9 +10,9 @@
         <div>
             {% if recipe.user_id == current_user.id %}
             <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary">Edit Recipe</a>
+            {% endif %}
             <a href="{{ url_for('recipes.generate_label_pdf', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank">6x4 Lable</a>
             <a href="{{ url_for('recipes.generate_pdf_details', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank">1 Page PDF</a>
-            {% endif %}
             <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary">Back to List</a>
         </div>
     </div>

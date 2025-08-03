@@ -17,6 +17,7 @@ from models import (
     MyMeal,
     UnifiedPortion,
     FoodCategory,
+    User,
 )
 from opennourish.recipes.forms import RecipeForm
 from opennourish.diary.forms import AddToLogForm
@@ -356,9 +357,13 @@ def view_recipe(recipe_id):
         .joinedload(RecipeIngredient.my_food)
         .selectinload(MyFood.portions),
         selectinload(Recipe.ingredients).joinedload(RecipeIngredient.linked_recipe),
+        joinedload(Recipe.user),  # Eager load the user
     ).get_or_404(recipe_id)
 
-    if not recipe.is_public and recipe.user_id != current_user.id:
+    # Authorization check
+    user = db.session.get(User, current_user.id)
+    is_friend = recipe.user and recipe.user in user.friends
+    if not recipe.is_public and recipe.user_id != user.id and not is_friend:
         flash("You are not authorized to view this recipe.", "danger")
         return redirect(url_for("recipes.recipes"))
 

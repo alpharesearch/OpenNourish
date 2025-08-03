@@ -35,15 +35,13 @@ def two_users(app_with_db):
 def auth_client_user_two(app_with_db, two_users):
     user_one_id, user_two_id = two_users
     with app_with_db.test_client() as client:
+        with client.session_transaction() as sess:
+            sess["_user_id"] = user_two_id  # Log in as user_two
+            sess["_fresh"] = True
         with app_with_db.app_context():
             user_one_in_context = db.session.get(User, user_one_id)
             user_two_in_context = db.session.get(User, user_two_id)
-            user_id = user_two_in_context.id
-
-        with client.session_transaction() as sess:
-            sess["_user_id"] = user_id
-            sess["_fresh"] = True
-        yield client, user_one_in_context, user_two_in_context
+            yield client, user_one_in_context, user_two_in_context
 
 
 @pytest.fixture
