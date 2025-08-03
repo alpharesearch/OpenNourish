@@ -383,3 +383,43 @@ def test_edit_my_food_with_invalid_data_type(auth_client):
         food_in_db = db.session.get(MyFood, food_id)
         assert food_in_db.description == "Test Food"
         assert food_in_db.calories_per_100g == 100.0
+
+
+def test_reorder_my_food_portions(auth_client):
+    """
+    Tests reordering portions for a MyFood item.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        my_food = MyFood(user_id=user.id, description="Food for Reordering")
+        db.session.add(my_food)
+        db.session.commit()
+
+        p1 = UnifiedPortion(
+            my_food_id=my_food.id, portion_description="A", gram_weight=10.0, seq_num=1
+        )
+        p2 = UnifiedPortion(
+            my_food_id=my_food.id, portion_description="B", gram_weight=20.0, seq_num=2
+        )
+        p3 = UnifiedPortion(
+            my_food_id=my_food.id, portion_description="C", gram_weight=30.0, seq_num=3
+        )
+        db.session.add_all([p1, p2, p3])
+        db.session.commit()
+        p1_id, p2_id, _ = p1.id, p2.id, p3.id
+
+    # Move p2 up
+    auth_client.post(f"/my_foods/portion/{p2_id}/move_up")
+    with auth_client.application.app_context():
+        p1_new = db.session.get(UnifiedPortion, p1_id)
+        p2_new = db.session.get(UnifiedPortion, p2_id)
+        assert p1_new.seq_num == 2
+        assert p2_new.seq_num == 1
+
+    # Move p2 down (back to original position)
+    auth_client.post(f"/my_foods/portion/{p2_id}/move_down")
+    with auth_client.application.app_context():
+        p1_new = db.session.get(UnifiedPortion, p1_id)
+        p2_new = db.session.get(UnifiedPortion, p2_id)
+        assert p1_new.seq_num == 1
+        assert p2_new.seq_num == 2

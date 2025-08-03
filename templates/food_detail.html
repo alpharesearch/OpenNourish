@@ -27,19 +27,29 @@
             {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_key_user) %}
                 <div class="card p-3 mb-4">
                     <h5 class="mb-3">Manage Portions</h5>
-                    {% for portion in portions %}
-                        <form action="{{ url_for('usda_admin.edit_usda_portion', portion_id=portion.id) }}" method="POST" class="mb-2">
-                            <div class="input-group">
-                                <input type="number" step="any" name="amount" class="form-control" value="{{ portion.amount }}" style="max-width: 80px;">
-                                <input type="text" name="measure_unit_description" class="form-control" value="{{ portion.measure_unit_description }}">
-                                <input type="text" name="portion_description" class="form-control" value="{{ portion.portion_description or '' }}">
-                                <input type="text" name="modifier" class="form-control" value="{{ portion.modifier or '' }}">
-                                <input type="number" step="any" name="gram_weight" class="form-control" value="{{ portion.gram_weight }}" required style="max-width: 100px;">
-                                <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
-                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="document.getElementById('delete-form-{{ portion.id }}').submit();">Delete</button>
+                    {% for portion in portions|sort(attribute='seq_num') %}
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="d-flex flex-column me-2">
+                                <form action="{{ url_for('usda_admin.move_usda_portion_up', portion_id=portion.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first %}disabled{% endif %}>▲</button>
+                                </form>
+                                <form action="{{ url_for('usda_admin.move_usda_portion_down', portion_id=portion.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last %}disabled{% endif %}>▼</button>
+                                </form>
                             </div>
-                        </form>
-                        <form id="delete-form-{{ portion.id }}" action="{{ url_for('usda_admin.delete_usda_portion', portion_id=portion.id) }}" method="POST" class="d-none"></form>
+                            <form action="{{ url_for('usda_admin.edit_usda_portion', portion_id=portion.id) }}" method="POST" class="flex-grow-1">
+                                <div class="input-group">
+                                    <input type="number" step="any" name="amount" class="form-control" value="{{ portion.amount }}" style="max-width: 80px;">
+                                    <input type="text" name="measure_unit_description" class="form-control" value="{{ portion.measure_unit_description }}">
+                                    <input type="text" name="portion_description" class="form-control" value="{{ portion.portion_description or '' }}">
+                                    <input type="text" name="modifier" class="form-control" value="{{ portion.modifier or '' }}">
+                                    <input type="number" step="any" name="gram_weight" class="form-control" value="{{ portion.gram_weight }}" required style="max-width: 100px;">
+                                    <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="document.getElementById('delete-form-{{ portion.id }}').submit();">Delete</button>
+                                </div>
+                            </form>
+                            <form id="delete-form-{{ portion.id }}" action="{{ url_for('usda_admin.delete_usda_portion', portion_id=portion.id) }}" method="POST" class="d-none"></form>
+                        </div>
                     {% endfor %}
 
                     <hr>

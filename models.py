@@ -407,6 +407,7 @@ class Food(db.Model):
         primaryjoin="foreign(UnifiedPortion.fdc_id) == Food.fdc_id",
         viewonly=True,
         uselist=True,
+        order_by="UnifiedPortion.seq_num.asc().nulls_last(), UnifiedPortion.gram_weight.asc()",
     )
     food_category = db.relationship(
         "FoodCategory",

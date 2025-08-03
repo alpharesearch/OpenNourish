@@ -21,6 +21,7 @@ from models import (
 from opennourish.recipes.forms import RecipeForm
 from opennourish.diary.forms import AddToLogForm
 from opennourish.my_foods.forms import PortionForm
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 from opennourish.utils import (
     calculate_nutrition_for_items,
@@ -127,6 +128,14 @@ def edit_recipe(recipe_id):
         selectinload(Recipe.portions),
     ).get_or_404(recipe_id)
 
+    # Ensure all portions have a seq_num
+    if any(p.seq_num is None for p in recipe.portions):
+        portions_to_update = sorted(recipe.portions, key=lambda p: p.gram_weight)
+        for i, p in enumerate(portions_to_update):
+            p.seq_num = i + 1
+        db.session.commit()
+        flash("Assigned sequence numbers to all portions.", "info")
+
     # Manually fetch USDA food data
     usda_food_ids = [ing.fdc_id for ing in recipe.ingredients if ing.fdc_id]
     if usda_food_ids:
@@ -174,6 +183,14 @@ def edit_recipe(recipe_id):
     if recipe.user_id != current_user.id:
         flash("You are not authorized to edit this recipe.", "danger")
         return redirect(url_for("recipes.recipes"))
+
+    # Ensure all portions have a seq_num
+    if any(p.seq_num is None for p in recipe.portions):
+        portions_to_update = sorted(recipe.portions, key=lambda p: p.gram_weight)
+        for i, p in enumerate(portions_to_update):
+            p.seq_num = i + 1
+        db.session.commit()
+        flash("Assigned sequence numbers to all portions. Please try again.", "info")
 
     form = RecipeForm(obj=recipe)
     form.food_category.choices = [("", "-- Select a Category --")] + [
@@ -477,6 +494,13 @@ def add_recipe_portion(recipe_id):
 
     form = PortionForm()
     if form.validate_on_submit():
+        # Calculate the next seq_num
+        max_seq_num = (
+            db.session.query(func.max(UnifiedPortion.seq_num))
+            .filter(UnifiedPortion.recipe_id == recipe_id)
+            .scalar()
+        )
+        next_seq_num = (max_seq_num or 0) + 1
         new_portion = UnifiedPortion(
             recipe_id=recipe.id,
             my_food_id=None,
@@ -486,6 +510,7 @@ def add_recipe_portion(recipe_id):
             measure_unit_description=form.measure_unit_description.data,
             modifier=form.modifier.data,
             gram_weight=form.gram_weight.data,
+            seq_num=next_seq_num,
         )
         db.session.add(new_portion)
         db.session.commit()
@@ -609,3 +634,97 @@ def copy_recipe(recipe_id):
     db.session.commit()
     flash(f"Successfully copied '{original_recipe.name}' to your recipes.", "success")
     return redirect(url_for("recipes.edit_recipe", recipe_id=new_recipe.id))
+
+
+@recipes_bp.route("/portion/<int:portion_id>/move_up", methods=["POST"])
+@login_required
+def move_recipe_portion_up(portion_id):
+    portion_to_move = db.session.get(UnifiedPortion, portion_id)
+    if not portion_to_move or portion_to_move.recipe.user_id != current_user.id:
+        flash("Portion not found or unauthorized.", "danger")
+        return redirect(url_for("recipes.recipes"))
+
+    if portion_to_move.seq_num is None:
+        # Assign sequence numbers to all portions of this food if any are missing
+        portions = (
+            UnifiedPortion.query.filter_by(recipe_id=portion_to_move.recipe_id)
+            .order_by(UnifiedPortion.gram_weight)
+            .all()
+        )
+        for i, p in enumerate(portions):
+            p.seq_num = i + 1
+        db.session.commit()
+        flash("Assigned sequence numbers to all portions. Please try again.", "info")
+        return redirect(
+            url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id)
+        )
+
+    # Find the portion with the next lower seq_num
+    portion_to_swap_with = (
+        UnifiedPortion.query.filter(
+            UnifiedPortion.recipe_id == portion_to_move.recipe_id,
+            UnifiedPortion.seq_num < portion_to_move.seq_num,
+        )
+        .order_by(UnifiedPortion.seq_num.desc())
+        .first()
+    )
+
+    if portion_to_swap_with:
+        # Swap seq_num values
+        portion_to_move.seq_num, portion_to_swap_with.seq_num = (
+            portion_to_swap_with.seq_num,
+            portion_to_move.seq_num,
+        )
+        db.session.commit()
+        flash("Portion moved up.", "success")
+    else:
+        flash("Portion is already at the top.", "info")
+
+    return redirect(url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id))
+
+
+@recipes_bp.route("/portion/<int:portion_id>/move_down", methods=["POST"])
+@login_required
+def move_recipe_portion_down(portion_id):
+    portion_to_move = db.session.get(UnifiedPortion, portion_id)
+    if not portion_to_move or portion_to_move.recipe.user_id != current_user.id:
+        flash("Portion not found or unauthorized.", "danger")
+        return redirect(url_for("recipes.recipes"))
+
+    if portion_to_move.seq_num is None:
+        # Assign sequence numbers to all portions of this food if any are missing
+        portions = (
+            UnifiedPortion.query.filter_by(recipe_id=portion_to_move.recipe_id)
+            .order_by(UnifiedPortion.gram_weight)
+            .all()
+        )
+        for i, p in enumerate(portions):
+            p.seq_num = i + 1
+        db.session.commit()
+        flash("Assigned sequence numbers to all portions. Please try again.", "info")
+        return redirect(
+            url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id)
+        )
+
+    # Find the portion with the next higher seq_num
+    portion_to_swap_with = (
+        UnifiedPortion.query.filter(
+            UnifiedPortion.recipe_id == portion_to_move.recipe_id,
+            UnifiedPortion.seq_num > portion_to_move.seq_num,
+        )
+        .order_by(UnifiedPortion.seq_num.asc())
+        .first()
+    )
+
+    if portion_to_swap_with:
+        # Swap seq_num values
+        portion_to_move.seq_num, portion_to_swap_with.seq_num = (
+            portion_to_swap_with.seq_num,
+            portion_to_move.seq_num,
+        )
+        db.session.commit()
+        flash("Portion moved down.", "success")
+    else:
+        flash("Portion is already at the bottom.", "info")
+
+    return redirect(url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id))

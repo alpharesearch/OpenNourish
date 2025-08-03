@@ -7,6 +7,7 @@ from flask import (
     send_from_directory,
     current_app,
     jsonify,
+    flash,
 )
 from flask_login import current_user
 from models import db, Food, UnifiedPortion
@@ -47,7 +48,26 @@ def food_detail(fdc_id):
     default_session = DefaultSession()
 
     try:
-        portions = default_session.query(UnifiedPortion).filter_by(fdc_id=fdc_id).all()
+        portions = (
+            default_session.query(UnifiedPortion)
+            .filter_by(fdc_id=fdc_id)
+            .order_by(
+                UnifiedPortion.seq_num.asc().nulls_last(),
+                UnifiedPortion.gram_weight.asc(),
+            )
+            .all()
+        )
+
+        # Ensure all portions have a seq_num
+        if any(p.seq_num is None for p in portions):
+            portions_to_update = sorted(portions, key=lambda p: p.gram_weight)
+            for i, p in enumerate(portions_to_update):
+                p.seq_num = i + 1
+            db.session.commit()
+            flash(
+                "Assigned sequence numbers to all portions. Please try again.", "info"
+            )
+
     finally:
         default_session.close()
 
@@ -64,7 +84,7 @@ def upc_search(barcode):
         food_obj = food_row[0]
 
         # Query for portions related to this fdc_id
-        portions = UnifiedPortion.query.filter_by(fdc_id=food_obj.fdc_id).all()
+        portions = food_obj.portions
         portions_data = [
             {"id": p.id, "description": p.full_description_str} for p in portions
         ]

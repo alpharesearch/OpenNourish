@@ -1200,3 +1200,43 @@ def test_delete_recipe_portion_unauthorized(auth_client_user_two):
 
 
 # endregion
+
+
+def test_reorder_recipe_portions(auth_client_with_user):
+    """
+    Tests reordering portions for a Recipe item.
+    """
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        recipe = Recipe(user_id=user.id, name="Recipe for Reordering")
+        db.session.add(recipe)
+        db.session.commit()
+
+        p1 = UnifiedPortion(
+            recipe_id=recipe.id, portion_description="A", gram_weight=10.0, seq_num=1
+        )
+        p2 = UnifiedPortion(
+            recipe_id=recipe.id, portion_description="B", gram_weight=20.0, seq_num=2
+        )
+        p3 = UnifiedPortion(
+            recipe_id=recipe.id, portion_description="C", gram_weight=30.0, seq_num=3
+        )
+        db.session.add_all([p1, p2, p3])
+        db.session.commit()
+        p1_id, p2_id, _ = p1.id, p2.id, p3.id
+
+    # Move p2 up
+    client.post(f"/recipes/portion/{p2_id}/move_up")
+    with client.application.app_context():
+        p1_new = db.session.get(UnifiedPortion, p1_id)
+        p2_new = db.session.get(UnifiedPortion, p2_id)
+        assert p1_new.seq_num == 2
+        assert p2_new.seq_num == 1
+
+    # Move p2 down (back to original position)
+    client.post(f"/recipes/portion/{p2_id}/move_down")
+    with client.application.app_context():
+        p1_new = db.session.get(UnifiedPortion, p1_id)
+        p2_new = db.session.get(UnifiedPortion, p2_id)
+        assert p1_new.seq_num == 1
+        assert p2_new.seq_num == 2

@@ -17,6 +17,7 @@ from models import (
     FoodCategory,
 )
 from opennourish.my_foods.forms import MyFoodForm, PortionForm
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from opennourish.utils import generate_myfood_label_pdf
 
@@ -167,6 +168,14 @@ def edit_my_food(food_id):
         (c.id, c.description) for c in FoodCategory.query.order_by(FoodCategory.code)
     ]
 
+    # Ensure all portions have a seq_num
+    if any(p.seq_num is None for p in my_food.portions):
+        portions_to_update = sorted(my_food.portions, key=lambda p: p.gram_weight)
+        for i, p in enumerate(portions_to_update):
+            p.seq_num = i + 1
+        db.session.commit()
+        flash("Assigned sequence numbers to all portions.", "info")
+
     if request.method == "GET" and my_food.food_category_id:
         form.food_category.data = my_food.food_category_id
 
@@ -231,6 +240,14 @@ def add_my_food_portion(food_id):
     my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
     form = PortionForm()
     if form.validate_on_submit():
+        # Calculate the next seq_num
+        max_seq_num = (
+            db.session.query(func.max(UnifiedPortion.seq_num))
+            .filter(UnifiedPortion.my_food_id == food_id)
+            .scalar()
+        )
+        next_seq_num = (max_seq_num or 0) + 1
+
         new_portion = UnifiedPortion(
             my_food_id=my_food.id,
             recipe_id=None,
@@ -240,6 +257,7 @@ def add_my_food_portion(food_id):
             measure_unit_description=form.measure_unit_description.data,
             modifier=form.modifier.data,
             gram_weight=form.gram_weight.data,
+            seq_num=next_seq_num,
         )
         db.session.add(new_portion)
         db.session.commit()
@@ -405,3 +423,86 @@ def generate_pdf_details(food_id):
     # Verify the user owns the food item
     MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
     return generate_myfood_label_pdf(food_id, label_only=False)
+
+
+@my_foods_bp.route("/portion/<int:portion_id>/move_up", methods=["POST"])
+@login_required
+def move_my_food_portion_up(portion_id):
+    portion_to_move = db.session.get(UnifiedPortion, portion_id)
+    if not portion_to_move or portion_to_move.my_food.user_id != current_user.id:
+        flash("Portion not found or unauthorized.", "danger")
+        return redirect(url_for("my_foods.my_foods"))
+
+    if portion_to_move.seq_num is None:
+        # Assign sequence numbers to all portions of this food if any are missing
+        portions = (
+            UnifiedPortion.query.filter_by(my_food_id=portion_to_move.my_food_id)
+            .order_by(UnifiedPortion.gram_weight)
+            .all()
+        )
+        for i, p in enumerate(portions):
+            p.seq_num = i + 1
+        db.session.commit()
+        flash("Assigned sequence numbers to all portions. Please try again.", "info")
+        return redirect(
+            url_for("my_foods.edit_my_food", food_id=portion_to_move.my_food_id)
+        )
+
+    # Find the portion with the next lower seq_num
+    portion_to_swap_with = (
+        UnifiedPortion.query.filter(
+            UnifiedPortion.my_food_id == portion_to_move.my_food_id,
+            UnifiedPortion.seq_num < portion_to_move.seq_num,
+        )
+        .order_by(UnifiedPortion.seq_num.desc())
+        .first()
+    )
+
+    if portion_to_swap_with:
+        # Swap seq_num values
+        portion_to_move.seq_num, portion_to_swap_with.seq_num = (
+            portion_to_swap_with.seq_num,
+            portion_to_move.seq_num,
+        )
+        db.session.commit()
+        flash("Portion moved up.", "success")
+    else:
+        flash("Portion is already at the top.", "info")
+
+    return redirect(
+        url_for("my_foods.edit_my_food", food_id=portion_to_move.my_food_id)
+    )
+
+
+@my_foods_bp.route("/portion/<int:portion_id>/move_down", methods=["POST"])
+@login_required
+def move_my_food_portion_down(portion_id):
+    portion_to_move = db.session.get(UnifiedPortion, portion_id)
+    if not portion_to_move or portion_to_move.my_food.user_id != current_user.id:
+        flash("Portion not found or unauthorized.", "danger")
+        return redirect(url_for("my_foods.my_foods"))
+
+    # Find the portion with the next higher seq_num
+    portion_to_swap_with = (
+        UnifiedPortion.query.filter(
+            UnifiedPortion.my_food_id == portion_to_move.my_food_id,
+            UnifiedPortion.seq_num > portion_to_move.seq_num,
+        )
+        .order_by(UnifiedPortion.seq_num.asc())
+        .first()
+    )
+
+    if portion_to_swap_with:
+        # Swap seq_num values
+        portion_to_move.seq_num, portion_to_swap_with.seq_num = (
+            portion_to_swap_with.seq_num,
+            portion_to_move.seq_num,
+        )
+        db.session.commit()
+        flash("Portion moved down.", "success")
+    else:
+        flash("Portion is already at the bottom.", "info")
+
+    return redirect(
+        url_for("my_foods.edit_my_food", food_id=portion_to_move.my_food_id)
+    )

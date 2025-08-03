@@ -110,8 +110,16 @@
                     </form>
                     <h6>Existing Portions</h6>
                     <ul class="list-group list-group-flush">
-                        {% for portion in recipe.portions %}
+                        {% for portion in recipe.portions|sort(attribute='seq_num') %}
                         <li class="list-group-item d-flex justify-content-between align-items-center p-1">
+                            <div class="d-flex flex-column me-2">
+                                <form action="{{ url_for('recipes.move_recipe_portion_up', portion_id=portion.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first %}disabled{% endif %}>▲</button>
+                                </form>
+                                <form action="{{ url_for('recipes.move_recipe_portion_down', portion_id=portion.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last %}disabled{% endif %}>▼</button>
+                                </form>
+                            </div>
                             <form action="{{ url_for('recipes.update_recipe_portion', portion_id=portion.id) }}" method="POST" class="d-flex flex-column flex-sm-row align-items-center w-100">
                                 {{ portion_form.hidden_tag() }}
                                 <div class="row g-2 flex-grow-1 me-sm-2">

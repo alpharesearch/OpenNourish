@@ -1058,8 +1058,10 @@ def get_portions(food_type, food_id):
             return jsonify({"error": "Not Found or Unauthorized"}), 404
         portions = UnifiedPortion.query.filter_by(recipe_id=food_id).all()
     elif food_type == "usda":
-        # USDA foods are public
-        portions = UnifiedPortion.query.filter_by(fdc_id=food_id).all()
+        usda_food = Food.query.filter_by(fdc_id=food_id).first()
+        if not usda_food:
+            return jsonify({"error": "Not Found"}), 404
+        portions = usda_food.portions
     elif food_type == "my_meal":
         # MyMeals are consumed as a whole. Return a single, default "serving" portion.
         # The add_item endpoint logic for my_meal ignores portion/amount, but we provide this for UI consistency.

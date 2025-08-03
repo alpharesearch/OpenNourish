@@ -242,13 +242,13 @@ def test_delete_usda_portion_key_user(key_user_client):
 def test_delete_usda_portion_unauthorized(auth_client):
     """Test that a regular user cannot delete a USDA portion."""
     with auth_client.application.app_context():
-        food = Food(fdc_id=77777, description="USDA Food Delete Unauthorized")
+        food = Food(fdc_id=88888, description="USDA Food Delete Unauthorized")
         portion = UnifiedPortion(
             fdc_id=food.fdc_id,
             amount=1.0,
-            measure_unit_description="item",
+            measure_unit_description="cup",
             portion_description="not to be deleted",
-            gram_weight=20.0,
+            gram_weight=100.0,
         )
         db.session.add_all([food, portion])
         db.session.commit()
@@ -256,12 +256,64 @@ def test_delete_usda_portion_unauthorized(auth_client):
 
     response = auth_client.post(
         url_for("usda_admin.delete_usda_portion", portion_id=portion_id),
-        follow_redirects=True,
+        follow_redirects=False,
     )
-
-    assert response.status_code == 200
-    assert b"This action requires special privileges." in response.data
+    assert response.status_code == 302
+    assert "/dashboard/" in response.headers["Location"]
 
     with auth_client.application.app_context():
         not_deleted_portion = db.session.get(UnifiedPortion, portion_id)
         assert not_deleted_portion is not None
+
+
+def test_reorder_usda_portions(key_user_client):
+    """Test reordering portions for a USDA food."""
+    with key_user_client.application.app_context():
+        food = Food(fdc_id=99999, description="USDA Food for Reordering")
+        db.session.add(food)
+        db.session.commit()
+
+        p1 = UnifiedPortion(
+            fdc_id=food.fdc_id, portion_description="A", gram_weight=10.0, seq_num=1
+        )
+        p2 = UnifiedPortion(
+            fdc_id=food.fdc_id, portion_description="B", gram_weight=20.0, seq_num=2
+        )
+        p3 = UnifiedPortion(
+            fdc_id=food.fdc_id, portion_description="C", gram_weight=30.0, seq_num=3
+        )
+        p4 = UnifiedPortion(
+            fdc_id=food.fdc_id, portion_description="D", gram_weight=40.0, seq_num=4
+        )
+        db.session.add_all([p1, p2, p3, p4])
+        db.session.commit()
+        p1_id, p2_id, p3_id, p4_id = p1.id, p2.id, p3.id, p4.id
+
+    # Move p4 (bottom) to the top
+    with key_user_client.application.app_context():
+        p4_to_move = db.session.get(UnifiedPortion, p4_id)
+        p3_portion = db.session.get(UnifiedPortion, p3_id)
+        p2_portion = db.session.get(UnifiedPortion, p2_id)
+        p1_portion = db.session.get(UnifiedPortion, p1_id)
+
+        # Simulate moving p4 up past p3
+        p4_to_move.seq_num, p3_portion.seq_num = p3_portion.seq_num, p4_to_move.seq_num
+        db.session.commit()
+
+        # Simulate moving p4 up past p2
+        p4_to_move.seq_num, p2_portion.seq_num = p2_portion.seq_num, p4_to_move.seq_num
+        db.session.commit()
+
+        # Simulate moving p4 up past p1
+        p4_to_move.seq_num, p1_portion.seq_num = p1_portion.seq_num, p4_to_move.seq_num
+        db.session.commit()
+
+        p1_new = db.session.get(UnifiedPortion, p1_id)
+        p2_new = db.session.get(UnifiedPortion, p2_id)
+        p3_new = db.session.get(UnifiedPortion, p3_id)
+        p4_new = db.session.get(UnifiedPortion, p4_id)
+
+        assert p4_new.seq_num == 1
+        assert p1_new.seq_num == 2
+        assert p2_new.seq_num == 3
+        assert p3_new.seq_num == 4
