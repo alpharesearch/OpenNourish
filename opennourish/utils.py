@@ -1431,3 +1431,25 @@ def calculate_weight_projection(user):
         day_count += 1
 
     return projected_dates, projected_weights, trending_away, at_goal_and_maintaining
+
+
+def ensure_portion_sequence(items):
+    """
+    Iterates through a list of items (MyFood, Recipe, Food) and ensures
+    all their portions have a sequence number.
+    """
+    needs_commit = False
+    for item in items:
+        if hasattr(item, "portions") and item.portions:
+            # Check if any portion is missing a seq_num
+            if any(p.seq_num is None for p in item.portions):
+                # Sort portions by gram_weight to create a stable order
+                # Handle potential None in gram_weight just in case
+                portions_to_update = sorted(
+                    item.portions, key=lambda p: p.gram_weight or 0
+                )
+                for i, p in enumerate(portions_to_update):
+                    p.seq_num = i + 1
+                needs_commit = True
+    if needs_commit:
+        db.session.commit()

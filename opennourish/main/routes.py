@@ -7,13 +7,17 @@ from flask import (
     send_from_directory,
     current_app,
     jsonify,
-    flash,
 )
 from flask_login import current_user
-from models import db, Food, UnifiedPortion
-from sqlalchemy.orm import sessionmaker
+from models import db, Food
 import os
-from opennourish.utils import generate_nutrition_label_pdf, generate_nutrition_label_svg
+from opennourish.utils import (
+    generate_nutrition_label_pdf,
+    generate_nutrition_label_svg,
+    ensure_portion_sequence,
+)
+
+main_bp = Blueprint("main", __name__)
 
 main_bp = Blueprint("main", __name__)
 
@@ -37,39 +41,15 @@ def index():
 @main_bp.route("/food/<int:fdc_id>")
 def food_detail(fdc_id):
     q = request.args.get("q")
-    current_app.logger.debug(f"Debug: In food_detail, received q: {q}")
     food = db.session.get(Food, fdc_id)
     if not food:
         return "Food not found", 404
 
-    # Manually fetch portions for this USDA food
-    # Manually fetch portions for this USDA food
-    DefaultSession = sessionmaker(bind=db.get_engine(bind=None))
-    default_session = DefaultSession()
+    # Ensure portions have sequence numbers before passing to the template
+    ensure_portion_sequence([food])
 
-    try:
-        portions = (
-            default_session.query(UnifiedPortion)
-            .filter_by(fdc_id=fdc_id)
-            .order_by(
-                UnifiedPortion.seq_num.asc().nulls_last(),
-                UnifiedPortion.gram_weight.asc(),
-            )
-            .all()
-        )
-
-        # Ensure all portions have a seq_num
-        if any(p.seq_num is None for p in portions):
-            portions_to_update = sorted(portions, key=lambda p: p.gram_weight)
-            for i, p in enumerate(portions_to_update):
-                p.seq_num = i + 1
-            db.session.commit()
-            flash(
-                "Assigned sequence numbers to all portions. Please try again.", "info"
-            )
-
-    finally:
-        default_session.close()
+    # The template will handle sorting by seq_num
+    portions = food.portions
 
     return render_template(
         "food_detail.html", food=food, search_term=q, portions=portions

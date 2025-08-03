@@ -204,7 +204,7 @@
                                     <div class="d-flex">
                                         <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
                                         <select name="portion_id" class="form-select form-select-sm">
-                                            {% for portion in food.portions %}
+                                            {% for portion in food.portions|sort(attribute='seq_num') %}
                                                 <option value="{{ portion.id }}">{{ portion.full_description_str}}</option>
                                             {% endfor %}
                                         </select>
@@ -296,7 +296,7 @@
                                 <div class="d-flex">
                                     <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
                                     <select name="portion_id" class="form-select form-select-sm">
-                                        {% for portion in recipe.portions %}
+                                        {% for portion in recipe.portions|sort(attribute='seq_num') %}
                                             <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
                                         {% endfor %}
                                     </select>
@@ -349,7 +349,7 @@
                                 <div class="d-flex">
                                     <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
                                     <select name="portion_id" class="form-select form-select-sm">
-                                            {% for portion in food.portions %}
+                                            {% for portion in food.portions|sort(attribute='seq_num') %}
                                                 <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
                                             {% endfor %}
                                         </select>

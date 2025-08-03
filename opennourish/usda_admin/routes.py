@@ -36,7 +36,7 @@ def add_usda_portion():
     db.session.add(new_portion)
     db.session.commit()
     flash("Portion added successfully.", "success")
-    return redirect(url_for("main.food_detail", fdc_id=fdc_id))
+    return redirect(url_for("main.food_detail", fdc_id=fdc_id) + "#portions-table")
 
 
 @usda_admin_bp.route("/usda_portion/<int:portion_id>/edit", methods=["POST"])
@@ -61,7 +61,9 @@ def edit_usda_portion(portion_id):
 
     db.session.commit()
     flash("Portion updated successfully.", "success")
-    return redirect(url_for("main.food_detail", fdc_id=portion.fdc_id))
+    return redirect(
+        url_for("main.food_detail", fdc_id=portion.fdc_id) + "#portions-table"
+    )
 
 
 @usda_admin_bp.route("/usda_portion/<int:portion_id>/delete", methods=["POST"])
@@ -77,7 +79,7 @@ def delete_usda_portion(portion_id):
     db.session.delete(portion)
     db.session.commit()
     flash("Portion deleted successfully.", "success")
-    return redirect(url_for("main.food_detail", fdc_id=fdc_id))
+    return redirect(url_for("main.food_detail", fdc_id=fdc_id) + "#portions-table")
 
 
 @usda_admin_bp.route("/usda_portion/<int:portion_id>/move_up", methods=["POST"])
@@ -123,7 +125,9 @@ def move_usda_portion_up(portion_id):
     else:
         flash("Portion is already at the top.", "info")
 
-    return redirect(url_for("main.food_detail", fdc_id=portion_to_move.fdc_id))
+    return redirect(
+        url_for("main.food_detail", fdc_id=portion_to_move.fdc_id) + "#portions-table"
+    )
 
 
 @usda_admin_bp.route("/usda_portion/<int:portion_id>/move_down", methods=["POST"])
@@ -156,4 +160,6 @@ def move_usda_portion_down(portion_id):
     else:
         flash("Portion is already at the bottom.", "info")
 
-    return redirect(url_for("main.food_detail", fdc_id=portion_to_move.fdc_id))
+    return redirect(
+        url_for("main.food_detail", fdc_id=portion_to_move.fdc_id) + "#portions-table"
+    )

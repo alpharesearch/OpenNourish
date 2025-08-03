@@ -24,6 +24,7 @@ from models import (
 from flask_login import login_required, current_user
 from datetime import date
 from opennourish.time_utils import get_user_today
+from opennourish.utils import ensure_portion_sequence
 from sqlalchemy import or_, func, and_
 import math
 
@@ -452,6 +453,14 @@ def search():
                 .order_by(MyMeal.usage_count.desc())
                 .paginate(page=my_meals_page, per_page=per_page, error_out=False)
             )
+
+    # Ensure all loaded portions have sequence numbers before rendering
+    if usda_foods_pagination:
+        ensure_portion_sequence(usda_foods_pagination.items)
+    if my_foods_pagination:
+        ensure_portion_sequence(my_foods_pagination.items)
+    if recipes_pagination:
+        ensure_portion_sequence(recipes_pagination.items)
 
     return render_template(
         "search/search.html",

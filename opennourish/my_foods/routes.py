@@ -264,7 +264,9 @@ def add_my_food_portion(food_id):
         flash("Portion added successfully!", "success")
     else:
         flash("Error adding portion.", "danger")
-    return redirect(url_for("my_foods.edit_my_food", food_id=my_food.id))
+    return redirect(
+        url_for("my_foods.edit_my_food", food_id=my_food.id) + "#portions-table"
+    )
 
 
 @my_foods_bp.route("/portion/<int:portion_id>/update", methods=["POST"])
@@ -283,7 +285,9 @@ def update_my_food_portion(portion_id):
     else:
         current_app.logger.debug(f"PortionForm errors: {form.errors}")
         flash("Error updating portion.", "danger")
-    return redirect(url_for("my_foods.edit_my_food", food_id=portion.my_food_id))
+    return redirect(
+        url_for("my_foods.edit_my_food", food_id=portion.my_food_id) + "#portions-table"
+    )
 
 
 @my_foods_bp.route("/portion/<int:portion_id>/delete", methods=["POST"])
@@ -295,7 +299,9 @@ def delete_my_food_portion(portion_id):
         db.session.delete(portion)
         db.session.commit()
         flash("Portion deleted.", "success")
-        return redirect(url_for("my_foods.edit_my_food", food_id=food_id))
+        return redirect(
+            url_for("my_foods.edit_my_food", food_id=food_id) + "#portions-table"
+        )
     else:
         flash("Portion not found or you do not have permission to delete it.", "danger")
         return redirect(url_for("my_foods.my_foods"))
@@ -433,21 +439,6 @@ def move_my_food_portion_up(portion_id):
         flash("Portion not found or unauthorized.", "danger")
         return redirect(url_for("my_foods.my_foods"))
 
-    if portion_to_move.seq_num is None:
-        # Assign sequence numbers to all portions of this food if any are missing
-        portions = (
-            UnifiedPortion.query.filter_by(my_food_id=portion_to_move.my_food_id)
-            .order_by(UnifiedPortion.gram_weight)
-            .all()
-        )
-        for i, p in enumerate(portions):
-            p.seq_num = i + 1
-        db.session.commit()
-        flash("Assigned sequence numbers to all portions. Please try again.", "info")
-        return redirect(
-            url_for("my_foods.edit_my_food", food_id=portion_to_move.my_food_id)
-        )
-
     # Find the portion with the next lower seq_num
     portion_to_swap_with = (
         UnifiedPortion.query.filter(
@@ -471,6 +462,7 @@ def move_my_food_portion_up(portion_id):
 
     return redirect(
         url_for("my_foods.edit_my_food", food_id=portion_to_move.my_food_id)
+        + "#portions-table"
     )
 
 
@@ -505,4 +497,5 @@ def move_my_food_portion_down(portion_id):
 
     return redirect(
         url_for("my_foods.edit_my_food", food_id=portion_to_move.my_food_id)
+        + "#portions-table"
     )

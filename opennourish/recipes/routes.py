@@ -26,6 +26,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from opennourish.utils import (
     calculate_nutrition_for_items,
     calculate_recipe_nutrition_per_100g,
+    ensure_portion_sequence,
     get_available_portions,
     remove_leading_one,
     update_recipe_nutrition,
@@ -359,6 +360,9 @@ def view_recipe(recipe_id):
         flash("You are not authorized to view this recipe.", "danger")
         return redirect(url_for("recipes.recipes"))
 
+    # Ensure portions have sequence numbers before passing to the template
+    ensure_portion_sequence([recipe])
+
     usda_food_ids = {ing.fdc_id for ing in recipe.ingredients if ing.fdc_id}
     usda_foods_map = {}
     if usda_food_ids:
@@ -541,7 +545,9 @@ def update_recipe_portion(portion_id):
         for field, errors in form.errors.items():
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
-    return redirect(url_for("recipes.edit_recipe", recipe_id=portion.recipe_id))
+    return redirect(
+        url_for("recipes.edit_recipe", recipe_id=portion.recipe_id) + "#portions-table"
+    )
 
 
 @recipes_bp.route("/recipe/portion/delete/<int:portion_id>", methods=["POST"])
@@ -680,7 +686,10 @@ def move_recipe_portion_up(portion_id):
     else:
         flash("Portion is already at the top.", "info")
 
-    return redirect(url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id))
+    return redirect(
+        url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id)
+        + "#portions-table"
+    )
 
 
 @recipes_bp.route("/portion/<int:portion_id>/move_down", methods=["POST"])
@@ -690,21 +699,6 @@ def move_recipe_portion_down(portion_id):
     if not portion_to_move or portion_to_move.recipe.user_id != current_user.id:
         flash("Portion not found or unauthorized.", "danger")
         return redirect(url_for("recipes.recipes"))
-
-    if portion_to_move.seq_num is None:
-        # Assign sequence numbers to all portions of this food if any are missing
-        portions = (
-            UnifiedPortion.query.filter_by(recipe_id=portion_to_move.recipe_id)
-            .order_by(UnifiedPortion.gram_weight)
-            .all()
-        )
-        for i, p in enumerate(portions):
-            p.seq_num = i + 1
-        db.session.commit()
-        flash("Assigned sequence numbers to all portions. Please try again.", "info")
-        return redirect(
-            url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id)
-        )
 
     # Find the portion with the next higher seq_num
     portion_to_swap_with = (
@@ -727,4 +721,7 @@ def move_recipe_portion_down(portion_id):
     else:
         flash("Portion is already at the bottom.", "info")
 
-    return redirect(url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id))
+    return redirect(
+        url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id)
+        + "#portions-table"
+    )
