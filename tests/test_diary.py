@@ -1,6 +1,6 @@
 import pytest
 from models import db, User, Food, FoodNutrient, Nutrient, MyFood, DailyLog, UnifiedPortion
-from datetime import date
+from datetime import date, timedelta
 from opennourish.utils import calculate_nutrition_for_items
 
 def test_add_usda_food_to_diary(auth_client):
@@ -304,3 +304,39 @@ def test_update_diary_entry(auth_client):
         assert updated_log.amount_grams == 100.0 # 2 * 50.0
         assert updated_log.portion_id_fk == portion2_id
         assert updated_log.serving_type == 'serving'
+
+def test_move_diary_entry(auth_client):
+    """
+    Tests moving a diary entry to a different date and meal.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username='testuser').first()
+        # Add a dummy entry to move
+        log_entry = DailyLog(
+            user_id=user.id,
+            log_date=date.today(),
+            meal_name='Breakfast',
+            amount_grams=100,
+            fdc_id=10001 # Using a dummy fdc_id from another test
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+        log_id = log_entry.id
+
+    target_date = date.today() + timedelta(days=1)
+    target_meal = 'Lunch'
+
+    response = auth_client.post('/diary/move_entry', data={
+        'log_id': log_id,
+        'target_date': target_date.strftime('%Y-%m-%d'),
+        'target_meal_name': target_meal
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b'Diary entry moved successfully.' in response.data
+
+    with auth_client.application.app_context():
+        moved_log = db.session.get(DailyLog, log_id)
+        assert moved_log is not None
+        assert moved_log.log_date == target_date
+        assert moved_log.meal_name == target_meal

@@ -205,6 +205,7 @@
                                     </select>
                                 <button type="submit" class="btn btn-outline-success btn-sm mt-2 mt-sm-0 ms-sm-2">Save</button>
                             </form>
+                            <button type="button" class="btn btn-outline-info btn-sm ms-sm-2 mt-2 mt-sm-0" data-bs-toggle="modal" data-bs-target="#moveEntryModal" data-log-id="{{ item.log_id }}" data-log-date="{{ date.isoformat() }}">Move</button>
                             <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}" class="ms-sm-2 mt-2 mt-sm-0">
                                 <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                             </form>
@@ -224,4 +225,61 @@
     </div>
     {% endfor %}
 </div>
+
+<!-- Move Entry Modal -->
+<div class="modal fade" id="moveEntryModal" tabindex="-1" aria-labelledby="moveEntryModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="moveEntryModalLabel">Move Diary Entry</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="moveEntryForm" method="POST" action="{{ url_for('diary.move_entry') }}">
+        <div class="modal-body">
+          <input type="hidden" name="log_id" id="modalLogId">
+          <div class="mb-3">
+            <label for="modalLogDate" class="form-label">Date</label>
+            <input type="date" class="form-control" id="modalLogDate" name="target_date" required>
+          </div>
+          <div class="mb-3">
+            <label for="modalMealName" class="form-label">Meal</label>
+            <select class="form-select" id="modalMealName" name="target_meal_name" required>
+              {% for meal_name_option in meal_names_to_render %}
+                {% if meal_name_option != 'Water' %}
+                    <option value="{{ meal_name_option }}">{{ meal_name_option }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-outline-primary">Move</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var moveEntryModal = document.getElementById('moveEntryModal');
+    if(moveEntryModal) {
+        moveEntryModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var logId = button.getAttribute('data-log-id');
+            var logDate = button.getAttribute('data-log-date');
+
+            var modalLogIdInput = moveEntryModal.querySelector('#modalLogId');
+            var modalLogDateInput = moveEntryModal.querySelector('#modalLogDate');
+
+            modalLogIdInput.value = logId;
+            modalLogDateInput.value = logDate;
+        });
+    }
+});
+</script>
+{% endblock %}
+
 {% endblock %}

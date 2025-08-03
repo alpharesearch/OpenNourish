@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash, current_ap
 from flask_login import current_user, login_required
 from . import diary_bp
 from models import db, DailyLog, Food, MyFood, MyMeal, MyMealItem, Recipe, UserGoal, ExerciseLog, UnifiedPortion, User, Friendship, FastingSession
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from opennourish.time_utils import get_user_today
 from opennourish.utils import calculate_nutrition_for_items, get_available_portions, remove_leading_one
 from .forms import MealForm, DailyLogForm, MealItemForm
@@ -291,6 +291,35 @@ def update_entry(log_id):
         flash('Invalid data submitted.', 'danger')
 
     return redirect(url_for('diary.diary', log_date_str=log_entry.log_date.isoformat()))
+
+
+@diary_bp.route('/diary/move_entry', methods=['POST'])
+@login_required
+def move_entry():
+    log_id = request.form.get('log_id')
+    target_date_str = request.form.get('target_date')
+    target_meal_name = request.form.get('target_meal_name')
+
+    log_entry = db.session.get(DailyLog, log_id)
+
+    if not log_entry or log_entry.user_id != current_user.id:
+        flash('Diary entry not found or you do not have permission to move it.', 'danger')
+        return redirect(request.referrer or url_for('diary.diary'))
+
+    original_date_str = log_entry.log_date.isoformat()
+
+    try:
+        target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+        log_entry.log_date = target_date
+        log_entry.meal_name = target_meal_name
+        db.session.commit()
+        flash('Diary entry moved successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error moving diary entry: {e}")
+        flash('There was an error moving the diary entry.', 'danger')
+
+    return redirect(url_for('diary.diary', log_date_str=original_date_str))
 
 
 @diary_bp.route('/my_meals/new', methods=['GET', 'POST'])

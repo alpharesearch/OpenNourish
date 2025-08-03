@@ -52,6 +52,11 @@ To avoid code duplication, the application uses a **single, unified model (`Unif
 - **Configuration:** Store application configuration (like `SECRET_KEY`) in a `config.py` file.
 - **Templates & Static Files:** Templates are in `templates/`, and static files (CSS, JS) are in `static/`.
 
+### 6.1. Linting and Formatting
+To ensure code quality and consistency, this project uses **Ruff** for both linting and formatting.
+- **To check for linting errors:** `ruff check .`
+- **To automatically format the code:** `ruff format .`
+
 ## 7. Design Directives & UI Conventions
 To maintain a consistent and professional look and feel, all generated HTML templates should adhere to these Bootstrap 5 conventions and outline variants button styles for consistency across the the application. 
 - **Primary Actions (Submit, Create, Add, Edit):** Buttons for these primary actions should always use the main theme color.
@@ -176,11 +181,14 @@ To ensure that all floating-point numbers (e.g., nutritional values, weights) ar
 - **Test Creation:** When generating new application tests, ensure they use a fixture that configures the app for testing and provides a test client.
 - **HTML Encoding in Assertions:** When asserting against HTML content in test responses, be mindful of HTML encoding. Characters like single quotes (`'`) are often encoded as `&#39;`. Therefore, assertions should check for the HTML-encoded version of the string (e.g., `assert b"Friend&#39;s Meal"` instead of `assert b"Friend's Meal"`).
 
-### 8.1. Cross-Database Queries
+### 8.1. Permanent Test Suite
+**Directive:** Do not delete or disable tests. The test suite must be maintained and expanded to cover all new and existing functionality. If a test is temporarily failing due to a known issue that cannot be immediately resolved, it may be marked with `pytest.mark.xfail` and a clear explanation, but it must not be removed.
+
+### 8.2. Cross-Database Queries
 - **Challenge:** A common challenge in this project is querying relationships between the user database (`user_data.db`) and the static USDA database (`usda_data.db`). Standard SQLAlchemy eager loading strategies like `joinedload` or `selectinload` can fail, as they may attempt to join tables across different database files, resulting in `sqlite3.OperationalError: no such table`.
 - **Solution:** To handle these cross-database relationships, you must use a manual, two-step query process. First, query the primary database (usually the user database) to retrieve the main objects. Then, extract the foreign keys from the results and perform a second, separate query against the second database (usually the USDA database) to fetch the related objects. Finally, manually attach the related objects to the main objects in your Python code. This approach ensures that each query is sent to the correct database, avoiding the "no such table" error.
 
-### 8.2. Testing Flash Messages
+### 8.3. Testing Flash Messages
 - **Challenge:** When testing routes that flash a message and then immediately redirect, the flashed message is consumed by the redirected request. Asserting the message content in the final response body after setting `follow_redirects=True` will fail because the message has already been displayed and removed from the session.
 - **Solution:** To reliably test flash messages, you must check the session *before* following the redirect.
   1. Make the POST request **without** `follow_redirects=True`.
@@ -208,7 +216,7 @@ To ensure that all floating-point numbers (e.g., nutritional values, weights) ar
       response = client.get(response.headers['Location'])
       assert response.status_code == 200
   ```
-### 8.3. Writing Effective Pytest Tests
+### 8.4. Writing Effective Pytest Tests
 
 To avoid common pitfalls and ensure tests are robust and maintainable, follow these guidelines when writing tests for OpenNourish.
 
