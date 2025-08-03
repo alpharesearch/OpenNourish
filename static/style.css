@@ -38,9 +38,14 @@ input[name="amount"], input[name="quantity"] {
 
 
 select[name="portion_id"] {
-    width: 90px;
+    width: 110px;
 }
 
+@media (min-width: 768px) {
+    select[name="portion_id"] {
+        width: 160px;
+    }
+}
 .progress-marker {
     position: absolute;
     top: -5px;
