@@ -73,6 +73,7 @@ def new_my_food():
         "sodium_mg_per_100g",
         "fiber_per_100g",
         "sugars_per_100g",
+        "added_sugars_per_100g",
         "vitamin_d_mcg_per_100g",
         "calcium_mg_per_100g",
         "iron_mg_per_100g",
@@ -112,6 +113,7 @@ def new_my_food():
             "sodium_mg_per_100g",
             "fiber_per_100g",
             "sugars_per_100g",
+            "added_sugars_per_100g",
             "vitamin_d_mcg_per_100g",
             "calcium_mg_per_100g",
             "iron_mg_per_100g",
@@ -321,28 +323,57 @@ def copy_usda_food():
         .first_or_404()
     )
 
-    new_food = MyFood(user_id=current_user.id, description=usda_food.description)
-    # Populate nutrients from the USDA food
+    # Create the new MyFood object
+    new_food = MyFood(
+        user_id=current_user.id,
+        description=usda_food.description,
+        food_category_id=usda_food.food_category_id,
+        ingredients=usda_food.ingredients,
+        fdc_id=usda_food.fdc_id,
+        upc=usda_food.upc,
+    )
+
+    # Nutrient mapping dictionary (Nutrient Name from USDA -> MyFood attribute)
+    nutrient_map = {
+        "Energy": "calories_per_100g",
+        "Protein": "protein_per_100g",
+        "Carbohydrate, by difference": "carbs_per_100g",
+        "Total lipid (fat)": "fat_per_100g",
+        "Fatty acids, total saturated": "saturated_fat_per_100g",
+        "Fatty acids, total trans": "trans_fat_per_100g",
+        "Cholesterol": "cholesterol_mg_per_100g",
+        "Sodium, Na": "sodium_mg_per_100g",
+        "Fiber, total dietary": "fiber_per_100g",
+        "Sugars, total including NLEA": "sugars_per_100g",
+        "Sugars, added": "added_sugars_per_100g",
+        "Vitamin D (D2 + D3)": "vitamin_d_mcg_per_100g",
+        "Calcium, Ca": "calcium_mg_per_100g",
+        "Iron, Fe": "iron_mg_per_100g",
+        "Potassium, K": "potassium_mg_per_100g",
+    }
+
+    # Populate nutrients from the USDA food using the map
     for nutrient_link in usda_food.nutrients:
-        nutrient_name = nutrient_link.nutrient.name.lower()
-        # This is a simplified mapping. You might need a more robust one.
-        if "protein" in nutrient_name:
-            new_food.protein_per_100g = nutrient_link.amount
-        elif "total lipid (fat)" in nutrient_name:
-            new_food.fat_per_100g = nutrient_link.amount
-        elif "carbohydrate" in nutrient_name:
-            new_food.carbs_per_100g = nutrient_link.amount
-        elif (
-            "energy" in nutrient_name
-            and "kcal" in nutrient_link.nutrient.unit_name.lower()
-        ):
-            new_food.calories_per_100g = nutrient_link.amount
+        nutrient_name = nutrient_link.nutrient.name
+        my_food_attr = nutrient_map.get(nutrient_name)
+        if my_food_attr:
+            # For 'Energy', only copy it if the unit is KCAL.
+            if nutrient_name == "Energy":
+                if nutrient_link.nutrient.unit_name.lower() == "kcal":
+                    setattr(new_food, my_food_attr, nutrient_link.amount)
+            # For all other mapped nutrients, copy them directly.
+            else:
+                setattr(new_food, my_food_attr, nutrient_link.amount)
 
     db.session.add(new_food)
     db.session.flush()  # Flush to get the new_food.id
 
-    # Deep copy portions from the original USDA food
-    original_portions = UnifiedPortion.query.filter_by(fdc_id=usda_food.fdc_id).all()
+    # Deep copy portions from the original USDA food, preserving seq_num
+    original_portions = (
+        UnifiedPortion.query.filter_by(fdc_id=usda_food.fdc_id)
+        .order_by(UnifiedPortion.seq_num)
+        .all()
+    )
     for orig_portion in original_portions:
         new_portion = UnifiedPortion(
             my_food_id=new_food.id,
@@ -351,6 +382,7 @@ def copy_usda_food():
             portion_description=orig_portion.portion_description,
             modifier=orig_portion.modifier,
             gram_weight=orig_portion.gram_weight,
+            seq_num=orig_portion.seq_num,  # Copy the sequence number
         )
         db.session.add(new_portion)
 

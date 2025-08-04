@@ -104,10 +104,13 @@
                     const foodType = this.dataset.foodType;
                     const foodName = this.dataset.foodName;
 
+                    // Map foodType to the value expected by the API
+                    const apiFoodType = foodType === 'usda_food' ? 'usda' : foodType;
+
                     // 1. Populate static fields
                     modalFoodName.textContent = foodName;
                     modalFoodId.value = foodId;
-                    modalFoodType.value = foodType;
+                    modalFoodType.value = apiFoodType; // Use the mapped type for the form
 
                     // 2. Set date to today
                     modalLogDate.value = new Date().toLocaleDateString('en-CA', { timeZone: '{{ current_user.timezone }}' });
@@ -124,7 +127,7 @@
                     }
 
                     // 4. Show/hide amount/portion fields based on food type
-                    if (foodType === 'my_meal') {
+                    if (apiFoodType === 'my_meal') {
                         modalAmountPortionFields.style.display = 'none';
                     } else {
                         modalAmountPortionFields.style.display = 'block';
@@ -132,7 +135,7 @@
 
                     // 5. Fetch portions
                     modalPortionId.innerHTML = '<option>Loading...</option>';
-                    fetch(`/search/api/get-portions/${foodType}/${foodId}`)
+                    fetch(`/search/api/get-portions/${apiFoodType}/${foodId}`)
                         .then(response => response.json())
                         .then(data => {
                             modalPortionId.innerHTML = '';

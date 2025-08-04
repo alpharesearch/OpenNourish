@@ -53,7 +53,14 @@ class MyFoodForm(FlaskForm):
         "Fiber (g per 100g)", validators=[Optional(), NumberRange(min=0)], default=0.0
     )
     sugars_per_100g = FloatField(
-        "Sugars (g per 100g)", validators=[Optional(), NumberRange(min=0)], default=0.0
+        "Total Sugars (g per 100g)",
+        validators=[Optional(), NumberRange(min=0)],
+        default=0.0,
+    )
+    added_sugars_per_100g = FloatField(
+        "Added Sugars (g per 100g)",
+        validators=[Optional(), NumberRange(min=0)],
+        default=0.0,
     )
     vitamin_d_mcg_per_100g = FloatField(
         "Vitamin D (mcg per 100g)",

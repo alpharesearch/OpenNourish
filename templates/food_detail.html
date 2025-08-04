@@ -3,99 +3,121 @@
 {% block title %}{{ food.description }} - {{ super() }}{% endblock %}
 
 {% block content %}
-<h1>{{ food.description }}</h1>
+<div class="container mt-4">
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">{{ food.description }}</h1>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-success btn-sm add-to-diary-btn"
+                    data-food-id="{{ food.fdc_id }}"
+                    data-food-type="usda_food"
+                    data-food-name="{{ food.description }}">
+                Add
+            </button>
+            {% if current_user.is_authenticated %}
+            <form method="post" action="{{ url_for('my_foods.copy_usda_food') }}" class="d-inline">
+                <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
+                <button type="submit" class="btn btn-outline-primary btn-sm">Create Copy</button>
+            </form>
+            <a href="{{ url_for('main.generate_nutrition_label', fdc_id=food.fdc_id) }}" class="btn btn-outline-info btn-sm"
+                target="_blank">PDF Fact Sheet</a>
+            {% endif %}
+        </div>
+    </div>
 
-{% if food.upc %}
-<p><strong>UPC:</strong> {{ food.upc }}</p>
-{% endif %}
+    {% if food.upc %}
+    <p><strong>UPC:</strong> {{ food.upc }}</p>
+    {% endif %}
 
-{% if food.ingredients %}
-<h2>Ingredients</h2>
-<p>{{ food.ingredients }}</p>
-{% endif %}
+    {% if food.ingredients %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Ingredients</h2>
+        </div>
+        <div class="card-body">
+            <p>{{ food.ingredients }}</p>
+        </div>
+    </div>
+    {% endif %}
 
-<div class="row">
-    <div class="col-lg-6">
-        <h2>Nutritional Information (per 100g)</h2>
-        <ul>
-            {% for food_nutrient in food.nutrients %}
-            <li>{{ food_nutrient.nutrient.name }}: {{ food_nutrient.amount }} {{ food_nutrient.nutrient.unit_name }}
-            </li>
-            {% endfor %}
-        </ul>
-
-        <h2>Portion Sizes</h2>
-        {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_key_user) %}
-
-        <h6 class="mt-2">Add New Portion</h6>
-        <form action="{{ url_for('usda_admin.add_usda_portion') }}" method="POST">
-            <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
-            <div class="row g-2">
-                <div class="col-lg-2">
-                    <input type="number" step="any" name="amount" class="form-control form-control-sm"
-                        placeholder="e.g., 1">
+    <!-- PORTION SIZES CARD -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Portion Sizes</h2>
+        </div>
+        <div class="card-body">
+            {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_key_user) %}
+            <h6 class="mt-2">Add New Portion</h6>
+            <form action="{{ url_for('usda_admin.add_usda_portion') }}" method="POST" class="mb-4">
+                <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
+                <div class="row g-2">
+                    <div class="col-auto">
+                        <input type="number" step="any" name="amount" class="form-control form-control-sm"
+                            placeholder="e.g., 1" style="width: 60px;">
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" name="measure_unit_description"
+                            class="form-control form-control-sm" placeholder="e.g., cup">
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" name="portion_description" class="form-control form-control-sm"
+                            placeholder="e.g., chopped">
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" name="modifier" class="form-control form-control-sm"
+                            placeholder="e.g., raw">
+                    </div>
+                    <div class="col-auto">
+                        <input type="number" step="any" name="gram_weight" class="form-control form-control-sm"
+                            placeholder="Grams" required>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end mt-2">
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Add</button>
+                    </div>
                 </div>
-                <div class="col-lg-3">
-                    <input type="text" name="measure_unit_description" class="form-control form-control-sm"
-                        placeholder="e.g., cup">
-                </div>
-                <div class="col-lg-3">
-                    <input type="text" name="portion_description" class="form-control form-control-sm"
-                        placeholder="e.g., chopped">
-                </div>
-                <div class="col-lg-2">
-                    <input type="text" name="modifier" class="form-control form-control-sm" placeholder="e.g., raw">
-                </div>
-                <div class="col-lg-2">
-                    <input type="number" step="any" name="gram_weight" class="form-control form-control-sm"
-                        placeholder="Grams" required>
-                </div>
-                <div class="col-lg-12 d-flex justify-content-end mt-2">
-                    <button type="submit" class="btn btn-outline-primary btn-sm">Add</button>
-                </div>
-            </div>
-        </form>
-        <hr>
-        <div class="card p-3 mb-4" id="portions-table">
+            </form>
+            <hr>
             <h5 class="mb-3">Manage Portions</h5>
             {% for portion in portions|sort(attribute='seq_num') %}
             <div class="d-flex align-items-center mb-2">
                 <div class="d-flex flex-column me-2">
-                    <form action="{{ url_for('usda_admin.move_usda_portion_up', portion_id=portion.id) }}" method="POST"
-                        class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first %}disabled{%
-                            endif %}>▲</button>
+                    <form action="{{ url_for('usda_admin.move_usda_portion_up', portion_id=portion.id) }}"
+                        method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first
+                            %}disabled{% endif %}>▲</button>
                     </form>
                     <form action="{{ url_for('usda_admin.move_usda_portion_down', portion_id=portion.id) }}"
                         method="POST" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last %}disabled{%
-                            endif %}>▼</button>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last
+                            %}disabled{% endif %}>▼</button>
                     </form>
                 </div>
-                <form action="{{ url_for('usda_admin.edit_usda_portion', portion_id=portion.id) }}" method="POST"
-                    class="flex-grow-1">
+                <form action="{{ url_for('usda_admin.edit_usda_portion', portion_id=portion.id) }}"
+                    method="POST" class="flex-grow-1">
                     <div class="row g-2">
-                        <div class="col-lg-2">
+                        <div class="col-auto">
                             <input type="number" step="any" name="amount" class="form-control form-control-sm"
-                                value="{{ portion.amount }}">
+                                value="{{ portion.amount }}" style="width: 60px;">
                         </div>
-                        <div class="col-lg-3">
-                            <input type="text" name="measure_unit_description" class="form-control form-control-sm"
+                        <div class="col-auto">
+                            <input type="text" name="measure_unit_description"
+                                class="form-control form-control-sm"
                                 value="{{ portion.measure_unit_description }}">
                         </div>
-                        <div class="col-lg-3">
-                            <input type="text" name="portion_description" class="form-control form-control-sm"
+                        <div class="col-auto">
+                            <input type="text" name="portion_description"
+                                class="form-control form-control-sm"
                                 value="{{ portion.portion_description or '' }}">
                         </div>
-                        <div class="col-lg-2">
+                        <div class="col-auto">
                             <input type="text" name="modifier" class="form-control form-control-sm"
                                 value="{{ portion.modifier or '' }}">
                         </div>
-                        <div class="col-lg-2">
-                            <input type="number" step="any" name="gram_weight" class="form-control form-control-sm"
-                                value="{{ portion.gram_weight }}" required>
+                        <div class="col-auto">
+                            <input type="number" step="any" name="gram_weight"
+                                class="form-control form-control-sm" value="{{ portion.gram_weight }}" required>
                         </div>
-                        <div class="col-lg-12 d-flex justify-content-end mt-2">
+                        <div class="col-12 d-flex justify-content-end mt-2">
                             <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
                             <button type="button" class="btn btn-outline-danger btn-sm ms-2"
                                 onclick="document.getElementById('delete-form-{{ portion.id }}').submit();">Delete</button>
@@ -103,34 +125,51 @@
                     </div>
                 </form>
                 <form id="delete-form-{{ portion.id }}"
-                    action="{{ url_for('usda_admin.delete_usda_portion', portion_id=portion.id) }}" method="POST"
-                    class="d-none"></form>
+                    action="{{ url_for('usda_admin.delete_usda_portion', portion_id=portion.id) }}"
+                    method="POST" class="d-none"></form>
             </div>
             {% endfor %}
+            {% else %}
+            <ul class="list-group list-group-flush">
+                {% for portion in portions %}
+                <li class="list-group-item">
+                    {{ portion.full_description_str }}: {{ "%.2f"|format(portion.gram_weight) }}g
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
         </div>
-        {% else %}
-        <ul>
-            {% for portion in portions %}
-            <li>
-                {{ portion.full_description_str }}: {{ portion.gram_weight }}g
-            </li>
-            {% endfor %}
-        </ul>
-        {% endif %}
     </div>
-    <div class="col-lg-6">
-        <h2>Nutrition Label</h2>
-        <img src="{{ url_for('main.nutrition_label_svg', fdc_id=food.fdc_id) }}" alt="Nutrition Label"
-            class="img-fluid">
+
+    <div class="row">
+        <div class="col-lg-6">
+            <!-- NUTRITIONAL INFORMATION CARD -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Nutritional Information (per 100g)</h2>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        {% for food_nutrient in food.nutrients %}
+                        <li>{{ food_nutrient.nutrient.name }}: {{ "%.2f"|format(food_nutrient.amount) }} {{
+                            food_nutrient.nutrient.unit_name }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <!-- NUTRITION LABEL CARD -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Nutrition Label</h2>
+                </div>
+                <div class="card-body">
+                    <img src="{{ url_for('main.nutrition_label_svg', fdc_id=food.fdc_id) }}" alt="Nutrition Label"
+                        class="img-fluid">
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-{% if current_user.is_authenticated %}
-<a href="{{ url_for('search.search', search_term=search_term) }}" class="btn btn-outline-secondary">Back to search</a>
-<form method="post" action="{{ url_for('my_foods.copy_usda_food') }}" class="d-inline">
-    <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
-    <button type="submit" class="btn btn-outline-primary">Add to My Foods</button>
-</form>
-<a href="{{ url_for('main.generate_nutrition_label', fdc_id=food.fdc_id) }}" class="btn btn-outline-info"
-    target="_blank">Download Nutrition Label (PDF)</a>
-{% endif %}
 {% endblock %}

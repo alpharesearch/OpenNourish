@@ -141,10 +141,18 @@
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
-                        {{ form.sugars_per_100g.label(class="form-label") }}
+                        {{ form.sugars_per_100g.label(class="form-label", text="Total Sugars (g per 100g)") }}
                         {{ form.sugars_per_100g(class="form-control", type="number", step="any",
                         value="%.2f"|format(my_food.sugars_per_100g) if my_food else "") }}
                         {% for error in form.sugars_per_100g.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-lg-3 mb-3">
+                        {{ form.added_sugars_per_100g.label(class="form-label") }}
+                        {{ form.added_sugars_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.added_sugars_per_100g) if my_food else "") }}
+                        {% for error in form.added_sugars_per_100g.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
