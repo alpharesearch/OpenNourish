@@ -1,6 +1,7 @@
 import pytest
 from models import db, User, ExerciseLog, ExerciseActivity, UserGoal, CheckIn
 from datetime import date, timedelta
+from opennourish.time_utils import get_user_today
 
 
 def test_weekly_exercise_progress_display(auth_client):
@@ -30,7 +31,7 @@ def test_weekly_exercise_progress_display(auth_client):
         db.session.commit()
 
         # Log exercises for the current week
-        today = date.today()
+        today = get_user_today(user.timezone)
         start_of_week = today - timedelta(days=today.weekday())
 
         # Log 1: Running, 45 mins, 300 kcal (example values)
