@@ -204,8 +204,20 @@
         <div class="card-body">
             <ul class="list-group list-group-flush">
                 {% for ingredient in recipe.ingredients %}
-                <li class="list-group-item">
-                    <div class="row align-items-center">
+                <li class="list-group-item d-flex justify-content-between align-items-center p-1">
+                    <div class="d-flex flex-column me-2">
+                        <form action="{{ url_for('recipes.move_recipe_ingredient_up', ingredient_id=ingredient.id) }}"
+                            method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first
+                                %}disabled{% endif %}>▲</button>
+                        </form>
+                        <form action="{{ url_for('recipes.move_recipe_ingredient_down', ingredient_id=ingredient.id) }}"
+                            method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last
+                                %}disabled{% endif %}>▼</button>
+                        </form>
+                    </div>
+                    <div class="row align-items-center flex-grow-1">
                         <!-- Ingredient Info -->
                         <div class="col-md-6 mb-3 mb-md-0">
                             <h6>

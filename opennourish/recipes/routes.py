@@ -130,13 +130,15 @@ def edit_recipe(recipe_id):
         selectinload(Recipe.portions),
     ).get_or_404(recipe_id)
 
-    # Ensure all portions have a seq_num
-    if any(p.seq_num is None for p in recipe.portions):
-        portions_to_update = sorted(recipe.portions, key=lambda p: p.gram_weight)
-        for i, p in enumerate(portions_to_update):
-            p.seq_num = i + 1
+    # Ensure all ingredients have a seq_num
+    if any(ing.seq_num is None for ing in recipe.ingredients):
+        ingredients_to_update = sorted(
+            recipe.ingredients, key=lambda ing: ing.id
+        )  # Sort by ID for initial assignment
+        for i, ing in enumerate(ingredients_to_update):
+            ing.seq_num = i + 1
         db.session.commit()
-        flash("Assigned sequence numbers to all portions.", "info")
+        flash("Assigned sequence numbers to all ingredients.", "info")
 
     # Manually fetch USDA food data
     usda_food_ids = [ing.fdc_id for ing in recipe.ingredients if ing.fdc_id]
@@ -312,7 +314,9 @@ def delete_ingredient(ingredient_id):
     update_recipe_nutrition(recipe)
     db.session.commit()
     flash("Ingredient removed.", "success")
-    return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id) + "#ingredients-section")
+    return redirect(
+        url_for("recipes.edit_recipe", recipe_id=recipe.id) + "#ingredients-section"
+    )
 
 
 @recipes_bp.route("/recipe/ingredient/<int:ingredient_id>/update", methods=["POST"])
@@ -346,7 +350,96 @@ def update_ingredient(ingredient_id):
     update_recipe_nutrition(recipe)
     db.session.commit()
     flash("Ingredient updated successfully.", "success")
-    return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id) + "#ingredients-section")
+    return redirect(
+        url_for("recipes.edit_recipe", recipe_id=recipe.id) + "#ingredients-section"
+    )
+
+
+@recipes_bp.route("/ingredient/<int:ingredient_id>/move_up", methods=["POST"])
+@login_required
+def move_recipe_ingredient_up(ingredient_id):
+    ingredient_to_move = db.session.get(RecipeIngredient, ingredient_id)
+    if not ingredient_to_move or ingredient_to_move.recipe.user_id != current_user.id:
+        flash("Ingredient not found or unauthorized.", "danger")
+        return redirect(url_for("recipes.recipes"))
+
+    if ingredient_to_move.seq_num is None:
+        # Assign sequence numbers to all ingredients of this recipe if any are missing
+        ingredients = (
+            RecipeIngredient.query.filter_by(recipe_id=ingredient_to_move.recipe_id)
+            .order_by(
+                RecipeIngredient.id
+            )  # Use ID for initial assignment if seq_num is missing
+            .all()
+        )
+        for i, ing in enumerate(ingredients):
+            ing.seq_num = i + 1
+        db.session.commit()
+        flash("Assigned sequence numbers to all ingredients. Please try again.", "info")
+        return redirect(
+            url_for("recipes.edit_recipe", recipe_id=ingredient_to_move.recipe_id)
+        )
+
+    # Find the ingredient with the next lower seq_num
+    ingredient_to_swap_with = (
+        RecipeIngredient.query.filter(
+            RecipeIngredient.recipe_id == ingredient_to_move.recipe_id,
+            RecipeIngredient.seq_num < ingredient_to_move.seq_num,
+        )
+        .order_by(RecipeIngredient.seq_num.desc())
+        .first()
+    )
+
+    if ingredient_to_swap_with:
+        # Swap seq_num values
+        ingredient_to_move.seq_num, ingredient_to_swap_with.seq_num = (
+            ingredient_to_swap_with.seq_num,
+            ingredient_to_move.seq_num,
+        )
+        db.session.commit()
+        flash("Ingredient moved up.", "success")
+    else:
+        flash("Ingredient is already at the top.", "info")
+
+    return redirect(
+        url_for("recipes.edit_recipe", recipe_id=ingredient_to_move.recipe_id)
+        + "#ingredients-section"
+    )
+
+
+@recipes_bp.route("/ingredient/<int:ingredient_id>/move_down", methods=["POST"])
+@login_required
+def move_recipe_ingredient_down(ingredient_id):
+    ingredient_to_move = db.session.get(RecipeIngredient, ingredient_id)
+    if not ingredient_to_move or ingredient_to_move.recipe.user_id != current_user.id:
+        flash("Ingredient not found or unauthorized.", "danger")
+        return redirect(url_for("recipes.recipes"))
+
+    # Find the ingredient with the next higher seq_num
+    ingredient_to_swap_with = (
+        RecipeIngredient.query.filter(
+            RecipeIngredient.recipe_id == ingredient_to_move.recipe_id,
+            RecipeIngredient.seq_num > ingredient_to_move.seq_num,
+        )
+        .order_by(RecipeIngredient.seq_num.asc())
+        .first()
+    )
+
+    if ingredient_to_swap_with:
+        # Swap seq_num values
+        ingredient_to_move.seq_num, ingredient_to_swap_with.seq_num = (
+            ingredient_to_swap_with.seq_num,
+            ingredient_to_move.seq_num,
+        )
+        db.session.commit()
+        flash("Ingredient moved down.", "success")
+    else:
+        flash("Ingredient is already at the bottom.", "info")
+
+    return redirect(
+        url_for("recipes.edit_recipe", recipe_id=ingredient_to_move.recipe_id)
+        + "#ingredients-section"
+    )
 
 
 @recipes_bp.route("/<int:recipe_id>")
@@ -622,13 +715,14 @@ def copy_recipe(recipe_id):
     db.session.flush()  # Flush to get the new_recipe.id for ingredients
 
     # Copy ingredients
-    for orig_ing in original_recipe.ingredients:
+    for i, orig_ing in enumerate(original_recipe.ingredients):
         new_ing = RecipeIngredient(
             recipe_id=new_recipe.id,
             fdc_id=orig_ing.fdc_id,
             my_food_id=orig_ing.my_food_id,
             recipe_id_link=orig_ing.recipe_id_link,
             amount_grams=orig_ing.amount_grams,
+            seq_num=i + 1,
         )
         db.session.add(new_ing)
 

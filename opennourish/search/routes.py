@@ -571,6 +571,14 @@ def add_item():
                 return redirect(url_for("recipes.edit_recipe", recipe_id=recipe_id))
 
             for item in my_meal.items:
+                # Calculate the next seq_num for the ingredient
+                max_seq_num = (
+                    db.session.query(func.max(RecipeIngredient.seq_num))
+                    .filter(RecipeIngredient.recipe_id == target_recipe.id)
+                    .scalar()
+                )
+                next_seq_num = (max_seq_num or 0) + 1
+
                 ingredient = RecipeIngredient(
                     recipe_id=target_recipe.id,
                     fdc_id=item.fdc_id,
@@ -579,6 +587,7 @@ def add_item():
                     amount_grams=item.amount_grams,
                     serving_type=item.serving_type,
                     portion_id_fk=item.portion_id_fk,
+                    seq_num=next_seq_num,
                 )
                 db.session.add(ingredient)
             update_recipe_nutrition(target_recipe)
@@ -727,12 +736,21 @@ def add_item():
             if food_type == "usda":
                 food = db.session.get(Food, food_id)
                 if food:
+                    # Calculate the next seq_num for the ingredient
+                    max_seq_num = (
+                        db.session.query(func.max(RecipeIngredient.seq_num))
+                        .filter(RecipeIngredient.recipe_id == target_recipe.id)
+                        .scalar()
+                    )
+                    next_seq_num = (max_seq_num or 0) + 1
+
                     ingredient = RecipeIngredient(
                         recipe_id=target_recipe.id,
                         fdc_id=food.fdc_id,
                         amount_grams=amount_grams,
                         serving_type=serving_type,
                         portion_id_fk=portion_id_fk_value,
+                        seq_num=next_seq_num,
                     )
                     db.session.add(ingredient)
                     update_recipe_nutrition(target_recipe)
@@ -754,12 +772,21 @@ def add_item():
                         return redirect(
                             url_for("recipes.edit_recipe", recipe_id=recipe_id)
                         )
+                    # Calculate the next seq_num for the ingredient
+                    max_seq_num = (
+                        db.session.query(func.max(RecipeIngredient.seq_num))
+                        .filter(RecipeIngredient.recipe_id == target_recipe.id)
+                        .scalar()
+                    )
+                    next_seq_num = (max_seq_num or 0) + 1
+
                     ingredient = RecipeIngredient(
                         recipe_id=target_recipe.id,
                         my_food_id=food.id,
                         amount_grams=amount_grams,
                         serving_type=serving_type,
                         portion_id_fk=portion_id_fk_value,
+                        seq_num=next_seq_num,
                     )
                     db.session.add(ingredient)
                     update_recipe_nutrition(target_recipe)
@@ -792,12 +819,21 @@ def add_item():
                     )
 
                 # If we reach here, it's a valid sub-recipe and not self-nesting
+                # Calculate the next seq_num for the ingredient
+                max_seq_num = (
+                    db.session.query(func.max(RecipeIngredient.seq_num))
+                    .filter(RecipeIngredient.recipe_id == target_recipe.id)
+                    .scalar()
+                )
+                next_seq_num = (max_seq_num or 0) + 1
+
                 ingredient = RecipeIngredient(
                     recipe_id=target_recipe.id,
                     recipe_id_link=sub_recipe.id,
                     amount_grams=amount_grams,
                     serving_type=serving_type,
                     portion_id_fk=portion_id_fk_value,
+                    seq_num=next_seq_num,
                 )
                 db.session.add(ingredient)
                 update_recipe_nutrition(target_recipe)

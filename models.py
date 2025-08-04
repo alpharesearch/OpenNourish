@@ -307,6 +307,7 @@ class Recipe(db.Model):
         backref="recipe",
         cascade="all, delete-orphan",
         foreign_keys="RecipeIngredient.recipe_id",
+        order_by="RecipeIngredient.seq_num.asc().nulls_last()",
     )
     portions = db.relationship(
         "UnifiedPortion",
@@ -346,6 +347,7 @@ class RecipeIngredient(db.Model):
     amount_grams = db.Column(db.Float)
     serving_type = db.Column(db.String(50), default="g")
     portion_id_fk = db.Column(db.Integer, db.ForeignKey("portions.id"), nullable=True)
+    seq_num = db.Column(db.Integer)
 
     @property
     def food(self):
