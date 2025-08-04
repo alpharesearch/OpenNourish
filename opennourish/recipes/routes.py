@@ -715,11 +715,10 @@ def copy_recipe(recipe_id):
         selectinload(Recipe.ingredients), selectinload(Recipe.portions)
     ).get_or_404(recipe_id)
 
-    # Verify user is friends with the owner
-    friend_ids = [friend.id for friend in current_user.friends]
-    if original_recipe.user_id not in friend_ids:
-        # Allow copying public recipes even if not friends
-        if not original_recipe.is_public:
+    # Allow cloning own recipe, or copying from a friend/public recipe
+    if original_recipe.user_id != current_user.id:
+        friend_ids = [friend.id for friend in current_user.friends]
+        if not original_recipe.is_public and original_recipe.user_id not in friend_ids:
             flash(
                 "You can only copy recipes from your friends or public recipes.",
                 "danger",
@@ -729,7 +728,7 @@ def copy_recipe(recipe_id):
     # Create a new recipe for the current user
     new_recipe = Recipe(
         user_id=current_user.id,
-        name=original_recipe.name,
+        name=f"{original_recipe.name} (Copy)",
         instructions=original_recipe.instructions,
         servings=original_recipe.servings,
         is_public=False,  # Copied recipes are private by default

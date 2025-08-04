@@ -408,7 +408,7 @@ def copy_my_food(food_id):
 
     new_food = MyFood(
         user_id=current_user.id,
-        description=original_food.description,
+        description=f"{original_food.description} (Copy)",
         ingredients=original_food.ingredients,
         calories_per_100g=original_food.calories_per_100g,
         protein_per_100g=original_food.protein_per_100g,

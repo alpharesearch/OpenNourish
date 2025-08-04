@@ -55,7 +55,7 @@ def test_copy_recipe(auth_client_with_friendship):
 
     # Verify the new recipe exists and is owned by the current user
     copied_recipe = Recipe.query.filter_by(
-        name="Friend's Recipe", user_id=test_user.id
+        name="Friend's Recipe (Copy)", user_id=test_user.id
     ).first()
     assert copied_recipe is not None
     assert copied_recipe.id != friend_recipe.id
@@ -80,7 +80,7 @@ def test_copy_my_food(auth_client_with_friendship):
     assert b"Successfully copied" in response.data
 
     copied_food = MyFood.query.filter_by(
-        description="Friend's Food", user_id=test_user.id
+        description="Friend's Food (Copy)", user_id=test_user.id
     ).first()
     assert copied_food is not None
     assert copied_food.id != friend_food.id
@@ -105,7 +105,7 @@ def test_copy_my_meal(auth_client_with_friendship, faker):
     assert b"Successfully copied" in response.data
 
     copied_meal = MyMeal.query.filter_by(
-        name="Friend's Meal", user_id=test_user.id
+        name="Friend's Meal (Copy)", user_id=test_user.id
     ).first()
     assert copied_meal is not None
     assert copied_meal.id != friend_meal.id

@@ -7,6 +7,9 @@
         <h1 class="mb-0">{% if recipe %}{{ recipe.name }}{% else %}Create Recipe{% endif %}</h1>
         {% if recipe and recipe.id %}
         <div class="d-flex gap-2">
+            <form action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-outline-primary">Clone</button>
+            </form>
             <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info">View
                 Recipe</a>
             <a href="{{ url_for('recipes.generate_label_pdf', recipe_id=recipe.id) }}" class="btn btn-outline-info"

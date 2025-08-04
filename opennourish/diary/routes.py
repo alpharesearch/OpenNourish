@@ -343,12 +343,14 @@ def delete_meal(meal_id):
 def copy_meal(meal_id):
     original_meal = MyMeal.query.options(selectinload(MyMeal.items)).get_or_404(meal_id)
 
-    friend_ids = [friend.id for friend in current_user.friends]
-    if original_meal.user_id not in friend_ids:
-        flash("You can only copy meals from your friends.", "danger")
-        return redirect(request.referrer or url_for("diary.my_meals"))
+    # Allow cloning own meal, or copying from a friend
+    if original_meal.user_id != current_user.id:
+        friend_ids = [friend.id for friend in current_user.friends]
+        if original_meal.user_id not in friend_ids:
+            flash("You can only copy meals from your friends.", "danger")
+            return redirect(request.referrer or url_for("diary.my_meals"))
 
-    new_meal = MyMeal(user_id=current_user.id, name=original_meal.name)
+    new_meal = MyMeal(user_id=current_user.id, name=f"{original_meal.name} (Copy)")
     db.session.add(new_meal)
     db.session.flush()
 
