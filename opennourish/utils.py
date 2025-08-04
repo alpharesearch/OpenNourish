@@ -1050,6 +1050,9 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
             return text
         return text.replace("\\", r"\\").replace('"', r"\"").replace("*", r"\*")
 
+    # 0. Determine how many servings the recipe has
+    servings_str = _sanitize_for_typst(recipe.servings)
+
     # 1. Determine the default portion and scaling factor
     default_portion = (
         UnifiedPortion.query.filter(UnifiedPortion.recipe_id == recipe.id)
@@ -1182,7 +1185,7 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
 #import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
 #import "@preview/codetastic:0.2.2": ean13
 #let data = (
-  servings: "1",
+  servings: "{servings_str}",
   serving_size: "{serving_size_str}",
   calories: "{scaled_nutrients['Energy']:.0f}",
   total_fat: (value: {scaled_nutrients['Total lipid (fat)']:.1f}, unit: "g"),
