@@ -111,6 +111,14 @@ def search():
     log_date = request.values.get("log_date")
     meal_name = request.values.get("meal_name")
 
+    return_url = None
+    if target == "diary":
+        return_url = url_for("diary.diary", log_date_str=log_date)
+    elif target == "recipe":
+        return_url = url_for("recipes.edit_recipe", recipe_id=recipe_id)
+    elif target == "meal":
+        return_url = url_for("diary.edit_meal", meal_id=recipe_id)
+
     if search_term:
         user_ids_to_search = [current_user.id]
         if search_friends:
@@ -485,6 +493,7 @@ def search():
         my_meals_page=my_meals_page,
         food_categories=food_categories,
         selected_category_id=selected_category_id,
+        return_url=return_url,
     )
 
 
@@ -501,6 +510,7 @@ def add_item():
     meal_name = request.form.get("meal_name")
     amount = float(request.form.get("amount", 1))
     portion_id_str = request.form.get("portion_id")
+    return_url = request.form.get("return_url")
 
     # Ensure a 1-gram portion exists for USDA foods when they are added.
     # This is crucial for consistency across the application.
@@ -562,6 +572,8 @@ def add_item():
                 db.session.add(daily_log)
             db.session.commit()
             flash(f'"{my_meal.name}" (expanded) added to your diary.', "success")
+            if return_url:
+                return redirect(return_url)
             return redirect(url_for("diary.diary", log_date_str=log_date_str))
 
         elif target == "recipe":
@@ -598,6 +610,8 @@ def add_item():
                 f'"{my_meal.name}" (expanded) added to recipe {target_recipe.name}.',
                 "success",
             )
+            if return_url:
+                return redirect(return_url)
             return redirect(url_for("recipes.edit_recipe", recipe_id=target_recipe.id))
 
         else:
@@ -719,6 +733,8 @@ def add_item():
                     flash("Recipe not found.", "danger")
             else:
                 flash("Invalid food type for diary.", "danger")
+            if return_url:
+                return redirect(return_url)
             return redirect(url_for("diary.diary", log_date_str=log_date_str))
 
         elif target == "recipe":
@@ -851,6 +867,8 @@ def add_item():
                 )
             else:
                 flash("Invalid food type for recipe.", "danger")
+            if return_url:
+                return redirect(return_url)
             return redirect(url_for("recipes.edit_recipe", recipe_id=target_recipe.id))
 
         elif target == "meal":
@@ -957,6 +975,8 @@ def add_item():
                     flash("Sub-meal not found.", "danger")
             else:
                 flash("Invalid food type for meal.", "danger")
+            if return_url:
+                return redirect(return_url)
             return redirect(url_for("diary.edit_meal", meal_id=my_meal_id))
 
         elif target == "my_foods":
@@ -1067,6 +1087,8 @@ def add_item():
                 flash(
                     f"{usda_food.description} has been added to your foods.", "success"
                 )
+                if return_url:
+                    return redirect(return_url)
                 return redirect(url_for("my_foods.edit_my_food", food_id=my_food.id))
             else:
                 flash(

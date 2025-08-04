@@ -12,7 +12,8 @@
                     data-food-id="{{ food.fdc_id }}"
                     data-food-type="usda_food"
                     data-food-name="{{ food.description }}"
-                    data-target="diary">
+                    data-target="diary"
+                    data-return-url="{{ url_for('main.food_detail', fdc_id=food.fdc_id) }}">
                 Add
             </button>
             {% if current_user.is_authenticated %}

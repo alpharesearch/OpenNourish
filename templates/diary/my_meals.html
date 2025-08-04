@@ -99,7 +99,8 @@
                                         data-food-id="{{ meal.id }}"
                                         data-food-type="my_meal"
                                         data-food-name="{{ meal.name }}"
-                                        data-target="diary">
+                                        data-target="diary"
+                                        data-return-url="{{ url_for('diary.my_meals') }}">
                                     Add
                                 </button>
                             {% if meal.user_id == current_user.id %}

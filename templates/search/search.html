@@ -45,6 +45,7 @@
         <input type="hidden" name="log_date" value="{{ log_date or '' }}">
         <input type="hidden" name="meal_name" value="{{ meal_name or '' }}">
         <input type="hidden" name="recipe_id" value="{{ recipe_id or '' }}">
+        <input type="hidden" name="return_url" value="{{ return_url or '' }}">
         <input type="hidden" name="per_page" value="{{ request.args.get('per_page', 10) }}">
         <input type="hidden" name="section" value="{{ request.args.get('section', '') }}">
         <input type="hidden" name="usda_page" value="{{ request.args.get('usda_page', 1) }}">
@@ -200,7 +201,8 @@
                                     data-target="{{ target or 'diary' }}"
                                     data-log-date="{{ log_date or '' }}"
                                     data-meal-name="{{ meal_name or '' }}"
-                                    data-recipe-id="{{ recipe_id or '' }}">
+                                    data-recipe-id="{{ recipe_id or '' }}"
+                                    data-return-url="{{ return_url or '' }}">
                                 Add
                             </button>
                             <div class="btn-group flex-shrink-0">
@@ -240,7 +242,8 @@
                                     data-target="{{ target or 'diary' }}"
                                     data-log-date="{{ log_date or '' }}"
                                     data-meal-name="{{ meal_name or '' }}"
-                                    data-recipe-id="{{ recipe_id or '' }}">
+                                    data-recipe-id="{{ recipe_id or '' }}"
+                                    data-return-url="{{ return_url or '' }}">
                                 Add
                             </button>
                             <a href="{{ url_for('diary.edit_meal', meal_id=searched_meal.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
@@ -283,7 +286,8 @@
                                     data-target="{{ target or 'diary' }}"
                                     data-log-date="{{ log_date or '' }}"
                                     data-meal-name="{{ meal_name or '' }}"
-                                    data-recipe-id="{{ recipe_id or '' }}">
+                                    data-recipe-id="{{ recipe_id or '' }}"
+                                    data-return-url="{{ return_url or '' }}">
                                 Add
                             </button>
                             <div class="btn-group flex-shrink-0">
@@ -327,7 +331,8 @@
                                 data-target="{{ target or 'diary' }}"
                                 data-log-date="{{ log_date or '' }}"
                                 data-meal-name="{{ meal_name or '' }}"
-                                data-recipe-id="{{ recipe_id or '' }}">
+                                data-recipe-id="{{ recipe_id or '' }}"
+                                data-return-url="{{ return_url or '' }}">
                             Add
                         </button>
                         <a href="{{ food.detail_url }}" class="btn btn-sm btn-outline-info">View</a>

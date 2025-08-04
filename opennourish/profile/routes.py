@@ -234,7 +234,10 @@ def diary(username, log_date_str=None):
         "Unspecified": [],
     }
 
-    meal_totals = {meal_name: {"calories": 0, "protein": 0, "carbs": 0, "fat": 0} for meal_name in meals}
+    meal_totals = {
+        meal_name: {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}
+        for meal_name in meals
+    }
 
     totals = calculate_nutrition_for_items(daily_logs)
 

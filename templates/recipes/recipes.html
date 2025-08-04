@@ -64,7 +64,8 @@
                                         data-food-id="{{ recipe.id }}"
                                         data-food-type="recipe"
                                         data-food-name="{{ recipe.name }}"
-                                        data-target="diary">
+                                        data-target="diary"
+                                        data-return-url="{{ url_for('recipes.recipes') }}">
                                     Add
                                 </button>
                             <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info btn-sm">View</a>

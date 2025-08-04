@@ -42,6 +42,7 @@
               <input type="hidden" name="target" id="modalTarget">
               <input type="hidden" name="recipe_id" id="modalRecipeId">
               <input type="hidden" name="meal_id" id="modalMealId">
+              <input type="hidden" name="return_url" id="modalReturnUrl">
 
               <div id="diaryFields">
                 <div class="mb-3">
@@ -100,6 +101,7 @@
             const modalTarget = document.getElementById('modalTarget');
             const modalRecipeId = document.getElementById('modalRecipeId');
             const modalMealId = document.getElementById('modalMealId');
+            const modalReturnUrl = document.getElementById('modalReturnUrl');
             const diaryFields = document.getElementById('diaryFields');
             const modalLogDate = document.getElementById('modalLogDate');
             const modalMealName = document.getElementById('modalMealName');
@@ -116,6 +118,7 @@
                     const mealId = this.dataset.mealId || '';
                     const logDate = this.dataset.logDate || '';
                     const mealName = this.dataset.mealName || '';
+                    const returnUrl = this.dataset.returnUrl || '';
 
                     const apiFoodType = foodType === 'usda_food' ? 'usda' : foodType;
 
@@ -125,6 +128,7 @@
                     modalTarget.value = target;
                     modalRecipeId.value = recipeId;
                     modalMealId.value = mealId;
+                    modalReturnUrl.value = returnUrl;
 
                     if (target === 'diary') {
                         diaryFields.style.display = 'block';

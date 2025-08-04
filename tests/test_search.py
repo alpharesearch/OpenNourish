@@ -446,18 +446,26 @@ def test_usda_food_search_results_include_1g_portion(auth_client_with_data):
     assert response.status_code == 200
 
     # Check that the "Add" button is present and has the correct data attributes
-    expected_button_html = (
-        f'<button type="button" class="btn btn-sm btn-outline-success add-to-diary-btn me-2"\n'
-        f'                                    data-food-id="{usda_food_fdc_id}"\n'
-        f'                                    data-food-type="usda_food"\n'
-        f'                                    data-food-name="USDA Food with Cup Portion"\n'
-        f'                                    data-log-date="{{ log_date or \'\' }}"\n'
-        f'                                    data-meal-name="{{ meal_name or \'\' }}"'
-    )
-    # A simple substring check is sufficient here
-    assert f'data-food-id="{usda_food_fdc_id}"' in response.data.decode('utf-8')
-    assert f'data-food-type="usda_food"' in response.data.decode('utf-8')
+    response_data_str = response.data.decode("utf-8")
 
+    # Assert the button's basic structure and class
+    assert (
+        '<button type="button" class="btn btn-sm btn-outline-success add-item-btn me-2"'
+        in response_data_str
+    )
+
+    # Assert specific data attributes
+    assert f'data-food-id="{usda_food_fdc_id}"' in response_data_str
+    assert 'data-food-type="usda_food"' in response_data_str
+    assert 'data-food-name="USDA Food with Cup Portion"' in response_data_str
+    assert 'data-target="diary"' in response_data_str
+    assert 'data-log-date=""' in response_data_str
+    assert 'data-meal-name=""' in response_data_str
+    assert 'data-recipe-id=""' in response_data_str
+    assert (
+        '<button type="button" class="btn btn-sm btn-outline-success add-item-btn me-2"'
+        in response_data_str
+    )
 
 
 def test_usda_portion_p_icon_logic(auth_client_with_data):
