@@ -1059,7 +1059,11 @@ def get_portions(food_type, food_id):
             and my_food.user_id not in [friend.id for friend in current_user.friends]
         ):
             return jsonify({"error": "Not Found or Unauthorized"}), 404
-        portions = UnifiedPortion.query.filter_by(my_food_id=food_id).all()
+        portions = (
+            UnifiedPortion.query.filter_by(my_food_id=food_id)
+            .order_by(UnifiedPortion.seq_num)
+            .all()
+        )
     elif food_type == "recipe":
         # Ensure the user has access to this recipe
         recipe = db.session.get(Recipe, food_id)
@@ -1069,12 +1073,20 @@ def get_portions(food_type, food_id):
             and recipe.user_id not in [friend.id for friend in current_user.friends]
         ):
             return jsonify({"error": "Not Found or Unauthorized"}), 404
-        portions = UnifiedPortion.query.filter_by(recipe_id=food_id).all()
+        portions = (
+            UnifiedPortion.query.filter_by(recipe_id=food_id)
+            .order_by(UnifiedPortion.seq_num)
+            .all()
+        )
     elif food_type == "usda":
         usda_food = Food.query.filter_by(fdc_id=food_id).first()
         if not usda_food:
             return jsonify({"error": "Not Found"}), 404
-        portions = usda_food.portions
+        portions = (
+            UnifiedPortion.query.filter_by(fdc_id=food_id)
+            .order_by(UnifiedPortion.seq_num)
+            .all()
+        )
     elif food_type == "my_meal":
         # MyMeals are consumed as a whole. Return a single, default "serving" portion.
         # The add_item endpoint logic for my_meal ignores portion/amount, but we provide this for UI consistency.
