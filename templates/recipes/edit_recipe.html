@@ -203,7 +203,7 @@
         </div>
         <div class="card-body">
             <ul class="list-group list-group-flush">
-                {% for ingredient in recipe.ingredients %}
+                {% for ingredient in ingredients_for_display %}
                 <li class="list-group-item d-flex justify-content-between align-items-center p-1">
                     <div class="d-flex flex-column me-2">
                         <form action="{{ url_for('recipes.move_recipe_ingredient_up', ingredient_id=ingredient.id) }}"
@@ -244,13 +244,11 @@
                                     <input type="number" step="any" name="amount" class="form-control form-control-sm mb-2 mb-sm-0"
                                         value="{{ '%.2f'|format(ingredient.quantity) }}">
                                     <select name="portion_id" class="form-select form-select-sm">
-                                        {% set food_item = ingredient.usda_food or ingredient.my_food or
+                                        {% set food_item = ingredient.food or ingredient.my_food or
                                         ingredient.linked_recipe %}
                                         {% if food_item %}
-                                        {% for portion in get_available_portions(food_item) %}
-                                        <option value="{{ portion.id }}" {% if ingredient.portion_id_fk==portion.id or
-                                            (ingredient.portion_description=='g' and
-                                            portion.measure_unit_description=='g' and portion.amount==1.0) %}selected{%
+                                        {% for portion in ingredient.available_portions %}
+                                        <option value="{{ portion.id }}" {% if ingredient.portion_id_fk==portion.id %}selected{%
                                             endif %}>{{ portion.full_description_str }}</option>
                                         {% endfor %}
                                         {% endif %}

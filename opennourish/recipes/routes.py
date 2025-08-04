@@ -142,22 +142,20 @@ def edit_recipe(recipe_id):
 
     # Manually fetch USDA food data
     usda_food_ids = [ing.fdc_id for ing in recipe.ingredients if ing.fdc_id]
+    usda_foods_map = {}
     if usda_food_ids:
         usda_foods = Food.query.filter(Food.fdc_id.in_(usda_food_ids)).all()
         usda_foods_map = {food.fdc_id: food for food in usda_foods}
 
+    ingredients_for_display = []
     for ing in recipe.ingredients:
         if ing.fdc_id:
             ing.usda_food = usda_foods_map.get(ing.fdc_id)
 
         # Calculate nutrition for each individual ingredient
         ingredient_nutrition = calculate_nutrition_for_items([ing])
-        ing.calories = ingredient_nutrition["calories"]
-        ing.protein = ingredient_nutrition["protein"]
-        ing.carbs = ingredient_nutrition["carbs"]
-        ing.fat = ingredient_nutrition["fat"]
 
-        # Calculate quantity and portion description
+        # Calculate quantity and portion description for display
         food_object = None
         if hasattr(ing, "usda_food") and ing.usda_food:
             food_object = ing.usda_food
@@ -166,8 +164,9 @@ def edit_recipe(recipe_id):
         elif ing.linked_recipe:
             food_object = ing.linked_recipe
 
-        ing.quantity = ing.amount_grams
-        ing.portion_description = "g"
+        display_quantity = ing.amount_grams
+        display_portion_description = "g"
+        available_portions = []
 
         if food_object:
             available_portions = get_available_portions(food_object)
@@ -180,9 +179,32 @@ def edit_recipe(recipe_id):
                         or abs(p.gram_weight - (ing.amount_grams % p.gram_weight))
                         < 0.01
                     ):
-                        ing.quantity = round(ing.amount_grams / p.gram_weight, 2)
-                        ing.portion_description = p.full_description_str
+                        display_quantity = round(ing.amount_grams / p.gram_weight, 2)
+                        display_portion_description = p.full_description_str
                         break
+
+        ingredients_for_display.append(
+            {
+                "id": ing.id,
+                "fdc_id": ing.fdc_id,
+                "my_food_id": ing.my_food_id,
+                "recipe_id_link": ing.recipe_id_link,
+                "amount_grams": ing.amount_grams,
+                "serving_type": ing.serving_type,
+                "portion_id_fk": ing.portion_id_fk,
+                "seq_num": ing.seq_num,
+                "food": ing.food,  # This will be the USDA Food object if fdc_id is present
+                "my_food": ing.my_food,
+                "linked_recipe": ing.linked_recipe,
+                "calories": ingredient_nutrition["calories"],
+                "protein": ingredient_nutrition["protein"],
+                "carbs": ingredient_nutrition["carbs"],
+                "fat": ingredient_nutrition["fat"],
+                "quantity": display_quantity,
+                "portion_description": display_portion_description,
+                "available_portions": available_portions,
+            }
+        )
 
     if recipe.user_id != current_user.id:
         flash("You are not authorized to edit this recipe.", "danger")
@@ -298,6 +320,7 @@ def edit_recipe(recipe_id):
         portion_form=portion_form,
         get_available_portions=get_available_portions,
         search_term=query,
+        ingredients_for_display=ingredients_for_display,
     )
 
 
