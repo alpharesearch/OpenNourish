@@ -193,25 +193,16 @@
                             </small>
                         </div>
                         <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
-                            {% if target %}
-                                <form method="post" action="{{ url_for('search.add_item') }}" class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center me-sm-2">
-                                    <input type="hidden" name="target" value="{{ target }}">
-                                    <input type="hidden" name="log_date" value="{{ log_date }}">
-                                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                    <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                                    <input type="hidden" name="food_type" value="my_food">
-                                    <input type="hidden" name="food_id" value="{{ food.id }}">
-                                    <div class="d-flex">
-                                        <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
-                                        <select name="portion_id" class="form-select form-select-sm">
-                                            {% for portion in food.portions|sort(attribute='seq_num') %}
-                                                <option value="{{ portion.id }}">{{ portion.full_description_str}}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <button type="submit" class="btn btn-sm btn-outline-success mt-2 mt-sm-0 ms-sm-2">Add</button>
-                                </form>
-                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-success add-item-btn me-2"
+                                    data-food-id="{{ food.id }}"
+                                    data-food-type="my_food"
+                                    data-food-name="{{ food.description }}"
+                                    data-target="{{ target or 'diary' }}"
+                                    data-log-date="{{ log_date or '' }}"
+                                    data-meal-name="{{ meal_name or '' }}"
+                                    data-recipe-id="{{ recipe_id or '' }}">
+                                Add
+                            </button>
                             <div class="btn-group flex-shrink-0">
                                 {% if food.user_id == current_user.id %}
                                     <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
@@ -242,17 +233,16 @@
                             </small>
                         </div>
                         <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
-                            {% if target %}
-                            <form method="post" action="{{ url_for('search.add_item') }}" class="d-inline-flex align-items-center me-2">
-                                <input type="hidden" name="target" value="{{ target }}">
-                                <input type="hidden" name="log_date" value="{{ log_date }}">
-                                <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                                <input type="hidden" name="food_type" value="my_meal">
-                                <input type="hidden" name="food_id" value="{{ searched_meal.id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-success">Add</button>
-                            </form>
-                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-success add-item-btn me-2"
+                                    data-food-id="{{ searched_meal.id }}"
+                                    data-food-type="my_meal"
+                                    data-food-name="{{ searched_meal.name }}"
+                                    data-target="{{ target or 'diary' }}"
+                                    data-log-date="{{ log_date or '' }}"
+                                    data-meal-name="{{ meal_name or '' }}"
+                                    data-recipe-id="{{ recipe_id or '' }}">
+                                Add
+                            </button>
                             <a href="{{ url_for('diary.edit_meal', meal_id=searched_meal.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
                         </div>
                     </li>
@@ -286,25 +276,16 @@
                             </small>
                         </div>
                         <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
-                            {% if target %}
-                            <form method="post" action="{{ url_for('search.add_item') }}" class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center me-sm-2">
-                                <input type="hidden" name="target" value="{{ target }}">
-                                <input type="hidden" name="log_date" value="{{ log_date }}">
-                                <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                                <input type="hidden" name="food_type" value="recipe">
-                                <input type="hidden" name="food_id" value="{{ recipe.id }}">
-                                <div class="d-flex">
-                                    <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
-                                    <select name="portion_id" class="form-select form-select-sm">
-                                        {% for portion in recipe.portions|sort(attribute='seq_num') %}
-                                            <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-sm btn-outline-success mt-2 mt-sm-0 ms-sm-2">Add</button>
-                            </form>
-                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-success add-item-btn me-2"
+                                    data-food-id="{{ recipe.id }}"
+                                    data-food-type="recipe"
+                                    data-food-name="{{ recipe.name }}"
+                                    data-target="{{ target or 'diary' }}"
+                                    data-log-date="{{ log_date or '' }}"
+                                    data-meal-name="{{ meal_name or '' }}"
+                                    data-recipe-id="{{ recipe_id or '' }}">
+                                Add
+                            </button>
                             <div class="btn-group flex-shrink-0">
                                 {% if recipe.user_id == current_user.id %}
                                     <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
@@ -339,30 +320,16 @@
                         </div>
                     </div>
                     <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">
-                        {% if target %}
-                            <form method="post" action="{{ url_for('search.add_item') }}" class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center me-sm-2">
-                                <input type="hidden" name="target" value="{{ target }}">
-                                <input type="hidden" name="log_date" value="{{ log_date }}">
-                                <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                                <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
-                                <input type="hidden" name="food_type" value="usda">
-                                <input type="hidden" name="food_id" value="{{ food.fdc_id }}">
-                                <div class="d-flex">
-                                    <input type="number" name="amount" class="form-control form-control-sm mb-2 mb-sm-0 me-sm-2" value="1">
-                                    <select name="portion_id" class="form-select form-select-sm">
-                                            {% for portion in food.portions|sort(attribute='seq_num') %}
-                                                <option value="{{ portion.id }}">{{ portion.full_description_str }}</option>
-                                            {% endfor %}
-                                        </select>
-                                </div>
-                                <button type="submit" class="btn btn-sm btn-outline-success mt-2 mt-sm-0 ms-sm-2">Add</button>
-                            </form>
-                        {% else %}
-                            <form method="post" action="{{ url_for('my_foods.copy_usda_food') }}" class="d-inline">
-                                <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-primary">Copy</button>
-                            </form>
-                        {% endif %}
+                        <button type="button" class="btn btn-sm btn-outline-success add-item-btn me-2"
+                                data-food-id="{{ food.fdc_id }}"
+                                data-food-type="usda_food"
+                                data-food-name="{{ food.description }}"
+                                data-target="{{ target or 'diary' }}"
+                                data-log-date="{{ log_date or '' }}"
+                                data-meal-name="{{ meal_name or '' }}"
+                                data-recipe-id="{{ recipe_id or '' }}">
+                            Add
+                        </button>
                         <a href="{{ food.detail_url }}" class="btn btn-sm btn-outline-info">View</a>
                     </div>
                 </li>

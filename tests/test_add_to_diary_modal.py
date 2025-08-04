@@ -102,7 +102,7 @@ def test_get_portions_api_authorization(client, app_with_db, user_a_id, user_b_i
 
 def test_add_to_diary_button_is_present_on_list_pages(client_a, user_a_id):
     """
-    Test Case 3: UI - Presence of the "Add to Diary" Button
+    Test Case 3: UI - Presence of the "Add" Button
     """
     with client_a.application.app_context():
         my_food = MyFood(user_id=user_a_id, description="My Test Food")

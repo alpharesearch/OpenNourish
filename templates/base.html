@@ -26,31 +26,35 @@
     </div>
 
     {% if not is_read_only %}
-    <!-- Add to Diary Modal -->
-    <div class="modal fade" id="addToDiaryModal" tabindex="-1" aria-labelledby="addToDiaryModalLabel" aria-hidden="true">
+    <!-- Add Item Modal -->
+    <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="addToDiaryModalLabel">Add to Diary</h5>
+            <h5 class="modal-title" id="addItemModalLabel">Add Item</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <form id="addToDiaryForm" action="{{ url_for('search.add_item') }}" method="post">
+          <form id="addItemForm" action="{{ url_for('search.add_item') }}" method="post">
             <div class="modal-body">
               <p>Adding: <strong id="modalFoodName"></strong></p>
               <input type="hidden" name="food_id" id="modalFoodId">
               <input type="hidden" name="food_type" id="modalFoodType">
-              <input type="hidden" name="target" value="diary">
+              <input type="hidden" name="target" id="modalTarget">
+              <input type="hidden" name="recipe_id" id="modalRecipeId">
+              <input type="hidden" name="meal_id" id="modalMealId">
 
-              <div class="mb-3">
-                <label for="modalLogDate" class="form-label">Date</label>
-                <input type="date" class="form-control" id="modalLogDate" name="log_date" required>
-              </div>
+              <div id="diaryFields">
+                <div class="mb-3">
+                  <label for="modalLogDate" class="form-label">Date</label>
+                  <input type="date" class="form-control" id="modalLogDate" name="log_date">
+                </div>
 
-              <div class="mb-3">
-                <label for="modalMealName" class="form-label">Meal</label>
-                <select class="form-select" id="modalMealName" name="meal_name" required>
-                  <!-- Options will be populated by JavaScript -->
-                </select>
+                <div class="mb-3">
+                  <label for="modalMealName" class="form-label">Meal</label>
+                  <select class="form-select" id="modalMealName" name="meal_name">
+                    <!-- Options will be populated by JavaScript -->
+                  </select>
+                </div>
               </div>
 
               <div id="modalAmountPortionFields">
@@ -88,52 +92,74 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             {% if not is_read_only %}
-            const addToDiaryModal = new bootstrap.Modal(document.getElementById('addToDiaryModal'));
-            const addToDiaryForm = document.getElementById('addToDiaryForm');
+            const addItemModal = new bootstrap.Modal(document.getElementById('addItemModal'));
+            const addItemForm = document.getElementById('addItemForm');
             const modalFoodName = document.getElementById('modalFoodName');
             const modalFoodId = document.getElementById('modalFoodId');
             const modalFoodType = document.getElementById('modalFoodType');
+            const modalTarget = document.getElementById('modalTarget');
+            const modalRecipeId = document.getElementById('modalRecipeId');
+            const modalMealId = document.getElementById('modalMealId');
+            const diaryFields = document.getElementById('diaryFields');
             const modalLogDate = document.getElementById('modalLogDate');
             const modalMealName = document.getElementById('modalMealName');
             const modalPortionId = document.getElementById('modalPortionId');
             const modalAmountPortionFields = document.getElementById('modalAmountPortionFields');
 
-            document.querySelectorAll('.add-to-diary-btn').forEach(button => {
+            document.querySelectorAll('.add-item-btn').forEach(button => {
                 button.addEventListener('click', function() {
                     const foodId = this.dataset.foodId;
                     const foodType = this.dataset.foodType;
                     const foodName = this.dataset.foodName;
+                    const target = this.dataset.target;
+                    const recipeId = this.dataset.recipeId || '';
+                    const mealId = this.dataset.mealId || '';
+                    const logDate = this.dataset.logDate || '';
+                    const mealName = this.dataset.mealName || '';
 
-                    // Map foodType to the value expected by the API
                     const apiFoodType = foodType === 'usda_food' ? 'usda' : foodType;
 
-                    // 1. Populate static fields
                     modalFoodName.textContent = foodName;
                     modalFoodId.value = foodId;
-                    modalFoodType.value = apiFoodType; // Use the mapped type for the form
+                    modalFoodType.value = apiFoodType;
+                    modalTarget.value = target;
+                    modalRecipeId.value = recipeId;
+                    modalMealId.value = mealId;
 
-                    // 2. Set date to today
-                    modalLogDate.value = new Date().toLocaleDateString('en-CA', { timeZone: '{{ current_user.timezone }}' });
+                    if (target === 'diary') {
+                        diaryFields.style.display = 'block';
+                        modalLogDate.required = true;
+                        modalMealName.required = true;
+                        if (logDate) {
+                            modalLogDate.value = logDate;
+                        } else {
+                            modalLogDate.value = new Date().toLocaleDateString('en-CA', { timeZone: '{{ current_user.timezone }}' });
+                        }
 
-                    // 3. Build meal dropdown
-                    modalMealName.innerHTML = '';
-                    const mealsPerDay = {{ meals_per_day|default(6) }};
-                    const standardMealNames = {{ standard_meal_names|tojson }};
-                    for (let i = 0; i < mealsPerDay; i++) {
-                        const option = document.createElement('option');
-                        option.value = standardMealNames[i];
-                        option.textContent = standardMealNames[i];
-                        modalMealName.appendChild(option);
+                        modalMealName.innerHTML = '';
+                        const mealsPerDay = {{ meals_per_day|default(6) }};
+                        const standardMealNames = {{ standard_meal_names|tojson }};
+                        for (let i = 0; i < mealsPerDay; i++) {
+                            const option = document.createElement('option');
+                            option.value = standardMealNames[i];
+                            option.textContent = standardMealNames[i];
+                            if (mealName && mealName === standardMealNames[i]) {
+                                option.selected = true;
+                            }
+                            modalMealName.appendChild(option);
+                        }
+                    } else {
+                        diaryFields.style.display = 'none';
+                        modalLogDate.required = false;
+                        modalMealName.required = false;
                     }
 
-                    // 4. Show/hide amount/portion fields based on food type
                     if (apiFoodType === 'my_meal') {
                         modalAmountPortionFields.style.display = 'none';
                     } else {
                         modalAmountPortionFields.style.display = 'block';
                     }
 
-                    // 5. Fetch portions
                     modalPortionId.innerHTML = '<option>Loading...</option>';
                     fetch(`/search/api/get-portions/${apiFoodType}/${foodId}`)
                         .then(response => response.json())
@@ -161,42 +187,12 @@
                             console.error('Error fetching portions:', error);
                         });
 
-                    // 6. Show modal
-                    addToDiaryModal.show();
+                    addItemModal.show();
                 });
             });
 
-            // Handle form submission with Fetch API to stay on the same page
-            addToDiaryForm.addEventListener('submit', function(event) {
-                event.preventDefault(); // Stop default form submission
+            // The form will now submit normally, allowing the browser to handle the redirect and display the flash message.
 
-                const formData = new FormData(this);
-                
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    // Check for redirect, which indicates success in the add_item endpoint
-                    if (response.redirected) {
-                        // Manually follow the redirect to get the flash messages
-                        return fetch(response.url);
-                    }
-                    // If no redirect, something might have gone wrong, or it was an API response
-                    return response.text();
-                })
-                .then(html => {
-                    // The response from the followed redirect will contain the new page with the flash message.
-                    // We can just reload the current page, and the flash message from the server session will be displayed.
-                    window.location.reload();
-                })
-                .catch(error => {
-                    console.error('Error submitting form:', error);
-                    // Optionally, display an error message in the modal
-                });
-
-                addToDiaryModal.hide();
-            });
             {% endif %}
 
             const htmlTag = document.documentElement;

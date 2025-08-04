@@ -60,12 +60,13 @@
                             </small>
                         </div>
                         <div class="btn-group mt-2 mt-md-0 flex-shrink-0" role="group" aria-label="Recipe Actions">
-                            <button type="button" class="btn btn-outline-success btn-sm add-to-diary-btn"
-                                    data-food-id="{{ recipe.id }}"
-                                    data-food-type="recipe"
-                                    data-food-name="{{ recipe.name }}">
-                                Add
-                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm add-item-btn"
+                                        data-food-id="{{ recipe.id }}"
+                                        data-food-type="recipe"
+                                        data-food-name="{{ recipe.name }}"
+                                        data-target="diary">
+                                    Add
+                                </button>
                             <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info btn-sm">View</a>
                             {% if recipe.user_id == current_user.id %}
                                 <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>

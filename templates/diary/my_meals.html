@@ -95,12 +95,13 @@
                             </div>
                         </div>
                         <div class="btn-group mt-2 mt-md-0 flex-shrink-0" role="group" aria-label="Meal Actions">
-                            <button type="button" class="btn btn-outline-success btn-sm add-to-diary-btn"
-                                    data-food-id="{{ meal.id }}"
-                                    data-food-type="my_meal"
-                                    data-food-name="{{ meal.name }}">
-                                Add
-                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm add-item-btn"
+                                        data-food-id="{{ meal.id }}"
+                                        data-food-type="my_meal"
+                                        data-food-name="{{ meal.name }}"
+                                        data-target="diary">
+                                    Add
+                                </button>
                             {% if meal.user_id == current_user.id %}
                                 <a href="{{ url_for('diary.edit_meal', meal_id=meal.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                                 <form action="{{ url_for('diary.delete_meal', meal_id=meal.id) }}" method="post" class="d-inline">

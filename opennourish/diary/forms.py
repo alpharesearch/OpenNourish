@@ -47,4 +47,4 @@ class AddToLogForm(FlaskForm):
     log_date = DateField(
         "Date", default=date.today, format="%Y-%m-%d", validators=[DataRequired()]
     )
-    submit = SubmitField("Add to Diary")
+    submit = SubmitField("Add")

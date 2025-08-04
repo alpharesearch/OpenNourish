@@ -8,10 +8,11 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">{{ food.description }}</h1>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-success btn-sm add-to-diary-btn"
+            <button type="button" class="btn btn-outline-success btn-sm add-item-btn"
                     data-food-id="{{ food.fdc_id }}"
                     data-food-type="usda_food"
-                    data-food-name="{{ food.description }}">
+                    data-food-name="{{ food.description }}"
+                    data-target="diary">
                 Add
             </button>
             {% if current_user.is_authenticated %}
