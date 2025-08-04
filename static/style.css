@@ -3,7 +3,8 @@ body {
     margin: 2em;
 }
 
-h1, h2 {
+h1,
+h2 {
     color: #333;
 }
 
@@ -18,13 +19,17 @@ a {
 
 .search-forms-container {
     display: flex;
-    gap: 20px; /* Adds space between the two search forms */
-    flex-wrap: wrap; /* Allows forms to wrap on smaller screens */
+    gap: 20px;
+    /* Adds space between the two search forms */
+    flex-wrap: wrap;
+    /* Allows forms to wrap on smaller screens */
 }
 
-.search-forms-container > div {
-    flex: 1; /* Allows each form container to grow and shrink */
-    min-width: 300px; /* Ensures forms don't get too small */
+.search-forms-container>div {
+    flex: 1;
+    /* Allows each form container to grow and shrink */
+    min-width: 300px;
+    /* Ensures forms don't get too small */
 }
 
 #upc {
@@ -32,7 +37,8 @@ a {
 }
 
 /* Standardized input field widths for consistency */
-input[name="amount"], input[name="quantity"] {
+input[name="amount"],
+input[name="quantity"] {
     width: 90px;
 }
 
@@ -46,6 +52,7 @@ select[name="portion_id"] {
         width: 160px;
     }
 }
+
 .progress-marker {
     position: absolute;
     top: -5px;
@@ -64,24 +71,30 @@ select[name="portion_id"] {
 
 /* Custom styles for dark mode secondary navbar */
 html[data-bs-theme="dark"] .navbar.navbar-light.bg-light {
-    background-color: #2b3035 !important; /* Slightly lighter dark gray */
-    color: rgba(255, 255, 255, 0.85) !important; /* Light text for general elements */
+    background-color: #2b3035 !important;
+    /* Slightly lighter dark gray */
+    color: rgba(255, 255, 255, 0.85) !important;
+    /* Light text for general elements */
 }
 
 html[data-bs-theme="dark"] .navbar.navbar-light.bg-light .nav-link {
-    color: rgba(255, 255, 255, 0.85) !important; /* Light text for links */
+    color: rgba(255, 255, 255, 0.85) !important;
+    /* Light text for links */
 }
 
 html[data-bs-theme="dark"] .navbar.navbar-light.bg-light .nav-link.active {
-    color: #fff !important; /* White for active links */
+    color: #fff !important;
+    /* White for active links */
 }
 
 html[data-bs-theme="dark"] .navbar.navbar-light.bg-light .nav-link:hover {
-    color: #fff !important; /* White for hovered links */
+    color: #fff !important;
+    /* White for hovered links */
 }
 
 html[data-bs-theme="dark"] .navbar.navbar-light.bg-light.border-bottom {
-    border-color: rgba(255, 255, 255, 0.1) !important; /* Lighter border */
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    /* Lighter border */
 }
 
 /* Improve headline readability in dark mode */
@@ -91,25 +104,31 @@ html[data-bs-theme="dark"] h3,
 html[data-bs-theme="dark"] h4,
 html[data-bs-theme="dark"] h5,
 html[data-bs-theme="dark"] h6 {
-    color: #f8f9fa !important; /* Very light gray/off-white */
+    color: #f8f9fa !important;
+    /* Very light gray/off-white */
 }
 
 @media (max-width: 420px) {
     h1 {
         font-size: 1.75rem;
     }
+
     h2 {
         font-size: 1.5rem;
     }
+
     .card {
         /* Reduces padding inside cards to save space */
         padding: 0.8rem;
     }
-    .btn, .btn-sm {
+
+    .btn,
+    .btn-sm {
         /* Makes buttons smaller to fit better on narrow screens */
         padding: 0.25rem 0.5rem;
         font-size: 0.875rem;
     }
+
     /* Further reduce padding on smaller form controls */
     .form-control-sm {
         padding: 0.2rem 0.4rem;
@@ -121,5 +140,4 @@ html[data-bs-theme="dark"] h6 {
     .category-select {
         max-width: 220px;
     }
-}
 }
