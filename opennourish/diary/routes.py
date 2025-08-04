@@ -532,6 +532,7 @@ def save_meal():
         log_date = date.fromisoformat(log_date_str)
 
         new_meal = MyMeal(user_id=current_user.id, name=new_meal_name)
+        new_meal.usage_count = 1  # Increment usage count for new meal
         db.session.add(new_meal)
 
         log_items = DailyLog.query.filter_by(

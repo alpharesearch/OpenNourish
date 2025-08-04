@@ -568,7 +568,9 @@ def add_item():
             target_recipe = db.session.get(Recipe, recipe_id)
             if not target_recipe or target_recipe.user_id != current_user.id:
                 flash("Recipe not found or not authorized.", "danger")
-                return redirect(url_for("recipes.edit_recipe", recipe_id=recipe_id))
+                return redirect(
+                    url_for("recipes.recipes")
+                )  # Redirect to a safe page if recipe_id is invalid
 
             for item in my_meal.items:
                 # Calculate the next seq_num for the ingredient
@@ -596,7 +598,7 @@ def add_item():
                 f'"{my_meal.name}" (expanded) added to recipe {target_recipe.name}.',
                 "success",
             )
-            return redirect(url_for("recipes.edit_recipe", recipe_id=recipe_id))
+            return redirect(url_for("recipes.edit_recipe", recipe_id=target_recipe.id))
 
         else:
             flash(f"Cannot add a meal to the selected target: {target}.", "danger")
@@ -810,7 +812,9 @@ def add_item():
                         "This recipe belongs to a deleted user and cannot be added as an ingredient.",
                         "info",
                     )
-                    return redirect(url_for("recipes.edit_recipe", recipe_id=recipe_id))
+                    return redirect(
+                        url_for("recipes.edit_recipe", recipe_id=target_recipe.id)
+                    )
 
                 if sub_recipe.id == target_recipe.id:
                     flash("A recipe cannot be an ingredient of itself.", "danger")
@@ -842,10 +846,12 @@ def add_item():
                     f"{sub_recipe.name} added as ingredient to recipe {target_recipe.name}.",
                     "success",
                 )
-                return redirect(url_for("recipes.edit_recipe", recipe_id=recipe_id))
+                return redirect(
+                    url_for("recipes.edit_recipe", recipe_id=target_recipe.id)
+                )
             else:
                 flash("Invalid food type for recipe.", "danger")
-            return redirect(url_for("recipes.edit_recipe", recipe_id=recipe_id))
+            return redirect(url_for("recipes.edit_recipe", recipe_id=target_recipe.id))
 
         elif target == "meal":
             my_meal_id = recipe_id

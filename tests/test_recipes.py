@@ -1126,12 +1126,7 @@ def test_update_recipe_portion_unauthorized(auth_client_user_two):
         recipe_user_one = Recipe(user_id=user_one.id, name="User One's Recipe")
         db.session.add(recipe_user_one)
         db.session.commit()
-        portion_user_one = UnifiedPortion(
-            recipe_id=recipe_user_one.id,
-            gram_weight=10,
-            amount=1.0,
-            measure_unit_description="g",
-        )
+        portion_user_one = UnifiedPortion(recipe_id=recipe_user_one.id, gram_weight=10)
         db.session.add(portion_user_one)
         db.session.commit()
         portion_id = portion_user_one.id
@@ -1238,3 +1233,136 @@ def test_reorder_recipe_portions(auth_client_with_user):
         p2_new = db.session.get(UnifiedPortion, p2_id)
         assert p1_new.seq_num == 1
         assert p2_new.seq_num == 2
+
+
+def test_add_meal_to_recipe_unpacks_items(auth_client_with_user):
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        # Create a recipe to add ingredients to
+        target_recipe = Recipe(user_id=user.id, name="Target Recipe for Meal")
+        db.session.add(target_recipe)
+        db.session.commit()
+        target_recipe_id = target_recipe.id
+
+        # Create a meal with various items
+        meal = MyMeal(user_id=user.id, name="Complex Meal")
+        db.session.add(meal)
+        db.session.commit()
+        meal_id = meal.id
+
+        # Item 1: USDA Food
+        usda_food = Food(fdc_id=70001, description="USDA Food Item")
+        db.session.add(usda_food)
+        db.session.commit()
+        usda_portion = UnifiedPortion(
+            fdc_id=usda_food.fdc_id,
+            gram_weight=1.0,
+            amount=1.0,
+            measure_unit_description="g",
+        )
+        db.session.add(usda_portion)
+        db.session.commit()
+        meal_item_usda = MyMealItem(
+            my_meal_id=meal.id,
+            fdc_id=usda_food.fdc_id,
+            amount_grams=100,
+            portion_id_fk=usda_portion.id,
+        )
+
+        # Item 2: MyFood
+        my_food = MyFood(
+            user_id=user.id, description="My Custom Food", calories_per_100g=100
+        )
+        db.session.add(my_food)
+        db.session.commit()
+        my_food_portion = UnifiedPortion(
+            my_food_id=my_food.id,
+            gram_weight=1.0,
+            amount=1.0,
+            measure_unit_description="g",
+        )
+        db.session.add(my_food_portion)
+        db.session.commit()
+        meal_item_my_food = MyMealItem(
+            my_meal_id=meal.id,
+            my_food_id=my_food.id,
+            amount_grams=50,
+            portion_id_fk=my_food_portion.id,
+        )
+
+        # Item 3: Another Recipe
+        sub_recipe = Recipe(user_id=user.id, name="Sub Recipe Item")
+        db.session.add(sub_recipe)
+        db.session.commit()
+        sub_recipe_portion = UnifiedPortion(
+            recipe_id=sub_recipe.id,
+            gram_weight=1.0,
+            amount=1.0,
+            measure_unit_description="g",
+        )
+        db.session.add(sub_recipe_portion)
+        db.session.commit()
+        meal_item_sub_recipe = MyMealItem(
+            my_meal_id=meal.id,
+            recipe_id=sub_recipe.id,
+            amount_grams=200,
+            portion_id_fk=sub_recipe_portion.id,
+        )
+
+        db.session.add_all([meal_item_usda, meal_item_my_food, meal_item_sub_recipe])
+        db.session.commit()
+
+        # Store names and IDs for assertion outside the context
+        meal_name = meal.name
+        target_recipe_name = target_recipe.name
+        usda_food_fdc_id = usda_food.fdc_id
+        my_food_id = my_food.id
+        sub_recipe_id = sub_recipe.id
+
+    # Simulate adding the meal to the target recipe
+    response = client.post(
+        "/search/add_item",
+        data={
+            "food_id": meal_id,
+            "food_type": "my_meal",
+            "target": "recipe",
+            "recipe_id": target_recipe_id,
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        flashes = session.get("_flashes", [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == "success"
+        assert (
+            flashes[0][1]
+            == f'"{meal_name}" (expanded) added to recipe {target_recipe_name}.'
+        )
+
+    # Manually follow the redirect
+    response = client.get(response.headers["Location"])
+    assert response.status_code == 200
+
+    with client.application.app_context():
+        # Verify ingredients were added to the target recipe
+        ingredients = (
+            RecipeIngredient.query.filter_by(recipe_id=target_recipe_id)
+            .order_by(RecipeIngredient.seq_num)
+            .all()
+        )
+        assert len(ingredients) == 3
+
+        # Check each ingredient
+        assert ingredients[0].fdc_id == usda_food_fdc_id
+        assert ingredients[0].amount_grams == 100
+        assert ingredients[0].seq_num == 1
+
+        assert ingredients[1].my_food_id == my_food_id
+        assert ingredients[1].amount_grams == 50
+        assert ingredients[1].seq_num == 2
+
+        assert ingredients[2].recipe_id_link == sub_recipe_id
+        assert ingredients[2].amount_grams == 200
+        assert ingredients[2].seq_num == 3
