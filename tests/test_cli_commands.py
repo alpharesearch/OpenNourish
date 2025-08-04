@@ -69,7 +69,8 @@ def test_seed_usda_categories_command(app_with_db, tmp_path, monkeypatch):
 
 def test_seed_usda_portions_command(app_with_db, tmp_path, monkeypatch):
     """
-    Tests the 'flask seed-usda-portions' CLI command.
+    Tests the 'flask seed-usda-portions' CLI command, including its
+    idempotency and its ability to skip manually curated portions.
     """
     opennourish_dir = tmp_path / "opennourish"
     opennourish_dir.mkdir()
@@ -77,10 +78,12 @@ def test_seed_usda_portions_command(app_with_db, tmp_path, monkeypatch):
     usda_data_dir = tmp_path / "persistent" / "usda_data"
     usda_data_dir.mkdir(parents=True)
 
-    # Create dummy CSV files
-    (usda_data_dir / "measure_unit.csv").write_text("id,name\n9999,g\n")
+    # Create dummy CSV files with two different foods
+    (usda_data_dir / "measure_unit.csv").write_text("id,name\n9999,g\n1000,cup\n")
     (usda_data_dir / "food_portion.csv").write_text(
-        "id,fdc_id,seq_num,amount,measure_unit_id,portion_description,modifier,gram_weight\n1,123456,1,1.0,9999,slice,,25.0\n"
+        "id,fdc_id,seq_num,amount,measure_unit_id,portion_description,modifier,gram_weight\n"
+        "1,123456,1,1.0,9999,slice,,25.0\n"
+        "2,789012,1,1.0,1000,scoop,,50.0\n"
     )
 
     monkeypatch.setattr(app_with_db, "root_path", str(opennourish_dir))
@@ -90,26 +93,55 @@ def test_seed_usda_portions_command(app_with_db, tmp_path, monkeypatch):
     with app_with_db.app_context():
         assert UnifiedPortion.query.count() == 0
 
-    # Run the seeder
+    # 1. Initial run of the seeder
     result = runner.invoke(args=["seed-usda-portions"])
-    assert "Successfully seeded 1 total USDA portions" in result.output
+    assert "Successfully seeded 2 new USDA portions" in result.output
 
     with app_with_db.app_context():
-        assert UnifiedPortion.query.count() == 1
-        portion = UnifiedPortion.query.first()
-        assert portion.fdc_id == 123456
-        assert portion.gram_weight == 25.0
-        assert portion.portion_description == "slice"
-        assert portion.modifier is None
-        assert portion.was_imported is True
+        assert UnifiedPortion.query.count() == 2
+        portion1 = UnifiedPortion.query.filter_by(fdc_id=123456).first()
+        portion2 = UnifiedPortion.query.filter_by(fdc_id=789012).first()
+        assert portion1 is not None
+        assert portion2 is not None
+        assert portion1.was_imported is True
+        assert portion2.was_imported is True
 
-    # Test idempotency (deletes old portions and re-seeds)
+    # 2. Manually curate one of the portions
+    with app_with_db.app_context():
+        portion_to_curate = UnifiedPortion.query.filter_by(fdc_id=123456).first()
+        portion_to_curate.was_imported = False
+        portion_to_curate.portion_description = "A manually edited slice"
+        db.session.commit()
+
+    # 3. Re-run the seeder to test smart update logic
     result = runner.invoke(args=["seed-usda-portions"])
+
+    # Assert that the command identified the curated food and skipped it
+    assert (
+        "Found 1 manually curated foods. Their portions will be skipped."
+        in result.output
+    )
+    # Assert that it deleted the non-curated portion
     assert "Deleted 1 existing imported USDA portions" in result.output
-    assert "Successfully seeded 1 total USDA portions" in result.output
+    # Assert that it re-seeded the non-curated portion
+    assert "Successfully seeded 1 new USDA portions" in result.output
 
+    # 4. Verify the final state of the database
     with app_with_db.app_context():
-        assert UnifiedPortion.query.count() == 1
+        # The total count should still be 2
+        assert UnifiedPortion.query.count() == 2
+
+        # The curated portion should be untouched
+        curated_portion = UnifiedPortion.query.filter_by(fdc_id=123456).first()
+        assert curated_portion is not None
+        assert curated_portion.was_imported is False
+        assert curated_portion.portion_description == "A manually edited slice"
+
+        # The other portion should have been re-seeded (and thus was_imported is True)
+        reseeded_portion = UnifiedPortion.query.filter_by(fdc_id=789012).first()
+        assert reseeded_portion is not None
+        assert reseeded_portion.was_imported is True
+        assert reseeded_portion.portion_description == "scoop"
 
 
 def test_exercise_seed_activities_command(app_with_db):

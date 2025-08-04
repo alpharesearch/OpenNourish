@@ -5,6 +5,13 @@ from flask_login import login_required
 from opennourish.decorators import key_user_required
 
 
+def _mark_portions_as_modified(fdc_id):
+    """Sets was_imported to False for all portions of a given fdc_id."""
+    UnifiedPortion.query.filter_by(fdc_id=fdc_id).update(
+        {"was_imported": False}, synchronize_session=False
+    )
+
+
 @usda_admin_bp.route("/usda_portion/add", methods=["POST"])
 @login_required
 @key_user_required
@@ -32,8 +39,10 @@ def add_usda_portion():
         portion_description=portion_description,
         modifier=modifier,
         gram_weight=gram_weight,
+        was_imported=False,  # Mark as user-modified
     )
     db.session.add(new_portion)
+    _mark_portions_as_modified(fdc_id)  # Mark all portions for this food as modified
     db.session.commit()
     flash("Portion added successfully.", "success")
     return redirect(url_for("main.food_detail", fdc_id=fdc_id) + "#portions-table")
@@ -59,6 +68,7 @@ def edit_usda_portion(portion_id):
         flash("Gram weight is a required field.", "danger")
         return redirect(url_for("main.food_detail", fdc_id=portion.fdc_id))
 
+    _mark_portions_as_modified(portion.fdc_id)
     db.session.commit()
     flash("Portion updated successfully.", "success")
     return redirect(
@@ -77,6 +87,7 @@ def delete_usda_portion(portion_id):
 
     fdc_id = portion.fdc_id
     db.session.delete(portion)
+    _mark_portions_as_modified(fdc_id)
     db.session.commit()
     flash("Portion deleted successfully.", "success")
     return redirect(url_for("main.food_detail", fdc_id=fdc_id) + "#portions-table")
@@ -100,6 +111,7 @@ def move_usda_portion_up(portion_id):
         )
         for i, p in enumerate(portions):
             p.seq_num = i + 1
+        _mark_portions_as_modified(portion_to_move.fdc_id)
         db.session.commit()
         flash("Assigned sequence numbers to all portions. Please try again.", "info")
         return redirect(url_for("main.food_detail", fdc_id=portion_to_move.fdc_id))
@@ -120,6 +132,7 @@ def move_usda_portion_up(portion_id):
             portion_to_swap_with.seq_num,
             portion_to_move.seq_num,
         )
+        _mark_portions_as_modified(portion_to_move.fdc_id)
         db.session.commit()
         flash("Portion moved up.", "success")
     else:
@@ -155,6 +168,7 @@ def move_usda_portion_down(portion_id):
             portion_to_swap_with.seq_num,
             portion_to_move.seq_num,
         )
+        _mark_portions_as_modified(portion_to_move.fdc_id)
         db.session.commit()
         flash("Portion moved down.", "success")
     else:

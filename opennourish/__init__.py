@@ -1050,17 +1050,37 @@ def create_app(config_class=Config):
     def seed_usda_portions_command():
         """
         Seeds USDA food portions from food_portion.csv into the unified portions table.
-        This command only seeds the portions explicitly defined in the USDA data.
+        This command is smart: it will not overwrite portions for any food that has
+        been manually curated by a key user (i.e., where at least one portion
+        has `was_imported` set to False).
         """
         with app.app_context():
             print("Seeding USDA portions...")
 
-            # 1. Delete existing imported USDA portions to ensure idempotency.
-            # This leaves user-added or user-modified portions (where was_imported=False) intact.
-            deleted_count = UnifiedPortion.query.filter_by(was_imported=True).delete()
+            # 1. Find all fdc_ids that have been manually curated.
+            # These are foods where at least one portion has was_imported = False.
+            curated_fdc_ids_query = (
+                db.session.query(UnifiedPortion.fdc_id)
+                .filter_by(was_imported=False)
+                .distinct()
+            )
+            curated_fdc_ids = {row.fdc_id for row in curated_fdc_ids_query}
+            if curated_fdc_ids:
+                print(
+                    f"Found {len(curated_fdc_ids)} manually curated foods. Their portions will be skipped."
+                )
+
+            # 2. Delete existing imported USDA portions for non-curated foods only.
+            # This ensures that we can re-run the script to update USDA data without
+            # touching the foods that users have spent time curating.
+            delete_query = UnifiedPortion.query.filter(
+                UnifiedPortion.was_imported,
+                ~UnifiedPortion.fdc_id.in_(curated_fdc_ids),
+            )
+            deleted_count = delete_query.delete(synchronize_session=False)
             db.session.commit()
             print(
-                f"Deleted {deleted_count} existing imported USDA portions from user_data.db."
+                f"Deleted {deleted_count} existing imported USDA portions from non-curated foods."
             )
 
             usda_data_dir = os.path.join(
@@ -1077,7 +1097,7 @@ def create_app(config_class=Config):
                 )
                 return
 
-            # 2. Load measure units from CSV for efficient lookup.
+            # 3. Load measure units from CSV for efficient lookup.
             measure_units = {}
             with open(measure_unit_csv_path, "r", encoding="utf-8") as f:
                 reader = csv.reader(f)
@@ -1086,12 +1106,17 @@ def create_app(config_class=Config):
                     measure_units[row[0]] = row[1]
             print(f"Loaded {len(measure_units)} measure units from CSV.")
 
-            # 3. Load all portions from the USDA's food_portion.csv.
+            # 4. Load all portions from the USDA's food_portion.csv, skipping curated foods.
             portions_to_add = []
             with open(food_portion_csv_path, "r", encoding="utf-8") as f:
                 reader = csv.reader(f)
                 next(reader)  # Skip header
                 for row in reader:
+                    fdc_id = int(row[1])
+                    # Skip this portion if its fdc_id is in the curated list
+                    if fdc_id in curated_fdc_ids:
+                        continue
+
                     # Sanitize the modifier: if it's a number, discard it.
                     modifier_val = row[6]
                     if modifier_val.isdigit():
@@ -1101,7 +1126,7 @@ def create_app(config_class=Config):
 
                     # Create a UnifiedPortion object for each row in the CSV
                     portion = UnifiedPortion(
-                        fdc_id=int(row[1]),
+                        fdc_id=fdc_id,
                         seq_num=int(row[2]) if row[2] else None,
                         amount=float(row[3]) if row[3] else None,
                         measure_unit_description=measure_units.get(row[4], "")
@@ -1113,17 +1138,19 @@ def create_app(config_class=Config):
                         was_imported=True,  # Mark as imported
                     )
                     portions_to_add.append(portion)
-            print(f"Loaded {len(portions_to_add)} portions from food_portion.csv.")
+            print(
+                f"Loaded {len(portions_to_add)} new portions to add from food_portion.csv."
+            )
 
-            # 4. Add all collected portions to the database in a single transaction.
+            # 5. Add all collected portions to the database in a single transaction.
             if portions_to_add:
                 db.session.bulk_save_objects(portions_to_add)
                 db.session.commit()
                 print(
-                    f"Successfully seeded {len(portions_to_add)} total USDA portions to the user database."
+                    f"Successfully seeded {len(portions_to_add)} new USDA portions to the user database."
                 )
             else:
-                print("No USDA portions were found or needed to be added.")
+                print("No new USDA portions were found or needed to be added.")
 
     @app.cli.command("seed-usda-categories")
     def seed_usda_categories_command():
