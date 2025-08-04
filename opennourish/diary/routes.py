@@ -81,6 +81,8 @@ def diary(log_date_str=None):
         "Water": [],
     }
 
+    meal_totals = {meal_name: {"calories": 0, "protein": 0, "carbs": 0, "fat": 0} for meal_name in meals}
+
     totals = calculate_nutrition_for_items(daily_logs)
 
     for log in daily_logs:
@@ -151,6 +153,13 @@ def diary(log_date_str=None):
         meal_key = log.meal_name or "Unspecified"
         if meal_key not in meals:
             meals[meal_key] = []
+
+        # Add nutrition to the meal's total
+        meal_totals[meal_key]["calories"] += nutrition['calories']
+        meal_totals[meal_key]["protein"] += nutrition['protein']
+        meal_totals[meal_key]["carbs"] += nutrition['carbs']
+        meal_totals[meal_key]["fat"] += nutrition['fat']
+
         meals[meal_key].append(
             {
                 "log_id": log.id,
@@ -293,6 +302,7 @@ def diary(log_date_str=None):
         is_fasting=is_fasting,
         water_total_grams=water_total_grams,
         water_food=water_food,
+        meal_totals=meal_totals,
     )
 
 

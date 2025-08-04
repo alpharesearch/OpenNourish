@@ -89,18 +89,27 @@
     {% set items = meals.get(meal_name, []) %}
     <div class="card mb-3">
         <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
-            <h4 class="mb-2 mb-md-0">
-                {{ meal_name }}
+            <div class="me-auto">
+                <h4 class="mb-1">
+                    {{ meal_name }}
+                </h4>
                 {% if meal_name == 'Water' and water_total_grams > 0 %}
-                    <span class="text-muted h6">
+                    <span class="text-muted small">
                         {% if current_user.measurement_system == 'metric' %}
                             (Total: {{ "%.0f" | format(water_total_grams) }} ml)
                         {% else %}
                             (Total: {{ "%.1f" | format(water_total_grams * 0.033814) }} oz)
                         {% endif %}
                     </span>
+                {% elif meal_name != 'Water' and items %}
+                    <span class="text-muted small">
+                        {{ meal_totals[meal_name].calories|round(0) }}kcal |
+                        Fat: {{ meal_totals[meal_name].fat|round(1) }}g |
+                        Carbs: {{ meal_totals[meal_name].carbs|round(1) }}g |
+                        Prot: {{ meal_totals[meal_name].protein|round(1) }}g
+                    </span>
                 {% endif %}
-            </h4>
+            </div>
             {% if is_read_only and items %}
                 <form action="{{ url_for('diary.copy_meal_from_friend') }}" method="post">
                     <input type="hidden" name="friend_username" value="{{ username }}">
@@ -185,10 +194,11 @@
                         {% endif %}
                         <br>
                         <small class="text-muted">
-                            Calories: {{ item.nutrition.calories|round(0) }} kcal |
-                            Protein: {{ item.nutrition.protein|round(1) }}g |
+                            {{ item.nutrition.calories|round(0) }} kcal |
+                            Fat: {{ item.nutrition.fat|round(1) }}g |
                             Carbs: {{ item.nutrition.carbs|round(1) }}g |
-                            Fat: {{ item.nutrition.fat|round(1) }}g
+                            Prot: {{ item.nutrition.protein|round(1) }}g 
+                            
                         </small>
                     </div>
                     <div class="col-md-5">
