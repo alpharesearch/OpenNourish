@@ -7,14 +7,17 @@
         <h1 class="mb-0">{% if my_food %}Edit Custom Food{% else %}Add New Custom Food{% endif %}</h1>
         <div class="d-flex gap-2">
             {% if my_food %}
-            <a href="{{ url_for('my_foods.generate_pdf_label', food_id=my_food.id) }}" class="btn btn-outline-info" target="_blank">1x2 UPC Label</a>
-            <a href="{{ url_for('my_foods.generate_pdf_details', food_id=my_food.id) }}" class="btn btn-outline-info" target="_blank">6x4 Detail Label</a>
+            <a href="{{ url_for('my_foods.generate_pdf_label', food_id=my_food.id) }}" class="btn btn-outline-info"
+                target="_blank">1x2 UPC Label</a>
+            <a href="{{ url_for('my_foods.generate_pdf_details', food_id=my_food.id) }}" class="btn btn-outline-info"
+                target="_blank">6x4 Detail Label</a>
             {% endif %}
             <a href="{{ url_for('my_foods.my_foods') }}" class="btn btn-outline-secondary">Back to List</a>
         </div>
     </div>
 
-    <form method="POST" action="{{ url_for('my_foods.new_my_food') if not my_food else url_for('my_foods.edit_my_food', food_id=my_food.id) }}">
+    <form method="POST"
+        action="{{ url_for('my_foods.new_my_food') if not my_food else url_for('my_foods.edit_my_food', food_id=my_food.id) }}">
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2 class="h5 mb-0">Food Details</h2>
@@ -35,7 +38,8 @@
                         {{ form.fdc_id.label(class="form-label") }}
                         {{ form.fdc_id(class="form-control") }}
                         {% if my_food.fdc_id %}
-                        <a href="{{ url_for('main.food_detail', fdc_id=my_food.fdc_id) }}" class="btn btn-outline-info btn-sm mt-2">View USDA Details</a>
+                        <a href="{{ url_for('main.food_detail', fdc_id=my_food.fdc_id) }}"
+                            class="btn btn-outline-info btn-sm mt-2">View USDA Details</a>
                         {% endif %}
                     </div>
                     <div class="col-lg-6 mb-3">
@@ -62,106 +66,120 @@
                 <div class="row">
                     <div class="col-lg-3 mb-3">
                         {{ form.calories_per_100g.label(class="form-label") }}
-                        {{ form.calories_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.calories_per_100g) if my_food else "") }}
+                        {{ form.calories_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.calories_per_100g) if my_food else "") }}
                         {% for error in form.calories_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
                         {{ form.protein_per_100g.label(class="form-label") }}
-                        {{ form.protein_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.protein_per_100g) if my_food else "") }}
+                        {{ form.protein_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.protein_per_100g) if my_food else "") }}
                         {% for error in form.protein_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
                         {{ form.carbs_per_100g.label(class="form-label") }}
-                        {{ form.carbs_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.carbs_per_100g) if my_food else "") }}
+                        {{ form.carbs_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.carbs_per_100g) if my_food else "") }}
                         {% for error in form.carbs_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
                         {{ form.fat_per_100g.label(class="form-label") }}
-                        {{ form.fat_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.fat_per_100g) if my_food else "") }}
+                        {{ form.fat_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.fat_per_100g) if my_food else "") }}
                         {% for error in form.fat_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-lg-3 mb-3">
                         {{ form.saturated_fat_per_100g.label(class="form-label") }}
-                        {{ form.saturated_fat_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.saturated_fat_per_100g) if my_food else "") }}
+                        {{ form.saturated_fat_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.saturated_fat_per_100g) if my_food else "") }}
                         {% for error in form.saturated_fat_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
                         {{ form.trans_fat_per_100g.label(class="form-label") }}
-                        {{ form.trans_fat_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.trans_fat_per_100g) if my_food else "") }}
+                        {{ form.trans_fat_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.trans_fat_per_100g) if my_food else "") }}
                         {% for error in form.trans_fat_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
                         {{ form.cholesterol_mg_per_100g.label(class="form-label") }}
-                        {{ form.cholesterol_mg_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.cholesterol_mg_per_100g) if my_food else "") }}
+                        {{ form.cholesterol_mg_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.cholesterol_mg_per_100g) if my_food else "") }}
                         {% for error in form.cholesterol_mg_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
                         {{ form.sodium_mg_per_100g.label(class="form-label") }}
-                        {{ form.sodium_mg_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.sodium_mg_per_100g) if my_food else "") }}
+                        {{ form.sodium_mg_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.sodium_mg_per_100g) if my_food else "") }}
                         {% for error in form.sodium_mg_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-lg-3 mb-3">
                         {{ form.fiber_per_100g.label(class="form-label") }}
-                        {{ form.fiber_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.fiber_per_100g) if my_food else "") }}
+                        {{ form.fiber_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.fiber_per_100g) if my_food else "") }}
                         {% for error in form.fiber_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
                         {{ form.sugars_per_100g.label(class="form-label") }}
-                        {{ form.sugars_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.sugars_per_100g) if my_food else "") }}
+                        {{ form.sugars_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.sugars_per_100g) if my_food else "") }}
                         {% for error in form.sugars_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
                         {{ form.vitamin_d_mcg_per_100g.label(class="form-label") }}
-                        {{ form.vitamin_d_mcg_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.vitamin_d_mcg_per_100g) if my_food else "") }}
+                        {{ form.vitamin_d_mcg_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.vitamin_d_mcg_per_100g) if my_food else "") }}
                         {% for error in form.vitamin_d_mcg_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
                         {{ form.calcium_mg_per_100g.label(class="form-label") }}
-                        {{ form.calcium_mg_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.calcium_mg_per_100g) if my_food else "") }}
+                        {{ form.calcium_mg_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.calcium_mg_per_100g) if my_food else "") }}
                         {% for error in form.calcium_mg_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-lg-3 mb-3">
                         {{ form.iron_mg_per_100g.label(class="form-label") }}
-                        {{ form.iron_mg_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.iron_mg_per_100g) if my_food else "") }}
+                        {{ form.iron_mg_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.iron_mg_per_100g) if my_food else "") }}
                         {% for error in form.iron_mg_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-lg-3 mb-3">
                         {{ form.potassium_mg_per_100g.label(class="form-label") }}
-                        {{ form.potassium_mg_per_100g(class="form-control", type="number", step="any", value="%.2f"|format(my_food.potassium_mg_per_100g) if my_food else "") }}
+                        {{ form.potassium_mg_per_100g(class="form-control", type="number", step="any",
+                        value="%.2f"|format(my_food.potassium_mg_per_100g) if my_food else "") }}
                         {% for error in form.potassium_mg_per_100g.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                 </div>
@@ -175,49 +193,6 @@
             Portions for {{ my_food.description }}
         </div>
         <div class="card-body">
-            <h6>Existing Portions</h6>
-            <ul class="list-group mb-3">
-                {% for portion in my_food.portions|sort(attribute='seq_num') %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div class="d-flex flex-column me-2">
-                        <form action="{{ url_for('my_foods.move_my_food_portion_up', portion_id=portion.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first %}disabled{% endif %}>▲</button>
-                        </form>
-                        <form action="{{ url_for('my_foods.move_my_food_portion_down', portion_id=portion.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last %}disabled{% endif %}>▼</button>
-                        </form>
-                    </div>
-                    <form action="{{ url_for('my_foods.update_my_food_portion', portion_id=portion.id) }}" method="POST" class="d-flex flex-column flex-sm-row align-items-center w-100">
-                        {{ portion_form.hidden_tag() }}
-                        <div class="row g-2 flex-grow-1 me-sm-2">
-                            <div class="col-lg-3">
-                                <input type="number" step="any" name="amount" class="form-control form-control-sm" value="{{ portion.amount if portion.amount is not none else '' }}" placeholder="Amount">
-                            </div>
-                            <div class="col-lg-3">
-                                <input type="text" name="measure_unit_description" class="form-control form-control-sm" value="{{ portion.measure_unit_description if portion.measure_unit_description is not none else '' }}" placeholder="Unit">
-                            </div>
-                            <div class="col-lg-3">
-                                <input type="text" name="portion_description" class="form-control form-control-sm" value="{{ portion.portion_description if portion.portion_description is not none else '' }}" placeholder="Description">
-                            </div>
-                            <div class="col-lg-3">
-                                <input type="text" name="modifier" class="form-control form-control-sm" value="{{ portion.modifier if portion.modifier is not none else '' }}" placeholder="Modifier">
-                            </div>
-                        </div>
-                        <div class="col-lg-2 mt-2 mt-sm-0">
-                            <input type="number" step="any" name="gram_weight" class="form-control form-control-sm" value="{{ portion.gram_weight }}" placeholder="Gram Weight">
-                        </div>
-                        <button type="submit" class="btn btn-sm btn-outline-success ms-sm-1 mt-2 mt-sm-0">Save</button>
-                    </form>
-                    <form action="{{ url_for('my_foods.delete_my_food_portion', portion_id=portion.id) }}" method="POST" class="d-inline mt-2 mt-sm-0">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
-                    </form>
-                </li>
-                {% else %}
-                <li class="list-group-item">No custom portions defined.</li>
-                {% endfor %}
-            </ul>
-
-            <hr>
             <h6>Add New Portion</h6>
             <form method="POST" action="{{ url_for('my_foods.add_my_food_portion', food_id=my_food.id) }}">
                 {{ portion_form.hidden_tag() }}
@@ -228,13 +203,16 @@
                                 {{ portion_form.amount(class="form-control form-control-sm", placeholder="Amount") }}
                             </div>
                             <div class="col-lg-3">
-                                {{ portion_form.measure_unit_description(class="form-control form-control-sm", placeholder="Unit") }}
+                                {{ portion_form.measure_unit_description(class="form-control form-control-sm",
+                                placeholder="Unit") }}
                             </div>
                             <div class="col-lg-3">
-                                {{ portion_form.portion_description(class="form-control form-control-sm", placeholder="Description") }}
+                                {{ portion_form.portion_description(class="form-control form-control-sm",
+                                placeholder="Description") }}
                             </div>
                             <div class="col-lg-3">
-                                {{ portion_form.modifier(class="form-control form-control-sm", placeholder="Modifier") }}
+                                {{ portion_form.modifier(class="form-control form-control-sm", placeholder="Modifier")
+                                }}
                             </div>
                         </div>
                     </div>
@@ -246,13 +224,74 @@
                     </div>
                 </div>
             </form>
+            <hr>
+            <h6>Existing Portions</h6>
+            <ul class="list-group mb-3">
+                {% for portion in my_food.portions|sort(attribute='seq_num') %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="d-flex flex-column me-2">
+                        <form action="{{ url_for('my_foods.move_my_food_portion_up', portion_id=portion.id) }}"
+                            method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first %}disabled{%
+                                endif %}>▲</button>
+                        </form>
+                        <form action="{{ url_for('my_foods.move_my_food_portion_down', portion_id=portion.id) }}"
+                            method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last %}disabled{%
+                                endif %}>▼</button>
+                        </form>
+                    </div>
+                    <form action="{{ url_for('my_foods.update_my_food_portion', portion_id=portion.id) }}" method="POST"
+                        class="d-flex flex-column flex-sm-row align-items-center w-100">
+                        {{ portion_form.hidden_tag() }}
+                        <div class="row g-2 flex-grow-1 me-sm-2">
+                            <div class="col-lg-3">
+                                <input type="number" step="any" name="amount" class="form-control form-control-sm"
+                                    value="{{ portion.amount if portion.amount is not none else '' }}"
+                                    placeholder="Amount">
+                            </div>
+                            <div class="col-lg-3">
+                                <input type="text" name="measure_unit_description" class="form-control form-control-sm"
+                                    value="{{ portion.measure_unit_description if portion.measure_unit_description is not none else '' }}"
+                                    placeholder="Unit">
+                            </div>
+                            <div class="col-lg-3">
+                                <input type="text" name="portion_description" class="form-control form-control-sm"
+                                    value="{{ portion.portion_description if portion.portion_description is not none else '' }}"
+                                    placeholder="Description">
+                            </div>
+                            <div class="col-lg-3">
+                                <input type="text" name="modifier" class="form-control form-control-sm"
+                                    value="{{ portion.modifier if portion.modifier is not none else '' }}"
+                                    placeholder="Modifier">
+                            </div>
+                        </div>
+                        <div class="col-lg-2 mt-2 mt-sm-0">
+                            <input type="number" step="any" name="gram_weight" class="form-control form-control-sm"
+                                value="{{ portion.gram_weight }}" placeholder="Gram Weight">
+                        </div>
+                        <div class="d-flex mt-2 mt-sm-0 ms-sm-1">
+                            <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-1"
+                                onclick="document.getElementById('delete-portion-{{ portion.id }}').submit();">&times;</button>
+                        </div>
+                    </form>
+                    <form id="delete-portion-{{ portion.id }}"
+                        action="{{ url_for('my_foods.delete_my_food_portion', portion_id=portion.id) }}" method="POST"
+                        class="d-none"></form>
+                </li>
+                {% else %}
+                <li class="list-group-item">No custom portions defined.</li>
+                {% endfor %}
+            </ul>
         </div>
     </div>
     {% endif %}
 </div>
 
 <!-- Barcode Scanner Modal -->
-<div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-labelledby="barcodeScannerModalLabel" aria-hidden="true">
+<div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-labelledby="barcodeScannerModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -303,21 +342,22 @@
      * Generates the full 13-digit internal UPC and populates the input field.
      */
     function generateUpc() {
-        const foodId = {{ my_food.id|tojson }};
-        const prefix = "200";
+        const foodId = {{ my_food.id| tojson
+    }};
+    const prefix = "200";
 
-        // 1. Create the 12-digit base
-        const paddedId = String(foodId).padStart(9, '0');
-        const baseUpc = prefix + paddedId;
+    // 1. Create the 12-digit base
+    const paddedId = String(foodId).padStart(9, '0');
+    const baseUpc = prefix + paddedId;
 
-        // 2. Calculate the checksum
-        const checksum = calculateEan13Checksum(baseUpc);
+    // 2. Calculate the checksum
+    const checksum = calculateEan13Checksum(baseUpc);
 
-        // 3. Append checksum to create the final 13-digit UPC
-        const fullUpc = baseUpc + String(checksum);
+    // 3. Append checksum to create the final 13-digit UPC
+    const fullUpc = baseUpc + String(checksum);
 
-        // 4. Populate the input field
-        document.getElementById("upc").value = fullUpc;
+    // 4. Populate the input field
+    document.getElementById("upc").value = fullUpc;
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -387,4 +427,3 @@
 </script>
 {% endif %}
 {% endblock %}
-

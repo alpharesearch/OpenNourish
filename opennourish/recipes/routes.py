@@ -312,7 +312,7 @@ def delete_ingredient(ingredient_id):
     update_recipe_nutrition(recipe)
     db.session.commit()
     flash("Ingredient removed.", "success")
-    return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
+    return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id) + "#ingredients-section")
 
 
 @recipes_bp.route("/recipe/ingredient/<int:ingredient_id>/update", methods=["POST"])
@@ -346,7 +346,7 @@ def update_ingredient(ingredient_id):
     update_recipe_nutrition(recipe)
     db.session.commit()
     flash("Ingredient updated successfully.", "success")
-    return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
+    return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id) + "#ingredients-section")
 
 
 @recipes_bp.route("/<int:recipe_id>")

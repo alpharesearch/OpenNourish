@@ -1,4 +1,4 @@
-                {% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <div class="container mt-4">
@@ -7,9 +7,12 @@
         <h1 class="mb-0">{% if recipe %}{{ recipe.name }}{% else %}Create Recipe{% endif %}</h1>
         {% if recipe and recipe.id %}
         <div class="d-flex gap-2">
-            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info">View Recipe</a>
-            <a href="{{ url_for('recipes.generate_label_pdf', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank">6x4 Label</a>
-            <a href="{{ url_for('recipes.generate_pdf_details', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank">1 Page PDF</a>
+            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info">View
+                Recipe</a>
+            <a href="{{ url_for('recipes.generate_label_pdf', recipe_id=recipe.id) }}" class="btn btn-outline-info"
+                target="_blank">6x4 Label</a>
+            <a href="{{ url_for('recipes.generate_pdf_details', recipe_id=recipe.id) }}" class="btn btn-outline-info"
+                target="_blank">1 Page PDF</a>
             <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary">Back to List</a>
         </div>
         {% endif %}
@@ -18,7 +21,9 @@
     <div class="row">
         <!-- Left Column: Recipe Details -->
         <div class="col-lg-6">
-            <form method="POST" action="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) if recipe else url_for('recipes.new_recipe') }}" id="recipe-details-form">
+            <form method="POST"
+                action="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) if recipe else url_for('recipes.new_recipe') }}"
+                id="recipe-details-form">
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h2 class="h5 mb-0">Recipe Details</h2>
@@ -39,7 +44,8 @@
                             <div class="input-group">
                                 {{ form.servings(class="form-control") }}
                                 {% if recipe %}
-                                <button type="submit" id="auto-portion-btn" class="btn btn-outline-secondary" title="Create a portion based on the number of servings.">
+                                <button type="submit" id="auto-portion-btn" class="btn btn-outline-secondary"
+                                    title="Create a portion based on the number of servings.">
                                     Create Portion from Servings
                                 </button>
                                 {% endif %}
@@ -85,27 +91,33 @@
                 <div class="card-body">
                     <p>Define custom serving sizes for this recipe (e.g., "1 bowl", "1 slice").</p>
                     {% if recipe %}
-                    <form action="{{ url_for('recipes.add_recipe_portion', recipe_id=recipe.id) }}" method="POST" class="mb-3">
+                    <form action="{{ url_for('recipes.add_recipe_portion', recipe_id=recipe.id) }}" method="POST"
+                        class="mb-3">
                         {{ portion_form.hidden_tag() }}
                         <div class="row g-2 align-items-center">
                             <div class="col-sm">
                                 <div class="row g-2">
                                     <div class="col-lg-3">
-                                        {{ portion_form.amount(class="form-control form-control-sm", placeholder="Amount") }}
+                                        {{ portion_form.amount(class="form-control form-control-sm",
+                                        placeholder="Amount") }}
                                     </div>
                                     <div class="col-lg-3">
-                                        {{ portion_form.measure_unit_description(class="form-control form-control-sm", placeholder="Unit") }}
+                                        {{ portion_form.measure_unit_description(class="form-control form-control-sm",
+                                        placeholder="Unit") }}
                                     </div>
                                     <div class="col-lg-3">
-                                        {{ portion_form.portion_description(class="form-control form-control-sm", placeholder="Description") }}
+                                        {{ portion_form.portion_description(class="form-control form-control-sm",
+                                        placeholder="Description") }}
                                     </div>
                                     <div class="col-lg-3">
-                                        {{ portion_form.modifier(class="form-control form-control-sm", placeholder="Modifier") }}
+                                        {{ portion_form.modifier(class="form-control form-control-sm",
+                                        placeholder="Modifier") }}
                                     </div>
                                 </div>
                             </div>
                             <div class="col-sm-3 mt-2 mt-sm-0">
-                                {{ portion_form.gram_weight(class="form-control form-control-sm", placeholder="Gram Weight") }}
+                                {{ portion_form.gram_weight(class="form-control form-control-sm", placeholder="Gram
+                                Weight") }}
                             </div>
                             <div class="col-sm-auto mt-2 mt-sm-0">
                                 <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add</button>
@@ -117,37 +129,59 @@
                         {% for portion in recipe.portions|sort(attribute='seq_num') %}
                         <li class="list-group-item d-flex justify-content-between align-items-center p-1">
                             <div class="d-flex flex-column me-2">
-                                <form action="{{ url_for('recipes.move_recipe_portion_up', portion_id=portion.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first %}disabled{% endif %}>▲</button>
+                                <form action="{{ url_for('recipes.move_recipe_portion_up', portion_id=portion.id) }}"
+                                    method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first
+                                        %}disabled{% endif %}>▲</button>
                                 </form>
-                                <form action="{{ url_for('recipes.move_recipe_portion_down', portion_id=portion.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last %}disabled{% endif %}>▼</button>
+                                <form action="{{ url_for('recipes.move_recipe_portion_down', portion_id=portion.id) }}"
+                                    method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last
+                                        %}disabled{% endif %}>▼</button>
                                 </form>
                             </div>
-                            <form action="{{ url_for('recipes.update_recipe_portion', portion_id=portion.id) }}" method="POST" class="d-flex flex-column flex-sm-row align-items-center w-100">
+                            <form action="{{ url_for('recipes.update_recipe_portion', portion_id=portion.id) }}"
+                                method="POST" class="d-flex flex-column flex-sm-row align-items-center w-100">
                                 {{ portion_form.hidden_tag() }}
                                 <div class="row g-2 flex-grow-1 me-sm-2">
                                     <div class="col-lg-3">
-                                        <input type="number" step="any" name="amount" class="form-control form-control-sm" value="{{ portion.amount if portion.amount is not none else '' }}" placeholder="Amount">
+                                        <input type="number" step="any" name="amount"
+                                            class="form-control form-control-sm"
+                                            value="{{ portion.amount if portion.amount is not none else '' }}"
+                                            placeholder="Amount">
                                     </div>
                                     <div class="col-lg-3">
-                                        <input type="text" name="measure_unit_description" class="form-control form-control-sm" value="{{ portion.measure_unit_description if portion.measure_unit_description is not none else '' }}" placeholder="Unit">
+                                        <input type="text" name="measure_unit_description"
+                                            class="form-control form-control-sm"
+                                            value="{{ portion.measure_unit_description if portion.measure_unit_description is not none else '' }}"
+                                            placeholder="Unit">
                                     </div>
                                     <div class="col-lg-3">
-                                        <input type="text" name="portion_description" class="form-control form-control-sm" value="{{ portion.portion_description if portion.portion_description is not none else '' }}" placeholder="Description">
+                                        <input type="text" name="portion_description"
+                                            class="form-control form-control-sm"
+                                            value="{{ portion.portion_description if portion.portion_description is not none else '' }}"
+                                            placeholder="Description">
                                     </div>
                                     <div class="col-lg-3">
-                                        <input type="text" name="modifier" class="form-control form-control-sm" value="{{ portion.modifier if portion.modifier is not none else '' }}" placeholder="Modifier">
+                                        <input type="text" name="modifier" class="form-control form-control-sm"
+                                            value="{{ portion.modifier if portion.modifier is not none else '' }}"
+                                            placeholder="Modifier">
                                     </div>
                                 </div>
                                 <div class="col-lg-2 mt-2 mt-sm-0">
-                                    <input type="number" step="any" name="gram_weight" class="form-control form-control-sm" value="{{ portion.gram_weight }}" placeholder="Gram Weight">
+                                    <input type="number" step="any" name="gram_weight"
+                                        class="form-control form-control-sm" value="{{ portion.gram_weight }}"
+                                        placeholder="Gram Weight">
                                 </div>
-                                <button type="submit" class="btn btn-sm btn-outline-success ms-sm-1 mt-2 mt-sm-0">Save</button>
+                                <div class="d-flex mt-2 mt-sm-0 ms-sm-1">
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-1"
+                                        onclick="document.getElementById('delete-portion-{{ portion.id }}').submit();">&times;</button>
+                                </div>
                             </form>
-                            <form action="{{ url_for('recipes.delete_recipe_portion', portion_id=portion.id) }}" method="POST" class="d-inline mt-2 mt-sm-0">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
-                            </form>
+                            <form id="delete-portion-{{ portion.id }}"
+                                action="{{ url_for('recipes.delete_recipe_portion', portion_id=portion.id) }}"
+                                method="POST" class="d-none"></form>
                         </li>
                         {% else %}
                         <li class="list-group-item p-1"><small>No custom portions defined.</small></li>
@@ -163,50 +197,61 @@
 
     {% if recipe %}
     <!-- Ingredients Section -->
-    <div class="card mt-4">
+    <div class="card mt-4" id="ingredients-section">
         <div class="card-header">
             Ingredients
         </div>
         <div class="card-body">
             <ul class="list-group list-group-flush">
                 {% for ingredient in recipe.ingredients %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6>
-                            {% if ingredient.fdc_id %}
+                <li class="list-group-item">
+                    <div class="row align-items-center">
+                        <!-- Ingredient Info -->
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <h6>
+                                {% if ingredient.fdc_id %}
                                 {{ ingredient.food.description }}
-                            {% elif ingredient.my_food_id %}
+                                {% elif ingredient.my_food_id %}
                                 {{ ingredient.my_food.description }}
-                            {% elif ingredient.recipe_id_link %}
+                                {% elif ingredient.recipe_id_link %}
                                 {{ ingredient.linked_recipe.name }} (Recipe)
-                            {% endif %}
-                        </h6>
-                        <small class="text-muted">
-                            Calories: {{ ingredient.calories|default(0)|round(0) }} kcal |
-                            Protein: {{ ingredient.protein|default(0)|round(1) }}g |
-                            Carbs: {{ ingredient.carbs|default(0)|round(1) }}g |
-                            Fat: {{ ingredient.fat|default(0)|round(1) }}g
-                        </small>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <div>
-                            <form action="{{ url_for('recipes.update_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-flex flex-column flex-sm-row align-items-center gap-2">
-                                <input type="number" step="any" name="amount" class="form-control form-control-sm" value="{{ '%.2f'|format(ingredient.quantity) }}">
-                                <select name="portion_id" class="form-select form-select-sm mt-2 mt-sm-0">
-                                    {% set food_item = ingredient.usda_food or ingredient.my_food or ingredient.linked_recipe %}
-                                    {% if food_item %}
-                                        {% for portion in get_available_portions(food_item) %}
-                                            <option value="{{ portion.id }}" {% if ingredient.portion_id_fk == portion.id or (ingredient.portion_description == 'g' and portion.measure_unit_description == 'g' and portion.amount == 1.0) %}selected{% endif %}>{{ portion.full_description_str }}</option>
-                                        {% endfor %}
-                                    {% endif %}
-                                </select>
-                                <button type="submit" class="btn btn-sm btn-outline-success mt-2 mt-sm-0">Save</button>
-                            </form>
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted">
+                                Calories: {{ ingredient.calories|default(0)|round(0) }} kcal |
+                                Protein: {{ ingredient.protein|default(0)|round(1) }}g |
+                                Carbs: {{ ingredient.carbs|default(0)|round(1) }}g |
+                                Fat: {{ ingredient.fat|default(0)|round(1) }}g
+                            </small>
                         </div>
-                        <div class="mt-2 mt-sm-0">
-                            <form action="{{ url_for('recipes.delete_ingredient', ingredient_id=ingredient.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
-                            </form>
+                        <!-- Ingredient Form -->
+                        <div class="col-md-6">
+                            <div class="d-sm-flex justify-content-end align-items-center gap-2">
+                                <form id="update-ingredient-form-{{ ingredient.id }}" action="{{ url_for('recipes.update_ingredient', ingredient_id=ingredient.id) }}"
+                                    method="POST" class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 mb-2 mb-sm-0">
+                                    <input type="number" step="any" name="amount" class="form-control form-control-sm mb-2 mb-sm-0"
+                                        value="{{ '%.2f'|format(ingredient.quantity) }}">
+                                    <select name="portion_id" class="form-select form-select-sm">
+                                        {% set food_item = ingredient.usda_food or ingredient.my_food or
+                                        ingredient.linked_recipe %}
+                                        {% if food_item %}
+                                        {% for portion in get_available_portions(food_item) %}
+                                        <option value="{{ portion.id }}" {% if ingredient.portion_id_fk==portion.id or
+                                            (ingredient.portion_description=='g' and
+                                            portion.measure_unit_description=='g' and portion.amount==1.0) %}selected{%
+                                            endif %}>{{ portion.full_description_str }}</option>
+                                        {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                </form>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <button type="submit" form="update-ingredient-form-{{ ingredient.id }}" class="btn btn-sm btn-outline-success">Save</button>
+                                    <form action="{{ url_for('recipes.delete_ingredient', ingredient_id=ingredient.id) }}"
+                                        method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </li>
@@ -227,12 +272,13 @@
                 <input type="hidden" name="target" value="recipe">
                 <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
                 <div class="input-group">
-                    <input type="text" name="search_term" class="form-control" placeholder="Search for foods or meals..." value="{{ search_term or '' }}">
+                    <input type="text" name="search_term" class="form-control"
+                        placeholder="Search for foods or meals..." value="{{ search_term or '' }}">
                     <button type="submit" class="btn btn-outline-primary">Search</button>
                 </div>
             </form>
             {% if search_term %}
-                {# The unified search template will handle displaying results #}
+            {# The unified search template will handle displaying results #}
             {% endif %}
         </div>
     </div>
@@ -240,7 +286,8 @@
 </div>
 
 <!-- Barcode Scanner Modal -->
-<div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-labelledby="barcodeScannerModalLabel" aria-hidden="true">
+<div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-labelledby="barcodeScannerModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -291,27 +338,28 @@
      * Generates the full 13-digit internal UPC and populates the input field.
      */
     function generateUpc() {
-        const recipeId = {{ recipe.id|tojson }};
-        const prefix = "201";
+        const recipeId = {{ recipe.id| tojson
+    }};
+    const prefix = "201";
 
-        // 1. Create the 12-digit base
-        const paddedId = String(recipeId).padStart(9, '0');
-        const baseUpc = prefix + paddedId;
+    // 1. Create the 12-digit base
+    const paddedId = String(recipeId).padStart(9, '0');
+    const baseUpc = prefix + paddedId;
 
-        // 2. Calculate the checksum
-        const checksum = calculateEan13Checksum(baseUpc);
+    // 2. Calculate the checksum
+    const checksum = calculateEan13Checksum(baseUpc);
 
-        // 3. Append checksum to create the final 13-digit UPC
-        const fullUpc = baseUpc + String(checksum);
+    // 3. Append checksum to create the final 13-digit UPC
+    const fullUpc = baseUpc + String(checksum);
 
-        // 4. Populate the input field
-        document.getElementById("upc").value = fullUpc;
+    // 4. Populate the input field
+    document.getElementById("upc").value = fullUpc;
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         var autoPortionBtn = document.getElementById('auto-portion-btn');
         if (autoPortionBtn) {
-            autoPortionBtn.addEventListener('click', function(event) {
+            autoPortionBtn.addEventListener('click', function (event) {
                 event.preventDefault(); // Stop the form from submitting to the default action
                 var form = document.getElementById('recipe-details-form');
                 var servingsInput = form.querySelector('input[name="servings"]');
@@ -394,5 +442,3 @@
 </script>
 {% endif %}
 {% endblock %}
-
-
