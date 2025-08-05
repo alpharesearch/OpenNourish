@@ -222,6 +222,10 @@ def create_app(config_class=Config):
 
     app.register_blueprint(fasting_bp, url_prefix="/fasting")
 
+    from opennourish.ocr import ocr_bp
+
+    app.register_blueprint(ocr_bp)
+
     # Centralized meal configuration based on user settings
     MEAL_CONFIG = {
         3: ["Breakfast", "Lunch", "Dinner"],

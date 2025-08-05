@@ -2,7 +2,16 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Add New Custom Food</h2>
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Add New Custom Food</h1>
+        <div>
+            <button type="button" class="btn btn-outline-info" id="scanLabelBtn">Scan Label</button>
+            <input type="file" id="labelImageInput" accept="image/*" capture="environment" style="display: none;">
+            <a href="{{ url_for('my_foods.my_foods') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </div>
+
     <p>Create a new food item by defining a serving size and entering the nutrition facts for that serving. The values will be automatically scaled to the standard 100g base.</p>
 
     <form method="POST" action="{{ url_for('my_foods.new_my_food') }}">
@@ -13,7 +22,12 @@
             <!-- Left Column: Food Details & Serving Info -->
             <div class="col-lg-6">
                 <div class="card mb-4">
-                    <div class="card-header">Food & Serving Details</div>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h2 class="h5 mb-0">Food & Serving Details</h2>
+                        <div>
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Create Food</button>
+                        </div>
+                    </div>
                     <div class="card-body">
                         <div class="mb-3">
                             {{ form.description.label(class="form-label") }}
@@ -155,11 +169,122 @@
                 </div>
             </div>
         </div>
-
-        <div class="mt-3">
-            <button type="submit" class="btn btn-outline-primary">Create Food</button>
-            <a href="{{ url_for('my_foods.my_foods') }}" class="btn btn-outline-secondary">Cancel</a>
-        </div>
+        
     </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const scanLabelBtn = document.getElementById('scanLabelBtn');
+    const labelImageInput = document.getElementById('labelImageInput');
+    const cropperModal = new bootstrap.Modal(document.getElementById('cropperModal'));
+    const imageToCrop = document.getElementById('imageToCrop');
+    const confirmCropBtn = document.getElementById('confirmCropBtn');
+    let cropper;
+
+    scanLabelBtn.addEventListener('click', function () {
+        labelImageInput.click();
+    });
+
+    labelImageInput.addEventListener('change', function (e) {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                imageToCrop.src = event.target.result;
+                cropperModal.show();
+            };
+            reader.readAsDataURL(files[0]);
+        }
+    });
+
+    document.getElementById('cropperModal').addEventListener('shown.bs.modal', function () {
+        if (cropper) {
+            cropper.destroy();
+        }
+        cropper = new Cropper(imageToCrop, {
+            viewMode: 1,
+            autoCropArea: 1,
+        });
+    });
+
+    confirmCropBtn.addEventListener('click', function () {
+        if (cropper) {
+            cropper.getCroppedCanvas().toBlob(function (blob) {
+                cropperModal.hide();
+                scanLabelBtn.textContent = 'Processing...';
+                scanLabelBtn.disabled = true;
+
+                const formData = new FormData();
+                formData.append('file', blob, 'nutrition_label.jpg');
+
+                fetch('/api/ocr-nutrition-label', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        return;
+                    }
+
+                    // Map API keys to the correct form field IDs
+                    const fieldMapping = {
+                        calories: 'calories_per_100g',
+                        total_fat: 'fat_per_100g',
+                        saturated_fat: 'saturated_fat_per_100g',
+                        trans_fat: 'trans_fat_per_100g',
+                        cholesterol: 'cholesterol_mg_per_100g',
+                        sodium: 'sodium_mg_per_100g',
+                        total_carbohydrate: 'carbs_per_100g',
+                        dietary_fiber: 'fiber_per_100g',
+                        total_sugars: 'sugars_per_100g',
+                        protein: 'protein_per_100g'
+                    };
+
+                    // Loop through the mapping to populate the main nutrition fields
+                    for (const [apiKey, elementId] of Object.entries(fieldMapping)) {
+                        if (data[apiKey]) {
+                            console.log(`Attempting to populate field: ${elementId} with key: ${apiKey}`);
+                            try {
+                                const element = document.getElementById(elementId);
+                                if (element) {
+                                    element.value = data[apiKey];
+                                } else {
+                                    console.error(`Element with ID '${elementId}' not found for API key '${apiKey}'.`);
+                                }
+                            } catch (e) {
+                                console.error(`Error setting value for element '${elementId}' with data from key '${apiKey}'.`, e);
+                            }
+                        }
+                    }
+
+                    // Handle the portion form fields separately and more intelligently
+                    if (data.serving_size) {
+                        // Extract the description part of the serving size, e.g., "2/3 cup"
+                        const servingDescription = data.serving_size.replace(/\s*\([\d.]+g\)/i, '').trim();
+                        document.getElementById('portion_form-portion_description').value = servingDescription;
+                        document.getElementById('portion_form-measure_unit_description').value = 'Serving'; // Set a sensible default
+                    }
+                    if (data.gram_weight) {
+                        document.getElementById('portion_form-gram_weight').value = data.gram_weight;
+                    }
+
+                })
+                .catch(error => {
+                    console.error('Error during form population:', error);
+                    alert('An error occurred while processing the image.');
+                })
+                .finally(() => {
+                    scanLabelBtn.textContent = 'Scan Label';
+                    scanLabelBtn.disabled = false;
+                });
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

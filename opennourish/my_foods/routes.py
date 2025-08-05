@@ -64,7 +64,7 @@ def new_my_food():
     form.food_category.choices = [("", "-- Select a Category --")] + [
         (c.id, c.description) for c in FoodCategory.query.order_by(FoodCategory.code)
     ]
-    portion_form = PortionForm()
+    portion_form = PortionForm(prefix="portion_form")
 
     # Change form labels for the 'new' page context
     nutrient_fields = [
@@ -184,7 +184,7 @@ def edit_my_food(food_id):
     form.food_category.choices = [("", "-- Select a Category --")] + [
         (c.id, c.description) for c in FoodCategory.query.order_by(FoodCategory.code)
     ]
-    portion_form = PortionForm()
+    portion_form = PortionForm(prefix="portion_form")
 
     if form.validate_on_submit():
         submitted_portion_id = request.form.get("selected_portion_id", type=int)

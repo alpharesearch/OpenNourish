@@ -15,11 +15,11 @@ def test_create_my_food(auth_client):
         "carbs_per_100g": 30.0,  # 'Carbohydrates (g)'
         "fat_per_100g": 10.0,  # 'Fat (g)'
         # Portion form data
-        "amount": 1,
-        "measure_unit_description": "cup",
-        "portion_description": "",
-        "modifier": "",
-        "gram_weight": 50.0,  # The gram weight of the '1 cup' serving
+        "portion_form-amount": 1,
+        "portion_form-measure_unit_description": "cup",
+        "portion_form-portion_description": "",
+        "portion_form-modifier": "",
+        "portion_form-gram_weight": 50.0,  # The gram weight of the '1 cup' serving
     }
     response = auth_client.post("/my_foods/new", data=food_data, follow_redirects=True)
     assert response.status_code == 200

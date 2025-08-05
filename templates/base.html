@@ -6,11 +6,34 @@
     <title>{% block title %}OpenNourish{% endblock %}</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='cropper.min.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="{{ url_for('static', filename='chart.js') }}"></script>
   </head>
   <body>
     {% include '_navbar.html' %}
+
+    <!-- Cropper Modal -->
+    <div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="cropperModalLabel">Crop Image</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div>
+              <img id="imageToCrop" src="" style="max-width: 100%;">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-outline-primary" id="confirmCropBtn">Confirm Crop</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="container">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -89,6 +112,7 @@
     {% endif %}
 
     <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='cropper.min.js') }}"></script>
     {% block scripts %}{% endblock %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
