@@ -236,6 +236,7 @@ def search():
                         portion_description="",
                         modifier="",
                         gram_weight=1.0,
+                        was_imported=True,  # Mark as an imported-equivalent portion
                     )
                     db.session.add(one_gram_portion)
                     db.session.commit()
@@ -441,6 +442,7 @@ def search():
                             portion_description="",
                             modifier="",
                             gram_weight=1.0,
+                            was_imported=True,  # Mark as an imported-equivalent portion
                         )
                         db.session.add(one_gram_portion)
                         db.session.commit()
@@ -527,6 +529,7 @@ def add_item():
                 portion_description="",
                 modifier="",
                 gram_weight=1.0,
+                was_imported=True,  # Mark as an imported-equivalent portion
             )
             db.session.add(one_gram_portion)
             db.session.commit()

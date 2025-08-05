@@ -1066,7 +1066,6 @@ def create_app(config_class=Config):
 
             group_by_columns = [
                 UnifiedPortion.fdc_id,
-                UnifiedPortion.seq_num,
                 UnifiedPortion.amount,
                 UnifiedPortion.measure_unit_description,
                 UnifiedPortion.portion_description,
@@ -1076,7 +1075,7 @@ def create_app(config_class=Config):
             # Subquery to find the minimum ID for each unique group of imported portions
             subquery = (
                 db.session.query(func.min(UnifiedPortion.id).label("min_id"))
-                .filter(UnifiedPortion.was_imported == True)
+                .filter(UnifiedPortion.was_imported)
                 .group_by(*group_by_columns)
                 .subquery()
             )
@@ -1085,7 +1084,7 @@ def create_app(config_class=Config):
             ids_to_keep = {row[0] for row in ids_to_keep_query}
             # Delete all imported portions whose IDs are not in the list of IDs to keep
             duplicates_delete_query = UnifiedPortion.query.filter(
-                UnifiedPortion.was_imported == True, ~UnifiedPortion.id.in_(ids_to_keep)
+                UnifiedPortion.was_imported, ~UnifiedPortion.id.in_(ids_to_keep)
             )
             deleted_duplicates_count = duplicates_delete_query.delete(
                 synchronize_session=False
@@ -1176,7 +1175,6 @@ def create_app(config_class=Config):
                     # Create a unique key to prevent adding duplicates from the CSV
                     portion_key = (
                         fdc_id,
-                        seq_num,
                         amount,
                         measure_unit_desc,
                         portion_desc,
@@ -1212,6 +1210,56 @@ def create_app(config_class=Config):
                 )
             else:
                 print("No new USDA portions were found or needed to be added.")
+
+    @app.cli.command("deduplicate-portions")
+    def deduplicate_portions_command():
+        """
+        Finds and removes duplicate portions from the unified_portion table,
+        keeping only the first instance of each unique portion.
+        """
+        with app.app_context():
+            print("Checking for and removing duplicate portions...")
+            from sqlalchemy import func
+
+            group_by_columns = [
+                UnifiedPortion.fdc_id,
+                UnifiedPortion.my_food_id,
+                UnifiedPortion.recipe_id,
+                UnifiedPortion.amount,
+                UnifiedPortion.measure_unit_description,
+                UnifiedPortion.portion_description,
+                UnifiedPortion.modifier,
+                UnifiedPortion.gram_weight,
+            ]
+            # Subquery to find the minimum ID for each unique group of portions
+            subquery = (
+                db.session.query(func.min(UnifiedPortion.id).label("min_id"))
+                .group_by(*group_by_columns)
+                .subquery()
+            )
+            # Get the list of IDs to keep (the first instance of each unique portion)
+            ids_to_keep_query = db.session.query(subquery.c.min_id)
+            ids_to_keep = {row[0] for row in ids_to_keep_query}
+
+            # Find all portion IDs to determine which ones to delete
+            all_ids_query = db.session.query(UnifiedPortion.id)
+            all_ids = {row[0] for row in all_ids_query}
+            ids_to_delete = all_ids - ids_to_keep
+
+            if not ids_to_delete:
+                print("No duplicate portions found.")
+                return
+
+            # Delete all portions whose IDs are in the list of IDs to delete
+            duplicates_delete_query = UnifiedPortion.query.filter(
+                UnifiedPortion.id.in_(ids_to_delete)
+            )
+            deleted_duplicates_count = duplicates_delete_query.delete(
+                synchronize_session=False
+            )
+            db.session.commit()
+
+            print(f"Removed {deleted_duplicates_count} duplicate portions.")
 
     @app.cli.command("seed-usda-categories")
     def seed_usda_categories_command():
