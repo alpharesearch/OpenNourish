@@ -128,14 +128,12 @@
                 {% elif not is_read_only %}
                 <div class="d-flex flex-column flex-md-row align-items-md-center">
                     {% if meal_name == 'Water' %}
-                    {% set ml_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'ml') |
-                    first %}
-                    {% set floz_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'fl
-                    oz') | first %}
+                    {% set ml_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'ml') | first %}
+                    {% set floz_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'fl oz') | first %}
                     <div class="d-flex justify-content-end align-items-center flex-wrap-nowrap">
                         <div class="btn-group btn-group-sm" role="group" aria-label="Water quick add">
                             {% if current_user.measurement_system == 'metric' and ml_portion %}
-                            {% for amount in [100, 250, 500] %}
+                            {% for amount in [100, 250, 500, 750] %}
                             <form action="{{ url_for('search.add_item') }}" method="post" class="d-inline">
                                 <input type="hidden" name="food_id" value="{{ water_food.id }}">
                                 <input type="hidden" name="food_type" value="my_food">
@@ -148,7 +146,7 @@
                             </form>
                             {% endfor %}
                             {% elif current_user.measurement_system == 'us' and floz_portion %}
-                            {% for amount in [8, 12, 16] %}
+                            {% for amount in [4, 8, 16, 24] %}
                             <form action="{{ url_for('search.add_item') }}" method="post" class="d-inline">
                                 <input type="hidden" name="food_id" value="{{ water_food.id }}">
                                 <input type="hidden" name="food_type" value="my_food">
