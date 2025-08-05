@@ -7,6 +7,8 @@ echo "========================================\n" >> project_snapshot.txt
 
 # Find all relevant files, excluding ignored/binary directories and files
 find . -type f \
+	-not -path "./htmlcov/*" \
+	-not -path "./.ruff_cache/*" \
     -not -path "./usda_data/*" \
     -not -path "./.git/*" \
     -not -path "./__pycache__/*" \
@@ -21,8 +23,12 @@ find . -type f \
     -not -name "*.db-journal" \
     -not -name "*.pyc" \
     -not -name "*.ico" \
+    -not -name "*.png" \
     -not -name "*.env" \
     -not -name "*.js" \
+    -not -name "*.map" \
+    -not -name ".coverage" \
+    -not -name ".coveragerc" \
     | while read -r file; do
         # For each file, print a clear header and then the file's content
         echo "--- FILE: ${file} ---" >> project_snapshot.txt
