@@ -1,9 +1,15 @@
 DIET_PRESETS = {
     "SAD": {"protein": 0.15, "carbs": 0.50, "fat": 0.35},
+    "Balanced": {"protein": 0.20, "carbs": 0.50, "fat": 0.30},
+    "Low Carb": {"protein": 0.40, "carbs": 0.25, "fat": 0.35},
+    "Low Fat": {"protein": 0.20, "carbs": 0.60, "fat": 0.20},
+    "High Protein": {"protein": 0.40, "carbs": 0.40, "fat": 0.20},
     "Keto": {"protein": 0.20, "carbs": 0.05, "fat": 0.75},
+    "Zone": {"protein": 0.30, "carbs": 0.40, "fat": 0.30},
     "Paleo": {"protein": 0.30, "carbs": 0.30, "fat": 0.40},
     "Mediterranean": {"protein": 0.20, "carbs": 0.40, "fat": 0.40},
 }
+
 CORE_NUTRIENT_IDS = {
     "calories": 1008,
     "protein": 1003,
