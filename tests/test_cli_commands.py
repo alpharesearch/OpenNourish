@@ -118,7 +118,7 @@ def test_seed_usda_portions_command(app_with_db, tmp_path, monkeypatch):
 
     # Assert that the command identified the curated food and skipped it
     assert (
-        "Found 1 manually curated foods. Their portions will be skipped."
+        "Found 1 manually curated foods. Their portions will be skipped during re-import."
         in result.output
     )
     # Assert that it deleted the non-curated portion

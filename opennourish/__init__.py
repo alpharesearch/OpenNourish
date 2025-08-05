@@ -1053,11 +1053,52 @@ def create_app(config_class=Config):
         This command is smart: it will not overwrite portions for any food that has
         been manually curated by a key user (i.e., where at least one portion
         has `was_imported` set to False).
+        It also prevents duplicate portions from being created.
         """
         with app.app_context():
             print("Seeding USDA portions...")
 
-            # 1. Find all fdc_ids that have been manually curated.
+            # 1. Clean up any pre-existing duplicate imported portions from previous runs.
+            # This ensures that even curated foods are cleaned of duplicates without
+            # affecting manually added (non-imported) portions.
+            print("Checking for and removing existing duplicate imported portions...")
+            from sqlalchemy import func
+
+            group_by_columns = [
+                UnifiedPortion.fdc_id,
+                UnifiedPortion.seq_num,
+                UnifiedPortion.amount,
+                UnifiedPortion.measure_unit_description,
+                UnifiedPortion.portion_description,
+                UnifiedPortion.modifier,
+                UnifiedPortion.gram_weight,
+            ]
+            # Subquery to find the minimum ID for each unique group of imported portions
+            subquery = (
+                db.session.query(func.min(UnifiedPortion.id).label("min_id"))
+                .filter(UnifiedPortion.was_imported == True)
+                .group_by(*group_by_columns)
+                .subquery()
+            )
+            # Get the list of IDs to keep (the first instance of each unique portion)
+            ids_to_keep_query = db.session.query(subquery.c.min_id)
+            ids_to_keep = {row[0] for row in ids_to_keep_query}
+            # Delete all imported portions whose IDs are not in the list of IDs to keep
+            duplicates_delete_query = UnifiedPortion.query.filter(
+                UnifiedPortion.was_imported == True, ~UnifiedPortion.id.in_(ids_to_keep)
+            )
+            deleted_duplicates_count = duplicates_delete_query.delete(
+                synchronize_session=False
+            )
+            db.session.commit()
+            if deleted_duplicates_count > 0:
+                print(
+                    f"Removed {deleted_duplicates_count} pre-existing duplicate imported portions."
+                )
+            else:
+                print("No pre-existing duplicate imported portions found.")
+
+            # 2. Find all fdc_ids that have been manually curated.
             # These are foods where at least one portion has was_imported = False.
             curated_fdc_ids_query = (
                 db.session.query(UnifiedPortion.fdc_id)
@@ -1067,12 +1108,11 @@ def create_app(config_class=Config):
             curated_fdc_ids = {row.fdc_id for row in curated_fdc_ids_query}
             if curated_fdc_ids:
                 print(
-                    f"Found {len(curated_fdc_ids)} manually curated foods. Their portions will be skipped."
+                    f"Found {len(curated_fdc_ids)} manually curated foods. Their portions will be skipped during re-import."
                 )
 
-            # 2. Delete existing imported USDA portions for non-curated foods only.
-            # This ensures that we can re-run the script to update USDA data without
-            # touching the foods that users have spent time curating.
+            # 3. Delete existing imported USDA portions for non-curated foods only.
+            # This clears the way for a fresh import.
             delete_query = UnifiedPortion.query.filter(
                 UnifiedPortion.was_imported,
                 ~UnifiedPortion.fdc_id.in_(curated_fdc_ids),
@@ -1080,7 +1120,7 @@ def create_app(config_class=Config):
             deleted_count = delete_query.delete(synchronize_session=False)
             db.session.commit()
             print(
-                f"Deleted {deleted_count} existing imported USDA portions from non-curated foods."
+                f"Deleted {deleted_count} existing imported USDA portions from non-curated foods for re-import."
             )
 
             usda_data_dir = os.path.join(
@@ -1097,7 +1137,7 @@ def create_app(config_class=Config):
                 )
                 return
 
-            # 3. Load measure units from CSV for efficient lookup.
+            # 4. Load measure units from CSV for efficient lookup.
             measure_units = {}
             with open(measure_unit_csv_path, "r", encoding="utf-8") as f:
                 reader = csv.reader(f)
@@ -1106,8 +1146,9 @@ def create_app(config_class=Config):
                     measure_units[row[0]] = row[1]
             print(f"Loaded {len(measure_units)} measure units from CSV.")
 
-            # 4. Load all portions from the USDA's food_portion.csv, skipping curated foods.
+            # 5. Load all portions from the USDA's food_portion.csv, preventing duplicates.
             portions_to_add = []
+            unique_portions_tracker = set()
             with open(food_portion_csv_path, "r", encoding="utf-8") as f:
                 reader = csv.reader(f)
                 next(reader)  # Skip header
@@ -1124,25 +1165,45 @@ def create_app(config_class=Config):
                     else:
                         modifier_val = modifier_val or None
 
-                    # Create a UnifiedPortion object for each row in the CSV
+                    seq_num = int(row[2]) if row[2] else None
+                    amount = float(row[3]) if row[3] else None
+                    measure_unit_desc = (
+                        measure_units.get(row[4], "") if row[4] != "9999" else ""
+                    )
+                    portion_desc = row[5] or None
+                    gram_weight = float(row[7])
+
+                    # Create a unique key to prevent adding duplicates from the CSV
+                    portion_key = (
+                        fdc_id,
+                        seq_num,
+                        amount,
+                        measure_unit_desc,
+                        portion_desc,
+                        modifier_val,
+                        gram_weight,
+                    )
+                    if portion_key in unique_portions_tracker:
+                        continue
+                    unique_portions_tracker.add(portion_key)
+
+                    # Create a UnifiedPortion object for each unique row
                     portion = UnifiedPortion(
                         fdc_id=fdc_id,
-                        seq_num=int(row[2]) if row[2] else None,
-                        amount=float(row[3]) if row[3] else None,
-                        measure_unit_description=measure_units.get(row[4], "")
-                        if row[4] != "9999"
-                        else "",
-                        portion_description=row[5] or None,  # Handle empty strings
-                        modifier=modifier_val,  # Use sanitized value
-                        gram_weight=float(row[7]),
+                        seq_num=seq_num,
+                        amount=amount,
+                        measure_unit_description=measure_unit_desc,
+                        portion_description=portion_desc,
+                        modifier=modifier_val,
+                        gram_weight=gram_weight,
                         was_imported=True,  # Mark as imported
                     )
                     portions_to_add.append(portion)
             print(
-                f"Loaded {len(portions_to_add)} new portions to add from food_portion.csv."
+                f"Loaded {len(portions_to_add)} new, unique portions to add from food_portion.csv."
             )
 
-            # 5. Add all collected portions to the database in a single transaction.
+            # 6. Add all collected portions to the database in a single transaction.
             if portions_to_add:
                 db.session.bulk_save_objects(portions_to_add)
                 db.session.commit()
