@@ -123,17 +123,20 @@ To ensure a consistent and semantically correct structure across all pages, new 
 **Standard Layout Example:**
 ```html
 <div class="container mt-4">
-    <!-- 1. PAGE HEADER: Main title and primary action for the page -->
+    <!-- 1. PAGE HEADER: Main title and primary actions for the entire page -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">Page Title</h1>
-        <a href="..." class="btn btn-primary">Primary Page Action</a>
+        <div>
+            <a href="..." class="btn btn-outline-primary">Primary Page Action (e.g., Add New)</a>
+            <a href="..." class="btn btn-outline-secondary">Back to List</a>
+        </div>
     </div>
 
     <!-- 2. STANDARD CONTENT CARD: For displaying information or forms -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h2 class="h5 mb-0">Card Title</h2>
-            <!-- Optional: Card-specific action buttons -->
+            <!-- Card-specific action buttons -->
             <div>
                 <a href="..." class="btn btn-sm btn-outline-primary">Edit</a>
                 <form action="..." method="POST" class="d-inline">
@@ -143,18 +146,27 @@ To ensure a consistent and semantically correct structure across all pages, new 
         </div>
         <div class="card-body">
             <p>Card content, such as text, forms, or tables, goes here.</p>
+            
+            <!-- 3. ELEMENT-SPECIFIC ACTIONS: Buttons associated with a single input field -->
+            <div class="input-group mt-3">
+                <input type="text" class="form-control" placeholder="UPC Code">
+                <button class="btn btn-outline-secondary" type="button">Scan UPC</button>
+            </div>
         </div>
     </div>
 </div>
 ```
 
-**Key Improvements:**
+**Key Principles and Improvements:**
 
-1.  **Page Header:** A dedicated header for the page's `<h1>` title improves structure and provides a consistent location for primary page-level actions (e.g., "Add New Recipe").
-2.  **Flexbox Headers:** Using `d-flex justify-content-between align-items-center` in both page and card headers provides a robust way to align titles to the left and action buttons to the right.
-3.  **Semantic & Visual Headings:** Card titles use a semantic `<h2>` tag but are visually styled smaller with the `.h5` class for a balanced appearance. The `mb-0` class removes unwanted bottom margin.
-4.  **Button Sizing:** Card-specific action buttons are sized down with `btn-sm` to fit cleanly within the card header.
-5.  **Consistent Spacing:** `mt-4` on the main container and `mb-4` on headers and cards ensure predictable vertical spacing throughout the application.
+1.  **Page Header:** A dedicated header for the page's `<h1>` title improves structure and provides a consistent location for primary, page-level actions (e.g., "Add New Recipe", "Back to List").
+2.  **Card Header:** The `.card-header` is used for the title of a content block and any actions that apply to the entire card (e.g., "Edit", "Delete").
+3.  **Element-Specific Actions:** Buttons that perform an action on a single input field (e.g., "Scan UPC", "Generate") should be placed directly next to that element, often using Bootstrap's `.input-group`.
+4.  **Flexbox for Alignment:** Using `d-flex justify-content-between align-items-center` in both page and card headers provides a robust way to align titles to the left and action buttons to the right.
+5.  **Semantic & Visual Headings:** Card titles should use a semantic `<h2>` tag but can be visually styled smaller with the `.h5` class for a balanced appearance. The `mb-0` class removes unwanted bottom margin.
+6.  **Button Sizing:** Card-specific action buttons should be sized down with `btn-sm` to fit cleanly within the card header. Page-level buttons can remain the standard size.
+7.  **Consistent Spacing:** Using `mt-4` on the main container and `mb-4` on headers and cards ensures predictable vertical spacing throughout the application.
+8.  **Responsive Design:** All layouts and components must be responsive. Use Bootstrap's grid system (`row`, `col-*`), flexbox utilities (`d-flex`, `flex-wrap`), and responsive display/spacing classes to ensure the UI is usable and looks good on all screen sizes, from small mobile phones to large desktop monitors. For example, button groups in headers should use `flex-wrap` to stack vertically on small screens.
 
 ### 7.4. Frontend Display Conventions
 

@@ -5,7 +5,7 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">{% if my_food %}Edit Custom Food{% else %}Add New Custom Food{% endif %}</h1>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
             {% if my_food %}
             <form action="{{ url_for('my_foods.copy_my_food', food_id=my_food.id) }}" method="POST" class="d-inline">
                 <button type="submit" class="btn btn-outline-primary">Clone</button>
