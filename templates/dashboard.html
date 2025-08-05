@@ -10,25 +10,24 @@
             class="alert-link">Friends page</a> to accept or decline.
     </div>
     {% endif %}
-    <div class="d-sm-flex justify-content-between align-items-center mb-3 mt-4">
-        <div class="d-flex justify-content-between mb-2 mb-sm-0">
-            {% if is_read_only %}
-            <a href="{{ url_for('profile.dashboard', username=username, log_date_str=prev_date.isoformat()) }}"
-                class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
-            {% else %}
-            <a href="{{ url_for('dashboard.index', log_date_str=prev_date.isoformat()) }}"
-                class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
-            {% endif %}
-            {% if is_read_only %}
-            <a href="{{ url_for('profile.dashboard', username=username, log_date_str=next_date.isoformat()) }}"
-                class="btn btn-outline-secondary">Next Day &raquo;</a>
-            {% else %}
-            <a href="{{ url_for('dashboard.index', log_date_str=next_date.isoformat()) }}"
-                class="btn btn-outline-secondary">Next Day &raquo;</a>
-            {% endif %}
+    {% set prev_url = url_for('profile.dashboard', username=username, log_date_str=prev_date.isoformat()) if is_read_only else url_for('dashboard.index', log_date_str=prev_date.isoformat()) %}
+    {% set next_url = url_for('profile.dashboard', username=username, log_date_str=next_date.isoformat()) if is_read_only else url_for('dashboard.index', log_date_str=next_date.isoformat()) %}
+    <div class="row justify-content-between align-items-center mb-3 mt-4">
+        <!-- Prev button: On small screens, ordered second. On large, ordered first. -->
+        <div class="col-auto order-2 order-sm-1">
+            <a href="{{ prev_url }}" class="btn btn-outline-secondary">&laquo; Prev Day</a>
         </div>
-        <h1 class="mb-0 text-center">{% if is_read_only %}{{ username }}'s {% endif %}Dashboard</h1>
-        <h2 class="mb-0 text-center h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
+
+        <!-- Title: On small screens, ordered first and full-width. On large, ordered second. -->
+        <div class="col-12 col-sm-auto text-center order-1 order-sm-2 mb-2 mb-sm-0">
+            <h1 class="mb-0">{% if is_read_only %}{{ username }}'s {% endif %}Dashboard</h1>
+            <h2 class="mb-0 h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
+        </div>
+
+        <!-- Next button: Always ordered third. -->
+        <div class="col-auto order-3">
+            <a href="{{ next_url }}" class="btn btn-outline-secondary">&raquo; Next Day</a>
+        </div>
     </div>
 
     <div class="card mb-4">

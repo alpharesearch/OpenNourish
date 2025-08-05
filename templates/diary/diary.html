@@ -2,24 +2,27 @@
 
 {% block content %}
 <div class="container">
-    
-    <div class="d-sm-flex justify-content-between align-items-center mb-3 mt-4">
-        <div class="d-flex justify-content-between mb-2 mb-sm-0">
-        {% if is_read_only %}
-            <a href="{{ url_for('profile.diary', username=username, log_date_str=prev_date.isoformat()) }}" class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
-        {% else %}
-            <a href="{{ url_for('diary.diary', log_date_str=prev_date.isoformat()) }}" class="btn btn-outline-secondary me-2">&laquo; Prev Day</a>
-        {% endif %}
-        {% if is_read_only %}
-            <a href="{{ url_for('profile.diary', username=username, log_date_str=next_date.isoformat()) }}" class="btn btn-outline-secondary">Next Day &raquo;</a>
-        {% else %}
-            <a href="{{ url_for('diary.diary', log_date_str=next_date.isoformat()) }}" class="btn btn-outline-secondary">Next Day &raquo;</a>
-        {% endif %}
+
+    {% set prev_url = url_for('profile.diary', username=username, log_date_str=prev_date.isoformat()) if is_read_only else url_for('diary.diary', log_date_str=prev_date.isoformat()) %}
+    {% set next_url = url_for('profile.diary', username=username, log_date_str=next_date.isoformat()) if is_read_only else url_for('diary.diary', log_date_str=next_date.isoformat()) %}
+    <div class="row justify-content-between align-items-center mb-3 mt-4">
+        <!-- Prev button: On small screens, ordered second. On large, ordered first. -->
+        <div class="col-auto order-2 order-sm-1">
+            <a href="{{ prev_url }}" class="btn btn-outline-secondary">&laquo; Prev Day</a>
+        </div>
+
+        <!-- Title: On small screens, ordered first and full-width. On large, ordered second. -->
+        <div class="col-12 col-sm-auto text-center order-1 order-sm-2 mb-2 mb-sm-0">
+            <h1 class="mb-0">{% if is_read_only %}{{ username }}'s {% endif %}Food Diary</h1>
+            <h2 class="mb-0 h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
+        </div>
+
+        <!-- Next button: Always ordered third. -->
+        <div class="col-auto order-3">
+            <a href="{{ next_url }}" class="btn btn-outline-secondary">&raquo; Next Day</a>
+        </div>
     </div>
-    <h1 class="mb-0 text-center">{% if is_read_only %}{{ username }}'s {% endif %}Food Diary</h1>
-    <h2 class="mb-0 text-center h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
-</div>
-{% if is_fasting %}
+    {% if is_fasting %}
     <div class="card mt-4">
         <div class="card-header">
             <h3>Fasting Log</h3>
@@ -38,7 +41,8 @@
                 <div class="col-lg-12">
                     <h5 class="mb-1">Calories Progress</h5>
                     <small class="text-muted d-block mb-1">
-                        Goal: {{ "%.1f" % goals.calories }} kcal | Consumed: {{ "%.1f" % totals.calories }} kcal | Burned: {{ "%.1f" % calories_burned }} kcal
+                        Goal: {{ "%.1f" % goals.calories }} kcal | Consumed: {{ "%.1f" % totals.calories }} kcal |
+                        Burned: {{ "%.1f" % calories_burned }} kcal
                     </small>
                     <p class="mb-2">
                         Remaining: {{ "%.1f" % (goals.calories - totals.calories + calories_burned) }} kcal
@@ -48,7 +52,9 @@
 
                         {% set percentage = (net_calories / goals.calories) * 100 if goals.calories > 0 else 0 %}
 
-                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ net_calories }}" aria-valuemin="0" aria-valuemax="{{ goals.calories }}">
+                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
+                            role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ net_calories }}"
+                            aria-valuemin="0" aria-valuemax="{{ goals.calories }}">
 
                             {{ "%.1f" % percentage }}%
 
@@ -66,65 +72,69 @@
                     </small>
                     <div class="progress" style="height: 15px;">
                         {% set percentage = (totals[key] / goals[key]) * 100 if goals[key] > 0 else 0 %}
-                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}" aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
+                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
+                            role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}"
+                            aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
                             {{ "%.1f" % percentage }}%
                         </div>
                     </div>
                 </div>
                 {% endfor %}
+            </div>
         </div>
-    </div>
-    {% endif %}
-    {% set ordered_meal_names = [] %}
-    {% if 'Water' in meal_names_to_render %}
-        {% do ordered_meal_names.append('Water') %}
-    {% endif %}
-    {% for meal_name in meal_names_to_render %}
-        {% if meal_name != 'Water' %}
-            {% do ordered_meal_names.append(meal_name) %}
         {% endif %}
-    {% endfor %}
+        {% set ordered_meal_names = [] %}
+        {% if 'Water' in meal_names_to_render %}
+        {% do ordered_meal_names.append('Water') %}
+        {% endif %}
+        {% for meal_name in meal_names_to_render %}
+        {% if meal_name != 'Water' %}
+        {% do ordered_meal_names.append(meal_name) %}
+        {% endif %}
+        {% endfor %}
 
-    {% for meal_name in ordered_meal_names %}
-    {% set items = meals.get(meal_name, []) %}
-    <div class="card mb-3">
-        <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
-            <div class="me-auto">
-                <h4 class="mb-1">
-                    {{ meal_name }}
-                </h4>
-                {% if meal_name == 'Water' and water_total_grams > 0 %}
+        {% for meal_name in ordered_meal_names %}
+        {% set items = meals.get(meal_name, []) %}
+        <div class="card mb-3">
+            <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
+                <div class="me-auto">
+                    <h4 class="mb-1">
+                        {{ meal_name }}
+                    </h4>
+                    {% if meal_name == 'Water' and water_total_grams > 0 %}
                     <span class="text-muted small">
                         {% if current_user.measurement_system == 'metric' %}
-                            (Total: {{ "%.0f" | format(water_total_grams) }} ml)
+                        (Total: {{ "%.0f" | format(water_total_grams) }} ml)
                         {% else %}
-                            (Total: {{ "%.1f" | format(water_total_grams * 0.033814) }} oz)
+                        (Total: {{ "%.1f" | format(water_total_grams * 0.033814) }} oz)
                         {% endif %}
                     </span>
-                {% elif meal_name != 'Water' and items %}
+                    {% elif meal_name != 'Water' and items %}
                     <span class="text-muted small">
                         {{ meal_totals[meal_name].calories|round(0) }}kcal |
                         Fat: {{ meal_totals[meal_name].fat|round(1) }}g |
                         Carbs: {{ meal_totals[meal_name].carbs|round(1) }}g |
                         Prot: {{ meal_totals[meal_name].protein|round(1) }}g
                     </span>
-                {% endif %}
-            </div>
-            {% if is_read_only and items %}
+                    {% endif %}
+                </div>
+                {% if is_read_only and items %}
                 <form action="{{ url_for('diary.copy_meal_from_friend') }}" method="post">
                     <input type="hidden" name="friend_username" value="{{ username }}">
                     <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
                     <input type="hidden" name="meal_name" value="{{ meal_name }}">
                     <button type="submit" class="btn btn-outline-success btn-sm">Copy to My Diary</button>
                 </form>
-            {% elif not is_read_only %}
-            <div class="d-flex flex-column flex-md-row align-items-md-center">
-                {% if meal_name == 'Water' %}
-                    {% set ml_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'ml') | first %}
-                    {% set floz_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'fl oz') | first %}
+                {% elif not is_read_only %}
+                <div class="d-flex flex-column flex-md-row align-items-md-center">
+                    {% if meal_name == 'Water' %}
+                    {% set ml_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'ml') |
+                    first %}
+                    {% set floz_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'fl
+                    oz') | first %}
                     <div class="d-flex justify-content-end align-items-center flex-wrap-nowrap">
                         <div class="btn-group btn-group-sm" role="group" aria-label="Water quick add">
-                        {% if current_user.measurement_system == 'metric' and ml_portion %}
+                            {% if current_user.measurement_system == 'metric' and ml_portion %}
                             {% for amount in [100, 250, 500] %}
                             <form action="{{ url_for('search.add_item') }}" method="post" class="d-inline">
                                 <input type="hidden" name="food_id" value="{{ water_food.id }}">
@@ -137,7 +147,7 @@
                                 <button type="submit" class="btn btn-outline-primary">{{ amount }} ml</button>
                             </form>
                             {% endfor %}
-                        {% elif current_user.measurement_system == 'us' and floz_portion %}
+                            {% elif current_user.measurement_system == 'us' and floz_portion %}
                             {% for amount in [8, 12, 16] %}
                             <form action="{{ url_for('search.add_item') }}" method="post" class="d-inline">
                                 <input type="hidden" name="food_id" value="{{ water_food.id }}">
@@ -150,146 +160,159 @@
                                 <button type="submit" class="btn btn-outline-primary">{{ amount }} oz</button>
                             </form>
                             {% endfor %}
-                        {% endif %}
+                            {% endif %}
                         </div>
-                         <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}" class="btn btn-outline-info btn-sm ms-2">
+                        <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}"
+                            class="btn btn-outline-info btn-sm ms-2">
                             <span class="d-none d-md-inline">Custom</span>
                             <span class="d-inline d-md-none">+</span>
                         </a>
                     </div>
-                {% else %}
-                <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex me-md-2 mb-2 mb-md-0">
-                    <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
-                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                    <input type="text" name="new_meal_name" class="form-control form-control-sm me-2" placeholder="Save as new meal...">
-                    <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
-                </form>
-                <div class="d-flex">
-                    <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}" class="btn btn-outline-primary btn-sm">
-                        <span class="d-none d-md-inline">Add Food</span>
-                        <span class="d-inline d-md-none">Add</span>
-                    </a>
-                    <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}" class="btn btn-outline-info btn-sm ms-2">
-                        <span class="d-none d-md-inline">Scan Barcode</span>
-                        <span class="d-inline d-md-none">Scan</span>
-                    </a>
+                    {% else %}
+                    <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex me-md-2 mb-2 mb-md-0">
+                        <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
+                        <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                        <input type="text" name="new_meal_name" class="form-control form-control-sm me-2"
+                            placeholder="Save as new meal...">
+                        <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
+                    </form>
+                    <div class="d-flex">
+                        <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}"
+                            class="btn btn-outline-primary btn-sm">
+                            <span class="d-none d-md-inline">Add Food</span>
+                            <span class="d-inline d-md-none">Add</span>
+                        </a>
+                        <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}"
+                            class="btn btn-outline-info btn-sm ms-2">
+                            <span class="d-none d-md-inline">Scan Barcode</span>
+                            <span class="d-inline d-md-none">Scan</span>
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>
-            {% endif %}
-        </div>
-        <ul class="list-group list-group-flush">
-            {% for item in items %}
-            <li class="list-group-item">
-                <div class="row align-items-center">
-                    <div class="col-md-7">
-                        {% if item.food_type == 'usda' and item.food_id %}
+            <ul class="list-group list-group-flush">
+                {% for item in items %}
+                <li class="list-group-item">
+                    <div class="row align-items-center">
+                        <div class="col-md-7">
+                            {% if item.food_type == 'usda' and item.food_id %}
                             <a href="{{ url_for('main.food_detail', fdc_id=item.food_id) }}">{{ item.description }}</a>
-                        {% elif item.food_type == 'my_food' and item.food_id %}
-                            <a href="{{ url_for('my_foods.edit_my_food', food_id=item.food_id) }}">{{ item.description }}</a>
-                        {% elif item.food_type == 'recipe' and item.food_id %}
-                            <a href="{{ url_for('recipes.view_recipe', recipe_id=item.food_id) }}">{{ item.description }}</a>
-                        {% else %}
+                            {% elif item.food_type == 'my_food' and item.food_id %}
+                            <a href="{{ url_for('my_foods.edit_my_food', food_id=item.food_id) }}">{{ item.description
+                                }}</a>
+                            {% elif item.food_type == 'recipe' and item.food_id %}
+                            <a href="{{ url_for('recipes.view_recipe', recipe_id=item.food_id) }}">{{ item.description
+                                }}</a>
+                            {% else %}
                             {{ item.description }}
-                        {% endif %}
-                        <br>
-                        <small class="text-muted">
-                            {{ item.nutrition.calories|round(0) }} kcal |
-                            Fat: {{ item.nutrition.fat|round(1) }}g |
-                            Carbs: {{ item.nutrition.carbs|round(1) }}g |
-                            Prot: {{ item.nutrition.protein|round(1) }}g 
-                            
-                        </small>
-                    </div>
-                    <div class="col-md-5">
-                        {% if not is_read_only %}
-                        <div class="d-flex justify-content-end align-items-center flex-column flex-sm-row">
-                            <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}" class="d-flex align-items-center flex-column flex-sm-row">
-                                <input type="number" name="amount" value="{{ item.amount|round(2) }}" class="form-control form-control-sm" step="any" required>
-                                <select name="portion_id" class="form-select form-select-sm mt-2 mt-sm-0 ms-sm-2">
+                            {% endif %}
+                            <br>
+                            <small class="text-muted">
+                                {{ item.nutrition.calories|round(0) }} kcal |
+                                Fat: {{ item.nutrition.fat|round(1) }}g |
+                                Carbs: {{ item.nutrition.carbs|round(1) }}g |
+                                Prot: {{ item.nutrition.protein|round(1) }}g
+
+                            </small>
+                        </div>
+                        <div class="col-md-5">
+                            {% if not is_read_only %}
+                            <div class="d-flex justify-content-end align-items-center flex-column flex-sm-row">
+                                <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}"
+                                    class="d-flex align-items-center flex-column flex-sm-row">
+                                    <input type="number" name="amount" value="{{ item.amount|round(2) }}"
+                                        class="form-control form-control-sm" step="any" required>
+                                    <select name="portion_id" class="form-select form-select-sm mt-2 mt-sm-0 ms-sm-2">
                                         {% for portion in item.portions %}
-                                            <option value="{{ portion.id }}" {% if item.selected_portion_id == portion.id %}selected{% endif %}>
-                                                {{ portion.full_description_str }}
-                                            </option>
+                                        <option value="{{ portion.id }}" {% if item.selected_portion_id==portion.id
+                                            %}selected{% endif %}>
+                                            {{ portion.full_description_str }}
+                                        </option>
                                         {% endfor %}
                                     </select>
-                                <button type="submit" class="btn btn-outline-success btn-sm mt-2 mt-sm-0 ms-sm-2">Save</button>
-                            </form>
-                            <button type="button" class="btn btn-outline-info btn-sm ms-sm-2 mt-2 mt-sm-0" data-bs-toggle="modal" data-bs-target="#moveEntryModal" data-log-id="{{ item.log_id }}" data-log-date="{{ date.isoformat() }}">Move</button>
-                            <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}" class="ms-sm-2 mt-2 mt-sm-0">
-                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-                            </form>
+                                    <button type="submit"
+                                        class="btn btn-outline-success btn-sm mt-2 mt-sm-0 ms-sm-2">Save</button>
+                                </form>
+                                <button type="button" class="btn btn-outline-info btn-sm ms-sm-2 mt-2 mt-sm-0"
+                                    data-bs-toggle="modal" data-bs-target="#moveEntryModal"
+                                    data-log-id="{{ item.log_id }}" data-log-date="{{ date.isoformat() }}">Move</button>
+                                <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}"
+                                    class="ms-sm-2 mt-2 mt-sm-0">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                </form>
+                            </div>
+                            {% else %}
+                            <div class="text-end text-muted">
+                                {{ item.amount|round(2) }} {{ item.serving_type }}
+                            </div>
+                            {% endif %}
                         </div>
-                        {% else %}
-                        <div class="text-end text-muted">
-                            {{ item.amount|round(2) }} {{ item.serving_type }}
-                        </div>
-                        {% endif %}
                     </div>
+                </li>
+                {% else %}
+                <li class="list-group-item">No items logged for this meal.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Move Entry Modal -->
+    <div class="modal fade" id="moveEntryModal" tabindex="-1" aria-labelledby="moveEntryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="moveEntryModalLabel">Move Diary Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            </li>
-            {% else %}
-            <li class="list-group-item">No items logged for this meal.</li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endfor %}
-</div>
-
-<!-- Move Entry Modal -->
-<div class="modal fade" id="moveEntryModal" tabindex="-1" aria-labelledby="moveEntryModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="moveEntryModalLabel">Move Diary Entry</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <form id="moveEntryForm" method="POST" action="{{ url_for('diary.move_entry') }}">
-        <div class="modal-body">
-          <input type="hidden" name="log_id" id="modalLogId">
-          <div class="mb-3">
-            <label for="modalLogDate" class="form-label">Date</label>
-            <input type="date" class="form-control" id="modalLogDate" name="target_date" required>
-          </div>
-          <div class="mb-3">
-            <label for="modalMealName" class="form-label">Meal</label>
-            <select class="form-select" id="modalMealName" name="target_meal_name" required>
-              {% for meal_name_option in meal_names_to_render %}
-                {% if meal_name_option != 'Water' %}
-                    <option value="{{ meal_name_option }}">{{ meal_name_option }}</option>
-                {% endif %}
-              {% endfor %}
-            </select>
-          </div>
+                <form id="moveEntryForm" method="POST" action="{{ url_for('diary.move_entry') }}">
+                    <div class="modal-body">
+                        <input type="hidden" name="log_id" id="modalLogId">
+                        <div class="mb-3">
+                            <label for="modalLogDate" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="modalLogDate" name="target_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modalMealName" class="form-label">Meal</label>
+                            <select class="form-select" id="modalMealName" name="target_meal_name" required>
+                                {% for meal_name_option in meal_names_to_render %}
+                                {% if meal_name_option != 'Water' %}
+                                <option value="{{ meal_name_option }}">{{ meal_name_option }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-outline-primary">Move</button>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-outline-primary">Move</button>
-        </div>
-      </form>
     </div>
-  </div>
-</div>
 
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var moveEntryModal = document.getElementById('moveEntryModal');
-    if(moveEntryModal) {
-        moveEntryModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var logId = button.getAttribute('data-log-id');
-            var logDate = button.getAttribute('data-log-date');
+    {% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var moveEntryModal = document.getElementById('moveEntryModal');
+            if (moveEntryModal) {
+                moveEntryModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    var logId = button.getAttribute('data-log-id');
+                    var logDate = button.getAttribute('data-log-date');
 
-            var modalLogIdInput = moveEntryModal.querySelector('#modalLogId');
-            var modalLogDateInput = moveEntryModal.querySelector('#modalLogDate');
+                    var modalLogIdInput = moveEntryModal.querySelector('#modalLogId');
+                    var modalLogDateInput = moveEntryModal.querySelector('#modalLogDate');
 
-            modalLogIdInput.value = logId;
-            modalLogDateInput.value = logDate;
+                    modalLogIdInput.value = logId;
+                    modalLogDateInput.value = logDate;
+                });
+            }
         });
-    }
-});
-</script>
-{% endblock %}
+    </script>
+    {% endblock %}
 
-{% endblock %}
+    {% endblock %}
