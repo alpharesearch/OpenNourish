@@ -18,8 +18,13 @@ from models import (
 )
 from opennourish.my_foods.forms import MyFoodForm, PortionForm
 from sqlalchemy import func
-from sqlalchemy.orm import joinedload
-from opennourish.utils import generate_myfood_label_pdf
+from sqlalchemy.orm import joinedload, selectinload
+from opennourish.utils import (
+    generate_myfood_label_pdf,
+    ensure_portion_sequence,
+    get_nutrients_for_display,
+    convert_display_nutrients_to_100g,
+)
 
 my_foods_bp = Blueprint("my_foods", __name__)
 
@@ -164,65 +169,98 @@ def new_my_food():
 @my_foods_bp.route("/<int:food_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_my_food(food_id):
-    my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
+    my_food = MyFood.query.options(selectinload(MyFood.portions)).get_or_404(food_id)
+    if my_food.user_id != current_user.id:
+        flash("You are not authorized to edit this food.", "danger")
+        return redirect(url_for("my_foods.my_foods"))
+
+    ensure_portion_sequence([my_food])
+    portions = sorted(
+        my_food.portions,
+        key=lambda p: p.seq_num if p.seq_num is not None else float("inf"),
+    )
+
     form = MyFoodForm(obj=my_food)
     form.food_category.choices = [("", "-- Select a Category --")] + [
         (c.id, c.description) for c in FoodCategory.query.order_by(FoodCategory.code)
     ]
-
-    # Ensure all portions have a seq_num
-    if any(p.seq_num is None for p in my_food.portions):
-        portions_to_update = sorted(my_food.portions, key=lambda p: p.gram_weight)
-        for i, p in enumerate(portions_to_update):
-            p.seq_num = i + 1
-        db.session.commit()
-        flash("Assigned sequence numbers to all portions.", "info")
-
-    if request.method == "GET" and my_food.food_category_id:
-        form.food_category.data = my_food.food_category_id
-
     portion_form = PortionForm()
 
     if form.validate_on_submit():
+        submitted_portion_id = request.form.get("selected_portion_id", type=int)
+        submitted_portion = db.session.get(UnifiedPortion, submitted_portion_id)
+
+        if not submitted_portion or submitted_portion.my_food_id != my_food.id:
+            flash("Invalid portion selected for nutrient input.", "danger")
+            return redirect(url_for("my_foods.edit_my_food", food_id=my_food.id))
+
+        submitted_nutrients = {
+            "calories": form.calories_per_100g.data,
+            "protein": form.protein_per_100g.data,
+            "carbs": form.carbs_per_100g.data,
+            "fat": form.fat_per_100g.data,
+            "saturated_fat": form.saturated_fat_per_100g.data,
+            "trans_fat": form.trans_fat_per_100g.data,
+            "cholesterol": form.cholesterol_mg_per_100g.data,
+            "sodium": form.sodium_mg_per_100g.data,
+            "fiber": form.fiber_per_100g.data,
+            "sugars": form.sugars_per_100g.data,
+            "added_sugars": form.added_sugars_per_100g.data,
+            "vitamin_d": form.vitamin_d_mcg_per_100g.data,
+            "calcium": form.calcium_mg_per_100g.data,
+            "iron": form.iron_mg_per_100g.data,
+            "potassium": form.potassium_mg_per_100g.data,
+        }
+        nutrients_100g = convert_display_nutrients_to_100g(
+            submitted_nutrients, submitted_portion
+        )
+
         my_food.description = form.description.data
         my_food.ingredients = form.ingredients.data
+        my_food.fdc_id = form.fdc_id.data
         my_food.upc = form.upc.data
+        my_food.food_category_id = form.food_category.data or None
 
-        food_category_id = form.food_category.data
-        if food_category_id:
-            my_food.food_category = db.session.get(FoodCategory, food_category_id)
-        else:
-            my_food.food_category = None
-
-        # Nutrient fields
-        nutrient_fields = [
-            "calories_per_100g",
-            "protein_per_100g",
-            "carbs_per_100g",
-            "fat_per_100g",
-            "saturated_fat_per_100g",
-            "trans_fat_per_100g",
-            "cholesterol_mg_per_100g",
-            "sodium_mg_per_100g",
-            "fiber_per_100g",
-            "sugars_per_100g",
-            "vitamin_d_mcg_per_100g",
-            "calcium_mg_per_100g",
-            "iron_mg_per_100g",
-            "potassium_mg_per_100g",
-        ]
-        for field_name in nutrient_fields:
-            setattr(my_food, field_name, getattr(form, field_name).data)
+        for key, value in nutrients_100g.items():
+            field_name = key + "_per_100g"
+            if key in ["cholesterol", "sodium", "calcium", "iron", "potassium"]:
+                field_name = key + "_mg_per_100g"
+            elif key == "vitamin_d":
+                field_name = key + "_mcg_per_100g"
+            setattr(my_food, field_name, value)
 
         db.session.commit()
-        flash("Food updated successfully!", "success")
-        return redirect(url_for("my_foods.edit_my_food", food_id=my_food.id))
+        flash("Custom food updated successfully.", "success")
+        return redirect(
+            url_for(
+                "my_foods.edit_my_food",
+                food_id=my_food.id,
+                portion_id=submitted_portion.id,
+            )
+        )
+
+    # GET Request Logic
+    selected_portion_id = request.args.get("portion_id", type=int)
+    selected_portion = (
+        db.session.get(UnifiedPortion, selected_portion_id)
+        if selected_portion_id
+        else None
+    )
+    if not selected_portion or selected_portion.my_food_id != my_food.id:
+        selected_portion = next(
+            (p for p in portions if p.seq_num == 1), portions[0] if portions else None
+        )
+
+    scaled_nutrients = get_nutrients_for_display(my_food, selected_portion)
 
     return render_template(
         "my_foods/edit_my_food.html",
         form=form,
         my_food=my_food,
         portion_form=portion_form,
+        portions=portions,
+        selected_portion=selected_portion,
+        scaled_nutrients=scaled_nutrients,
     )
 
 

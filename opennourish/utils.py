@@ -1520,3 +1520,65 @@ def ensure_portion_sequence(items):
                 needs_commit = True
     if needs_commit:
         db.session.commit()
+
+
+def get_nutrients_for_display(my_food, portion):
+    """
+    Calculates and returns the nutrient values scaled to the given portion's gram_weight.
+    If the portion's gram_weight is 1.0, it returns values per 100g, as this is considered the base 'per gram' unit.
+    """
+    # If portion is None, or has 0 or 1.0 gram_weight, we want to show the base 100g values.
+    if not portion or not portion.gram_weight or portion.gram_weight == 1.0:
+        scaling_factor = 1.0
+    # Otherwise, scale from per-100g to the portion's weight.
+    else:
+        scaling_factor = portion.gram_weight / 100.0
+
+    # Create a dictionary of all nutrient attributes from the my_food object
+    base_nutrients = {
+        "calories": my_food.calories_per_100g,
+        "protein": my_food.protein_per_100g,
+        "carbs": my_food.carbs_per_100g,
+        "fat": my_food.fat_per_100g,
+        "saturated_fat": my_food.saturated_fat_per_100g,
+        "trans_fat": my_food.trans_fat_per_100g,
+        "cholesterol": my_food.cholesterol_mg_per_100g,
+        "sodium": my_food.sodium_mg_per_100g,
+        "fiber": my_food.fiber_per_100g,
+        "sugars": my_food.sugars_per_100g,
+        "added_sugars": my_food.added_sugars_per_100g,
+        "vitamin_d": my_food.vitamin_d_mcg_per_100g,
+        "calcium": my_food.calcium_mg_per_100g,
+        "iron": my_food.iron_mg_per_100g,
+        "potassium": my_food.potassium_mg_per_100g,
+    }
+
+    # Scale all nutrients
+    scaled_nutrients = {
+        key: (value or 0) * scaling_factor for key, value in base_nutrients.items()
+    }
+
+    return scaled_nutrients
+
+
+def convert_display_nutrients_to_100g(display_nutrients, portion):
+    """
+    Converts nutrient values from a given portion's scale back to per 100g.
+    If the portion's gram_weight is 1.0, it assumes the display values are already per 100g.
+    """
+    # If portion is None, or has 0 or 1.0 gram_weight, assume display values are per 100g.
+    if not portion or not portion.gram_weight or portion.gram_weight == 1.0:
+        scaling_factor = 1.0
+    # Otherwise, scale from the portion's weight up to 100g.
+    else:
+        scaling_factor = 100.0 / portion.gram_weight
+
+    nutrients_100g = {}
+    for key, value in display_nutrients.items():
+        # Ensure value is a number before multiplication
+        try:
+            numeric_value = float(value) if value is not None else 0.0
+        except (ValueError, TypeError):
+            numeric_value = 0.0
+        nutrients_100g[key] = numeric_value * scaling_factor
+    return nutrients_100g

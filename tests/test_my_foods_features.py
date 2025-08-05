@@ -256,8 +256,19 @@ def test_edit_my_food(auth_client):
             fat_per_100g=5.0,
         )
         db.session.add(initial_food)
+        db.session.commit()  # Commit to get the food ID
+
+        # Add a default portion, as would happen in the real app
+        default_portion = UnifiedPortion(
+            my_food_id=initial_food.id,
+            gram_weight=1.0,
+            portion_description="g",
+            seq_num=1,
+        )
+        db.session.add(default_portion)
         db.session.commit()
         food_id = initial_food.id
+        portion_id = default_portion.id
 
     updated_food_data = {
         "description": "Updated Food",
@@ -265,18 +276,77 @@ def test_edit_my_food(auth_client):
         "protein_per_100g": 2.0,
         "carbs_per_100g": 15.0,
         "fat_per_100g": 7.0,
+        "selected_portion_id": portion_id,  # Add portion to submission
     }
     response = auth_client.post(
         f"/my_foods/{food_id}/edit", data=updated_food_data, follow_redirects=True
     )
     assert response.status_code == 200
-    assert b"Food updated successfully!" in response.data
+    assert b"Custom food updated successfully." in response.data
 
     with auth_client.application.app_context():
         updated_food = db.session.get(MyFood, food_id)
         assert updated_food is not None
         assert updated_food.description == "Updated Food"
         assert updated_food.calories_per_100g == 150.0
+
+
+def test_edit_my_food_with_portion_scaling(auth_client):
+    """
+    Tests that editing nutrients based on a specific portion correctly
+    scales the values back to the 100g standard for storage.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        # 1. Create a food with known 100g values
+        my_food = MyFood(
+            user_id=user.id,
+            description="Test Scaling Food",
+            calories_per_100g=400.0,
+            protein_per_100g=20.0,
+        )
+        db.session.add(my_food)
+        db.session.commit()
+
+        # 2. Create a 1g portion and a 50g portion
+        portion_1g = UnifiedPortion(
+            my_food_id=my_food.id, gram_weight=1.0, portion_description="g", seq_num=1
+        )
+        portion_50g = UnifiedPortion(
+            my_food_id=my_food.id,
+            gram_weight=50.0,
+            portion_description="serving",
+            seq_num=2,
+        )
+        db.session.add_all([portion_1g, portion_50g])
+        db.session.commit()
+        food_id = my_food.id
+        portion_50g_id = portion_50g.id
+
+    # 3. The user sees values for the 50g portion (200 kcal, 10g protein)
+    #    and decides to change them to 250 kcal and 12.5g protein for that same 50g portion.
+    edit_data = {
+        "description": "Updated Scaling Food",
+        "calories_per_100g": 250.0,  # User is submitting 250 for the 50g portion
+        "protein_per_100g": 12.5,  # User is submitting 12.5 for the 50g portion
+        "selected_portion_id": portion_50g_id,  # Crucially, this is the portion context
+    }
+
+    # 4. Post the changes
+    response = auth_client.post(
+        f"/my_foods/{food_id}/edit", data=edit_data, follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b"Custom food updated successfully." in response.data
+
+    # 5. Verify the data was scaled back to 100g correctly in the database
+    with auth_client.application.app_context():
+        updated_food = db.session.get(MyFood, food_id)
+        assert updated_food is not None
+        # The 250 kcal for 50g should be 500 kcal per 100g
+        assert updated_food.calories_per_100g == 500.0
+        # The 12.5g protein for 50g should be 25g protein per 100g
+        assert updated_food.protein_per_100g == 25.0
 
 
 def test_delete_my_food(auth_client):

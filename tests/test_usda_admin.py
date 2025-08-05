@@ -266,54 +266,87 @@ def test_delete_usda_portion_unauthorized(auth_client):
         assert not_deleted_portion is not None
 
 
-def test_reorder_usda_portions(key_user_client):
-    """Test reordering portions for a USDA food."""
+def test_move_usda_portion_up(key_user_client):
+    """Test moving a USDA portion up in the sequence."""
     with key_user_client.application.app_context():
         food = Food(fdc_id=99999, description="USDA Food for Reordering")
         db.session.add(food)
-        db.session.commit()
-
         p1 = UnifiedPortion(
             fdc_id=food.fdc_id, portion_description="A", gram_weight=10.0, seq_num=1
         )
         p2 = UnifiedPortion(
             fdc_id=food.fdc_id, portion_description="B", gram_weight=20.0, seq_num=2
         )
-        p3 = UnifiedPortion(
-            fdc_id=food.fdc_id, portion_description="C", gram_weight=30.0, seq_num=3
-        )
-        p4 = UnifiedPortion(
-            fdc_id=food.fdc_id, portion_description="D", gram_weight=40.0, seq_num=4
-        )
-        db.session.add_all([p1, p2, p3, p4])
+        db.session.add_all([p1, p2])
         db.session.commit()
-        p1_id, p2_id, p3_id, p4_id = p1.id, p2.id, p3.id, p4.id
+        p1_id, p2_id = p1.id, p2.id
 
-    # Move p4 (bottom) to the top
+    # Move p2 up
+    response = key_user_client.post(
+        url_for("usda_admin.move_usda_portion_up", portion_id=p2_id),
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Portion moved up." in response.data
+
     with key_user_client.application.app_context():
-        p4_to_move = db.session.get(UnifiedPortion, p4_id)
-        p3_portion = db.session.get(UnifiedPortion, p3_id)
-        p2_portion = db.session.get(UnifiedPortion, p2_id)
-        p1_portion = db.session.get(UnifiedPortion, p1_id)
-
-        # Simulate moving p4 up past p3
-        p4_to_move.seq_num, p3_portion.seq_num = p3_portion.seq_num, p4_to_move.seq_num
-        db.session.commit()
-
-        # Simulate moving p4 up past p2
-        p4_to_move.seq_num, p2_portion.seq_num = p2_portion.seq_num, p4_to_move.seq_num
-        db.session.commit()
-
-        # Simulate moving p4 up past p1
-        p4_to_move.seq_num, p1_portion.seq_num = p1_portion.seq_num, p4_to_move.seq_num
-        db.session.commit()
-
         p1_new = db.session.get(UnifiedPortion, p1_id)
         p2_new = db.session.get(UnifiedPortion, p2_id)
-        p3_new = db.session.get(UnifiedPortion, p3_id)
-        p4_new = db.session.get(UnifiedPortion, p4_id)
-
-        assert p4_new.seq_num == 1
         assert p1_new.seq_num == 2
-        assert p2_new.seq_num == 3
-        assert p3_new.seq_num == 4
+        assert p2_new.seq_num == 1
+
+
+def test_move_usda_portion_down(key_user_client):
+    """Test moving a USDA portion down in the sequence."""
+    with key_user_client.application.app_context():
+        food = Food(fdc_id=101010, description="USDA Food for Reordering Down")
+        db.session.add(food)
+        p1 = UnifiedPortion(
+            fdc_id=food.fdc_id, portion_description="A", gram_weight=10.0, seq_num=1
+        )
+        p2 = UnifiedPortion(
+            fdc_id=food.fdc_id, portion_description="B", gram_weight=20.0, seq_num=2
+        )
+        db.session.add_all([p1, p2])
+        db.session.commit()
+        p1_id, p2_id = p1.id, p2.id
+
+    # Move p1 down
+    response = key_user_client.post(
+        url_for("usda_admin.move_usda_portion_down", portion_id=p1_id),
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Portion moved down." in response.data
+
+    with key_user_client.application.app_context():
+        p1_new = db.session.get(UnifiedPortion, p1_id)
+        p2_new = db.session.get(UnifiedPortion, p2_id)
+        assert p1_new.seq_num == 2
+        assert p2_new.seq_num == 1
+
+
+def test_reorder_usda_portions_unauthorized(auth_client):
+    """Test that a regular user cannot reorder USDA portions."""
+    with auth_client.application.app_context():
+        food = Food(fdc_id=111111, description="USDA Food Reorder Unauthorized")
+        portion = UnifiedPortion(
+            fdc_id=food.fdc_id,
+            portion_description="A",
+            gram_weight=10.0,
+            seq_num=1,
+        )
+        db.session.add_all([food, portion])
+        db.session.commit()
+        portion_id = portion.id
+
+    response = auth_client.post(
+        url_for("usda_admin.move_usda_portion_up", portion_id=portion_id),
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert "/dashboard/" in response.headers["Location"]
+
+    with auth_client.application.app_context():
+        portion_after = db.session.get(UnifiedPortion, portion_id)
+        assert portion_after.seq_num == 1
