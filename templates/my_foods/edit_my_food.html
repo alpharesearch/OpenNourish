@@ -82,7 +82,7 @@
                     </select>
                 </div>
                 <div class="row">
-                    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-4 mb-3">
                         {{ form.calories_per_100g.label(class="form-label") }}
                         {{ form.calories_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.calories_per_100g) if my_food and my_food.calories_per_100g is not none else ""}) }}
@@ -90,23 +90,7 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="col-lg-3 mb-3">
-                        {{ form.protein_per_100g.label(class="form-label") }}
-                        {{ form.protein_per_100g(class="form-control", type="number", step="any",
-                        **{'data-100g-value': "%.2f"|format(my_food.protein_per_100g) if my_food and my_food.protein_per_100g is not none else ""}) }}
-                        {% for error in form.protein_per_100g.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="col-lg-3 mb-3">
-                        {{ form.carbs_per_100g.label(class="form-label") }}
-                        {{ form.carbs_per_100g(class="form-control", type="number", step="any",
-                        **{'data-100g-value': "%.2f"|format(my_food.carbs_per_100g) if my_food and my_food.carbs_per_100g is not none else ""}) }}
-                        {% for error in form.carbs_per_100g.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-4 mb-3">
                         {{ form.fat_per_100g.label(class="form-label") }}
                         {{ form.fat_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.fat_per_100g) if my_food and my_food.fat_per_100g is not none else ""}) }}
@@ -114,9 +98,7 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-4 mb-3">
                         {{ form.saturated_fat_per_100g.label(class="form-label") }}
                         {{ form.saturated_fat_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.saturated_fat_per_100g) if my_food and my_food.saturated_fat_per_100g is not none else ""}) }}
@@ -124,7 +106,9 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="col-lg-3 mb-3">
+                </div>
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
                         {{ form.trans_fat_per_100g.label(class="form-label") }}
                         {{ form.trans_fat_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.trans_fat_per_100g) if my_food and my_food.trans_fat_per_100g is not none else ""}) }}
@@ -132,7 +116,7 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-4 mb-3">
                         {{ form.cholesterol_mg_per_100g.label(class="form-label") }}
                         {{ form.cholesterol_mg_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.cholesterol_mg_per_100g) if my_food and my_food.cholesterol_mg_per_100g is not none else ""}) }}
@@ -140,7 +124,7 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-4 mb-3">
                         {{ form.sodium_mg_per_100g.label(class="form-label") }}
                         {{ form.sodium_mg_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.sodium_mg_per_100g) if my_food and my_food.sodium_mg_per_100g is not none else ""}) }}
@@ -150,7 +134,15 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-4 mb-3">
+                        {{ form.carbs_per_100g.label(class="form-label") }}
+                        {{ form.carbs_per_100g(class="form-control", type="number", step="any",
+                        **{'data-100g-value': "%.2f"|format(my_food.carbs_per_100g) if my_food and my_food.carbs_per_100g is not none else ""}) }}
+                        {% for error in form.carbs_per_100g.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-lg-4 mb-3">
                         {{ form.fiber_per_100g.label(class="form-label") }}
                         {{ form.fiber_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.fiber_per_100g) if my_food and my_food.fiber_per_100g is not none else ""}) }}
@@ -158,7 +150,7 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-4 mb-3">
                         {{ form.sugars_per_100g.label(class="form-label", text="Total Sugars (g per 100g)") }}
                         {{ form.sugars_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.sugars_per_100g) if my_food and my_food.sugars_per_100g is not none else ""}) }}
@@ -166,7 +158,9 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="col-lg-3 mb-3">
+                </div>
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
                         {{ form.added_sugars_per_100g.label(class="form-label") }}
                         {{ form.added_sugars_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.added_sugars_per_100g) if my_food and my_food.added_sugars_per_100g is not none else ""}) }}
@@ -174,7 +168,18 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-4 mb-3">
+                        {{ form.protein_per_100g.label(class="form-label") }}
+                        {{ form.protein_per_100g(class="form-control", type="number", step="any",
+                        **{'data-100g-value': "%.2f"|format(my_food.protein_per_100g) if my_food and my_food.protein_per_100g is not none else ""}) }}
+                        {% for error in form.protein_per_100g.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
                         {{ form.vitamin_d_mcg_per_100g.label(class="form-label") }}
                         {{ form.vitamin_d_mcg_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.vitamin_d_mcg_per_100g) if my_food and my_food.vitamin_d_mcg_per_100g is not none else ""}) }}
@@ -182,7 +187,7 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-4 mb-3">
                         {{ form.calcium_mg_per_100g.label(class="form-label") }}
                         {{ form.calcium_mg_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.calcium_mg_per_100g) if my_food and my_food.calcium_mg_per_100g is not none else ""}) }}
@@ -190,9 +195,7 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-lg-3 mb-3">
+                    <div class="col-lg-4 mb-3">
                         {{ form.iron_mg_per_100g.label(class="form-label") }}
                         {{ form.iron_mg_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.iron_mg_per_100g) if my_food and my_food.iron_mg_per_100g is not none else ""}) }}
@@ -200,7 +203,9 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="col-lg-3 mb-3">
+                </div>
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
                         {{ form.potassium_mg_per_100g.label(class="form-label") }}
                         {{ form.potassium_mg_per_100g(class="form-control", type="number", step="any",
                         **{'data-100g-value': "%.2f"|format(my_food.potassium_mg_per_100g) if my_food and my_food.potassium_mg_per_100g is not none else ""}) }}

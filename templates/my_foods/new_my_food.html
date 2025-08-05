@@ -80,21 +80,11 @@
                                 {{ form.calories_per_100g(class="form-control", type="number", step="any") }}
                             </div>
                             <div class="col-lg-6 mb-3">
-                                {{ form.protein_per_100g.label(class="form-label") }}
-                                {{ form.protein_per_100g(class="form-control", type="number", step="any") }}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-6 mb-3">
-                                {{ form.carbs_per_100g.label(class="form-label") }}
-                                {{ form.carbs_per_100g(class="form-control", type="number", step="any") }}
-                            </div>
-                            <div class="col-lg-6 mb-3">
                                 {{ form.fat_per_100g.label(class="form-label") }}
                                 {{ form.fat_per_100g(class="form-control", type="number", step="any") }}
                             </div>
                         </div>
-                         <div class="row">
+                        <div class="row">
                             <div class="col-lg-6 mb-3">
                                 {{ form.saturated_fat_per_100g.label(class="form-label") }}
                                 {{ form.saturated_fat_per_100g(class="form-control", type="number", step="any") }}
@@ -116,6 +106,10 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-6 mb-3">
+                                {{ form.carbs_per_100g.label(class="form-label") }}
+                                {{ form.carbs_per_100g(class="form-control", type="number", step="any") }}
+                            </div>
+                            <div class="col-lg-6 mb-3">
                                 {{ form.fiber_per_100g.label(class="form-label") }}
                                 {{ form.fiber_per_100g(class="form-control", type="number", step="any") }}
                             </div>
@@ -130,6 +124,13 @@
                                 {{ form.added_sugars_per_100g(class="form-control", type="number", step="any") }}
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-lg-6 mb-3">
+                                {{ form.protein_per_100g.label(class="form-label") }}
+                                {{ form.protein_per_100g(class="form-control", type="number", step="any") }}
+                            </div>
+                        </div>
+                        <hr>
                         <div class="row">
                             <div class="col-lg-6 mb-3">
                                 {{ form.vitamin_d_mcg_per_100g.label(class="form-label") }}
