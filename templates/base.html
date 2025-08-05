@@ -180,6 +180,9 @@
                                 const option = document.createElement('option');
                                 option.value = portion.id;
                                 option.textContent = portion.description;
+                                if (portion.is_default) {
+                                    option.selected = true;
+                                }
                                 modalPortionId.appendChild(option);
                             });
                         })

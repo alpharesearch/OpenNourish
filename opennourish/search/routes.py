@@ -1154,11 +1154,22 @@ def get_portions(food_type, food_id):
     elif food_type == "my_meal":
         # MyMeals are consumed as a whole. Return a single, default "serving" portion.
         # The add_item endpoint logic for my_meal ignores portion/amount, but we provide this for UI consistency.
-        return jsonify([{"id": -1, "description": "1 serving", "gram_weight": 1.0}])
+        return jsonify(
+            [
+                {
+                    "id": -1,
+                    "description": "1 serving",
+                    "gram_weight": 1.0,
+                    "is_default": True,
+                }
+            ]
+        )
 
     if not portions:
         # Always return at least a 1-gram portion if none exist
-        return jsonify([{"id": -1, "description": "g", "gram_weight": 1.0}])
+        return jsonify(
+            [{"id": -1, "description": "g", "gram_weight": 1.0, "is_default": True}]
+        )
 
     portions_data = [
         {
@@ -1168,4 +1179,16 @@ def get_portions(food_type, food_id):
         }
         for p in portions
     ]
+
+    # Set a default portion if none is explicitly set.
+    # Prioritize 'serving', then the first in the list.
+    default_found = False
+    for p_data in portions_data:
+        if "serving" in p_data["description"].lower():
+            p_data["is_default"] = True
+            default_found = True
+            break
+    if not default_found and portions_data:
+        portions_data[0]["is_default"] = True
+
     return jsonify(portions_data)

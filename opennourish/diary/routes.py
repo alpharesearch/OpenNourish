@@ -561,6 +561,8 @@ def save_meal():
                 my_food_id=item.my_food_id,
                 recipe_id=item.recipe_id,
                 amount_grams=item.amount_grams,
+                serving_type=item.serving_type,
+                portion_id_fk=item.portion_id_fk,
             )
             db.session.add(new_meal_item)
 
