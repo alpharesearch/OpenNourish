@@ -10,12 +10,14 @@
             class="alert-link">Friends page</a> to accept or decline.
     </div>
     {% endif %}
-    {% set prev_url = url_for('profile.dashboard', username=username, log_date_str=prev_date.isoformat()) if is_read_only else url_for('dashboard.index', log_date_str=prev_date.isoformat()) %}
-    {% set next_url = url_for('profile.dashboard', username=username, log_date_str=next_date.isoformat()) if is_read_only else url_for('dashboard.index', log_date_str=next_date.isoformat()) %}
+    {% set prev_url = url_for('profile.dashboard', username=username, log_date_str=prev_date.isoformat()) if
+    is_read_only else url_for('dashboard.index', log_date_str=prev_date.isoformat()) %}
+    {% set next_url = url_for('profile.dashboard', username=username, log_date_str=next_date.isoformat()) if
+    is_read_only else url_for('dashboard.index', log_date_str=next_date.isoformat()) %}
     <div class="row justify-content-between align-items-center mb-3 mt-4">
         <!-- Prev button: On small screens, ordered second. On large, ordered first. -->
         <div class="col-auto order-2 order-sm-1">
-            <a href="{{ prev_url }}" class="btn btn-outline-secondary">&laquo; Prev Day</a>
+            <a id="prev-day-link" href="{{ prev_url }}" class="btn btn-outline-secondary">&laquo; Prev Day</a>
         </div>
 
         <!-- Title: On small screens, ordered first and full-width. On large, ordered second. -->
@@ -26,7 +28,7 @@
 
         <!-- Next button: Always ordered third. -->
         <div class="col-auto order-3">
-            <a href="{{ next_url }}" class="btn btn-outline-secondary">&raquo; Next Day</a>
+            <a id="next-day-link" href="{{ next_url }}" class="btn btn-outline-secondary">&raquo; Next Day</a>
         </div>
     </div>
 
@@ -526,6 +528,7 @@
         });
     </script>
     {% endif %}
+    {% block scripts %}
     <script>
         // Scroll to the chart if time_range parameter is present
         document.addEventListener('DOMContentLoaded', function () {
@@ -608,4 +611,46 @@
 });
     </script>
     {% endif %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const prevLink = document.getElementById('prev-day-link');
+            const nextLink = document.getElementById('next-day-link');
+
+            if (!prevLink || !nextLink) {
+                return;
+            }
+
+            let touchstartX = 0;
+            let touchendX = 0;
+            const swipeThreshold = 50; // minimum distance for a swipe in pixels
+
+            document.addEventListener('touchstart', function (event) {
+                touchstartX = event.changedTouches[0].screenX;
+            }, { passive: true });
+
+            document.addEventListener('touchend', function (event) {
+                touchendX = event.changedTouches[0].screenX;
+                handleSwipe();
+            }, { passive: true });
+
+            function handleSwipe() {
+                const swipeDistance = touchendX - touchstartX;
+
+                if (Math.abs(swipeDistance) < swipeThreshold) {
+                    return; // not a swipe
+                }
+
+                if (touchendX < touchstartX) {
+                    // Swiped left
+                    window.location.href = nextLink.href;
+                }
+
+                if (touchendX > touchstartX) {
+                    // Swiped right
+                    window.location.href = prevLink.href;
+                }
+            }
+        });
+    </script>
+    {% endblock %}
     {% endblock %}
