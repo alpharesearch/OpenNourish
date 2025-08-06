@@ -53,7 +53,7 @@
         <input type="hidden" name="recipes_page" value="{{ request.args.get('recipes_page', 1) }}">
         <input type="hidden" name="my_meals_page" value="{{ request.args.get('my_meals_page', 1) }}">
         <div class="d-flex flex-column flex-md-row gap-2 align-items-md-center">
-            <input type="text" name="search_term" class="form-control" placeholder="Search for a food..." value="{{ search_term or '' }}">
+            <input type="text" name="search_term" class="form-control" placeholder="Search for a food..." value="{{ search_term or '' }}" enterkeyhint="search">
             <select name="food_category_id" class="form-select category-select">
                 <option value="">All Categories</option>
                 {% for category in food_categories %}
@@ -441,6 +441,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const scanParam = urlParams.get('scan');
     if (scanParam === 'true') {
         scanButton.click();
+    }
+
+    // Activate search on Enter key
+    const searchInput = document.querySelector('input[name="search_term"]');
+    const searchForm = document.querySelector('form[action="{{ url_for('search.search') }}"]');
+    if (searchInput && searchForm) {
+        searchInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchForm.submit();
+            }
+        });
     }
 });
 </script>

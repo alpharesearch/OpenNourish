@@ -339,6 +339,10 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='html5-qrcode.min.js') }}"></script>
 {% if my_food %}
 <script>
     /**
