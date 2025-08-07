@@ -221,12 +221,13 @@
                         </div>
                         <div class="col-md-5">
                             {% if not is_read_only %}
-                            <div class="d-flex justify-content-end align-items-center flex-column flex-sm-row">
+                            <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
                                 <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}"
-                                    class="d-flex align-items-center flex-column flex-sm-row">
+                                    id="update-form-{{ item.log_id }}"
+                                    class="d-flex align-items-center flex-grow-1 flex-md-grow-0">
                                     <input type="number" name="amount" value="{{ item.amount|round(2) }}"
-                                        class="form-control form-control-sm" step="any" required>
-                                    <select name="portion_id" class="form-select form-select-sm mt-2 mt-sm-0 ms-sm-2">
+                                        class="form-control form-control-sm flex-grow-1" step="any" required>
+                                    <select name="portion_id" class="form-select form-select-sm ms-2">
                                         {% for portion in item.portions %}
                                         <option value="{{ portion.id }}" {% if item.selected_portion_id==portion.id
                                             %}selected{% endif %}>
@@ -234,16 +235,24 @@
                                         </option>
                                         {% endfor %}
                                     </select>
-                                    <button type="submit"
-                                        class="btn btn-outline-success btn-sm mt-2 mt-sm-0 ms-sm-2">Save</button>
                                 </form>
-                                <button type="button" class="btn btn-outline-info btn-sm ms-sm-2 mt-2 mt-sm-0"
-                                    data-bs-toggle="modal" data-bs-target="#moveEntryModal"
-                                    data-log-id="{{ item.log_id }}" data-log-date="{{ date.isoformat() }}">Move</button>
-                                <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}"
-                                    class="ms-sm-2 mt-2 mt-sm-0">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-                                </form>
+
+                                <div class="d-flex align-items-center justify-content-end w-100 w-md-auto gap-2">
+                                    <button type="submit" class="btn btn-outline-success btn-sm"
+                                        form="update-form-{{ item.log_id }}">
+                                        Save
+                                    </button>
+
+                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal"
+                                        data-bs-target="#moveEntryModal" data-log-id="{{ item.log_id }}"
+                                        data-log-date="{{ date.isoformat() }}">
+                                        Move
+                                    </button>
+
+                                    <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                    </form>
+                                </div>
                             </div>
                             {% else %}
                             <div class="text-end text-muted">

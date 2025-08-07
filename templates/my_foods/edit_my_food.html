@@ -7,6 +7,14 @@
         <h1 class="mb-0">{% if my_food %}Edit Custom Food{% else %}Add New Custom Food{% endif %}</h1>
         <div class="d-flex flex-wrap gap-2">
             {% if my_food %}
+            <button type="button" class="btn btn-outline-success add-item-btn"
+                    data-food-id="{{ my_food.id }}"
+                    data-food-type="my_food"
+                    data-food-name="{{ my_food.description }}"
+                    data-target="diary"
+                    data-return-url="{{ url_for('my_foods.edit_my_food', food_id=my_food.id) }}">
+                Add
+            </button>
             <form action="{{ url_for('my_foods.copy_my_food', food_id=my_food.id) }}" method="POST" class="d-inline">
                 <button type="submit" class="btn btn-outline-primary">Clone</button>
             </form>
