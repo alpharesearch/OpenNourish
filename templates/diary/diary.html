@@ -132,8 +132,7 @@
                     {% if meal_name == 'Water' %}
                     {% set ml_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'ml') |
                     first %}
-                    {% set floz_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'fl
-                    oz') | first %}
+                    {% set floz_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'fl oz') | first %}
                     <div class="d-flex justify-content-end align-items-center flex-wrap-nowrap">
                         <div class="btn-group btn-group-sm" role="group" aria-label="Water quick add">
                             {% if current_user.measurement_system == 'metric' and ml_portion %}
