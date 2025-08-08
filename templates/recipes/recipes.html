@@ -60,25 +60,27 @@
                             </small>
                         </div>
                         <div class="btn-group mt-2 mt-md-0 flex-shrink-0" role="group" aria-label="Recipe Actions">
+                            <div class="btn-group mt-2 mt-md-0 flex-shrink-0" role="group" aria-label="Recipe Actions">
                             <button type="button" class="btn btn-outline-success btn-sm add-item-btn"
                                         data-food-id="{{ recipe.id }}"
                                         data-food-type="recipe"
                                         data-food-name="{{ recipe.name }}"
                                         data-target="diary"
                                         data-return-url="{{ url_for('recipes.recipes') }}">
-                                    Add
+                                    <i class="bi bi-plus-circle"></i> Add
                                 </button>
-                            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info btn-sm">View</a>
+                            <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info btn-sm"><i class="bi bi-info-circle"></i> View</a>
                             {% if recipe.user_id == current_user.id %}
-                                <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+                                <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i> Edit</a>
                                 <form action="{{ url_for('recipes.delete_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline">
                                     <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i></button>
                                 </form>
                             {% else %}
                                 <form action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-success btn-sm">Copy</button>
+                                    <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-clipboard"></i> Copy</button>
                                 </form>
                             {% endif %}
+                        </div>
                         </div>
                     </div>
                 {% endfor %}

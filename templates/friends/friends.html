@@ -99,10 +99,10 @@
                                 <span class="mb-2 mb-md-0">From: <strong>{{ req.requester.username }}</strong></span>
                                 <div class="d-flex flex-wrap gap-2">
                                     <form action="{{ url_for('friends.accept_request', request_id=req.id) }}" method="POST">
-                                        <button type="submit" class="btn btn-outline-success btn-sm">Accept</button>
+                                        <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-check-circle"></i> Accept</button>
                                     </form>
                                     <form action="{{ url_for('friends.decline_request', request_id=req.id) }}" method="POST">
-                                        <button type="submit" class="btn btn-outline-secondary btn-sm">Decline</button>
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-circle"></i> Decline</button>
                                     </form>
                                 </div>
                             </li>

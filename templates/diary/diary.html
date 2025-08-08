@@ -119,13 +119,13 @@
                         data-target="diary"
                         data-source-log-date="{{ date.isoformat() }}"
                         data-friend-username="{{ username }}">
-                        Advanced Copy
+                        <i class="bi bi-clipboard"></i> Advanced Copy
                     </button>
                     <form action="{{ url_for('diary.copy_meal_from_friend') }}" method="post">
                         <input type="hidden" name="friend_username" value="{{ username }}">
                         <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
                         <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                        <button type="submit" class="btn btn-outline-success btn-sm">Basic Copy</button>
+                        <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-clipboard"></i> Basic Copy</button>
                     </form>
                 </div>
                 {% elif not is_read_only %}
@@ -179,8 +179,7 @@
                             <input type="text" name="new_meal_name" class="form-control form-control-sm mt-sm-0"
                                 placeholder="Save as new meal...">
                             <button type="submit" class="btn btn-outline-success btn-sm mt-sm-0">
-                                <span class="d-none d-lg-inline"><i class="bi bi-check2-circle"></i></span>
-                                <span class="d-inline d-lg-none"><i class="bi bi-check2-circle"></i></span>  
+                                <i class="bi bi-check2-circle"></i>
                             </button>
                         </form>
                         <div class="d-flex w-lg-auto justify-content-end gap-2">
@@ -190,19 +189,16 @@
                                 data-food-name="Copy of {{ meal_name }} from {{ date.isoformat() }}"
                                 data-target="diary"
                                 data-source-log-date="{{ date.isoformat() }}">
-                                <span class="d-none d-lg-inline">Copy Meal</span>
-                                <span class="d-inline d-lg-none">Copy</span>
+                                <i class="bi bi-clipboard"></i><span class="d-none d-lg-inline"> Copy Meal</span>
                             </button>
                         
                             <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}"
                                 class="btn btn-outline-primary btn-sm mt-sm-0">
-                                <span class="d-none d-lg-inline">Search Food</span>
-                                <span class="d-inline d-lg-none">Search</span>
+                                <i class="bi bi-search"></i><span class="d-none d-lg-inline"> Search Food</span>
                             </a>
                             <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}"
                                 class="btn btn-outline-info btn-sm mt-sm-0">
-                                <span class="d-none d-lg-inline">Scan Barcode</span>
-                                <span class="d-inline d-lg-none">Scan</span>
+                                <i class="bi bi-upc-scan"></i><span class="d-none d-lg-inline"> Scan Barcode</span>
                             </a>
                         </div>
                     </div>

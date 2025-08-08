@@ -63,8 +63,8 @@
                 {% endfor %}
             </select>
             <div class="btn-group">
-                <button class="btn btn-outline-primary" type="submit">Search</button>
-                <button class="btn btn-outline-secondary" type="button" id="scan-barcode-btn">Scan Barcode</button>
+                <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-search"></i> Search</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" id="scan-barcode-btn"><i class="bi bi-upc-scan"></i> Scan Barcode</button>
             </div>
         </div>
         <!-- Desktop Checkboxes -->
@@ -203,14 +203,14 @@
                                     data-meal-name="{{ meal_name or '' }}"
                                     data-recipe-id="{{ recipe_id or '' }}"
                                     data-return-url="{{ return_url or '' }}">
-                                Add
+                                <i class="bi bi-plus-circle"></i> Add
                             </button>
                             <div class="btn-group flex-shrink-0">
                                 {% if food.user_id == current_user.id %}
-                                    <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
+                                    <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-pencil-square"></i> Edit</a>
                                 {% else %}
                                     <form method="post" action="{{ url_for('my_foods.copy_my_food', food_id=food.id) }}" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-outline-success">Copy</button>
+                                        <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-clipboard"></i> Copy</button>
                                     </form>
                                 {% endif %}
                             </div>
@@ -244,9 +244,9 @@
                                     data-meal-name="{{ meal_name or '' }}"
                                     data-recipe-id="{{ recipe_id or '' }}"
                                     data-return-url="{{ return_url or '' }}">
-                                Add
+                                <i class="bi bi-plus-circle"></i> Add
                             </button>
-                            <a href="{{ url_for('diary.edit_meal', meal_id=searched_meal.id) }}" class="btn btn-sm btn-outline-info">Edit</a>
+                            <a href="{{ url_for('diary.edit_meal', meal_id=searched_meal.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-pencil-square"></i> Edit</a>
                         </div>
                     </li>
                 {% endfor %}
@@ -288,16 +288,16 @@
                                     data-meal-name="{{ meal_name or '' }}"
                                     data-recipe-id="{{ recipe_id or '' }}"
                                     data-return-url="{{ return_url or '' }}">
-                                Add
+                                <i class="bi bi-plus-circle"></i> Add
                             </button>
                             <div class="btn-group flex-shrink-0">
                                 {% if recipe.user_id == current_user.id %}
-                                    <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> Edit</a>
                                 {% endif %}
-                                <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                                <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-info-circle"></i> View</a>
                                 {% if recipe.user_id != current_user.id %}
                                     <form method="post" action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-outline-success">Copy</button>
+                                        <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-clipboard"></i> Copy</button>
                                     </form>
                                 {% endif %}
                             </div>
@@ -333,9 +333,9 @@
                                 data-meal-name="{{ meal_name or '' }}"
                                 data-recipe-id="{{ recipe_id or '' }}"
                                 data-return-url="{{ return_url or '' }}">
-                            Add
+                            <i class="bi bi-plus-circle"></i> Add
                         </button>
-                        <a href="{{ food.detail_url }}" class="btn btn-sm btn-outline-info">View</a>
+                        <a href="{{ food.detail_url }}" class="btn btn-sm btn-outline-info"><i class="bi bi-info-circle"></i> View</a>
                     </div>
                 </li>
             {% endfor %}
