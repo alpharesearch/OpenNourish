@@ -18,17 +18,9 @@ from datetime import date, timedelta
 from opennourish.time_utils import get_user_today
 from opennourish.utils import (
     calculate_nutrition_for_items,
+    get_standard_meal_names_for_user,
 )
-
-ALL_MEAL_TYPES = [
-    "Breakfast",
-    "Snack (morning)",
-    "Lunch",
-    "Snack (afternoon)",
-    "Dinner",
-    "Snack (evening)",
-    "Unspecified",
-]
+from constants import ALL_MEAL_TYPES
 
 
 def _get_friend_user_or_404(username):
@@ -278,7 +270,9 @@ def diary(username, log_date_str=None):
         # Assign to the correct meal category, defaulting to 'Unspecified'
         meal_key = log.meal_name or "Unspecified"
         if meal_key not in meals:
-            meals[meal_key] = []  # Initialize if not present
+            meals[meal_key] = []
+        if meal_key not in meal_totals:
+            meal_totals[meal_key] = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}
 
         # Add nutrition to the meal's total
         meal_totals[meal_key]["calories"] += nutrition["calories"]
@@ -304,30 +298,7 @@ def diary(username, log_date_str=None):
     next_date = log_date + timedelta(days=1)
 
     # Determine the base meal names to always display based on user settings
-    base_meals_to_show = []
-    if friend_user.meals_per_day == 3:
-        base_meals_to_show = ["Breakfast", "Lunch", "Dinner"]
-    elif friend_user.meals_per_day == 4:
-        base_meals_to_show = ["Water", "Breakfast", "Lunch", "Dinner"]
-    elif friend_user.meals_per_day == 6:
-        base_meals_to_show = [
-            "Breakfast",
-            "Snack (morning)",
-            "Lunch",
-            "Snack (afternoon)",
-            "Dinner",
-            "Snack (evening)",
-        ]
-    elif friend_user.meals_per_day == 7:
-        base_meals_to_show = [
-            "Water",
-            "Breakfast",
-            "Snack (morning)",
-            "Lunch",
-            "Snack (afternoon)",
-            "Dinner",
-            "Snack (evening)",
-        ]
+    base_meals_to_show = get_standard_meal_names_for_user(friend_user)
 
     # Collect all meal names that actually have items logged for the day
     logged_meal_names = {meal_name for meal_name, items in meals.items() if items}
@@ -335,6 +306,11 @@ def diary(username, log_date_str=None):
     # Combine base meals with any other meals that have logged items
     meal_names_to_render = sorted(
         list(set(base_meals_to_show) | logged_meal_names), key=ALL_MEAL_TYPES.index
+    )
+
+    # Calculate total water intake in grams
+    water_total_grams = sum(
+        log.amount_grams for log in daily_logs if log.meal_name == "Water"
     )
 
     return render_template(
@@ -351,4 +327,5 @@ def diary(username, log_date_str=None):
         meal_names_to_render=meal_names_to_render,
         user=friend_user,
         meal_totals=meal_totals,
+        water_total_grams=water_total_grams,
     )

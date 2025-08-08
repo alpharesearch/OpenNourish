@@ -12,8 +12,10 @@ from models import (
     Nutrient,
     FoodNutrient,
     UnifiedPortion,
+    Friendship,
 )
 from datetime import date
+from flask import url_for
 
 
 @pytest.fixture
@@ -584,3 +586,176 @@ def test_usda_search_ranking(auth_client_with_data):
     assert idx_milk_whole < idx_milk_chocolate
     assert idx_milk_chocolate < idx_soy_milk
     assert idx_soy_milk < idx_almond_milk
+
+
+def test_copy_diary_meal(auth_client_with_data):
+    """
+    Tests copying a meal from the diary to another meal using the add_item route.
+    """
+    auth_client = auth_client_with_data
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        today = date.today()
+
+        # Create dummy food items to reference
+        food1 = Food(fdc_id=99998, description="Test Coffee")
+        food2 = Food(fdc_id=99999, description="Test Toast")
+        db.session.add_all([food1, food2])
+
+        # Log two items to Breakfast
+        log1 = DailyLog(
+            user_id=user.id,
+            log_date=today,
+            meal_name="Breakfast",
+            amount_grams=100,
+            fdc_id=99998,
+        )
+        log2 = DailyLog(
+            user_id=user.id,
+            log_date=today,
+            meal_name="Breakfast",
+            amount_grams=200,
+            fdc_id=99999,
+        )
+        db.session.add_all([log1, log2])
+        db.session.commit()
+
+        # Verify initial state
+        breakfast_items_count = DailyLog.query.filter_by(
+            user_id=user.id, log_date=today, meal_name="Breakfast"
+        ).count()
+        assert breakfast_items_count == 2
+        lunch_items_count = DailyLog.query.filter_by(
+            user_id=user.id, log_date=today, meal_name="Lunch"
+        ).count()
+        assert lunch_items_count == 0
+        return_url = url_for("diary.diary", log_date_str=today.isoformat())
+
+    # Perform the copy operation from Breakfast to Lunch via the search.add_item route
+    response = auth_client.post(
+        "/search/add_item",
+        data={
+            "food_id": "Breakfast",  # Source meal name
+            "food_type": "diary_meal",
+            "target": "diary",
+            "source_log_date": today.isoformat(),
+            "log_date": today.isoformat(),
+            "meal_name": "Lunch",  # Target meal name
+            "return_url": return_url,
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Successfully copied items from Breakfast to Lunch." in response.data
+
+    # Verify the result
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        # Original meal should be unchanged
+        breakfast_items_count = DailyLog.query.filter_by(
+            user_id=user.id, log_date=today, meal_name="Breakfast"
+        ).count()
+        assert breakfast_items_count == 2
+
+        # New meal should have the copied items
+        lunch_items = DailyLog.query.filter_by(
+            user_id=user.id, log_date=today, meal_name="Lunch"
+        ).all()
+        assert len(lunch_items) == 2
+
+        fdc_ids = {item.fdc_id for item in lunch_items}
+        assert 99998 in fdc_ids
+        assert 99999 in fdc_ids
+
+
+def test_copy_friend_diary_meal(auth_client_with_data):
+    """
+    Tests copying a meal from a friend's diary to the current user's diary.
+    """
+    auth_client = auth_client_with_data
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        friend = User(username="friend", email="friend@example.com")
+        friend.set_password("password")
+        db.session.add(friend)
+        db.session.commit()
+
+        friendship = Friendship(
+            requester_id=user.id, receiver_id=friend.id, status="accepted"
+        )
+        db.session.add(friendship)
+
+        today = date.today()
+
+        # Create dummy food items to reference
+        food1 = Food(fdc_id=99998, description="Test Coffee")
+        food2 = Food(fdc_id=99999, description="Test Toast")
+        db.session.add_all([food1, food2])
+
+        # Log two items to the FRIEND's Breakfast
+        log1 = DailyLog(
+            user_id=friend.id,
+            log_date=today,
+            meal_name="Breakfast",
+            amount_grams=100,
+            fdc_id=99998,
+        )
+        log2 = DailyLog(
+            user_id=friend.id,
+            log_date=today,
+            meal_name="Breakfast",
+            amount_grams=200,
+            fdc_id=99999,
+        )
+        db.session.add_all([log1, log2])
+        db.session.commit()
+
+        # Verify initial state
+        friend_breakfast_items_count = DailyLog.query.filter_by(
+            user_id=friend.id, log_date=today, meal_name="Breakfast"
+        ).count()
+        assert friend_breakfast_items_count == 2
+        user_lunch_items_count = DailyLog.query.filter_by(
+            user_id=user.id, log_date=today, meal_name="Lunch"
+        ).count()
+        assert user_lunch_items_count == 0
+        return_url = url_for("diary.diary", log_date_str=today.isoformat())
+
+    # Perform the copy operation from the FRIEND's Breakfast to the USER's Lunch
+    response = auth_client.post(
+        "/search/add_item",
+        data={
+            "food_id": "Breakfast",  # Source meal name
+            "food_type": "diary_meal",
+            "target": "diary",
+            "source_log_date": today.isoformat(),
+            "log_date": today.isoformat(),
+            "meal_name": "Lunch",  # Target meal name
+            "friend_username": "friend",  # The source of the meal
+            "return_url": return_url,
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Successfully copied items from Breakfast to Lunch." in response.data
+
+    # Verify the result
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        # Friend's meal should be unchanged
+        friend_breakfast_items_count = DailyLog.query.filter_by(
+            user_id=friend.id, log_date=today, meal_name="Breakfast"
+        ).count()
+        assert friend_breakfast_items_count == 2
+
+        # User's new meal should have the copied items
+        user_lunch_items = DailyLog.query.filter_by(
+            user_id=user.id, log_date=today, meal_name="Lunch"
+        ).all()
+        assert len(user_lunch_items) == 2
+
+        fdc_ids = {item.fdc_id for item in user_lunch_items}
+        assert 99998 in fdc_ids
+        assert 99999 in fdc_ids

@@ -27,3 +27,37 @@ CORE_NUTRIENT_IDS = {
     "iron": 1089,
     "potassium": 1092,
 }
+
+MEAL_CONFIG = {
+    3: ["Breakfast", "Lunch", "Dinner"],
+    4: ["Water", "Breakfast", "Lunch", "Dinner"],
+    6: [
+        "Breakfast",
+        "Snack (morning)",
+        "Lunch",
+        "Snack (afternoon)",
+        "Dinner",
+        "Snack (evening)",
+    ],
+    7: [
+        "Water",
+        "Breakfast",
+        "Snack (morning)",
+        "Lunch",
+        "Snack (afternoon)",
+        "Dinner",
+        "Snack (evening)",
+    ],
+}
+DEFAULT_MEAL_NAMES = MEAL_CONFIG[6]
+
+ALL_MEAL_TYPES = [
+    "Water",
+    "Breakfast",
+    "Snack (morning)",
+    "Lunch",
+    "Snack (afternoon)",
+    "Dinner",
+    "Snack (evening)",
+    "Unspecified",
+]

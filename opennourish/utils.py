@@ -2,7 +2,7 @@ import os
 import asyncio
 import subprocess
 import tempfile
-from constants import DIET_PRESETS, CORE_NUTRIENT_IDS
+from constants import DIET_PRESETS, CORE_NUTRIENT_IDS, MEAL_CONFIG, DEFAULT_MEAL_NAMES
 from flask import send_file, current_app, render_template
 from types import SimpleNamespace
 from cryptography.fernet import Fernet
@@ -1351,6 +1351,16 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
                 "Typst executable not found. Please ensure Typst is installed and in your system's PATH.",
                 500,
             )
+
+
+def get_standard_meal_names_for_user(user):
+    """
+    Returns a list of standard meal names based on the user's preference.
+    """
+    if not user or not hasattr(user, "meals_per_day"):
+        return DEFAULT_MEAL_NAMES
+
+    return MEAL_CONFIG.get(user.meals_per_day, DEFAULT_MEAL_NAMES)
 
 
 def calculate_weight_projection(user):

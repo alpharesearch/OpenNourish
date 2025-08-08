@@ -33,6 +33,7 @@ from datetime import date, timedelta
 import csv
 from werkzeug.middleware.proxy_fix import ProxyFix
 from opennourish.time_utils import register_template_filters
+from constants import MEAL_CONFIG, DEFAULT_MEAL_NAMES
 
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
@@ -154,6 +155,10 @@ def create_app(config_class=Config):
     # Enable the Jinja2 'do' extension
     app.jinja_env.add_extension("jinja2.ext.do")
 
+    from opennourish.context_processors import utility_processor
+
+    app.context_processor(utility_processor)
+
     from opennourish.auth import auth_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
@@ -221,30 +226,6 @@ def create_app(config_class=Config):
     from opennourish.fasting import fasting_bp
 
     app.register_blueprint(fasting_bp, url_prefix="/fasting")
-
-    # Centralized meal configuration based on user settings
-    MEAL_CONFIG = {
-        3: ["Breakfast", "Lunch", "Dinner"],
-        4: ["Water", "Breakfast", "Lunch", "Dinner"],
-        6: [
-            "Breakfast",
-            "Snack (morning)",
-            "Lunch",
-            "Snack (afternoon)",
-            "Dinner",
-            "Snack (evening)",
-        ],
-        7: [
-            "Water",
-            "Breakfast",
-            "Snack (morning)",
-            "Lunch",
-            "Snack (afternoon)",
-            "Dinner",
-            "Snack (evening)",
-        ],
-    }
-    DEFAULT_MEAL_NAMES = MEAL_CONFIG[6]
 
     @app.context_processor
     def inject_user_settings():

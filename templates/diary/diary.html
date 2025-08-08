@@ -85,17 +85,7 @@
             </div>
         </div>
         {% endif %}
-        {% set ordered_meal_names = [] %}
-        {% if 'Water' in meal_names_to_render %}
-        {% do ordered_meal_names.append('Water') %}
-        {% endif %}
         {% for meal_name in meal_names_to_render %}
-        {% if meal_name != 'Water' %}
-        {% do ordered_meal_names.append(meal_name) %}
-        {% endif %}
-        {% endfor %}
-
-        {% for meal_name in ordered_meal_names %}
         {% set items = meals.get(meal_name, []) %}
         <div class="card mb-3">
             <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
@@ -121,12 +111,23 @@
                     {% endif %}
                 </div>
                 {% if is_read_only and items %}
-                <form action="{{ url_for('diary.copy_meal_from_friend') }}" method="post">
-                    <input type="hidden" name="friend_username" value="{{ username }}">
-                    <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
-                    <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                    <button type="submit" class="btn btn-outline-success btn-sm">Copy to My Diary</button>
-                </form>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm add-item-btn"
+                        data-food-id="{{ meal_name }}"
+                        data-food-type="diary_meal"
+                        data-food-name="Copy of {{ meal_name }} from {{ date.isoformat() }}"
+                        data-target="diary"
+                        data-source-log-date="{{ date.isoformat() }}"
+                        data-friend-username="{{ username }}">
+                        Advanced Copy
+                    </button>
+                    <form action="{{ url_for('diary.copy_meal_from_friend') }}" method="post">
+                        <input type="hidden" name="friend_username" value="{{ username }}">
+                        <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
+                        <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                        <button type="submit" class="btn btn-outline-success btn-sm">Basic Copy</button>
+                    </form>
+                </div>
                 {% elif not is_read_only %}
                 <div class="d-flex flex-column flex-md-row align-items-md-center">
                     {% if meal_name == 'Water' %}
@@ -178,6 +179,14 @@
                             placeholder="Save as new meal...">
                         <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
                     </form>
+                    <button type="button" class="btn btn-outline-secondary btn-sm add-item-btn me-md-2 mb-2 mb-md-0"
+                        data-food-id="{{ meal_name }}"
+                        data-food-type="diary_meal"
+                        data-food-name="Copy of {{ meal_name }} from {{ date.isoformat() }}"
+                        data-target="diary"
+                        data-source-log-date="{{ date.isoformat() }}">
+                        Copy
+                    </button>
                     <div class="d-flex">
                         <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}"
                             class="btn btn-outline-primary btn-sm">
@@ -273,14 +282,14 @@
                 </div>
                 <form id="moveEntryForm" method="POST" action="{{ url_for('diary.move_entry') }}">
                     <div class="modal-body">
-                        <input type="hidden" name="log_id" id="modalLogId">
+                        <input type="hidden" name="log_id" id="move-modalLogId">
                         <div class="mb-3">
-                            <label for="modalLogDate" class="form-label">Date</label>
-                            <input type="date" class="form-control" id="modalLogDate" name="target_date" required>
+                            <label for="move-modalLogDate" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="move-modalLogDate" name="target_date" required>
                         </div>
                         <div class="mb-3">
-                            <label for="modalMealName" class="form-label">Meal</label>
-                            <select class="form-select" id="modalMealName" name="target_meal_name" required>
+                            <label for="move-modalMealName" class="form-label">Meal</label>
+                            <select class="form-select" id="move-modalMealName" name="target_meal_name" required>
                                 {% for meal_name_option in meal_names_to_render %}
                                 {% if meal_name_option != 'Water' %}
                                 <option value="{{ meal_name_option }}">{{ meal_name_option }}</option>
@@ -308,8 +317,8 @@
                     var logId = button.getAttribute('data-log-id');
                     var logDate = button.getAttribute('data-log-date');
 
-                    var modalLogIdInput = moveEntryModal.querySelector('#modalLogId');
-                    var modalLogDateInput = moveEntryModal.querySelector('#modalLogDate');
+                    var modalLogIdInput = moveEntryModal.querySelector('#move-modalLogId');
+                    var modalLogDateInput = moveEntryModal.querySelector('#move-modalLogDate');
 
                     modalLogIdInput.value = logId;
                     modalLogDateInput.value = logDate;

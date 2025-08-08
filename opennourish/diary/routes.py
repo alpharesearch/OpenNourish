@@ -21,22 +21,13 @@ from opennourish.time_utils import get_user_today
 from opennourish.utils import (
     calculate_nutrition_for_items,
     get_available_portions,
+    get_standard_meal_names_for_user,
 )
 from .forms import MealForm
 from sqlalchemy.orm import joinedload, selectinload
+from constants import ALL_MEAL_TYPES
 
 from types import SimpleNamespace
-
-ALL_MEAL_TYPES = [
-    "Breakfast",
-    "Snack (morning)",
-    "Lunch",
-    "Snack (afternoon)",
-    "Dinner",
-    "Snack (evening)",
-    "Unspecified",
-    "Water",
-]
 
 
 @diary_bp.route("/diary/")
@@ -184,30 +175,7 @@ def diary(log_date_str=None):
     next_date = log_date + timedelta(days=1)
 
     # Determine the base meal names to always display based on user settings
-    base_meals_to_show = []
-    if current_user.meals_per_day == 3:
-        base_meals_to_show = ["Breakfast", "Lunch", "Dinner"]
-    elif current_user.meals_per_day == 4:
-        base_meals_to_show = ["Water", "Breakfast", "Lunch", "Dinner"]
-    elif current_user.meals_per_day == 6:
-        base_meals_to_show = [
-            "Breakfast",
-            "Snack (morning)",
-            "Lunch",
-            "Snack (afternoon)",
-            "Dinner",
-            "Snack (evening)",
-        ]
-    elif current_user.meals_per_day == 7:
-        base_meals_to_show = [
-            "Water",
-            "Breakfast",
-            "Snack (morning)",
-            "Lunch",
-            "Snack (afternoon)",
-            "Dinner",
-            "Snack (evening)",
-        ]
+    base_meals_to_show = get_standard_meal_names_for_user(current_user)
 
     # If fasting, only show water and hide other meals
     if is_fasting:

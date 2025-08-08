@@ -20,6 +20,7 @@ from models import (
     UnifiedPortion,
     FoodNutrient,
     FoodCategory,
+    User,
 )
 from flask_login import login_required, current_user
 from datetime import date
@@ -513,6 +514,7 @@ def add_item():
     amount = float(request.form.get("amount", 1))
     portion_id_str = request.form.get("portion_id")
     return_url = request.form.get("return_url")
+    friend_username = request.form.get("friend_username")
 
     # Ensure a 1-gram portion exists for USDA foods when they are added.
     # This is crucial for consistency across the application.
@@ -620,6 +622,70 @@ def add_item():
         else:
             flash(f"Cannot add a meal to the selected target: {target}.", "danger")
             return redirect(request.referrer or url_for("diary.diary"))
+
+    elif food_type == "diary_meal":
+        source_log_date_str = request.form.get("source_log_date")
+        source_meal_name = food_id  # For diary_meal, food_id holds the meal name
+        target_meal_name = meal_name
+        target_log_date_str = (
+            log_date_str  # log_date_str is from the form, which is the target
+        )
+
+        source_user_id = current_user.id
+        if friend_username:
+            friend_user = User.query.filter_by(username=friend_username).first()
+            if friend_user:
+                source_user_id = friend_user.id
+            else:
+                flash(f"Friend '{friend_username}' not found.", "danger")
+                return redirect(request.referrer or url_for("diary.diary"))
+
+        if (
+            source_meal_name == target_meal_name
+            and source_log_date_str == target_log_date_str
+            and source_user_id == current_user.id
+        ):
+            flash("Source and target meal cannot be the same.", "warning")
+            if return_url:
+                return redirect(return_url)
+            return redirect(url_for("diary.diary", log_date_str=log_date_str))
+
+        source_log_date = date.fromisoformat(source_log_date_str)
+        source_logs = DailyLog.query.filter_by(
+            user_id=source_user_id,
+            log_date=source_log_date,
+            meal_name=source_meal_name,
+        ).all()
+
+        if not source_logs:
+            flash(f"No items found in {source_meal_name} to copy.", "warning")
+            if return_url:
+                return redirect(return_url)
+            return redirect(url_for("diary.diary", log_date_str=log_date_str))
+
+        target_log_date = date.fromisoformat(target_log_date_str)
+        for log in source_logs:
+            new_log = DailyLog(
+                user_id=current_user.id,
+                log_date=target_log_date,
+                meal_name=target_meal_name,
+                fdc_id=log.fdc_id,
+                my_food_id=log.my_food_id,
+                recipe_id=log.recipe_id,
+                amount_grams=log.amount_grams,
+                serving_type=log.serving_type,
+                portion_id_fk=log.portion_id_fk,
+            )
+            db.session.add(new_log)
+
+        db.session.commit()
+        flash(
+            f"Successfully copied items from {source_meal_name} to {target_meal_name}.",
+            "success",
+        )
+        if return_url:
+            return redirect(return_url)
+        return redirect(url_for("diary.diary", log_date_str=log_date_str))
 
     portion = None
     if portion_id_str:
@@ -1157,6 +1223,18 @@ def get_portions(food_type, food_id):
     elif food_type == "my_meal":
         # MyMeals are consumed as a whole. Return a single, default "serving" portion.
         # The add_item endpoint logic for my_meal ignores portion/amount, but we provide this for UI consistency.
+        return jsonify(
+            [
+                {
+                    "id": -1,
+                    "description": "1 serving",
+                    "gram_weight": 1.0,
+                    "is_default": True,
+                }
+            ]
+        )
+    elif food_type == "diary_meal":
+        # Diary meals are also consumed as a whole.
         return jsonify(
             [
                 {

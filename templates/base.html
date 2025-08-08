@@ -25,7 +25,7 @@
         {% block content %}{% endblock %}
     </div>
 
-    {% if not is_read_only %}
+    {% if current_user.is_authenticated %}
     <!-- Add Item Modal -->
     <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
       <div class="modal-dialog">
@@ -41,8 +41,10 @@
               <input type="hidden" name="food_type" id="modalFoodType">
               <input type="hidden" name="target" id="modalTarget">
               <input type="hidden" name="recipe_id" id="modalRecipeId">
+              <input type="hidden" name="source_log_date" id="modalSourceLogDate">
               <input type="hidden" name="meal_id" id="modalMealId">
               <input type="hidden" name="return_url" id="modalReturnUrl">
+              <input type="hidden" name="friend_username" id="modalFriendUsername">
 
               <div id="diaryFields">
                 <div class="mb-3">
@@ -92,115 +94,138 @@
     {% block scripts %}{% endblock %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            {% if not is_read_only %}
-            const addItemModal = new bootstrap.Modal(document.getElementById('addItemModal'));
-            const addItemForm = document.getElementById('addItemForm');
-            const modalFoodName = document.getElementById('modalFoodName');
-            const modalFoodId = document.getElementById('modalFoodId');
-            const modalFoodType = document.getElementById('modalFoodType');
-            const modalTarget = document.getElementById('modalTarget');
-            const modalRecipeId = document.getElementById('modalRecipeId');
+            const addItemModalEl = document.getElementById('addItemModal');
+            if (addItemModalEl) {
+                const addItemModal = new bootstrap.Modal(addItemModalEl);
+                const addItemForm = document.getElementById('addItemForm');
+                const modalFoodName = document.getElementById('modalFoodName');
+                const modalFoodId = document.getElementById('modalFoodId');
+                const modalFoodType = document.getElementById('modalFoodType');
+                const modalTarget = document.getElementById('modalTarget');
+                const modalRecipeId = document.getElementById('modalRecipeId');
+                const modalSourceLogDate = document.getElementById('modalSourceLogDate');
             const modalMealId = document.getElementById('modalMealId');
             const modalReturnUrl = document.getElementById('modalReturnUrl');
+            const modalFriendUsername = document.getElementById('modalFriendUsername');
             const diaryFields = document.getElementById('diaryFields');
-            const modalLogDate = document.getElementById('modalLogDate');
-            const modalMealName = document.getElementById('modalMealName');
-            const modalPortionId = document.getElementById('modalPortionId');
-            const modalAmountPortionFields = document.getElementById('modalAmountPortionFields');
+                const modalLogDate = document.getElementById('modalLogDate');
+                const modalMealName = document.getElementById('modalMealName');
+                const modalPortionId = document.getElementById('modalPortionId');
+                const modalAmountPortionFields = document.getElementById('modalAmountPortionFields');
 
-            document.querySelectorAll('.add-item-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const foodId = this.dataset.foodId;
-                    const foodType = this.dataset.foodType;
-                    const foodName = this.dataset.foodName;
-                    const target = this.dataset.target;
-                    const recipeId = this.dataset.recipeId || '';
+                document.querySelectorAll('.add-item-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        // --- 1. GATHER DATA FROM BUTTON ---
+                        const foodId = this.dataset.foodId;
+                        const foodType = this.dataset.foodType;
+                        const foodName = this.dataset.foodName;
+                        const target = this.dataset.target;
+                        const recipeId = this.dataset.recipeId || '';
+                    const sourceLogDate = this.dataset.sourceLogDate || '';
                     const mealId = this.dataset.mealId || '';
+                    const friendUsername = this.dataset.friendUsername || '';
                     const logDate = this.dataset.logDate || '';
-                    const mealName = this.dataset.mealName || '';
-                    const returnUrl = this.dataset.returnUrl || '';
+                        const mealName = this.dataset.mealName || '';
+                        const returnUrl = this.dataset.returnUrl || '';
+                        const apiFoodType = foodType === 'usda_food' ? 'usda' : foodType;
 
-                    const apiFoodType = foodType === 'usda_food' ? 'usda' : foodType;
+                        // --- 2. POPULATE HIDDEN MODAL FIELDS ---
+                        modalFoodName.textContent = foodName;
+                        modalFoodId.value = foodId;
+                        modalFoodType.value = apiFoodType;
+                        modalTarget.value = target;
+                        modalRecipeId.value = recipeId;
+                        modalSourceLogDate.value = sourceLogDate;
+                        modalMealId.value = mealId;
+                        modalReturnUrl.value = returnUrl;
+                        modalFriendUsername.value = friendUsername;
 
-                    modalFoodName.textContent = foodName;
-                    modalFoodId.value = foodId;
-                    modalFoodType.value = apiFoodType;
-                    modalTarget.value = target;
-                    modalRecipeId.value = recipeId;
-                    modalMealId.value = mealId;
-                    modalReturnUrl.value = returnUrl;
+                        // --- 3. HANDLE UI VISIBILITY AND REQUIRED FIELDS ---
+                        const isDiaryTarget = target === 'diary';
+                        diaryFields.style.display = isDiaryTarget ? 'block' : 'none';
+                        modalLogDate.required = isDiaryTarget;
+                        modalMealName.required = isDiaryTarget;
 
-                    if (target === 'diary') {
-                        diaryFields.style.display = 'block';
-                        modalLogDate.required = true;
-                        modalMealName.required = true;
-                        if (logDate) {
-                            modalLogDate.value = logDate;
-                        } else {
-                            modalLogDate.value = new Date().toLocaleDateString('en-CA', { timeZone: '{{ current_user.timezone }}' });
-                        }
+                        const isPortionless = apiFoodType === 'my_meal' || apiFoodType === 'diary_meal';
+                        modalAmountPortionFields.style.display = isPortionless ? 'none' : 'block';
+                        modalPortionId.required = !isPortionless;
 
-                        modalMealName.innerHTML = '';
-                        const mealsPerDay = {{ meals_per_day|default(6) }};
-                        const standardMealNames = {{ standard_meal_names|tojson }};
-                        for (let i = 0; i < mealsPerDay; i++) {
-                            const option = document.createElement('option');
-                            option.value = standardMealNames[i];
-                            option.textContent = standardMealNames[i];
-                            if (mealName && mealName === standardMealNames[i]) {
-                                option.selected = true;
-                            }
-                            modalMealName.appendChild(option);
-                        }
-                    } else {
-                        diaryFields.style.display = 'none';
-                        modalLogDate.required = false;
-                        modalMealName.required = false;
-                    }
+                        // --- 4. POPULATE DIARY-SPECIFIC FIELDS (DATE & MEAL) ---
+                        if (isDiaryTarget) {
+                            // Set date: Use the button's specific logDate if provided, otherwise default to today.
+                            modalLogDate.value = logDate || '{{ current_log_date_str }}';
 
-                    if (apiFoodType === 'my_meal') {
-                        modalAmountPortionFields.style.display = 'none';
-                    } else {
-                        modalAmountPortionFields.style.display = 'block';
-                    }
+                            // Populate meal dropdown
+                            modalMealName.innerHTML = '';
+                            const globalStandardMealNames = {{ standard_meal_names|tojson }};
 
-                    modalPortionId.innerHTML = '<option>Loading...</option>';
-                    fetch(`/search/api/get-portions/${apiFoodType}/${foodId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            modalPortionId.innerHTML = '';
-                            if (data.error) {
-                                const option = document.createElement('option');
-                                option.textContent = 'Error loading portions';
-                                modalPortionId.appendChild(option);
-                                console.error('Error fetching portions:', data.error);
-                                return;
-                            }
-                            data.forEach(portion => {
-                                const option = document.createElement('option');
-                                option.value = portion.id;
-                                option.textContent = portion.description;
-                                if (portion.is_default) {
-                                    option.selected = true;
+                            if (apiFoodType === 'diary_meal') {
+                                // Special Case: Copying a meal. The backend will validate if the source and target are the same.
+                                const sourceMealName = this.dataset.foodId;
+                                for (const meal of globalStandardMealNames) {
+                                    if (meal !== 'Water') {
+                                        const option = document.createElement('option');
+                                        option.value = meal;
+                                        option.textContent = meal;
+                                        modalMealName.appendChild(option);
+                                    }
                                 }
-                                modalPortionId.appendChild(option);
-                            });
-                        })
-                        .catch(error => {
-                            modalPortionId.innerHTML = '';
-                            const option = document.createElement('option');
-                            option.textContent = 'Error loading portions';
-                            modalPortionId.appendChild(option);
-                            console.error('Error fetching portions:', error);
-                        });
+                            } else {
+                                // Standard Case: Adding any other item.
+                                for (const meal of globalStandardMealNames) {
+                                    const option = document.createElement('option');
+                                    option.value = meal;
+                                    option.textContent = meal;
+                                    modalMealName.appendChild(option);
+                                }
+                                // If a mealName was passed from the button, pre-select it.
+                                if (mealName) {
+                                    modalMealName.value = mealName;
+                                }
+                            }
+                        }
 
-                    addItemModal.show();
+                        // --- 5. FETCH PORTIONS (IF APPLICABLE) ---
+                        if (!isPortionless) {
+                            modalPortionId.innerHTML = '<option>Loading...</option>';
+                            fetch(`/search/api/get-portions/${apiFoodType}/${foodId}`)
+                                .then(response => {
+                                    if (!response.ok) {
+                                        return response.json().then(err => { throw new Error(err.error || `HTTP error! status: ${response.status}`) });
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    modalPortionId.innerHTML = '';
+                                    if (data.error) { throw new Error(data.error); }
+                                    data.forEach(portion => {
+                                        const option = document.createElement('option');
+                                        option.value = portion.id;
+                                        option.textContent = portion.description;
+                                        if (portion.is_default) {
+                                            option.selected = true;
+                                        }
+                                        modalPortionId.appendChild(option);
+                                    });
+                                })
+                                .catch(error => {
+                                    modalPortionId.innerHTML = '';
+                                    const option = document.createElement('option');
+                                    option.textContent = 'Error loading portions';
+                                    modalPortionId.appendChild(option);
+                                    console.error('Error fetching portions:', error.message);
+                                });
+                        } else {
+                            modalPortionId.innerHTML = ''; // Clear portions dropdown for portionless items
+                        }
+
+                        // --- 6. SHOW MODAL ---
+                        addItemModal.show();
+                    });
                 });
-            });
+            }
 
             // The form will now submit normally, allowing the browser to handle the redirect and display the flash message.
-
-            {% endif %}
 
             const htmlTag = document.documentElement;
             const userThemePreference = htmlTag.getAttribute('data-bs-theme');
