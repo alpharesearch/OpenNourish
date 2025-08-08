@@ -13,10 +13,10 @@
                     data-food-name="{{ recipe.name }}"
                     data-target="diary"
                     data-return-url="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}">
-                Add
+                <i class="bi bi-plus-circle"></i> Add
             </button>
             <form action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline">
-                <button type="submit" class="btn btn-outline-primary">Clone</button>
+                <button type="submit" class="btn btn-outline-success"><i class="bi bi-clipboard"></i> Clone</button>
             </form>
             <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info">View
                 Recipe</a>
@@ -38,7 +38,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h2 class="h5 mb-0">Recipe Details</h2>
-                        <button type="submit" class="btn btn-sm btn-outline-primary">Save Recipe</button>
+                        <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-check2-circle"></i> Save Recipe</button>
                     </div>
                     <div class="card-body">
                         {{ form.hidden_tag() }}
@@ -77,8 +77,8 @@
                                     <span class="d-inline d-sm-none">Generate</span>
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary" id="scan-barcode-btn">
-                                    <span class="d-none d-sm-inline">Scan UPC</span>
-                                    <span class="d-inline d-sm-none">Scan</span>
+                                    <span class="d-none d-sm-inline"><i class="bi bi-upc-scan"></i> Scan UPC</span>
+                                    <span class="d-inline d-sm-none"><i class="bi bi-upc-scan"></i> Scan</span>
                                 </button>
                                 {% endif %}
                             </div>
@@ -131,7 +131,7 @@
                                 Weight") }}
                             </div>
                             <div class="col-sm-auto mt-2 mt-sm-0">
-                                <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add</button>
+                                <button type="submit" class="btn btn-sm btn-outline-primary w-100"><i class="bi bi-plus-circle"></i> Add</button>
                             </div>
                         </div>
                     </form>

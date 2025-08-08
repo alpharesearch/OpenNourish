@@ -10,7 +10,7 @@
     <div class="row justify-content-between align-items-center mb-3 mt-4">
         <!-- Prev button: On small screens, ordered second. On large, ordered first. -->
         <div class="col-auto order-2 order-sm-1">
-            <a id="prev-day-link" href="{{ prev_url }}" class="btn btn-outline-secondary">&laquo; Prev Day</a>
+            <a id="prev-day-link" href="{{ prev_url }}" class="btn btn-outline-secondary"><i class="bi bi-chevron-double-left"></i> Prev Day</a>
         </div>
 
         <!-- Title: On small screens, ordered first and full-width. On large, ordered second. -->
@@ -21,7 +21,7 @@
 
         <!-- Next button: Always ordered third. -->
         <div class="col-auto order-3">
-            <a id="next-day-link" href="{{ next_url }}" class="btn btn-outline-secondary">&raquo; Next Day</a>
+            <a id="next-day-link" href="{{ next_url }}" class="btn btn-outline-secondary">Next Day <i class="bi bi-chevron-double-right"></i></a>
         </div>
     </div>
     {% if is_fasting %}
@@ -166,9 +166,8 @@
                             {% endif %}
                         </div>
                         <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}"
-                            class="btn btn-outline-info btn-sm ms-2">
-                            <span class="d-none d-md-inline">Custom</span>
-                            <span class="d-inline d-md-none">+</span>
+                            class="btn btn-outline-primary btn-sm ms-2">
+                            <i class="bi bi-search"></i> <span class="d-none d-lg-inline">Search</span>
                         </a>
                     </div>
                     {% else %}
@@ -177,7 +176,7 @@
                             <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
                             <input type="hidden" name="meal_name" value="{{ meal_name }}">
                             <input type="text" name="new_meal_name" class="form-control form-control-sm mt-sm-0"
-                                placeholder="Save as new meal...">
+                                placeholder="Save as new My Meal...">
                             <button type="submit" class="btn btn-outline-success btn-sm mt-sm-0">
                                 <i class="bi bi-check2-circle"></i>
                             </button>

@@ -13,10 +13,10 @@
                     data-food-name="{{ my_food.description }}"
                     data-target="diary"
                     data-return-url="{{ url_for('my_foods.edit_my_food', food_id=my_food.id) }}">
-                Add
+                <i class="bi bi-plus-circle"></i> Add
             </button>
             <form action="{{ url_for('my_foods.copy_my_food', food_id=my_food.id) }}" method="POST" class="d-inline">
-                <button type="submit" class="btn btn-outline-primary">Clone</button>
+                <button type="submit" class="btn btn-outline-success"><i class="bi bi-clipboard"></i> Clone</button>
             </form>
             <a href="{{ url_for('my_foods.generate_pdf_label', food_id=my_food.id) }}" class="btn btn-outline-info"
                 target="_blank"><i class="bi bi-file-earmark-pdf"></i> 1x2 UPC Label</a>
@@ -32,7 +32,13 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2 class="h5 mb-0">Food Details</h2>
-                {{ form.submit(class="btn btn-sm btn-outline-primary") }}
+                <button type="submit" name="submit" class="btn btn-sm btn-outline-primary">
+                    {% if my_food %}
+                    <i class="bi bi-check2-circle"></i> Save Changes
+                    {% else %}
+                    <i class="bi bi-plus-circle"></i> Save Food
+                    {% endif %}
+                </button>
             </div>
             <div class="card-body">
                 {{ form.hidden_tag() }}
@@ -63,8 +69,8 @@
                                 <span class="d-inline d-sm-none">Generate</span>
                             </button>
                             <button type="button" class="btn btn-outline-secondary" id="scan-barcode-btn">
-                                <span class="d-none d-sm-inline">Scan UPC</span>
-                                <span class="d-inline d-sm-none">Scan</span>
+                                <span class="d-none d-sm-inline"><i class="bi bi-upc-scan"></i> Scan UPC</span>
+                                <span class="d-inline d-sm-none"><i class="bi bi-upc-scan"></i> Scan</span>
                             </button>
                             {% endif %}
                         </div>
