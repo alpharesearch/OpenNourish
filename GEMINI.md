@@ -217,6 +217,10 @@ To ensure a consistent and intuitive user interface, all icons should be used pu
   - **Icon:** `bi-arrows-move`
   - **Usage:** For buttons that move an item from one location to another, such as moving a diary entry to a different date or meal.
 
+- **PDF/Print Actions:**
+  - **Icon:** `bi-file-earmark-pdf`
+  - **Usage:** For buttons that generate a PDF.
+
 ## 8. Testing
 - **Framework:** Testing is done using the **pytest** framework.
 - **Test Directory:** All tests are located in the `tests/` directory.
