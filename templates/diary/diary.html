@@ -172,32 +172,39 @@
                         </a>
                     </div>
                     {% else %}
-                    <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex me-md-2 mb-2 mb-md-0">
-                        <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
-                        <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                        <input type="text" name="new_meal_name" class="form-control form-control-sm me-2"
-                            placeholder="Save as new meal...">
-                        <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
-                    </form>
-                    <button type="button" class="btn btn-outline-secondary btn-sm add-item-btn me-md-2 mb-2 mb-md-0"
-                        data-food-id="{{ meal_name }}"
-                        data-food-type="diary_meal"
-                        data-food-name="Copy of {{ meal_name }} from {{ date.isoformat() }}"
-                        data-target="diary"
-                        data-source-log-date="{{ date.isoformat() }}">
-                        Copy
-                    </button>
-                    <div class="d-flex">
-                        <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}"
-                            class="btn btn-outline-primary btn-sm">
-                            <span class="d-none d-lg-inline">Search Food</span>
-                            <span class="d-inline d-lg-none">Search</span>
-                        </a>
-                        <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}"
-                            class="btn btn-outline-info btn-sm ms-2">
-                            <span class="d-none d-lg-inline">Scan Barcode</span>
-                            <span class="d-inline d-lg-none">Scan</span>
-                        </a>
+                    <div class="d-flex justify-content-end align-items-center flex-column flex-sm-row gap-2">
+                        <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex align-items-right flex-sm-row">
+                            <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
+                            <input type="hidden" name="meal_name" value="{{ meal_name }}">
+                            <input type="text" name="new_meal_name" class="form-control form-control-sm mt-sm-0"
+                                placeholder="Save as new meal...">
+                            <button type="submit" class="btn btn-outline-success btn-sm mt-sm-0">
+                                <span class="d-none d-lg-inline">Save</span>
+                                <span class="d-inline d-lg-none">Save</span>  
+                            </button>
+                        </form>
+                        <div class="d-flex w-lg-auto justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-sm-0 add-item-btn"
+                                data-food-id="{{ meal_name }}"
+                                data-food-type="diary_meal"
+                                data-food-name="Copy of {{ meal_name }} from {{ date.isoformat() }}"
+                                data-target="diary"
+                                data-source-log-date="{{ date.isoformat() }}">
+                                <span class="d-none d-lg-inline">Copy Meal</span>
+                                <span class="d-inline d-lg-none">Copy</span>
+                            </button>
+                        
+                            <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}"
+                                class="btn btn-outline-primary btn-sm mt-sm-0">
+                                <span class="d-none d-lg-inline">Search Food</span>
+                                <span class="d-inline d-lg-none">Search</span>
+                            </a>
+                            <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}"
+                                class="btn btn-outline-info btn-sm mt-sm-0">
+                                <span class="d-none d-lg-inline">Scan Barcode</span>
+                                <span class="d-inline d-lg-none">Scan</span>
+                            </a>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -246,7 +253,7 @@
                                     <button type="submit" class="btn btn-outline-success btn-sm  mt-sm-0 ">Save</button>
                                 </form>
                                 <div class="d-flex w-lg-auto justify-content-end gap-2">
-                                    <button type="button" class="btn btn-outline-info btn-sm   mt-sm-0"
+                                    <button type="button" class="btn btn-outline-info btn-sm mt-sm-0"
                                         data-bs-toggle="modal" data-bs-target="#moveEntryModal"
                                         data-log-id="{{ item.log_id }}"
                                         data-log-date="{{ date.isoformat() }}">Move</button>
