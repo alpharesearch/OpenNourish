@@ -132,7 +132,8 @@
                     {% if meal_name == 'Water' %}
                     {% set ml_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'ml') |
                     first %}
-                    {% set floz_portion = water_food.portions | selectattr('measure_unit_description', 'equalto', 'fl oz') | first %}
+                    {% set floz_portion = water_food.portions |
+                    selectattr('measure_unit_description', 'equalto', 'fl oz') | first %}
                     <div class="d-flex justify-content-end align-items-center flex-wrap-nowrap">
                         <div class="btn-group btn-group-sm" role="group" aria-label="Water quick add">
                             {% if current_user.measurement_system == 'metric' and ml_portion %}
@@ -180,13 +181,13 @@
                     <div class="d-flex">
                         <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}"
                             class="btn btn-outline-primary btn-sm">
-                            <span class="d-none d-md-inline">Add Food</span>
-                            <span class="d-inline d-md-none">Add</span>
+                            <span class="d-none d-lg-inline">Search Food</span>
+                            <span class="d-inline d-lg-none">Search</span>
                         </a>
                         <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}"
                             class="btn btn-outline-info btn-sm ms-2">
-                            <span class="d-none d-md-inline">Scan Barcode</span>
-                            <span class="d-inline d-md-none">Scan</span>
+                            <span class="d-none d-lg-inline">Scan Barcode</span>
+                            <span class="d-inline d-lg-none">Scan</span>
                         </a>
                     </div>
                     {% endif %}
@@ -218,15 +219,14 @@
 
                             </small>
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-lg-5 ">
                             {% if not is_read_only %}
-                            <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
+                            <div class="d-flex justify-content-end align-items-center flex-column flex-sm-row gap-2">
                                 <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}"
-                                    id="update-form-{{ item.log_id }}"
-                                    class="d-flex align-items-center flex-grow-1 flex-md-grow-0">
+                                    class="d-flex align-items-right flex-sm-row">
                                     <input type="number" name="amount" value="{{ item.amount|round(2) }}"
-                                        class="form-control form-control-sm flex-grow-1" step="any" required>
-                                    <select name="portion_id" class="form-select form-select-sm ms-2">
+                                        class="form-control form-control-sm" step="any" required>
+                                    <select name="portion_id" class="form-select form-select-sm  mt-sm-0 ">
                                         {% for portion in item.portions %}
                                         <option value="{{ portion.id }}" {% if item.selected_portion_id==portion.id
                                             %}selected{% endif %}>
@@ -234,21 +234,15 @@
                                         </option>
                                         {% endfor %}
                                     </select>
+                                    <button type="submit" class="btn btn-outline-success btn-sm  mt-sm-0 ">Save</button>
                                 </form>
-
-                                <div class="d-flex align-items-center justify-content-end w-100 w-md-auto gap-2">
-                                    <button type="submit" class="btn btn-outline-success btn-sm"
-                                        form="update-form-{{ item.log_id }}">
-                                        Save
-                                    </button>
-
-                                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal"
-                                        data-bs-target="#moveEntryModal" data-log-id="{{ item.log_id }}"
-                                        data-log-date="{{ date.isoformat() }}">
-                                        Move
-                                    </button>
-
-                                    <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}">
+                                <div class="d-flex w-lg-auto justify-content-end gap-2">
+                                    <button type="button" class="btn btn-outline-info btn-sm   mt-sm-0"
+                                        data-bs-toggle="modal" data-bs-target="#moveEntryModal"
+                                        data-log-id="{{ item.log_id }}"
+                                        data-log-date="{{ date.isoformat() }}">Move</button>
+                                    <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}"
+                                        class="  mt-sm-0">
                                         <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                                     </form>
                                 </div>
