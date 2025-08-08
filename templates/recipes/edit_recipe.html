@@ -185,9 +185,9 @@
                                         placeholder="Gram Weight">
                                 </div>
                                 <div class="d-flex mt-2 mt-sm-0 ms-sm-1">
-                                    <button type="submit" class="btn btn-sm btn-outline-success">Save</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-check2-circle"></i></button>
                                     <button type="button" class="btn btn-sm btn-outline-danger ms-1"
-                                        onclick="document.getElementById('delete-portion-{{ portion.id }}').submit();">&times;</button>
+                                        onclick="document.getElementById('delete-portion-{{ portion.id }}').submit();"><i class="bi bi-x-circle"></i></button>
                                 </div>
                             </form>
                             <form id="delete-portion-{{ portion.id }}"
@@ -266,10 +266,10 @@
                                     </select>
                                 </form>
                                 <div class="d-flex justify-content-end gap-1">
-                                    <button type="submit" form="update-ingredient-form-{{ ingredient.id }}" class="btn btn-sm btn-outline-success">Save</button>
+                                    <button type="submit" form="update-ingredient-form-{{ ingredient.id }}" class="btn btn-sm btn-outline-success"><i class="bi bi-check2-circle"></i></button>
                                     <form action="{{ url_for('recipes.delete_ingredient', ingredient_id=ingredient.id) }}"
                                         method="POST" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i></button>
                                     </form>
                                 </div>
                             </div>

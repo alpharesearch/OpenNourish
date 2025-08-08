@@ -72,10 +72,10 @@
                                         </option>
                                     {% endfor %}
                                 </select>
-                                <button type="submit" class="btn btn-outline-success btn-sm ms-2">Save</button>
+                                <button type="submit" class="btn btn-outline-success btn-sm ms-2"><i class="bi bi-check2-circle"></i></button>
                             </form>
                             <form action="{{ url_for('diary.delete_meal_item', meal_id=meal.id, item_id=item.id) }}" method="POST" class="d-inline-flex ms-2">
-                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i></button>
                             </form>
                         </div>
                     </div>

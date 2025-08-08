@@ -11,7 +11,9 @@
                 My Foods
             {% endif %}
         </h1>
-        <a href="{{ url_for('my_foods.new_my_food') }}" class="btn btn-primary">Create New Food</a>
+        <a href="{{ url_for('my_foods.new_my_food') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create New Food
+        </a>
     </div>
 
     <!-- FOODS LIST CARD -->
@@ -62,7 +64,7 @@
                         {% if food.user_id == current_user.id %}
                             <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                             <form action="{{ url_for('my_foods.delete_my_food', food_id=food.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i></button>
                             </form>
                         {% else %}
                             <form action="{{ url_for('my_foods.copy_my_food', food_id=food.id) }}" method="POST" class="d-inline">

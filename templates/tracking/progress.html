@@ -154,11 +154,11 @@
                         <label class="form-label d-lg-none">Body Fat %</label>
                         {{ forms[item.id].body_fat_percentage(class="form-control") }}
                     </div>
-                    <div class="col-12 col-lg-1">
-                        <button type="submit" class="btn btn-sm btn-outline-success w-100">Save</button>
-                    </div>
-                    <div class="col-12 col-lg-1">
-                        <button type="submit" class="btn btn-sm btn-outline-danger w-100" form="delete-form-{{ item.id }}">Delete</button>
+                    <div class="col-12 col-lg-2 d-flex justify-content-center gap-2">
+                        <div class="col-12 col-lg-2 d-flex justify-content-center gap-2">
+                            <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-check2-circle"></i></button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger" form="delete-form-{{ item.id }}"><i class="bi bi-x-circle"></i></button>
+                        </div>
                     </div>
                 </form>
                 <form id="delete-form-{{ item.id }}" action="{{ url_for('tracking.delete_check_in', check_in_id=item.id) }}" method="POST" class="d-none"></form>

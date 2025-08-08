@@ -120,9 +120,9 @@
                                 class="form-control form-control-sm" value="{{ portion.gram_weight }}" required>
                         </div>
                         <div class="col-12 d-flex justify-content-end mt-2">
-                            <button type="submit" class="btn btn-outline-success btn-sm">Save</button>
+                            <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-check2-circle"></i></button>
                             <button type="button" class="btn btn-outline-danger btn-sm ms-2"
-                                onclick="document.getElementById('delete-form-{{ portion.id }}').submit();">Delete</button>
+                                onclick="document.getElementById('delete-form-{{ portion.id }}').submit();"><i class="bi bi-x-circle"></i></button>
                         </div>
                     </div>
                 </form>

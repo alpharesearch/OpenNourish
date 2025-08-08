@@ -140,7 +140,7 @@ To ensure a consistent and semantically correct structure across all pages, new 
             <div>
                 <a href="..." class="btn btn-sm btn-outline-primary">Edit</a>
                 <form action="..." method="POST" class="d-inline">
-                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i></button>
                 </form>
             </div>
         </div>
@@ -179,6 +179,43 @@ To ensure that all floating-point numbers (e.g., nutritional values, weights) ar
     {{ form.calories_per_100g(class="form-control", value="%.2f"|format(my_food.calories_per_100g)) }}
     ```
 -   **Note:** This approach is suitable for display purposes. For data integrity, server-side validation and rounding should still be implemented in the relevant form or route logic to ensure the data is stored correctly, regardless of the frontend presentation.
+
+### 7.5. Icon Usage Conventions
+To ensure a consistent and intuitive user interface, all icons should be used purposefully and adhere to the following guidelines. The project uses [Bootstrap Icons](https://icons.getbootstrap.com/), which are now locally hosted.
+
+- **General Principle:** Whenever possible, icons should be paired with text labels for clarity (e.g., `<i class="bi bi-plus-circle"></i> Create New`). For compact spaces, such as in table rows, icon-only buttons are acceptable if the context makes their function clear.
+
+- **Primary Actions (Create, Add New):**
+  - **Icon:** `bi-plus-circle`
+  - **Usage:** For buttons that initiate the creation of a new item, like "Create New Recipe" or "Add New Food".
+
+- **Confirmation Actions (Save, Update):**
+  - **Icon:** `bi-check2-circle`
+  - **Usage:** For buttons that save or confirm changes, such as the small "Save" button next to an ingredient in a recipe.
+
+- **Destructive Actions (Delete, Remove):**
+  - **Icon:** `bi-x-circle`
+  - **Usage:** For buttons that delete an item. This provides a clear visual cue for a destructive action.
+
+- **Edit Actions:**
+  - **Icon:** `bi-pencil-square`
+  - **Usage:** For buttons that take the user to an edit page or enable editing functionality.
+
+- **View/Details Actions:**
+  - **Icon:** `bi-info-circle`
+  - **Usage:** For buttons that link to a detailed view of an item, like "View Recipe".
+
+- **Search Actions:**
+  - **Icon:** `bi-search`
+  - **Usage:** For search submission buttons.
+
+- **Clone/Copy Actions:**
+  - **Icon:** `bi-clipboard`
+  - **Usage:** For buttons that clone or copy an existing item, like "Clone Recipe".
+
+- **Move Actions:**
+  - **Icon:** `bi-arrows-move`
+  - **Usage:** For buttons that move an item from one location to another, such as moving a diary entry to a different date or meal.
 
 ## 8. Testing
 - **Framework:** Testing is done using the **pytest** framework.

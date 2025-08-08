@@ -11,7 +11,7 @@
                 My Meals
             {% endif %}
         </h1>
-        <a href="{{ url_for('diary.new_meal') }}" class="btn btn-primary">Create New Meal</a>
+        <a href="{{ url_for('diary.new_meal') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Create New Meal</a>
     </div>
 
     <!-- MEALS LIST CARD -->
@@ -106,7 +106,7 @@
                             {% if meal.user_id == current_user.id %}
                                 <a href="{{ url_for('diary.edit_meal', meal_id=meal.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                                 <form action="{{ url_for('diary.delete_meal', meal_id=meal.id) }}" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i></button>
                                 </form>
                             {% else %}
                                 <form action="{{ url_for('diary.copy_meal', meal_id=meal.id) }}" method="POST" class="d-inline">

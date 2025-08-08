@@ -72,7 +72,7 @@
                             {% if recipe.user_id == current_user.id %}
                                 <a href="{{ url_for('recipes.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                                 <form action="{{ url_for('recipes.delete_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i></button>
                                 </form>
                             {% else %}
                                 <form action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline">
