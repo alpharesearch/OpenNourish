@@ -47,7 +47,7 @@ OpenNourish is a free and open source food tracker.
 
 5. **Install Typst:**
    - Typst is an external dependency required for generating nutrition labels. For non-Docker installations, you need to ensure the `typst` executable is available in your system's PATH (e.g., by placing it in `/usr/local/bin`).
-   - Download the pre-built binary for your system from the official Typst website: [https://typst.app/docs/getting-started/](https://typst.app/docs/getting-started/)
+   - Download the pre-built binary for your system from the official Typst website: [https://github.com/typst/typst/](https://github.com/typst/typst/).
    - **Note:** The `typst/` directory in the project root is primarily used for the Docker build context. If you are running the application outside of Docker, ensure `typst` is installed and accessible via your system's PATH.
    - **Note:** The snapd version of Typst may have limitations. Refer to the "Typst PDF Generation Issues" in the Troubleshooting section for more details.
 
