@@ -1,6 +1,5 @@
 body {
     font-family: sans-serif;
-    margin: 2em;
 }
 
 h1,
@@ -139,5 +138,13 @@ html[data-bs-theme="dark"] h6 {
 @media (min-width: 768px) {
     .category-select {
         max-width: 220px;
+    }
+}
+
+/* Constrain body width on very large screens for better readability */
+@media (min-width: 1920px) {
+    body {
+        max-width: 1600px;
+        margin: 0 auto;
     }
 }
