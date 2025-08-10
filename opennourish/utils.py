@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from cryptography.fernet import Fernet
 from flask_mailing import Message
 from opennourish import mail
-from datetime import timedelta
+from datetime import datetime, timedelta
 from opennourish.time_utils import get_user_today
 from models import (
     db,
@@ -660,10 +660,11 @@ def generate_nutrition_label_pdf(fdc_id):
                 cwd=tmpdir,
             )
 
+            timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
             response = send_file(
                 pdf_file_path,
                 as_attachment=False,
-                download_name=f"nutrition_label_{fdc_id}.pdf",
+                download_name=f"nutrition_label_{fdc_id}_{timestamp}.pdf",
                 mimetype="application/pdf",
             )
             # Add headers to prevent caching
@@ -1017,7 +1018,8 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
                 cwd=tmpdir,
             )
 
-            download_name = f"{my_food.description}_{file_suffix}.pdf"
+            timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+            download_name = f"{my_food.description}_{file_suffix}_{timestamp}.pdf"
             response = send_file(
                 pdf_file_path,
                 as_attachment=False,
@@ -1327,7 +1329,8 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
                 cwd=tmpdir,
             )
 
-            download_name = f"{recipe.name}_{file_suffix}.pdf"
+            timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+            download_name = f"{recipe.name}_{file_suffix}_{timestamp}.pdf"
             response = send_file(
                 pdf_file_path,
                 as_attachment=False,
