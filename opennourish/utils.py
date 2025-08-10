@@ -2,6 +2,7 @@ import os
 import asyncio
 import subprocess
 import tempfile
+import re
 from constants import DIET_PRESETS, CORE_NUTRIENT_IDS, MEAL_CONFIG, DEFAULT_MEAL_NAMES
 from flask import send_file, current_app, render_template
 from types import SimpleNamespace
@@ -1019,7 +1020,8 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
             )
 
             timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-            download_name = f"{my_food.description}_{file_suffix}_{timestamp}.pdf"
+            safe_description = re.sub(r'[^\w\s-]', '', my_food.description).strip().replace(' ', '_')
+            download_name = f"{safe_description}_{file_suffix}_{timestamp}.pdf"
             response = send_file(
                 pdf_file_path,
                 as_attachment=False,
@@ -1330,7 +1332,8 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
             )
 
             timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-            download_name = f"{recipe.name}_{file_suffix}_{timestamp}.pdf"
+            safe_recipe_name = re.sub(r'[^\w\s-]', '', recipe.name).strip().replace(' ', '_')
+            download_name = f"{safe_recipe_name}_{file_suffix}_{timestamp}.pdf"
             response = send_file(
                 pdf_file_path,
                 as_attachment=False,
