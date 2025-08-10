@@ -327,6 +327,10 @@ def edit_recipe(recipe_id):
             item.type = "my_meal"
             search_results.append(item)
 
+    total_ingredient_weight = sum(
+        ing.amount_grams for ing in recipe.ingredients if ing.amount_grams
+    )
+
     return render_template(
         "recipes/edit_recipe.html",
         form=form,
@@ -336,6 +340,7 @@ def edit_recipe(recipe_id):
         search_term=query,
         ingredients_for_display=ingredients_for_display,
         timestamp=datetime.utcnow().timestamp(),
+        total_ingredient_weight=total_ingredient_weight,
     )
 
 

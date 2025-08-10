@@ -108,6 +108,7 @@
                 </div>
                 <div class="card-body">
                     <p>Define custom serving sizes for this recipe (e.g., "1 bowl", "1 slice").</p>
+                    <p class="text-muted small">The current total weight of all ingredients is {{ '%.2f'|format(total_ingredient_weight) }}g.</p>
                     {% if recipe %}
                     <form action="{{ url_for('recipes.add_recipe_portion', recipe_id=recipe.id) }}" method="POST"
                         class="mb-3">
