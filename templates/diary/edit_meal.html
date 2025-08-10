@@ -9,7 +9,7 @@
             <form action="{{ url_for('diary.copy_meal', meal_id=meal.id) }}" method="POST" class="d-inline">
                 <button type="submit" class="btn btn-outline-success"><i class="bi bi-clipboard"></i> Clone</button>
             </form>
-            <a href="{{ url_for('diary.my_meals') }}" class="btn btn-outline-secondary">Back to List</a>
+            <a href="{{ url_for('diary.my_meals') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-return-left"></i> Back to List</a>
         </div>
     </div>
 
@@ -48,11 +48,13 @@
                 <div class="row align-items-center">
                     <div class="col-lg-5">
                         {% if item.fdc_id %}
-                            {{ item.food.description }}
-                        {% elif item.my_food_id %}
-                            {{ item.my_food.description }}
+                        <a href="{{ url_for('main.food_detail', fdc_id=item.fdc_id) }}">{{ item.food.description }}</a>
+                        {%  elif item.my_food_id %}
+                        <a href="{{ url_for('my_foods.edit_my_food', food_id=item.my_food_id) }}">{{ item.my_food.description
+                            }}</a>
                         {% elif item.recipe_id %}
-                            {{ item.recipe.name }}
+                        <a href="{{ url_for('recipes.view_recipe', recipe_id=item.recipe_id) }}">{{ item.recipe.name
+                            }}</a>
                         {% endif %}
                         <p class="text-muted mb-0">
                             Calories: {{ "%.1f" % item.nutrition_summary.calories }} kcal | 

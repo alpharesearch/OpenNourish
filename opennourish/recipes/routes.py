@@ -538,6 +538,9 @@ def view_recipe(recipe_id):
                 "quantity": quantity,
                 "portion_description": portion_description,
                 "amount_grams": ingredient.amount_grams,
+                "fdc_id": ingredient.fdc_id,
+                "my_food_id": ingredient.my_food_id,
+                "recipe_id_link": ingredient.recipe_id_link,
             }
         )
 

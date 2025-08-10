@@ -21,7 +21,7 @@
             {% endif %}
             <a href="{{ url_for('recipes.generate_label_pdf', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank"><i class="bi bi-file-earmark-pdf"></i> 6x4 Lable</a>
             <a href="{{ url_for('recipes.generate_pdf_details', recipe_id=recipe.id) }}" class="btn btn-outline-info" target="_blank"><i class="bi bi-file-earmark-pdf"></i> 1 Page PDF</a>
-            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary">Back to List</a>
+            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-return-left"></i> Back to List</a>
         </div>
     </div>
 
@@ -46,7 +46,17 @@
                         <li class="list-group-item d-flex align-items-center">
                             <span class="d-inline-block text-end me-2" style="width: 60px;">{{ '%.2f'|format(ingredient.quantity) }}</span>
                             <span class="d-inline-block me-2" style="width: 120px;">{{ ingredient.portion_description }}</span>
-                            <span class="flex-grow-1">{{ ingredient.description }}</span>
+                            <span class="flex-grow-1">
+                                {% if ingredient.fdc_id %}
+                                    <a href="{{ url_for('main.food_detail', fdc_id=ingredient.fdc_id) }}">{{ ingredient.description }}</a>
+                                {% elif ingredient.my_food_id %}
+                                    <a href="{{ url_for('my_foods.edit_my_food', food_id=ingredient.my_food_id) }}">{{ ingredient.description }}</a>
+                                {% elif ingredient.recipe_id_link %}
+                                    <a href="{{ url_for('recipes.view_recipe', recipe_id=ingredient.recipe_id_link) }}">{{ ingredient.description }}</a>
+                                {% else %}
+                                    {{ ingredient.description }}
+                                {% endif %}
+                            </span>
                         </li>
                     {% else %}
                         <li class="list-group-item">No ingredients have been added to this recipe yet.</li>
@@ -62,7 +72,7 @@
                     Portions
                 </div>
                 <ul class="list-group list-group-flush">
-                    {% for portion in recipe.portions %}
+                    {% for portion in recipe.portions|sort(attribute='seq_num') %}
                         <li class="list-group-item">{{ portion.full_description_str_1 }} - {{ '%.2f'|format(portion.gram_weight) }}g</li>
                     {% else %}
                         <li class="list-group-item">No custom portions defined.</li>

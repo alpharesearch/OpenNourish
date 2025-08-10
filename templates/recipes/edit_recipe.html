@@ -24,7 +24,7 @@
                 target="_blank"><i class="bi bi-file-earmark-pdf"></i> 6x4 Label</a>
             <a href="{{ url_for('recipes.generate_pdf_details', recipe_id=recipe.id) }}" class="btn btn-outline-info"
                 target="_blank"><i class="bi bi-file-earmark-pdf"></i> 1 Page PDF</a>
-            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary">Back to List</a>
+            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-return-left"></i> Back to List</a>
         </div>
         {% endif %}
     </div>
@@ -233,11 +233,11 @@
                         <div class="col-md-6 mb-3 mb-md-0">
                             <h6>
                                 {% if ingredient.fdc_id %}
-                                {{ ingredient.food.description }}
+                                <a href="{{ url_for('main.food_detail', fdc_id=ingredient.fdc_id) }}">{{ ingredient.food.description }}</a>
                                 {% elif ingredient.my_food_id %}
-                                {{ ingredient.my_food.description }}
+                                <a href="{{ url_for('my_foods.edit_my_food', food_id=ingredient.my_food_id) }}">{{ ingredient.my_food.description }}</a>
                                 {% elif ingredient.recipe_id_link %}
-                                {{ ingredient.linked_recipe.name }} (Recipe)
+                                <a href="{{ url_for('recipes.view_recipe', recipe_id=ingredient.recipe_id_link) }}">{{ ingredient.linked_recipe.name }} (Recipe)</a>
                                 {% endif %}
                             </h6>
                             <small class="text-muted">

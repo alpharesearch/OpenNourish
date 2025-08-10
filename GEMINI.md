@@ -127,8 +127,8 @@ To ensure a consistent and semantically correct structure across all pages, new 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">Page Title</h1>
         <div>
-            <a href="..." class="btn btn-outline-primary">Primary Page Action (e.g., Add New)</a>
-            <a href="..." class="btn btn-outline-secondary">Back to List</a>
+            <a href="..." class="btn btn-outline-primary">Primary Page Action (e.g., <i class="bi bi-plus-circle"></i> Add New)</a>
+            <a href="..." class="btn btn-outline-secondary"><i class="bi bi-arrow-return-left"></i> Back to List</a>
         </div>
     </div>
 
