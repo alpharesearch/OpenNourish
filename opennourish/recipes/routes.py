@@ -83,6 +83,7 @@ def new_recipe():
             name=form.name.data,
             instructions=form.instructions.data,
             servings=form.servings.data,
+            final_weight_grams=form.final_weight_grams.data,
             is_public=form.is_public.data,
             food_category_id=form.food_category.data
             if form.food_category.data
@@ -230,6 +231,7 @@ def edit_recipe(recipe_id):
     servings_param = request.args.get("servings_param", type=float)
     name_param = request.args.get("name_param", type=str)
     instructions_param = request.args.get("instructions_param", type=str)
+    final_weight_grams_param = request.args.get("final_weight_grams_param", type=str)
 
     if servings_param is not None:
         form.servings.data = servings_param
@@ -237,6 +239,11 @@ def edit_recipe(recipe_id):
         form.name.data = name_param
     if instructions_param is not None:
         form.instructions.data = instructions_param
+    if final_weight_grams_param is not None:
+        try:
+            form.final_weight_grams.data = float(final_weight_grams_param)
+        except (ValueError, TypeError):
+            form.final_weight_grams.data = None
 
     portion_form = PortionForm()
 
@@ -246,6 +253,7 @@ def edit_recipe(recipe_id):
         recipe.instructions = form.instructions.data
         recipe.servings = form.servings.data
         recipe.upc = form.upc.data
+        recipe.final_weight_grams = form.final_weight_grams.data
 
         # Handle is_public based on email verification status
         if (
@@ -281,6 +289,11 @@ def edit_recipe(recipe_id):
             form.name.data = name_param
         if instructions_param is not None:
             form.instructions.data = instructions_param
+        if final_weight_grams_param is not None:
+            try:
+                form.final_weight_grams.data = float(final_weight_grams_param)
+            except (ValueError, TypeError):
+                form.final_weight_grams.data = None
 
     query = request.args.get("q")
     search_results = []
@@ -586,7 +599,22 @@ def auto_add_recipe_portion(recipe_id):
         flash("Invalid servings value provided.", "danger")
         return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
 
-    total_gram_weight = sum(ing.amount_grams for ing in recipe.ingredients)
+    # Use final_weight_grams from the form if available
+    final_weight_from_form = request.form.get("final_weight_grams", type=float)
+    if final_weight_from_form and final_weight_from_form > 0:
+        total_gram_weight = final_weight_from_form
+        flash("Portion created based on the final cooked weight of the recipe.", "info")
+    else:
+        total_gram_weight = sum(
+            ing.amount_grams
+            for ing in recipe.ingredients
+            if ing.amount_grams is not None
+        )
+        flash(
+            "Portion created based on the sum of ingredient weights. For better accuracy, you can provide a final cooked weight.",
+            "info",
+        )
+
     gram_weight_per_serving = total_gram_weight / servings_from_form
 
     new_portion = UnifiedPortion(
@@ -603,8 +631,7 @@ def auto_add_recipe_portion(recipe_id):
     db.session.commit()
     name_from_form = request.form.get("name", type=str)
     instructions_from_form = request.form.get("instructions", type=str)
-
-    # ... (existing code)
+    final_weight_grams_from_form = request.form.get("final_weight_grams", type=str)
 
     return redirect(
         url_for(
@@ -613,6 +640,7 @@ def auto_add_recipe_portion(recipe_id):
             servings_param=servings_from_form,
             name_param=name_from_form,
             instructions_param=instructions_from_form,
+            final_weight_grams_param=final_weight_grams_from_form,
         )
     )
 

@@ -302,6 +302,7 @@ class Recipe(db.Model):
     is_public = db.Column(db.Boolean, default=False, nullable=False, index=True)
     instructions = db.Column(db.Text)
     servings = db.Column(db.Float, default=1)
+    final_weight_grams = db.Column(db.Float, nullable=True)
     ingredients = db.relationship(
         "RecipeIngredient",
         backref="recipe",

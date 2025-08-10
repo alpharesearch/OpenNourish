@@ -63,6 +63,13 @@
                             </div>
                         </div>
                         <div class="mb-3">
+                            {{ form.final_weight_grams.label(class="form-label") }}
+                            {{ form.final_weight_grams(class="form-control") }}
+                            <small class="form-text text-muted">
+                                Optional. If you know the final weight of the cooked dish, enter it here. This will be used to calculate nutrition per serving portion more accurately. If left blank, the sum of ingredient weights will be used.
+                            </small>
+                        </div>
+                        <div class="mb-3">
                             {{ form.instructions.label(class="form-label") }}
                             {{ form.instructions(class="form-control", rows=5) }}
                         </div>
@@ -383,15 +390,6 @@
             autoPortionBtn.addEventListener('click', function (event) {
                 event.preventDefault(); // Stop the form from submitting to the default action
                 var form = document.getElementById('recipe-details-form');
-                var servingsInput = form.querySelector('input[name="servings"]');
-                var servingsValue = servingsInput ? servingsInput.value : '';
-
-                var hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'servings';
-                hiddenInput.value = servingsValue;
-                form.appendChild(hiddenInput);
-
                 form.action = "{{ url_for('recipes.auto_add_recipe_portion', recipe_id=recipe.id) }}";
                 form.submit();
             });

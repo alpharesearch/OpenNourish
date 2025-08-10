@@ -768,7 +768,15 @@ def calculate_recipe_nutrition_per_100g(recipe):
     Calculates the nutritional values per 100g for a given recipe.
     """
     total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
-    total_grams = sum(ing.amount_grams for ing in recipe.ingredients)
+    total_grams = (
+        recipe.final_weight_grams
+        if recipe.final_weight_grams and recipe.final_weight_grams > 0
+        else sum(
+            ing.amount_grams
+            for ing in recipe.ingredients
+            if ing.amount_grams is not None
+        )
+    )
 
     nutrition_per_100g = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}
 
@@ -788,8 +796,14 @@ def update_recipe_nutrition(recipe):
     The session is not committed here.
     """
     total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
-    total_grams = sum(
-        ing.amount_grams for ing in recipe.ingredients if ing.amount_grams is not None
+    total_grams = (
+        recipe.final_weight_grams
+        if recipe.final_weight_grams and recipe.final_weight_grams > 0
+        else sum(
+            ing.amount_grams
+            for ing in recipe.ingredients
+            if ing.amount_grams is not None
+        )
     )
 
     if total_grams > 0:

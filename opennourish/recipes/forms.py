@@ -18,6 +18,9 @@ class RecipeForm(FlaskForm):
     servings = FloatField(
         "Servings", validators=[DataRequired(), NumberRange(min=0.01)]
     )
+    final_weight_grams = FloatField(
+        "Final Cooked Weight (grams)", validators=[Optional(), NumberRange(min=0)]
+    )
     instructions = TextAreaField("Instructions", validators=[Optional()])
     upc = StringField("UPC Code", validators=[Optional()])
     is_public = BooleanField("Make this recipe public and searchable by other users?")
