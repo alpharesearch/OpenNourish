@@ -524,7 +524,16 @@ def _generate_typst_content(
     )
 
     if default_portion and default_portion.gram_weight > 0:
-        serving_size_str = _sanitize_for_typst(default_portion.full_description_str_1)
+        if default_portion.measure_unit_description == "g":
+            serving_size_str = _sanitize_for_typst(
+                default_portion.full_description_str_1
+            )
+        else:
+            serving_size_str = _sanitize_for_typst(
+                default_portion.full_description_str_1
+                + f" ({round(default_portion.gram_weight)}g)"
+            )
+
         scaling_factor = default_portion.gram_weight / 100.0
     else:
         # Fallback to 100g if no default portion is found
@@ -871,7 +880,16 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
     )
 
     if default_portion and default_portion.gram_weight > 0:
-        serving_size_str = _sanitize_for_typst(default_portion.full_description_str_1)
+        if default_portion.measure_unit_description == "g":
+            serving_size_str = _sanitize_for_typst(
+                default_portion.full_description_str_1
+            )
+        else:
+            serving_size_str = _sanitize_for_typst(
+                default_portion.full_description_str_1
+                + f" ({round(default_portion.gram_weight)}g)"
+            )
+
         scaling_factor = default_portion.gram_weight / 100.0
     else:
         # Fallback to 100g if no default portion is found
@@ -1108,7 +1126,16 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
     )
 
     if default_portion and default_portion.gram_weight > 0:
-        serving_size_str = _sanitize_for_typst(default_portion.full_description_str_1)
+        if default_portion.measure_unit_description == "g":
+            serving_size_str = _sanitize_for_typst(
+                default_portion.full_description_str_1
+            )
+        else:
+            serving_size_str = _sanitize_for_typst(
+                default_portion.full_description_str_1
+                + f" ({round(default_portion.gram_weight)}g)"
+            )
+
         scaling_factor = default_portion.gram_weight / 100.0
     else:
         # Fallback to 100g if no default portion is found
