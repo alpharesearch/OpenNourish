@@ -20,9 +20,9 @@
             </form>
             <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info">View
                 Recipe</a>
-            <a href="{{ url_for('recipes.generate_label_pdf', recipe_id=recipe.id) }}" class="btn btn-outline-info"
+            <a href="{{ url_for('recipes.generate_label_pdf', recipe_id=recipe.id, _t=timestamp) }}" class="btn btn-outline-info"
                 target="_blank"><i class="bi bi-file-earmark-pdf"></i> 6x4 Label</a>
-            <a href="{{ url_for('recipes.generate_pdf_details', recipe_id=recipe.id) }}" class="btn btn-outline-info"
+            <a href="{{ url_for('recipes.generate_pdf_details', recipe_id=recipe.id, _t=timestamp) }}" class="btn btn-outline-info"
                 target="_blank"><i class="bi bi-file-earmark-pdf"></i> 1 Page PDF</a>
             <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-return-left"></i> Back to List</a>
         </div>

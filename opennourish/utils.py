@@ -591,7 +591,7 @@ def _generate_typst_content(
 """
 
     if include_extra_info:
-        typst_content = (
+        typst_content_data = (
             typst_content_data
             + f"""
 #set page(paper: "a4", header: align(right + horizon)[OpenNourish Food fact sheet], columns: 2)
@@ -604,9 +604,22 @@ def _generate_typst_content(
 )[
 = {sanitized_food_description}
 ]
+"""
+        )
+
+    if include_extra_info and food.upc:
+        typst_content_data = (
+            typst_content_data
+            + f"""
 == UPC:
 #ean13(scale:(1.8, .5), "{upc_str}")
+"""
+        )
 
+    if include_extra_info:
+        typst_content = (
+            typst_content_data
+            + f"""
 == Ingredients: 
 {ingredients_str}
 
@@ -944,23 +957,50 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
     if label_only:
         typst_content = (
             typst_content_data
-            + f"""
+            + """
 #set page(width: 2in, height: 1in)
 #set page(margin: (x: 0.1cm, y: 0.1cm))
 #set text(font: "Liberation Sans", size: 8pt)
+"""
+        )
+
+    if label_only and my_food.upc:
+        typst_content = (
+            typst_content
+            + f"""
 #ean13(scale:(1.6, .5), "{upc_str}")
+"""
+        )
+
+    if label_only:
+        typst_content = (
+            typst_content
+            + f"""
 {sanitized_food_name}
 """
         )
     else:
         typst_content = (
             typst_content_data
-            + f"""
+            + """
 #set page(width: 6in, height: 4in, columns: 2)
 #set page(margin: (x: 0.2in, y: 0.05in))
 #set text(font: "Liberation Sans", size: 8pt)
-#ean13(scale:(2.0, .5), "{upc_str}")
+"""
+        )
 
+    if not label_only and my_food.upc:
+        typst_content = (
+            typst_content
+            + f"""
+#ean13(scale:(2.0, .5), "{upc_str}")
+"""
+        )
+
+    if not label_only:
+        typst_content = (
+            typst_content
+            + f"""
 #box(width: 3.25in, height: 3in, clip: true, 
 [== My Food: 
 {sanitized_food_name}
@@ -1020,7 +1060,9 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
             )
 
             timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-            safe_description = re.sub(r'[^\w\s-]', '', my_food.description).strip().replace(' ', '_')
+            safe_description = (
+                re.sub(r"[^\w\s-]", "", my_food.description).strip().replace(" ", "_")
+            )
             download_name = f"{safe_description}_{file_suffix}_{timestamp}.pdf"
             response = send_file(
                 pdf_file_path,
@@ -1214,12 +1256,25 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
     if label_only:
         typst_content = (
             typst_content_data
-            + f"""
+            + """
 #set page(width: 6in, height: 4in, columns: 2)
 #set page(margin: (x: 0.2in, y: 0.05in))
 #set text(font: "Liberation Sans", size: 8pt)
-#ean13(scale:(2.0, .5), "{upc_str}")
+"""
+        )
 
+    if label_only and recipe.upc:
+        typst_content = (
+            typst_content
+            + f"""
+#ean13(scale:(1.6, .5), "{upc_str}")
+"""
+        )
+
+    if label_only:
+        typst_content = (
+            typst_content
+            + f"""
 #box(width: 3.25in, height: 3in, clip: true, 
 [== Recipe: 
 {sanitized_recipe_name}
@@ -1248,7 +1303,21 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
 {sanitized_recipe_instructions}])
 #colbreak()
 #set align(right)
+"""
+        )
+
+    if not label_only and recipe.upc:
+        typst_content = (
+            typst_content
+            + f"""
 #ean13(scale:(2.0, .5), "{upc_str}")
+"""
+        )
+
+    if not label_only:
+        typst_content = (
+            typst_content
+            + f"""
 == Portion Sizes: 
 {portions_str}
 == Label:
@@ -1332,7 +1401,9 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
             )
 
             timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-            safe_recipe_name = re.sub(r'[^\w\s-]', '', recipe.name).strip().replace(' ', '_')
+            safe_recipe_name = (
+                re.sub(r"[^\w\s-]", "", recipe.name).strip().replace(" ", "_")
+            )
             download_name = f"{safe_recipe_name}_{file_suffix}_{timestamp}.pdf"
             response = send_file(
                 pdf_file_path,

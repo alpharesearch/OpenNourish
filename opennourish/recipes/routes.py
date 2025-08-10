@@ -7,6 +7,7 @@ from flask import (
     flash,
     current_app,
 )
+from datetime import datetime
 from flask_login import login_required, current_user
 from models import (
     db,
@@ -321,6 +322,7 @@ def edit_recipe(recipe_id):
         get_available_portions=get_available_portions,
         search_term=query,
         ingredients_for_display=ingredients_for_display,
+        timestamp=datetime.utcnow().timestamp(),
     )
 
 
@@ -551,6 +553,7 @@ def view_recipe(recipe_id):
         ingredients=ingredient_details,
         totals=total_nutrition,
         form=form,
+        timestamp=datetime.utcnow().timestamp(),
     )
 
 

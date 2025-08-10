@@ -7,6 +7,7 @@ from flask import (
     Blueprint,
     current_app,
 )
+from datetime import datetime
 from flask_login import login_required, current_user
 from models import (
     db,
@@ -261,6 +262,7 @@ def edit_my_food(food_id):
         portions=portions,
         selected_portion=selected_portion,
         scaled_nutrients=scaled_nutrients,
+        timestamp=datetime.utcnow().timestamp(),
     )
 
 

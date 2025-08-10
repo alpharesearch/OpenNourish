@@ -8,6 +8,7 @@ from flask import (
     current_app,
     jsonify,
 )
+from datetime import datetime
 from flask_login import current_user
 from models import db, Food
 import os
@@ -52,7 +53,11 @@ def food_detail(fdc_id):
     portions = food.portions
 
     return render_template(
-        "food_detail.html", food=food, search_term=q, portions=portions
+        "food_detail.html",
+        food=food,
+        search_term=q,
+        portions=portions,
+        timestamp=datetime.utcnow().timestamp(),
     )
 
 
