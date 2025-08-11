@@ -33,6 +33,7 @@ from opennourish.utils import (
     remove_leading_one,
     update_recipe_nutrition,
     generate_recipe_label_pdf,
+    generate_recipe_label_svg,
 )
 
 recipes_bp = Blueprint("recipes", __name__, template_folder="templates")
@@ -398,7 +399,7 @@ def update_ingredient(ingredient_id):
     )
 
 
-@recipes_bp.route("/ingredient/<int:ingredient_id>/move_up", methods=["POST"])
+@recipes_bp.route("/recipe/ingredient/<int:ingredient_id>/move_up", methods=["POST"])
 @login_required
 def move_recipe_ingredient_up(ingredient_id):
     ingredient_to_move = db.session.get(RecipeIngredient, ingredient_id)
@@ -450,13 +451,30 @@ def move_recipe_ingredient_up(ingredient_id):
     )
 
 
-@recipes_bp.route("/ingredient/<int:ingredient_id>/move_down", methods=["POST"])
+@recipes_bp.route("/recipe/ingredient/<int:ingredient_id>/move_down", methods=["POST"])
 @login_required
 def move_recipe_ingredient_down(ingredient_id):
     ingredient_to_move = db.session.get(RecipeIngredient, ingredient_id)
     if not ingredient_to_move or ingredient_to_move.recipe.user_id != current_user.id:
         flash("Ingredient not found or unauthorized.", "danger")
         return redirect(url_for("recipes.recipes"))
+
+    if ingredient_to_move.seq_num is None:
+        # Assign sequence numbers to all ingredients of this recipe if any are missing
+        ingredients = (
+            RecipeIngredient.query.filter_by(recipe_id=ingredient_to_move.recipe_id)
+            .order_by(
+                RecipeIngredient.id
+            )  # Use ID for initial assignment if seq_num is missing
+            .all()
+        )
+        for i, ing in enumerate(ingredients):
+            ing.seq_num = i + 1
+        db.session.commit()
+        flash("Assigned sequence numbers to all ingredients. Please try again.", "info")
+        return redirect(
+            url_for("recipes.edit_recipe", recipe_id=ingredient_to_move.recipe_id)
+        )
 
     # Find the ingredient with the next higher seq_num
     ingredient_to_swap_with = (
@@ -735,6 +753,12 @@ def generate_label_pdf(recipe_id):
         flash("You are not authorized to view this recipe.", "danger")
         return redirect(url_for("recipes.recipes"))
     return generate_recipe_label_pdf(recipe_id, label_only=True)
+
+
+@recipes_bp.route("/<int:recipe_id>/nutrition-label.svg")
+@login_required
+def nutrition_label_svg(recipe_id):
+    return generate_recipe_label_svg(recipe_id)
 
 
 @recipes_bp.route("/<int:recipe_id>/generate_pdf_details")

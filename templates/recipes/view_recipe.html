@@ -109,6 +109,16 @@
                     {% endif %}
                 </div>
             </div>
+            <!-- NUTRITION LABEL CARD -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Nutrition Label</h2>
+                </div>
+                <div class="card-body">
+                    <img src="{{ url_for('recipes.nutrition_label_svg', recipe_id=recipe.id) }}" alt="Nutrition Label"
+                        class="img-fluid">
+                </div>
+            </div>
 
             
         </div>

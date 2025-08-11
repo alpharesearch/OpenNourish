@@ -1121,7 +1121,9 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
             )
 
 
-def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False):
+def _generate_typst_content_recipe(
+    recipe, nutrients_for_label, label_only=False, svg_only=False
+):
     def _sanitize_for_typst(text):
         """Sanitizes text to be safely included in Typst markup by escaping special characters."""
         if not isinstance(text, str):
@@ -1294,25 +1296,32 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
 )
 """
 
-    if label_only:
+    if svg_only:
+        typst_content = (
+            typst_content_data
+            + """
+#set page(width: 12cm, height: 18cm)
+#show: nutrition-label-nam(data)
+"""
+        )
+    elif label_only:
         typst_content = (
             typst_content_data
             + """
 #set page(width: 6in, height: 4in, columns: 2)
 #set page(margin: (x: 0.2in, y: 0.05in))
-#set text(font: "Liberation Sans", size: 8pt)
+#set text(font: \"Liberation Sans\", size: 8pt)
 """
         )
 
-    if label_only and recipe.upc:
-        typst_content = (
-            typst_content
-            + f"""
-#ean13(scale:(1.6, .5), "{upc_str}")
+        if recipe.upc:
+            typst_content = (
+                typst_content
+                + f"""
+#ean13(scale:(1.6, .5), \"{upc_str}\")
 """
-        )
+            )
 
-    if label_only:
         typst_content = (
             typst_content
             + f"""
@@ -1332,9 +1341,9 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
         typst_content = (
             typst_content_data
             + f"""
-#set page(paper: "us-letter", columns: 2)
+#set page(paper: \"us-letter\", columns: 2)
 #set page(margin: (x: 0.75in, y: 0.75in))
-#set text(font: "Liberation Sans", size: 10pt)
+#set text(font: \"Liberation Sans\", size: 10pt)
 
 #box(width: 4.25in, height: 8in, clip: true, 
 [= {sanitized_recipe_name}
@@ -1347,15 +1356,14 @@ def _generate_typst_content_recipe(recipe, nutrients_for_label, label_only=False
 """
         )
 
-    if not label_only and recipe.upc:
-        typst_content = (
-            typst_content
-            + f"""
-#ean13(scale:(2.0, .5), "{upc_str}")
+        if recipe.upc:
+            typst_content = (
+                typst_content
+                + f"""
+#ean13(scale:(2.0, .5), \"{upc_str}\")
 """
-        )
+            )
 
-    if not label_only:
         typst_content = (
             typst_content
             + f"""
@@ -1463,6 +1471,64 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
                 f"Typst compilation failed for recipe_id {recipe_id}: {e.stderr}"
             )
             return f"Error generating PDF: {e.stderr}", 500
+        except FileNotFoundError:
+            current_app.logger.error("Typst executable not found.")
+            return (
+                "Typst executable not found. Please ensure Typst is installed and in your system's PATH.",
+                500,
+            )
+
+
+def generate_recipe_label_svg(recipe_id):
+    recipe, nutrients_for_label = _get_nutrition_label_data_recipe(recipe_id)
+    if not recipe:
+        return "Recipe not found", 404
+
+    typst_content = _generate_typst_content_recipe(
+        recipe, nutrients_for_label, svg_only=True
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        typ_file_path = os.path.join(tmpdir, f"recipe_label_{recipe_id}.typ")
+        svg_file_path = os.path.join(tmpdir, f"recipe_label_{recipe_id}.svg")
+
+        with open(typ_file_path, "w", encoding="utf-8") as f:
+            f.write(typst_content)
+
+        try:
+            # Run Typst command
+            subprocess.run(
+                [
+                    "typst",
+                    "compile",
+                    "--format",
+                    "svg",
+                    os.path.basename(typ_file_path),
+                    os.path.basename(svg_file_path),
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=tmpdir,
+            )
+
+            response = send_file(
+                svg_file_path,
+                as_attachment=False,
+                download_name=f"recipe_label_{recipe_id}.svg",
+                mimetype="image/svg+xml",
+            )
+            # Add headers to prevent caching
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            return response
+
+        except subprocess.CalledProcessError as e:
+            current_app.logger.error(
+                f"Typst compilation failed for recipe_id {recipe_id}: {e.stderr}"
+            )
+            return f"Error generating SVG: {e.stderr}", 500
         except FileNotFoundError:
             current_app.logger.error("Typst executable not found.")
             return (
