@@ -333,7 +333,7 @@
             if (prevLink && nextLink) {
                 let touchstartX = 0;
                 let touchendX = 0;
-                const swipeThreshold = 50; // minimum distance for a swipe in pixels
+                const swipeThreshold = 100; // minimum distance for a swipe in pixels
 
                 document.addEventListener('touchstart', function (event) {
                     touchstartX = event.changedTouches[0].screenX;
