@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+<a id="next-page-link" href="{{ url_for('diary.my_meals') }}" style="display: none;"></a>
 <div class="container mt-4">
     <!-- PAGE HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -116,4 +117,45 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const prevLink = document.getElementById('prev-page-link');
+    const nextLink = document.getElementById('next-page-link');
+
+    if (prevLink || nextLink) {
+        let touchstartX = 0;
+        let touchendX = 0;
+        const swipeThreshold = 100; // minimum distance for a swipe in pixels
+
+        document.addEventListener('touchstart', function (event) {
+            touchstartX = event.changedTouches[0].screenX;
+        }, { passive: true });
+
+        document.addEventListener('touchend', function (event) {
+            touchendX = event.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const swipeDistance = touchendX - touchstartX;
+
+            if (Math.abs(swipeDistance) < swipeThreshold) {
+                return; // not a swipe
+            }
+
+            if (touchendX < touchstartX && nextLink) {
+                // Swiped left
+                window.location.href = nextLink.href;
+            }
+
+            if (touchendX > touchstartX && prevLink) {
+                // Swiped right
+                window.location.href = prevLink.href;
+            }
+        }
+    }
+});
+</script>
 {% endblock %}

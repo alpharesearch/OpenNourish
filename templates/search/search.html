@@ -38,6 +38,7 @@
 {% endmacro %}
 
 {% block content %}
+    <a id="prev-page-link" href="{{ url_for('recipes.recipes') }}" style="display: none;"></a>
     <h1>Unified Search</h1>
 
     <form method="get" action="{{ url_for('search.search') }}" class="mb-4">
@@ -453,6 +454,45 @@ document.addEventListener('DOMContentLoaded', function () {
                 searchForm.submit();
             }
         });
+    }
+
+    const searchMode = urlParams.get('search_mode');
+    if (searchMode === 'usda_only') {
+        const prevLink = document.getElementById('prev-page-link');
+        const nextLink = document.getElementById('next-page-link');
+
+        if (prevLink || nextLink) {
+            let touchstartX = 0;
+            let touchendX = 0;
+            const swipeThreshold = 100; // minimum distance for a swipe in pixels
+
+            document.addEventListener('touchstart', function (event) {
+                touchstartX = event.changedTouches[0].screenX;
+            }, { passive: true });
+
+            document.addEventListener('touchend', function (event) {
+                touchendX = event.changedTouches[0].screenX;
+                handleSwipe();
+            }, { passive: true });
+
+            function handleSwipe() {
+                const swipeDistance = touchendX - touchstartX;
+
+                if (Math.abs(swipeDistance) < swipeThreshold) {
+                    return; // not a swipe
+                }
+
+                if (touchendX < touchstartX && nextLink) {
+                    // Swiped left
+                    window.location.href = nextLink.href;
+                }
+
+                if (touchendX > touchstartX && prevLink) {
+                    // Swiped right
+                    window.location.href = prevLink.href;
+                }
+            }
+        }
     }
 });
 </script>
