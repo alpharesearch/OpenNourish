@@ -49,7 +49,7 @@
                         <small class="text-muted">
                             Calories: {{ food.calories_per_100g|default(0)|round(0) }} kcal/100g |
                             Protein: {{ food.protein_per_100g|default(0)|round(1) }}g |
-                            Carbs: {{ food.carbs_per_100g|default(0)|round(1) }}g |
+                            Carbs: {{ food.carbs_per_100g|default(0)|round(1) }}g (Net: {{ (food.carbs_per_100g|default(0) - food.fiber_per_100g|default(0))|abs|round(1) }}g) |
                             Fat: {{ food.fat_per_100g|default(0)|round(1) }}g
                         </small>
                     </div>

@@ -63,17 +63,33 @@
                     <h5>{{ label }}</h5>
                     <small class="text-muted d-block mb-1">
                         Goal: {{ "%.1f" % goals[key] }}g | Consumed: {{ "%.1f" % totals[key] }}g
+                        {% if key == 'carbs' %}
+                            (Net: {{ "%.1f" % totals.net_carbs }}g)
+                        {% endif %}
                     </small>
                     <p class="mb-2">
                         Remaining: {{ "%.1f" % remaining[key] }} g
                     </p>
                     <div class="progress" style="height: 15px;">
-                        {% set percentage = (totals[key] / goals[key]) * 100 if goals[key] > 0 else 0 %}
-                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
-                            role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}"
-                            aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
-                            {{ "%.1f" % percentage }}%
-                        </div>
+                        {% if key == 'carbs' %}
+                            {% set total_carb_percentage = (totals.carbs / goals.carbs) * 100 if goals.carbs > 0 else 0 %}
+                            {% set net_carb_percentage_of_goal = (totals.net_carbs / goals.carbs) * 100 if goals.carbs > 0 else 0 %}
+                            {% set fiber_percentage_of_goal = ((totals.carbs - totals.net_carbs) / goals.carbs) * 100 if goals.carbs > 0 else 0 %}
+                            
+                            {% set bar_class = 'bg-danger' if total_carb_percentage >= 100 else 'bg-success' %}
+                    
+                            <div class="progress-bar progress-bar-striped {{ bar_class }}" role="progressbar" style="width: {{ net_carb_percentage_of_goal }}%" aria-valuenow="{{ totals.net_carbs }}" aria-valuemin="0" aria-valuemax="{{ goals.carbs }}">
+                                {{ "%.1f" % total_carb_percentage }}%
+                            </div>
+                            <div class="progress-bar {{ bar_class }}" role="progressbar" style="width: {{ fiber_percentage_of_goal }}%" aria-valuenow="{{ totals.carbs - totals.net_carbs }}" aria-valuemin="0" aria-valuemax="{{ goals.carbs }}"></div>
+                        {% else %}
+                            {% set percentage = (totals[key] / goals[key]) * 100 if goals[key] > 0 else 0 %}
+                            <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
+                                role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}"
+                                aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
+                                {{ "%.1f" % percentage }}%
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -97,18 +113,34 @@
                     <small class="text-muted d-block mb-1">
                         Goal: {{ "%.0f"|format(weekly_goals[key]) }} {{ unit }} | Consumed: {{
                         "%.0f"|format(weekly_totals[key]) }} {{ unit }}
+                        {% if key == 'carbs' %}
+                            (Net: {{ "%.0f"|format(weekly_totals.net_carbs) }}g)
+                        {% endif %}
                     </small>
                     <div class="progress-container position-relative" style="height: 20px;">
-                        {% set percentage = (weekly_totals[key] / weekly_goals[key]) * 100 if weekly_goals[key] > 0 else
-                        0 %}
-                        <div class="progress" style="height: 100%;">
-                            <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
-                                role="progressbar" style="width: {{ percentage }}%;"
-                                aria-valuenow="{{ weekly_totals[key] }}" aria-valuemin="0"
-                                aria-valuemax="{{ weekly_goals[key] }}">
-                                {{ "%.0f"|format(percentage) }}%
+                        {% if key == 'carbs' %}
+                            {% set total_carb_percentage = (weekly_totals.carbs / weekly_goals.carbs) * 100 if weekly_goals.carbs > 0 else 0 %}
+                            {% set net_carb_percentage_of_goal = (weekly_totals.net_carbs / weekly_goals.carbs) * 100 if weekly_goals.carbs > 0 else 0 %}
+                            {% set fiber_percentage_of_goal = ((weekly_totals.carbs - weekly_totals.net_carbs) / weekly_goals.carbs) * 100 if weekly_goals.carbs > 0 else 0 %}
+                            
+                            {% set bar_class = 'bg-danger' if total_carb_percentage >= 100 else 'bg-success' %}
+                            <div class="progress" style="height: 100%;">
+                                <div class="progress-bar progress-bar-striped {{ bar_class }}" role="progressbar" style="width: {{ net_carb_percentage_of_goal }}%" aria-valuenow="{{ weekly_totals.net_carbs }}" aria-valuemin="0" aria-valuemax="{{ weekly_goals.carbs }}">
+                                    {{ "%.0f"|format(total_carb_percentage) }}%
+                                </div>
+                                <div class="progress-bar {{ bar_class }}" role="progressbar" style="width: {{ fiber_percentage_of_goal }}%" aria-valuenow="{{ weekly_totals.carbs - weekly_totals.net_carbs }}" aria-valuemin="0" aria-valuemax="{{ weekly_goals.carbs }}"></div>
                             </div>
-                        </div>
+                        {% else %}
+                            {% set percentage = (weekly_totals[key] / weekly_goals[key]) * 100 if weekly_goals[key] > 0 else 0 %}
+                            <div class="progress" style="height: 100%;">
+                                <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
+                                    role="progressbar" style="width: {{ percentage }}%;"
+                                    aria-valuenow="{{ weekly_totals[key] }}" aria-valuemin="0"
+                                    aria-valuemax="{{ weekly_goals[key] }}">
+                                    {{ "%.0f"|format(percentage) }}%
+                                </div>
+                            </div>
+                        {% endif %}
                         {% set expected_percentage = (days_elapsed_in_week / 7) * 100 %}
                         <div class="progress-marker" style="left: {{ expected_percentage }}%;"
                             title="Expected progress for today"></div>

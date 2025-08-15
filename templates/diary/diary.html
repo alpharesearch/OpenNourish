@@ -71,14 +71,30 @@
                     <h5 class="mb-1">{{ label }} Progress</h5>
                     <small class="text-muted d-block mb-1">
                         Goal: {{ "%.1f" % goals[key] }}g | Consumed: {{ "%.1f" % totals[key] }}g
+                        {% if key == 'carbs' %}
+                            (Net: {{ "%.1f" % totals.net_carbs }}g)
+                        {% endif %}
                     </small>
                     <div class="progress" style="height: 15px;">
-                        {% set percentage = (totals[key] / goals[key]) * 100 if goals[key] > 0 else 0 %}
-                        <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
-                            role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}"
-                            aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
-                            {{ "%.1f" % percentage }}%
-                        </div>
+                        {% if key == 'carbs' %}
+                            {% set total_carb_percentage = (totals.carbs / goals.carbs) * 100 if goals.carbs > 0 else 0 %}
+                            {% set net_carb_percentage_of_goal = (totals.net_carbs / goals.carbs) * 100 if goals.carbs > 0 else 0 %}
+                            {% set fiber_percentage_of_goal = ((totals.carbs - totals.net_carbs) / goals.carbs) * 100 if goals.carbs > 0 else 0 %}
+                            
+                            {% set bar_class = 'bg-danger' if total_carb_percentage >= 100 else 'bg-success' %}
+                    
+                            <div class="progress-bar progress-bar-striped {{ bar_class }}" role="progressbar" style="width: {{ net_carb_percentage_of_goal }}%" aria-valuenow="{{ totals.net_carbs }}" aria-valuemin="0" aria-valuemax="{{ goals.carbs }}">
+                                {{ "%.1f" % total_carb_percentage }}%
+                            </div>
+                            <div class="progress-bar {{ bar_class }}" role="progressbar" style="width: {{ fiber_percentage_of_goal }}%" aria-valuenow="{{ totals.carbs - totals.net_carbs }}" aria-valuemin="0" aria-valuemax="{{ goals.carbs }}"></div>
+                        {% else %}
+                            {% set percentage = (totals[key] / goals[key]) * 100 if goals[key] > 0 else 0 %}
+                            <div class="progress-bar {% if percentage >= 100 %}bg-danger{% else %}bg-success{% endif %}"
+                                role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ totals[key] }}"
+                                aria-valuemin="0" aria-valuemax="{{ goals[key] }}">
+                                {{ "%.1f" % percentage }}%
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -105,7 +121,7 @@
                     <span class="text-muted small">
                         {{ meal_totals[meal_name].calories|round(0) }}kcal |
                         Fat: {{ meal_totals[meal_name].fat|round(1) }}g |
-                        Carbs: {{ meal_totals[meal_name].carbs|round(1) }}g |
+                        Carbs: {{ meal_totals[meal_name].carbs|round(1) }}g (Net: {{ (meal_totals[meal_name].carbs - meal_totals[meal_name].fiber)|abs|round(1) }}g) |
                         Prot: {{ meal_totals[meal_name].protein|round(1) }}g
                     </span>
                     {% endif %}
@@ -225,7 +241,7 @@
                             <small class="text-muted">
                                 {{ item.nutrition.calories|round(0) }} kcal |
                                 Fat: {{ item.nutrition.fat|round(1) }}g |
-                                Carbs: {{ item.nutrition.carbs|round(1) }}g |
+                                Carbs: {{ item.nutrition.carbs|round(1) }}g (Net: {{ item.nutrition.net_carbs|round(1) }}g) |
                                 Prot: {{ item.nutrition.protein|round(1) }}g
 
                             </small>

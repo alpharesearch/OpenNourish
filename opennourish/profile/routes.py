@@ -227,7 +227,7 @@ def diary(username, log_date_str=None):
     }
 
     meal_totals = {
-        meal_name: {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}
+        meal_name: {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0}
         for meal_name in meals
     }
 
@@ -279,6 +279,7 @@ def diary(username, log_date_str=None):
         meal_totals[meal_key]["protein"] += nutrition["protein"]
         meal_totals[meal_key]["carbs"] += nutrition["carbs"]
         meal_totals[meal_key]["fat"] += nutrition["fat"]
+        meal_totals[meal_key]["fiber"] += nutrition["fiber"]
 
         meals[meal_key].append(
             {

@@ -302,6 +302,7 @@ def calculate_nutrition_for_items(items, processed_recipes=None):
         "calcium": 0,
         "iron": 0,
         "potassium": 0,
+        "net_carbs": 0,
     }
 
     # Get nutrient IDs for common nutrients to avoid repeated lookups
@@ -395,6 +396,8 @@ def calculate_nutrition_for_items(items, processed_recipes=None):
 
                 for key, value in nested_nutrition.items():
                     totals[key] += value * scaling_factor
+
+    totals["net_carbs"] = max(0, totals.get("carbs", 0) - totals.get("fiber", 0))
 
     return totals
 
@@ -778,14 +781,29 @@ def calculate_recipe_nutrition_per_100g(recipe):
         )
     )
 
-    nutrition_per_100g = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}
+    nutrition_per_100g = {
+        "calories": 0,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 0,
+        "fiber": 0,
+        "net_carbs": 0,
+    }
 
     if total_grams > 0:
         scaling_factor = 100.0 / total_grams
-        nutrition_per_100g["calories"] = total_nutrition["calories"] * scaling_factor
-        nutrition_per_100g["protein"] = total_nutrition["protein"] * scaling_factor
-        nutrition_per_100g["carbs"] = total_nutrition["carbs"] * scaling_factor
-        nutrition_per_100g["fat"] = total_nutrition["fat"] * scaling_factor
+        nutrition_per_100g["calories"] = (
+            total_nutrition.get("calories", 0) * scaling_factor
+        )
+        nutrition_per_100g["protein"] = (
+            total_nutrition.get("protein", 0) * scaling_factor
+        )
+        nutrition_per_100g["carbs"] = total_nutrition.get("carbs", 0) * scaling_factor
+        nutrition_per_100g["fat"] = total_nutrition.get("fat", 0) * scaling_factor
+        nutrition_per_100g["fiber"] = total_nutrition.get("fiber", 0) * scaling_factor
+        nutrition_per_100g["net_carbs"] = max(
+            0, nutrition_per_100g["carbs"] - nutrition_per_100g["fiber"]
+        )
 
     return nutrition_per_100g
 

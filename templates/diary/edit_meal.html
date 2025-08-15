@@ -59,7 +59,7 @@
                         <p class="text-muted mb-0">
                             Calories: {{ "%.1f" % item.nutrition_summary.calories }} kcal | 
                             Protein: {{ "%.1f" % item.nutrition_summary.protein }}g | 
-                            Carbs: {{ "%.1f" % item.nutrition_summary.carbs }}g | 
+                            Carbs: {{ "%.1f" % item.nutrition_summary.carbs }}g (Net: {{ "%.1f" % item.nutrition_summary.net_carbs }}g) | 
                             Fat: {{ "%.1f" % item.nutrition_summary.fat }}g
                         </p>
                     </div>

@@ -45,7 +45,7 @@
                                 <small class="text-muted">
                                     Calories: {{ meal.totals.calories|round(0) }} kcal |
                                     Protein: {{ meal.totals.protein|round(1) }}g |
-                                    Carbs: {{ meal.totals.carbs|round(1) }}g |
+                                    Carbs: {{ meal.totals.carbs|round(1) }}g (Net: {{ meal.totals.net_carbs|round(1) }}g) |
                                     Fat: {{ meal.totals.fat|round(1) }}g
                                 </small>
                                 <table class="table table-sm table-striped mt-2" style="table-layout: fixed;">
@@ -75,7 +75,7 @@
                                                 </td>
                                                 <td>
                                                     <small class="text-muted">
-                                                        {{ item.nutrition_summary.calories|round(0) }} / {{ item.nutrition_summary.protein|round(1) }} / {{ item.nutrition_summary.carbs|round(1) }} / {{ item.nutrition_summary.fat|round(1) }}
+                                                        {{ item.nutrition_summary.calories|round(0) }} / {{ item.nutrition_summary.protein|round(1) }} / {{ item.nutrition_summary.carbs|round(1) }} ({{item.nutrition_summary.net_carbs|round(1)}}) / {{ item.nutrition_summary.fat|round(1) }}
                                                     </small>
                                                 </td>
                                                 <td class="text-end">
@@ -91,7 +91,7 @@
                                     <strong>Totals:</strong> 
                                     Cal: {{ meal.totals.calories|round(0) }} | 
                                     P: {{ meal.totals.protein|round(1) }}g | 
-                                    C: {{ meal.totals.carbs|round(1) }}g | 
+                                    C: {{ meal.totals.carbs|round(1) }}g (Net: {{meal.totals.net_carbs|round(1)}}g) | 
                                     F: {{ meal.totals.fat|round(1) }}g
                                 </small>
                                 <ul class="list-unstyled mb-0">
