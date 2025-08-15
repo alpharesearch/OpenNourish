@@ -80,6 +80,7 @@ docker push ${REGISTRY_URL}/opennourish-app:latest
 docker push ${REGISTRY_URL}/opennourish-app:${IMAGE_VERSION}
 docker push ${REGISTRY_URL}/opennourish-nginx:latest
 docker push ${REGISTRY_URL}/opennourish-nginx:${IMAGE_VERSION}
+docker logout ${REGISTRY_URL}
 
 if [ $? -ne 0 ]; then
     echo -e "\nDocker image push failed. Ensure your registry URL is correct and your Docker daemon trusts the registry."

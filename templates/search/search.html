@@ -321,7 +321,7 @@
                         <div class="text-muted small">
                             {% if food.portions|length > 1 %}<span class="me-2 fw-bold text-primary" title="Portion sizes available">P{{ food.portions|length }}</span>{% endif %}
                             {% if food.ingredients %}<span class="me-2 fw-bold text-success" title="Ingredients list available">I</span>{% endif %}
-                            {% if food.nutrients %}<span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>{% endif %}
+                            {% if food.nutrients and food.nutrients|length > 10 %}<span class="me-2 fw-bold text-warning" title="Rich nutritional data">N</span>{% endif %}
                         </div>
                     </div>
                     <div class="d-flex align-items-center mt-2 mt-md-0 flex-shrink-0">

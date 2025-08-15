@@ -19,6 +19,7 @@ find . -type f \
     -not -path "./.vscode/*" \
     -not -path "./persistent/*" \
     -not -path "./static/*" \
+    -not -path "./tests/*" \
     -not -name "*.db" \
     -not -name "*.db-journal" \
     -not -name "*.pyc" \
@@ -27,6 +28,7 @@ find . -type f \
     -not -name "*.env" \
     -not -name "*.js" \
     -not -name "*.map" \
+    -not -name "THIRD-PARTY-LICENSES.md" \
     -not -name ".coverage" \
     -not -name ".coveragerc" \
     | while read -r file; do
