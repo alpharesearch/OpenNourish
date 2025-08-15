@@ -284,10 +284,14 @@ def delete_log(log_id):
     log_entry = db.session.get(DailyLog, log_id)
     if log_entry and log_entry.user_id == current_user.id:
         log_date_str = log_entry.log_date.isoformat()
+        meal_name = log_entry.meal_name or "Unspecified"
+        anchor = f"meal-{meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
         db.session.delete(log_entry)
         db.session.commit()
         flash("Entry deleted.", "success")
-        return redirect(url_for("diary.diary", log_date_str=log_date_str))
+        return redirect(
+            url_for("diary.diary", log_date_str=log_date_str, _anchor=anchor)
+        )
 
     flash("Entry not found or you do not have permission to delete it.", "danger")
     return redirect(url_for("diary.diary"))
@@ -362,7 +366,15 @@ def update_entry(log_id):
     else:
         flash("Invalid data submitted.", "danger")
 
-    return redirect(url_for("diary.diary", log_date_str=log_entry.log_date.isoformat()))
+    meal_name = log_entry.meal_name or "Unspecified"
+    anchor = (
+        f"meal-{meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
+    )
+    return redirect(
+        url_for(
+            "diary.diary", log_date_str=log_entry.log_date.isoformat(), _anchor=anchor
+        )
+    )
 
 
 @diary_bp.route("/diary/move_entry", methods=["POST"])
@@ -380,20 +392,23 @@ def move_entry():
         )
         return redirect(request.referrer or url_for("diary.diary"))
 
-    original_date_str = log_entry.log_date.isoformat()
-
     try:
         target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
         log_entry.log_date = target_date
         log_entry.meal_name = target_meal_name
         db.session.commit()
         flash("Diary entry moved successfully.", "success")
+        anchor = f"meal-{target_meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
+        return redirect(
+            url_for("diary.diary", log_date_str=target_date_str, _anchor=anchor)
+        )
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error moving diary entry: {e}")
         flash("There was an error moving the diary entry.", "danger")
-
-    return redirect(url_for("diary.diary", log_date_str=original_date_str))
+        return redirect(
+            url_for("diary.diary", log_date_str=log_entry.log_date.isoformat())
+        )
 
 
 @diary_bp.route("/my_meals/new", methods=["GET", "POST"])

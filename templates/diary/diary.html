@@ -103,7 +103,7 @@
         {% endif %}
         {% for meal_name in meal_names_to_render %}
         {% set items = meals.get(meal_name, []) %}
-        <div class="card mb-3">
+        <div class="card mb-3" id="meal-{{ meal_name|lower|replace(' ', '-')|replace('(', '')|replace(')', '') }}">
             <div class="card-header d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
                 <div class="me-auto">
                     <h4 class="mb-1">
