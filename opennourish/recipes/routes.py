@@ -116,7 +116,12 @@ def new_recipe():
         flash("Recipe created successfully. Now add ingredients.", "success")
         return redirect(url_for("recipes.edit_recipe", recipe_id=new_recipe.id))
     return render_template(
-        "recipes/edit_recipe.html", form=form, recipe=None, portion_form=PortionForm()
+        "recipes/edit_recipe.html",
+        form=form,
+        recipe=None,
+        portion_form=PortionForm(),
+        ingredients_for_display=[],
+        total_ingredient_weight=0,
     )
 
 
