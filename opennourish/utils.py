@@ -639,7 +639,8 @@ def _generate_typst_content(
 {portions_str}
 
 #colbreak()
-#show: nutrition-label-nam(data)
+#nutrition-label-nam(data)
+Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients['Carbohydrate, by difference']) - float(scaled_nutrients['Fiber, total dietary']), 2))}g
 
 """
         )
@@ -1060,7 +1061,9 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 {portions_str}])
 #colbreak()
 #set align(right)
-#show: nutrition-label-nam(data, scale-percent: 75%, show-footnote: false,)
+#nutrition-label-nam(data, scale-percent: 73%, show-footnote: false,)
+#linebreak()
+Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients['Carbohydrate, by difference']) - float(scaled_nutrients['Fiber, total dietary']), 2))}g
 """
         )
 
@@ -1319,7 +1322,7 @@ def _generate_typst_content_recipe(
             typst_content_data
             + """
 #set page(width: 12cm, height: 18cm)
-#show: nutrition-label-nam(data)
+#nutrition-label-nam(data)
 """
         )
     elif label_only:
@@ -1352,7 +1355,9 @@ def _generate_typst_content_recipe(
 {portions_str}])
 #colbreak()
 #set align(right)
-#show: nutrition-label-nam(data, scale-percent: 75%, show-footnote: false,)
+#nutrition-label-nam(data, scale-percent: 73%, show-footnote: false,)
+#linebreak()
+Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients['Carbohydrate, by difference']) - float(scaled_nutrients['Fiber, total dietary']), 2))}g
 """
         )
     else:
@@ -1388,7 +1393,9 @@ def _generate_typst_content_recipe(
 == Portion Sizes: 
 {portions_str}
 == Label:
-#show: nutrition-label-nam(data, scale-percent: 75%)
+#nutrition-label-nam(data, scale-percent: 75%)
+#linebreak()
+Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients['Carbohydrate, by difference']) - float(scaled_nutrients['Fiber, total dietary']), 2))}g
 """
         )
 
