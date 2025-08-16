@@ -38,7 +38,7 @@ a {
 /* Standardized input field widths for consistency */
 input[name="amount"],
 input[name="quantity"] {
-    width: 90px;
+    width: 70px;
 }
 
 
@@ -49,6 +49,11 @@ select[name="portion_id"] {
 @media (min-width: 768px) {
     select[name="portion_id"] {
         width: 160px;
+    }
+
+    input[name="amount"],
+    input[name="quantity"] {
+        width: 100px;
     }
 }
 

@@ -236,10 +236,11 @@ def diary(username, log_date_str=None):
     for log in daily_logs:
         food_item = None
         description_to_display = "Unknown Food"
-        display_amount = log.amount_grams  # Initialize with default
-        selected_portion_id = None  # Initialize with default
-        nutrition = calculate_nutrition_for_items([log])  # Initialize with default
-        available_portions = []  # Initialize with default
+        display_amount = log.amount_grams
+        selected_portion = None
+        nutrition = calculate_nutrition_for_items([log])
+        available_portions = []
+        total_gram_weight = log.amount_grams
 
         if log.fdc_id:
             food_item = db.session.get(Food, log.fdc_id)
@@ -249,16 +250,11 @@ def diary(username, log_date_str=None):
             food_item = db.session.get(Recipe, log.recipe_id)
 
         if food_item:
-            # available_portions = [] # No portions in read-only mode
-
-            display_amount = log.amount_grams
-            selected_portion_id = "g"  # Default to grams
-
             if log.portion_id_fk:
-                selected_portion = db.session.get(UnifiedPortion, log.portion_id_fk)
-                if selected_portion and selected_portion.gram_weight > 0:
-                    display_amount = log.amount_grams / selected_portion.gram_weight
-                    selected_portion_id = selected_portion.id
+                portion = db.session.get(UnifiedPortion, log.portion_id_fk)
+                if portion and portion.gram_weight > 0:
+                    display_amount = log.amount_grams / portion.gram_weight
+                    selected_portion = portion
 
             nutrition = calculate_nutrition_for_items([log])
             description_to_display = (
@@ -267,14 +263,12 @@ def diary(username, log_date_str=None):
                 else food_item.name
             )
 
-        # Assign to the correct meal category, defaulting to 'Unspecified'
         meal_key = log.meal_name or "Unspecified"
         if meal_key not in meals:
             meals[meal_key] = []
         if meal_key not in meal_totals:
             meal_totals[meal_key] = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}
 
-        # Add nutrition to the meal's total
         meal_totals[meal_key]["calories"] += nutrition["calories"]
         meal_totals[meal_key]["protein"] += nutrition["protein"]
         meal_totals[meal_key]["carbs"] += nutrition["carbs"]
@@ -288,8 +282,8 @@ def diary(username, log_date_str=None):
                 "amount": display_amount,
                 "nutrition": nutrition,
                 "portions": available_portions,
-                "serving_type": log.serving_type,
-                "selected_portion_id": selected_portion_id,
+                "selected_portion": selected_portion,
+                "total_gram_weight": total_gram_weight,
             }
         )
 

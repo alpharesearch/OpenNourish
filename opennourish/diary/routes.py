@@ -82,12 +82,13 @@ def diary(log_date_str=None):
     for log in daily_logs:
         food_item = None
         description_to_display = "Unknown Food"
-        display_amount = log.amount_grams  # Initialize with default
-        selected_portion_id = None  # Initialize with default
-        nutrition = calculate_nutrition_for_items([log])  # Initialize with default
-        available_portions = []  # Initialize with default
+        display_amount = log.amount_grams
+        selected_portion = None
+        nutrition = calculate_nutrition_for_items([log])
+        available_portions = []
         food_type = None
         food_id = None
+        total_gram_weight = log.amount_grams
 
         if log.fdc_id:
             food_item = db.session.get(Food, log.fdc_id)
@@ -95,35 +96,25 @@ def diary(log_date_str=None):
             food_id = log.fdc_id
         elif log.my_food_id:
             food_item = db.session.get(MyFood, log.my_food_id)
-            if food_item and food_item.user_id != current_user.id:
-                pass
             food_type = "my_food"
             food_id = log.my_food_id
         elif log.recipe_id:
             food_item = db.session.get(Recipe, log.recipe_id)
-            if food_item and food_item.user_id != current_user.id:
-                pass
             food_type = "recipe"
             food_id = log.recipe_id
 
         if food_item:
             available_portions = get_available_portions(food_item)
-
-            # Find the database-backed 1-gram portion to use as a default
             gram_portion = next(
                 (p for p in available_portions if p.gram_weight == 1.0), None
             )
+            selected_portion = gram_portion
 
-            display_amount = log.amount_grams
-            # Default to the real gram portion's ID if it exists
-            selected_portion_id = gram_portion.id if gram_portion else None
-
-            # If a specific portion was logged, use that instead
             if log.portion_id_fk:
-                selected_portion = db.session.get(UnifiedPortion, log.portion_id_fk)
-                if selected_portion and selected_portion.gram_weight > 0:
-                    display_amount = log.amount_grams / selected_portion.gram_weight
-                    selected_portion_id = selected_portion.id
+                portion = db.session.get(UnifiedPortion, log.portion_id_fk)
+                if portion and portion.gram_weight > 0:
+                    display_amount = log.amount_grams / portion.gram_weight
+                    selected_portion = portion
 
             nutrition = calculate_nutrition_for_items([log])
             description_to_display = (
@@ -140,15 +131,12 @@ def diary(log_date_str=None):
                     if owner:
                         description_to_display += f" (from {owner.username})"
                     else:
-                        # This case handles if the user ID exists but the user record is gone
                         description_to_display += " (deleted)"
 
-        # Assign to the correct meal category, defaulting to 'Unspecified'
         meal_key = log.meal_name or "Unspecified"
         if meal_key not in meals:
             meals[meal_key] = []
 
-        # Add nutrition to the meal's total
         meal_totals[meal_key]["calories"] += nutrition["calories"]
         meal_totals[meal_key]["protein"] += nutrition["protein"]
         meal_totals[meal_key]["carbs"] += nutrition["carbs"]
@@ -162,8 +150,8 @@ def diary(log_date_str=None):
                 "amount": display_amount,
                 "nutrition": nutrition,
                 "portions": available_portions,
-                "serving_type": log.serving_type,
-                "selected_portion_id": selected_portion_id,
+                "selected_portion": selected_portion,
+                "total_gram_weight": total_gram_weight,
                 "owner_id": food_item.user_id
                 if hasattr(food_item, "user_id")
                 else None,
