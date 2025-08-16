@@ -31,9 +31,13 @@ def app_with_db(mocker):
     # --- SAFEGUARD ---
     # Ensure that we are not running against a file-based database
     if "memory" not in test_config["SQLALCHEMY_DATABASE_URI"]:
+        # no cover: start
         pytest.fail("Aborting test: SQLALCHEMY_DATABASE_URI is not set to in-memory.")
+        # no cover: stop
     if "memory" not in test_config["SQLALCHEMY_BINDS"]["usda"]:
+        # no cover: start
         pytest.fail("Aborting test: SQLALCHEMY_BINDS['usda'] is not set to in-memory.")
+        # no cover: stop
 
     app = create_app(test_config)
 
