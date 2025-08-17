@@ -824,6 +824,7 @@ def copy_recipe(recipe_id):
         name=f"{original_recipe.name} (Copy)",
         instructions=original_recipe.instructions,
         servings=original_recipe.servings,
+        final_weight_grams=original_recipe.final_weight_grams,
         is_public=False,  # Copied recipes are private by default
     )
     db.session.add(new_recipe)
@@ -837,6 +838,8 @@ def copy_recipe(recipe_id):
             my_food_id=orig_ing.my_food_id,
             recipe_id_link=orig_ing.recipe_id_link,
             amount_grams=orig_ing.amount_grams,
+            serving_type=orig_ing.serving_type,
+            portion_id_fk=orig_ing.portion_id_fk,
             seq_num=i + 1,
         )
         db.session.add(new_ing)
@@ -850,6 +853,7 @@ def copy_recipe(recipe_id):
             portion_description=orig_portion.portion_description,
             modifier=orig_portion.modifier,
             gram_weight=orig_portion.gram_weight,
+            seq_num=orig_portion.seq_num,
         )
         db.session.add(new_portion)
 

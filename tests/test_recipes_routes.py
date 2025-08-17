@@ -1,5 +1,5 @@
 import pytest
-from models import db, Recipe, RecipeIngredient, User, MyFood
+from models import db, Recipe, RecipeIngredient, User, MyFood, UnifiedPortion
 
 
 @pytest.fixture
@@ -16,12 +16,37 @@ def client_with_recipe_ingredient(client):
         db.session.add(my_food)
         db.session.commit()
 
-        recipe = Recipe(user_id=user.id, name="Test Recipe", is_public=True)
+        recipe = Recipe(
+            user_id=user.id,
+            name="Test Recipe",
+            is_public=True,
+            final_weight_grams=500.0,
+        )
         db.session.add(recipe)
         db.session.commit()
 
+        recipe_portion = UnifiedPortion(
+            recipe_id=recipe.id,
+            gram_weight=100,
+            portion_description="serving",
+            seq_num=1,
+        )
+        db.session.add(recipe_portion)
+        db.session.commit()
+
+        ingredient_portion = UnifiedPortion(
+            my_food_id=my_food.id, gram_weight=50, portion_description="slice"
+        )
+        db.session.add(ingredient_portion)
+        db.session.commit()
+
         ingredient = RecipeIngredient(
-            recipe_id=recipe.id, my_food_id=my_food.id, amount_grams=100, seq_num=1
+            recipe_id=recipe.id,
+            my_food_id=my_food.id,
+            amount_grams=100,
+            seq_num=1,
+            portion_id_fk=ingredient_portion.id,
+            serving_type="slice",
         )
         db.session.add(ingredient)
         db.session.commit()
@@ -214,7 +239,17 @@ def test_copy_recipe(client_with_recipe_ingredient):
     response = client.get(response.headers["Location"], follow_redirects=True)
     assert response.status_code == 200
 
-    copied_recipe = Recipe.query.filter(Recipe.user_id == other_user_id).first()
-    assert copied_recipe is not None
-    assert copied_recipe.name == "Test Recipe (Copy)"
-    assert len(copied_recipe.ingredients) == 1
+    with client.application.app_context():
+        original_recipe = Recipe.query.get(recipe_id)
+        copied_recipe = Recipe.query.filter(Recipe.user_id == other_user_id).first()
+        assert copied_recipe is not None
+        assert copied_recipe.name == "Test Recipe (Copy)"
+        assert len(copied_recipe.ingredients) == 1
+        assert copied_recipe.final_weight_grams == original_recipe.final_weight_grams
+        assert len(copied_recipe.portions) == 1
+        assert copied_recipe.portions[0].seq_num == original_recipe.portions[0].seq_num
+
+        original_ingredient = original_recipe.ingredients[0]
+        copied_ingredient = copied_recipe.ingredients[0]
+        assert copied_ingredient.portion_id_fk == original_ingredient.portion_id_fk
+        assert copied_ingredient.serving_type == original_ingredient.serving_type
