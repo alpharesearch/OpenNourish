@@ -215,7 +215,8 @@ def test_delete_fast(auth_client):
         f"/fasting/delete_fast/{fast_id}", follow_redirects=True
     )
     assert response.status_code == 200
-    assert b"Fast entry deleted." in response.data
+    assert b"Fast deleted." in response.data
+    assert b"Undo" in response.data
 
     with auth_client.application.app_context():
         deleted_fast = db.session.get(FastingSession, fast_id)

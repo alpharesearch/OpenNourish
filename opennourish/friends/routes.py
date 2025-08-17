@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 from models import db, User, Friendship, DailyLog, ExerciseLog
 from . import friends_bp
 from datetime import datetime, timedelta
+from opennourish.utils import prepare_undo_and_delete
 
 
 @friends_bp.route("/", methods=["GET"])
@@ -157,7 +158,9 @@ def remove_friend(friend_id):
         )
     ).first_or_404()
 
-    db.session.delete(friendship)
-    db.session.commit()
-    flash("Friend removed.", "success")
+    redirect_info = {"endpoint": "friends.friends_page"}
+    prepare_undo_and_delete(
+        friendship, "friendship", redirect_info, success_message="Friend removed."
+    )
+
     return redirect(url_for("friends.friends_page"))

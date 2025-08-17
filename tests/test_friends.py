@@ -175,6 +175,7 @@ def test_remove_friend(auth_client_with_user):
     )
     assert response.status_code == 200
     assert b"Friend removed." in response.data
+    assert b"Undo" in response.data
 
     # Check that the friendship is deleted
     friendship = Friendship.query.filter_by(

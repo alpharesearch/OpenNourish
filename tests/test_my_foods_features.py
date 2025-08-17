@@ -235,6 +235,7 @@ def test_delete_my_food_portion(auth_client):
     )
     assert response.status_code == 200
     assert b"Portion deleted." in response.data
+    assert b"Undo" in response.data
 
     with auth_client.application.app_context():
         deleted_portion = db.session.get(UnifiedPortion, portion_id)
@@ -370,6 +371,7 @@ def test_delete_my_food(auth_client):
     response = auth_client.post(f"/my_foods/{food_id}/delete", follow_redirects=True)
     assert response.status_code == 200
     assert b"Food deleted successfully!" in response.data
+    assert b"Undo" in response.data
 
     with auth_client.application.app_context():
         deleted_food = db.session.get(MyFood, food_id)

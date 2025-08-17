@@ -22,6 +22,7 @@ from opennourish.utils import (
     calculate_nutrition_for_items,
     get_available_portions,
     get_standard_meal_names_for_user,
+    prepare_undo_and_delete,
 )
 from .forms import MealForm
 from sqlalchemy.orm import joinedload, selectinload
@@ -274,9 +275,16 @@ def delete_log(log_id):
         log_date_str = log_entry.log_date.isoformat()
         meal_name = log_entry.meal_name or "Unspecified"
         anchor = f"meal-{meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
-        db.session.delete(log_entry)
-        db.session.commit()
-        flash("Entry deleted.", "success")
+
+        redirect_info = {
+            "endpoint": "diary.diary",
+            "params": {"log_date_str": log_date_str},
+            "fragment": anchor,
+        }
+        prepare_undo_and_delete(
+            log_entry, "dailylog", redirect_info, success_message="Entry deleted."
+        )
+
         return redirect(
             url_for("diary.diary", log_date_str=log_date_str, _anchor=anchor)
         )
@@ -290,9 +298,14 @@ def delete_log(log_id):
 def delete_meal(meal_id):
     meal = db.session.get(MyMeal, meal_id)
     if meal and meal.user_id == current_user.id:
-        db.session.delete(meal)
-        db.session.commit()
-        flash("Meal deleted.", "success")
+        redirect_info = {"endpoint": "diary.my_meals"}
+        prepare_undo_and_delete(
+            meal,
+            "mymeal",
+            redirect_info,
+            delete_method="anonymize",
+            success_message="Meal deleted.",
+        )
         return redirect(url_for("diary.my_meals"))
 
     flash("Meal not found or you do not have permission to delete it.", "danger")

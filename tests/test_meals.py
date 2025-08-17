@@ -74,16 +74,20 @@ def test_delete_my_meal(auth_client_with_user):
         db.session.commit()
 
         meal_id = meal.id
+        item_id = meal_item.id
 
         # POST to delete the meal
         response = client.post(f"/my_meals/{meal_id}/delete", follow_redirects=True)
         assert response.status_code == 200
 
-        # Assert that the meal and its items are deleted
-        deleted_meal = db.session.get(MyMeal, meal_id)
-        assert deleted_meal is None
-        deleted_item = MyMealItem.query.filter_by(my_meal_id=meal_id).first()
-        assert deleted_item is None
+        # Assert that the meal is anonymized, not deleted
+        anonymized_meal = db.session.get(MyMeal, meal_id)
+        assert anonymized_meal is not None
+        assert anonymized_meal.user_id is None
+
+        # Assert that the meal item still exists
+        item = db.session.get(MyMealItem, item_id)
+        assert item is not None
 
 
 def test_delete_meal_item(auth_client_with_user):
@@ -232,3 +236,35 @@ def test_create_new_meal(auth_client_with_user):
         redirect_response = client.get(response.location)
         assert redirect_response.status_code == 200
         assert b"Edit Meal: New Meal" in redirect_response.data
+
+
+def test_undo_anonymize_my_meal(auth_client_with_user):
+    """
+    Test that undoing an 'anonymize' action on a MyMeal restores the user_id.
+    """
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        # Create a MyMeal object
+        meal = MyMeal(user_id=user.id, name="Meal to Anonymize and Undo")
+        db.session.add(meal)
+        db.session.commit()
+        meal_id = meal.id
+
+        # POST to delete (anonymize) the meal
+        response = client.post(f"/my_meals/{meal_id}/delete")
+        assert response.status_code == 302  # Redirect
+
+        # Check that it's anonymized
+        anonymized_meal = db.session.get(MyMeal, meal_id)
+        assert anonymized_meal is not None
+        assert anonymized_meal.user_id is None
+
+        # Now, call the undo endpoint
+        undo_response = client.get("/undo", follow_redirects=True)
+        assert undo_response.status_code == 200
+        assert b"Item restored." in undo_response.data
+
+        # Check that the meal's user_id is restored
+        restored_meal = db.session.get(MyMeal, meal_id)
+        assert restored_meal is not None
+        assert restored_meal.user_id == user.id

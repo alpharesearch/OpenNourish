@@ -363,7 +363,7 @@ class RecipeIngredient(db.Model):
 class MyMeal(db.Model):
     __tablename__ = "my_meals"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     name = db.Column(db.String, nullable=False)
     usage_count = db.Column(db.Integer, default=0, nullable=False)
     items = db.relationship("MyMealItem", backref="meal", cascade="all, delete-orphan")

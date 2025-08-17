@@ -25,6 +25,7 @@ from opennourish.utils import (
     ensure_portion_sequence,
     get_nutrients_for_display,
     convert_display_nutrients_to_100g,
+    prepare_undo_and_delete,
 )
 
 my_foods_bp = Blueprint("my_foods", __name__)
@@ -270,9 +271,14 @@ def edit_my_food(food_id):
 @login_required
 def delete_my_food(food_id):
     my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
-    my_food.user_id = None
-    db.session.commit()
-    flash("Food deleted successfully!", "success")
+    redirect_info = {"endpoint": "my_foods.my_foods"}
+    prepare_undo_and_delete(
+        my_food,
+        "my_food",
+        redirect_info,
+        delete_method="anonymize",
+        success_message="Food deleted successfully!",
+    )
     return redirect(url_for("my_foods.my_foods"))
 
 
@@ -338,9 +344,14 @@ def delete_my_food_portion(portion_id):
     portion = db.session.get(UnifiedPortion, portion_id)
     if portion and portion.my_food and portion.my_food.user_id == current_user.id:
         food_id = portion.my_food_id
-        db.session.delete(portion)
-        db.session.commit()
-        flash("Portion deleted.", "success")
+        redirect_info = {
+            "endpoint": "my_foods.edit_my_food",
+            "params": {"food_id": food_id},
+            "fragment": "portions-table",
+        }
+        prepare_undo_and_delete(
+            portion, "portion", redirect_info, success_message="Portion deleted."
+        )
         return redirect(
             url_for("my_foods.edit_my_food", food_id=food_id) + "#portions-table"
         )

@@ -3,7 +3,13 @@ from flask_login import login_required, current_user
 from . import tracking_bp
 from .forms import CheckInForm
 from models import db, CheckIn, UserGoal
-from opennourish.utils import lbs_to_kg, in_to_cm, kg_to_lbs, cm_to_in
+from opennourish.utils import (
+    lbs_to_kg,
+    in_to_cm,
+    kg_to_lbs,
+    cm_to_in,
+    prepare_undo_and_delete,
+)
 from opennourish.time_utils import get_user_today
 
 
@@ -139,7 +145,14 @@ def delete_check_in(check_in_id):
     if check_in.user_id != current_user.id:
         flash("Entry not found or you do not have permission to delete it.", "danger")
         return redirect(url_for("tracking.progress"))
-    db.session.delete(check_in)
-    db.session.commit()
-    flash("Your check-in has been deleted.", "success")
-    return redirect(url_for("tracking.progress"))
+
+    page = request.args.get("page", 1, type=int)
+    redirect_info = {"endpoint": "tracking.progress", "params": {"page": page}}
+    prepare_undo_and_delete(
+        check_in,
+        "check_in",
+        redirect_info,
+        success_message="Your check-in has been deleted.",
+    )
+
+    return redirect(url_for("tracking.progress", page=page))

@@ -181,9 +181,10 @@ def test_delete_exercise_log(auth_client):
         db.session.commit()
         log_id = log.id
 
-    response = client.post(f"/exercise/{log_id}/delete", follow_redirects=True)
-    assert response.status_code == 200
-    assert b"Exercise log deleted successfully!" in response.data
+        response = client.post(f"/exercise/{log_id}/delete", follow_redirects=True)
+        assert response.status_code == 200
+        assert b"Exercise log deleted successfully!" in response.data
+        assert b"Undo" in response.data
 
     with client.application.app_context():
         deleted_log = db.session.get(ExerciseLog, log_id)

@@ -41,7 +41,8 @@ def test_delete_ingredient_success(client_with_recipe_ingredient):
         f"/recipes/ingredients/{ingredient_id}/delete", follow_redirects=True
     )
     assert response.status_code == 200
-    assert b"Ingredient removed." in response.data
+    assert b"Ingredient deleted." in response.data
+    assert b"Undo" in response.data
     assert RecipeIngredient.query.get(ingredient_id) is None
 
 
@@ -185,6 +186,7 @@ def test_delete_recipe_success(client_with_recipe_ingredient):
     response = client.post(f"/recipes/{recipe_id}/delete", follow_redirects=True)
     assert response.status_code == 200
     assert b"Recipe deleted." in response.data
+    assert b"Undo" in response.data
     assert Recipe.query.get(recipe_id).user_id is None
 
 

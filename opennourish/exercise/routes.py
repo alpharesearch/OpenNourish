@@ -6,6 +6,7 @@ from .utils import get_user_weight_kg, calculate_calories_burned
 from models import db, ExerciseLog, UserGoal, ExerciseActivity
 from datetime import timedelta
 from opennourish.time_utils import get_user_today, get_start_of_week
+from opennourish.utils import prepare_undo_and_delete
 
 
 @exercise_bp.route("/log", methods=["GET", "POST"])
@@ -174,9 +175,13 @@ def delete_exercise(log_id):
         flash("You do not have permission to delete this exercise log.", "danger")
         return redirect(url_for(".log_exercise"))
 
-    db.session.delete(exercise_log)
-    db.session.commit()
-    flash("Exercise log deleted successfully!", "success")
-    return redirect(
-        url_for(".log_exercise", page=request.args.get("page", 1, type=int))
+    page = request.args.get("page", 1, type=int)
+    redirect_info = {"endpoint": "exercise.log_exercise", "params": {"page": page}}
+    prepare_undo_and_delete(
+        exercise_log,
+        "exercise_log",
+        redirect_info,
+        success_message="Exercise log deleted successfully!",
     )
+
+    return redirect(url_for(".log_exercise", page=page))

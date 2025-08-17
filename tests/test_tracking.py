@@ -64,6 +64,7 @@ def test_check_in_crud_lifecycle(auth_client):
     )
     assert response.status_code == 200
     assert b"Your check-in has been deleted." in response.data
+    assert b"Undo" in response.data
 
     with auth_client.application.app_context():
         check_in = db.session.get(CheckIn, created_check_in_id)

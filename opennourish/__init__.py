@@ -227,6 +227,10 @@ def create_app(config_class=Config):
 
     app.register_blueprint(fasting_bp, url_prefix="/fasting")
 
+    from opennourish.undo import undo_bp
+
+    app.register_blueprint(undo_bp)
+
     @app.context_processor
     def inject_user_settings():
         from flask_login import current_user

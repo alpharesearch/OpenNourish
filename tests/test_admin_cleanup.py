@@ -1,5 +1,5 @@
 import pytest
-from models import db, User, MyFood, Recipe, DailyLog
+from models import db, User, MyFood, MyMeal, Recipe, DailyLog
 from datetime import date
 
 
@@ -33,7 +33,8 @@ def test_cleanup_page_correctly_identifies_and_separates_orphans(
         safe_food = MyFood(user_id=admin.id, description="Safe to Delete Food")
         in_use_recipe = Recipe(user_id=admin.id, name="In-Use Recipe")
         active_food = MyFood(user_id=admin.id, description="Active Admin Food")
-        db.session.add_all([safe_food, in_use_recipe, active_food])
+        safe_meal = MyMeal(user_id=admin.id, name="Safe to Delete Meal")
+        db.session.add_all([safe_food, in_use_recipe, active_food, safe_meal])
         db.session.commit()
 
         # User B uses the recipe
@@ -48,6 +49,7 @@ def test_cleanup_page_correctly_identifies_and_separates_orphans(
         # Orphan the items
         safe_food.user_id = None
         in_use_recipe.user_id = None
+        safe_meal.user_id = None
         db.session.commit()
 
     # Log in as admin
@@ -64,12 +66,8 @@ def test_cleanup_page_correctly_identifies_and_separates_orphans(
     # Assertions
     assert "Safe to Delete Food" in html
     assert "In-Use Recipe" in html
+    assert "Safe to Delete Meal" in html
     assert "Active Admin Food" not in html
-    # Check sections
-    # safe_section = html.split('<h3>Orphaned Items (Safe to Delete)</h3>')[1].split('<h3>')[0]
-    # in_use_section = html.split('<h3>Orphaned Items (In Use)</h3>')[1].split('<h3>')[0]
-    # assert 'Safe to Delete Food' in safe_section
-    # assert 'In-Use Recipe' in in_use_section
 
 
 def test_run_cleanup_deletes_only_unreferenced_orphans(client, admin_and_user):
@@ -80,11 +78,13 @@ def test_run_cleanup_deletes_only_unreferenced_orphans(client, admin_and_user):
         safe_food = MyFood(user_id=admin.id, description="Safe to Delete Food")
         in_use_recipe = Recipe(user_id=admin.id, name="In-Use Recipe")
         active_food = MyFood(user_id=admin.id, description="Active Admin Food")
-        db.session.add_all([safe_food, in_use_recipe, active_food])
+        safe_meal = MyMeal(user_id=admin.id, name="Safe to Delete Meal")
+        db.session.add_all([safe_food, in_use_recipe, active_food, safe_meal])
         db.session.commit()
         safe_food_id = safe_food.id
         in_use_recipe_id = in_use_recipe.id
         active_food_id = active_food.id
+        safe_meal_id = safe_meal.id
 
         log_entry = DailyLog(
             user_id=user_b.id,
@@ -98,6 +98,7 @@ def test_run_cleanup_deletes_only_unreferenced_orphans(client, admin_and_user):
 
         safe_food.user_id = None
         in_use_recipe.user_id = None
+        safe_meal.user_id = None
         db.session.commit()
 
     client.post(
@@ -108,7 +109,7 @@ def test_run_cleanup_deletes_only_unreferenced_orphans(client, admin_and_user):
     response = client.post("/admin/cleanup/run", follow_redirects=True)
 
     assert (
-        b"Database cleanup complete. Removed 1 orphaned food items and 0 orphaned recipes."
+        b"Database cleanup complete. Removed 1 orphaned food items, 0 orphaned recipes, and 1 orphaned meals."
         in response.data
     )
 
@@ -116,6 +117,7 @@ def test_run_cleanup_deletes_only_unreferenced_orphans(client, admin_and_user):
         assert db.session.get(MyFood, safe_food_id) is None
         assert db.session.get(Recipe, in_use_recipe_id) is not None
         assert db.session.get(MyFood, active_food_id) is not None
+        assert db.session.get(MyMeal, safe_meal_id) is None
         assert db.session.get(DailyLog, log_id) is not None
 
 
@@ -157,6 +159,6 @@ def test_cleanup_page_handles_no_orphans(client, admin_and_user):
 
     response_post = client.post("/admin/cleanup/run", follow_redirects=True)
     assert (
-        b"Database cleanup complete. Removed 0 orphaned food items and 0 orphaned recipes."
+        b"Database cleanup complete. Removed 0 orphaned food items, 0 orphaned recipes, and 0 orphaned meals."
         in response_post.data
     )

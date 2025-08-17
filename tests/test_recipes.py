@@ -342,6 +342,7 @@ def test_delete_recipe(auth_client_with_user):
     response = client.post(f"/recipes/{recipe_id}/delete", follow_redirects=True)
     assert response.status_code == 200
     assert b"Recipe deleted." in response.data
+    assert b"Undo" in response.data
 
     with client.application.app_context():
         deleted_recipe = db.session.get(Recipe, recipe_id)
@@ -418,7 +419,8 @@ def test_delete_ingredient_from_recipe(auth_client_with_user):
         f"/recipes/ingredients/{ingredient_id}/delete", follow_redirects=True
     )
     assert response.status_code == 200
-    assert b"Ingredient removed." in response.data
+    assert b"Ingredient deleted." in response.data
+    assert b"Undo" in response.data
 
     with client.application.app_context():
         deleted_ingredient = db.session.get(RecipeIngredient, ingredient_id)
@@ -1210,7 +1212,8 @@ def test_delete_recipe_portion_success(recipe_with_portion):
         follow_redirects=True,
     )
     assert response.status_code == 200
-    assert b"Recipe portion deleted." in response.data
+    assert b"Portion deleted." in response.data
+    assert b"Undo" in response.data
 
     with client.application.app_context():
         deleted_portion = db.session.get(UnifiedPortion, portion_id)

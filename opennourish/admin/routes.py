@@ -9,6 +9,7 @@ from models import (
     User,
     Recipe,
     MyFood,
+    MyMeal,
     DailyLog,
     ExerciseLog,
     SystemSetting,
@@ -414,9 +415,10 @@ def reset_onboarding(user_id):
 @login_required
 @admin_required
 def cleanup():
-    # Find orphaned MyFood and Recipe items
+    # Find orphaned MyFood, Recipe, and MyMeal items
     orphaned_foods = MyFood.query.filter(MyFood.user_id.is_(None)).all()
     orphaned_recipes = Recipe.query.filter(Recipe.user_id.is_(None)).all()
+    orphaned_meals = MyMeal.query.filter(MyMeal.user_id.is_(None)).all()
 
     # Get all referenced IDs
     referenced_my_food_ids = {
@@ -480,6 +482,9 @@ def cleanup():
         else:
             in_use_orphans.append(recipe)
 
+    # Orphaned meals are always safe to delete as they are not directly referenced.
+    safe_to_delete_orphans.extend(orphaned_meals)
+
     return render_template(
         "admin/cleanup.html",
         safe_to_delete_orphans=safe_to_delete_orphans,
@@ -494,6 +499,7 @@ def run_cleanup():
     # Re-run the scan to ensure we are deleting the correct items
     orphaned_foods = MyFood.query.filter(MyFood.user_id.is_(None)).all()
     orphaned_recipes = Recipe.query.filter(Recipe.user_id.is_(None)).all()
+    orphaned_meals = MyMeal.query.filter(MyMeal.user_id.is_(None)).all()
 
     referenced_my_food_ids = {
         row.my_food_id
@@ -543,6 +549,7 @@ def run_cleanup():
 
     deleted_foods_count = 0
     deleted_recipes_count = 0
+    deleted_meals_count = 0
 
     for food in orphaned_foods:
         if food.id not in referenced_my_food_ids:
@@ -554,10 +561,15 @@ def run_cleanup():
             db.session.delete(recipe)
             deleted_recipes_count += 1
 
+    for meal in orphaned_meals:
+        # Orphaned meals are always safe to delete.
+        db.session.delete(meal)
+        deleted_meals_count += 1
+
     db.session.commit()
 
     flash(
-        f"Database cleanup complete. Removed {deleted_foods_count} orphaned food items and {deleted_recipes_count} orphaned recipes.",
+        f"Database cleanup complete. Removed {deleted_foods_count} orphaned food items, {deleted_recipes_count} orphaned recipes, and {deleted_meals_count} orphaned meals.",
         "success",
     )
     return redirect(url_for("admin.cleanup"))

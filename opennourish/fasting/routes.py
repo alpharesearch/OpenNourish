@@ -5,6 +5,7 @@ from . import fasting_bp
 from .forms import EditFastForm
 from datetime import datetime
 import pytz
+from opennourish.utils import prepare_undo_and_delete
 
 
 @fasting_bp.route("/")
@@ -165,9 +166,11 @@ def update_fast(fast_id):
 def delete_fast(fast_id):
     fast = db.session.get(FastingSession, fast_id)
     if fast and fast.user_id == current_user.id:
-        db.session.delete(fast)
-        db.session.commit()
-        flash("Fast entry deleted.", "success")
+        page = request.args.get("page", 1, type=int)
+        redirect_info = {"endpoint": "fasting.index", "params": {"page": page}}
+        prepare_undo_and_delete(
+            fast, "fasting_session", redirect_info, success_message="Fast deleted."
+        )
     else:
         flash("Fast not found or you do not have permission to delete it.", "danger")
     return redirect(url_for("fasting.index"))

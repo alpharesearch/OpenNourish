@@ -34,6 +34,7 @@ from opennourish.utils import (
     update_recipe_nutrition,
     generate_recipe_label_pdf,
     generate_recipe_label_svg,
+    prepare_undo_and_delete,
 )
 
 recipes_bp = Blueprint("recipes", __name__, template_folder="templates")
@@ -359,10 +360,21 @@ def delete_ingredient(ingredient_id):
         flash("You are not authorized to modify this recipe.", "danger")
         return redirect(url_for("recipes.recipes"))
 
-    db.session.delete(ingredient)
+    redirect_info = {
+        "endpoint": "recipes.edit_recipe",
+        "params": {"recipe_id": recipe.id},
+        "fragment": "ingredients-section",
+    }
+    # This is a hard delete
+    prepare_undo_and_delete(
+        ingredient,
+        "recipe_ingredient",
+        redirect_info,
+        success_message="Ingredient deleted.",
+    )
     update_recipe_nutrition(recipe)
     db.session.commit()
-    flash("Ingredient removed.", "success")
+
     return redirect(
         url_for("recipes.edit_recipe", recipe_id=recipe.id) + "#ingredients-section"
     )
@@ -606,9 +618,15 @@ def delete_recipe(recipe_id):
         flash("You are not authorized to delete this recipe.", "danger")
         return redirect(url_for("recipes.recipes"))
 
-    recipe.user_id = None
-    db.session.commit()
-    flash("Recipe deleted.", "success")
+    redirect_info = {"endpoint": "recipes.recipes"}
+    prepare_undo_and_delete(
+        recipe,
+        "recipe",
+        redirect_info,
+        delete_method="anonymize",
+        success_message="Recipe deleted.",
+    )
+
     return redirect(url_for("recipes.recipes"))
 
 
@@ -741,10 +759,17 @@ def delete_recipe_portion(portion_id):
     portion = db.session.get(UnifiedPortion, portion_id)
     if portion and portion.recipe and portion.recipe.user_id == current_user.id:
         recipe_id = portion.recipe_id
-        db.session.delete(portion)
-        db.session.commit()
-        flash("Recipe portion deleted.", "success")
-        return redirect(url_for("recipes.edit_recipe", recipe_id=recipe_id))
+        redirect_info = {
+            "endpoint": "recipes.edit_recipe",
+            "params": {"recipe_id": recipe_id},
+            "fragment": "portions-table",
+        }
+        prepare_undo_and_delete(
+            portion, "portion", redirect_info, success_message="Portion deleted."
+        )
+        return redirect(
+            url_for("recipes.edit_recipe", recipe_id=recipe_id) + "#portions-table"
+        )
     else:
         flash("Portion not found or you do not have permission to delete it.", "danger")
         return redirect(url_for("recipes.recipes"))

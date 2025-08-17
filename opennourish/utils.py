@@ -4,7 +4,15 @@ import subprocess
 import tempfile
 import re
 from constants import DIET_PRESETS, CORE_NUTRIENT_IDS, MEAL_CONFIG, DEFAULT_MEAL_NAMES
-from flask import send_file, current_app, render_template
+from flask import (
+    send_file,
+    current_app,
+    render_template,
+    session,
+    flash,
+    url_for,
+)
+from markupsafe import Markup
 from types import SimpleNamespace
 from cryptography.fernet import Fernet
 from flask_mailing import Message
@@ -23,6 +31,26 @@ from models import (
     UnifiedPortion,
     FoodNutrient,
 )
+from sqlalchemy.inspection import inspect
+from datetime import date
+from decimal import Decimal
+
+
+def _serialize_model_for_session(model_instance):
+    """
+    Serializes a SQLAlchemy model instance into a JSON-serializable dictionary.
+    """
+    mapper = inspect(model_instance.__class__)
+    serialized_data = {}
+    for column in mapper.columns:
+        value = getattr(model_instance, column.key)
+        if isinstance(value, (datetime, date)):
+            serialized_data[column.key] = value.isoformat()
+        elif isinstance(value, Decimal):
+            serialized_data[column.key] = float(value)
+        else:
+            serialized_data[column.key] = value
+    return serialized_data
 
 
 def encrypt_value(value, key):
@@ -87,7 +115,7 @@ def calculate_weekly_nutrition_summary(weekly_logs):
         logs_by_date[log.log_date].append(log)
 
     # Calculate total nutrition for the week
-    for date, logs in logs_by_date.items():
+    for date1, logs in logs_by_date.items():
         daily_totals = calculate_nutrition_for_items(logs)
         total_nutrition["calories"] += daily_totals["calories"]
         total_nutrition["protein"] += daily_totals["protein"]
@@ -1801,3 +1829,51 @@ def convert_display_nutrients_to_100g(display_nutrients, portion):
             numeric_value = 0.0
         nutrients_100g[key] = numeric_value * scaling_factor
     return nutrients_100g
+
+
+def prepare_undo_and_delete(
+    item_to_delete,
+    item_type_str,
+    redirect_info,
+    delete_method="hard",
+    success_message="Item deleted.",
+):
+    """
+    Handles deleting an item in a way that can be undone, using either a 'hard' delete or 'anonymize' method.
+    """
+    session_data = {
+        "type": item_type_str,
+        "redirect_info": redirect_info,
+    }
+
+    if delete_method == "hard":
+        session_data["undo_method"] = "reinsert"
+        # Serialize the full object
+        data = _serialize_model_for_session(item_to_delete)
+        session_data["data"] = data
+
+        # Perform the hard delete
+        db.session.delete(item_to_delete)
+
+    elif delete_method == "anonymize":
+        session_data["undo_method"] = "reassign_owner"
+        session_data["data"] = {
+            "item_id": item_to_delete.id,
+            "original_user_id": item_to_delete.user_id,
+        }
+
+        # Perform the anonymization
+        item_to_delete.user_id = None
+
+    else:
+        raise ValueError(f"Unknown delete_method: {delete_method}")
+
+    # Store in session, commit, and flash
+    session["last_deleted"] = session_data
+    db.session.commit()
+
+    undo_url = url_for("undo.undo_last_action")
+    flash(
+        Markup(f"{success_message} <a href='{undo_url}' class='alert-link'>Undo</a>"),
+        "success",
+    )
