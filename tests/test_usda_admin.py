@@ -1,4 +1,5 @@
 import pytest
+import re
 from models import db, User, Food, UnifiedPortion
 from flask import url_for
 
@@ -212,7 +213,7 @@ def test_edit_usda_portion_unauthorized(auth_client):
 
 
 def test_delete_usda_portion_key_user(key_user_client):
-    """Test that a key_user can delete a USDA portion."""
+    """Test that a key_user can delete a USDA portion and undo the deletion."""
     with key_user_client.application.app_context():
         food = Food(fdc_id=66666, description="USDA Food to Delete Portion From")
         portion = UnifiedPortion(
@@ -225,18 +226,40 @@ def test_delete_usda_portion_key_user(key_user_client):
         db.session.add_all([food, portion])
         db.session.commit()
         portion_id = portion.id
+        assert db.session.get(UnifiedPortion, portion_id) is not None
 
+    # Delete the portion
     response = key_user_client.post(
         url_for("usda_admin.delete_usda_portion", portion_id=portion_id),
-        follow_redirects=True,
+        follow_redirects=False,  # Do not follow redirect to check session
     )
 
-    assert response.status_code == 200
-    assert b"Portion deleted successfully." in response.data
-
+    assert response.status_code == 302  # Should redirect after POST
     with key_user_client.application.app_context():
         deleted_portion = db.session.get(UnifiedPortion, portion_id)
         assert deleted_portion is None
+
+    # Check for the flash message and get the undo link
+    with key_user_client.session_transaction() as session:
+        flashes = session.get("_flashes", [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == "success"
+        assert "Portion deleted." in flashes[0][1]
+        # Extract undo URL from the flash message's Markup
+        undo_url_match = re.search(r"href='([^']+)'", flashes[0][1])
+        assert undo_url_match is not None
+        undo_url = undo_url_match.group(1)
+
+    # Follow the undo link
+    response = key_user_client.get(undo_url, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Item restored." in response.data
+
+    # Verify the portion is back in the database
+    with key_user_client.application.app_context():
+        restored_portion = db.session.get(UnifiedPortion, portion_id)
+        assert restored_portion is not None
+        assert restored_portion.gram_weight == 10.0
 
 
 def test_delete_usda_portion_unauthorized(auth_client):

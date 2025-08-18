@@ -3,6 +3,7 @@ from . import usda_admin_bp
 from models import db, UnifiedPortion, Food
 from flask_login import login_required
 from opennourish.decorators import key_user_required
+from opennourish.utils import prepare_undo_and_delete
 
 
 def _mark_portions_as_modified(fdc_id):
@@ -86,11 +87,18 @@ def delete_usda_portion(portion_id):
         return redirect(request.referrer or url_for("dashboard.index"))
 
     fdc_id = portion.fdc_id
-    db.session.delete(portion)
     _mark_portions_as_modified(fdc_id)
-    db.session.commit()
-    flash("Portion deleted successfully.", "success")
-    return redirect(url_for("main.food_detail", fdc_id=fdc_id) + "#portions-table")
+    redirect_info = {
+        "endpoint": "main.food_detail",
+        "params": {"fdc_id": fdc_id},
+        "fragment": "portions-table",
+    }
+    prepare_undo_and_delete(
+        portion, "portion", redirect_info, success_message="Portion deleted."
+    )
+    return redirect(
+        url_for("main.food_detail", fdc_id=fdc_id, _anchor="portions-table")
+    )
 
 
 @usda_admin_bp.route("/usda_portion/<int:portion_id>/move_up", methods=["POST"])

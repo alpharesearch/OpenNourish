@@ -222,7 +222,103 @@ To ensure a consistent and intuitive user interface, all icons should be used pu
   - **Usage:** For buttons that generate a PDF.
 
 ### 7.6. Undo System
-The application features a robust undo system that allows users to reverse the deletion of various items, such as diary entries, recipes, or meal items. When an item is deleted, it is not immediately removed from the database. Instead, it is soft-deleted (or its ownership is anonymized), and the data required to restore it is temporarily stored in the user's session. A flash message provides an "Undo" link, which, when clicked, triggers a route that re-inserts the data or restores the original ownership, effectively reversing the deletion. This system relies on a central `MODEL_MAP` to handle different types of objects, ensuring that the undo functionality can be easily extended across the application.
+
+The application features a robust undo system that allows users to reverse the deletion of various items. This guide explains how to integrate this system into a new or existing deletion route.
+
+**Core Components:**
+*   **`prepare_undo_and_delete()` utility:** Located in `opennourish/utils.py`, this is the primary function for initiating a soft-deletable action.
+*   **`undo` Blueprint:** Located in `opennourish/undo/routes.py`, it contains the `/undo` route and the `undo_last_action()` function that performs the actual restoration.
+*   **`MODEL_MAP` Dictionary:** Found in `opennourish/undo/routes.py`, this dictionary maps a string key (the "item type") to the corresponding SQLAlchemy model class.
+
+**How to Implement Undo for a Deletion:**
+
+#### 7.6.1  **Modify the Deletion Route:** In your route that handles the POST request for deleting an item, instead of directly deleting the object from the database (e.g., `db.session.delete(item)`), you will call the `prepare_undo_and_delete()` function.
+
+#### 7.6.2  **Call `prepare_undo_and_delete()`:**
+    ```python
+    from opennourish.utils import prepare_undo_and_delete
+
+    # ... inside your delete route ...
+    item_to_delete = db.session.get(MyModel, item_id)
+    
+    # Information for redirecting after the undo action is complete
+    redirect_info = {
+        "endpoint": "name_of_blueprint.view_function_to_redirect_to",
+        "params": {"id": item_to_delete.some_id}, # any params needed for the URL
+        "fragment": "optional_anchor_tag"
+    }
+
+    prepare_undo_and_delete(
+        item_to_delete=item_to_delete,
+        item_type_str="mymodel",  # MUST match a key in MODEL_MAP
+        redirect_info=redirect_info,
+        delete_method="hard",  # or "anonymize"
+        success_message="Your item has been deleted."
+    )
+
+    # Redirect back to the page where the user initiated the deletion
+    return redirect(url_for('...'))
+    ```
+
+#### 7.6.3  **Register the Model in `MODEL_MAP`:** Ensure your model is registered in the `MODEL_MAP` dictionary in `opennourish/undo/routes.py`. The key (`item_type_str`) must be a lowercase string representation of your model, and the value is the model class itself.
+    ```python
+    # In opennourish/undo/routes.py
+    from models import MyModel
+
+    MODEL_MAP = {
+        # ... other models
+        "mymodel": MyModel,
+        "UnifiedPortion": UnifiedPortion, # It is case-sensitive
+    }
+    ```
+    **Important:** The `item_type_str` you use in `prepare_undo_and_delete()` must exactly match a key in this `MODEL_MAP`.
+
+**Deletion Methods:**
+*   `delete_method="hard"`: The item is removed from the database. The undo action will re-insert it. Use this for most cases.
+*   `delete_method="anonymize"`: The `user_id` of the item is set to `None`, but the record is kept. The undo action restores the `user_id`. Use this for items that might be referenced by other users (e.g., shared meals).
+
+**Testing the Undo Functionality:**
+When writing a `pytest` test for a deletion that uses the undo system, you must account for the flash message and the redirect.
+
+```python
+import re
+
+def test_delete_and_undo(client, authenticated_user):
+    # 1. Setup: Create the item to be deleted
+    # ...
+
+    # 2. POST to the delete route, but DO NOT follow the redirect
+    response = client.post(
+        url_for('my_blueprint.delete_route', item_id=item.id),
+        follow_redirects=False
+    )
+    assert response.status_code == 302 # Asserts a redirect happened
+    
+    # 3. Verify the item is gone from the DB
+    with client.application.app_context():
+        assert db.session.get(MyModel, item.id) is None
+
+    # 4. Check the session for the flash message and extract the Undo URL
+    with client.session_transaction() as session:
+        flashes = session.get('_flashes', [])
+        assert len(flashes) > 0
+        flash_message = flashes[0][1] # The message is the second item in the tuple
+        
+        # Use regex to find the href attribute in the flashed anchor tag
+        # Note: The quotes might be single quotes
+        undo_url_match = re.search(r"href='([^']+)'", flash_message)
+        assert undo_url_match is not None
+        undo_url = undo_url_match.group(1)
+
+    # 5. GET the undo URL to restore the item
+    response = client.get(undo_url, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Item restored." in response.data
+
+    # 6. Verify the item is back in the database
+    with client.application.app_context():
+        assert db.session.get(MyModel, item.id) is not None
+```
 
 ## 8. Testing
 - **Framework:** Testing is done using the **pytest** framework.
