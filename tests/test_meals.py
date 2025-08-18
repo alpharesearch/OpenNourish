@@ -111,6 +111,7 @@ def test_delete_meal_item(auth_client_with_user):
     )
     assert response.status_code == 200
     assert b"Meal item deleted." in response.data
+    assert b"Undo" in response.data
 
     with client.application.app_context():
         deleted_item = db.session.get(MyMealItem, item_id)

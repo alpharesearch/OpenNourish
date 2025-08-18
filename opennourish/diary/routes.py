@@ -505,19 +505,18 @@ def delete_meal_item(meal_id, item_id):
     ):
         flash("Item not found or you do not have permission to delete it.", "danger")
         return redirect(url_for("diary.edit_meal", meal_id=meal_id))
-    current_app.logger.debug(
-        f"DEBUG: Attempting to delete item {item.id} from meal {meal.id}"
+
+    redirect_info = {
+        "endpoint": "diary.edit_meal",
+        "params": {"meal_id": meal_id},
+    }
+    prepare_undo_and_delete(
+        item,
+        "mymealitem",
+        redirect_info,
+        success_message="Meal item deleted.",
     )
-    current_app.logger.debug(
-        f"DEBUG: Item state before delete: {db.inspect(item).persistent}"
-    )
-    db.session.delete(item)
-    current_app.logger.debug(
-        f"DEBUG: Item state after db.session.delete: {db.inspect(item).deleted}"
-    )
-    db.session.commit()
-    current_app.logger.debug(f"DEBUG: Item {item.id} deleted and committed.")
-    flash("Meal item deleted.", "success")
+
     return redirect(url_for("diary.edit_meal", meal_id=meal_id))
 
 

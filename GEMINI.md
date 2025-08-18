@@ -221,6 +221,9 @@ To ensure a consistent and intuitive user interface, all icons should be used pu
   - **Icon:** `bi-file-earmark-pdf`
   - **Usage:** For buttons that generate a PDF.
 
+### 7.6. Undo System
+The application features a robust undo system that allows users to reverse the deletion of various items, such as diary entries, recipes, or meal items. When an item is deleted, it is not immediately removed from the database. Instead, it is soft-deleted (or its ownership is anonymized), and the data required to restore it is temporarily stored in the user's session. A flash message provides an "Undo" link, which, when clicked, triggers a route that re-inserts the data or restores the original ownership, effectively reversing the deletion. This system relies on a central `MODEL_MAP` to handle different types of objects, ensuring that the undo functionality can be easily extended across the application.
+
 ## 8. Testing
 - **Framework:** Testing is done using the **pytest** framework.
 - **Test Directory:** All tests are located in the `tests/` directory.
