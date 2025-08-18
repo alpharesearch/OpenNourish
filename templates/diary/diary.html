@@ -9,12 +9,12 @@
     else url_for('diary.diary', log_date_str=next_date.isoformat()) %}
     <div class="row justify-content-between align-items-center mb-3 mt-4">
         <!-- Prev button: On small screens, ordered second. On large, ordered first. -->
-        <div class="col-auto order-2 order-sm-1">
+        <div class="col-auto order-2 order-md-1">
             <a id="prev-day-link" href="{{ prev_url }}" class="btn btn-outline-secondary"><i class="bi bi-chevron-double-left"></i> Prev Day</a>
         </div>
 
         <!-- Title: On small screens, ordered first and full-width. On large, ordered second. -->
-        <div class="col-12 col-sm-auto text-center order-1 order-sm-2 mb-2 mb-sm-0">
+        <div class="col-12 col-md-auto text-center order-1 order-md-2 mb-2 mb-md-0">
             <h1 class="mb-0">{% if is_read_only %}{{ username }}'s {% endif %}Food Diary</h1>
             <h2 class="mb-0 h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
         </div>
