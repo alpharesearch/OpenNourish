@@ -2,9 +2,9 @@ from datetime import date
 from models import db, DailyLog, MyMeal, MyMealItem, Food, MyFood, UnifiedPortion
 
 
-def test_save_meal_from_diary(auth_client_with_user):
+def test_save_meal_from_diary_and_edit(auth_client_with_user):
     """
-    Test saving a meal from the diary.
+    Test saving a meal from the diary and redirecting to the edit page.
     """
     client, user = auth_client_with_user
     with client.application.app_context():
@@ -19,26 +19,36 @@ def test_save_meal_from_diary(auth_client_with_user):
         db.session.add(daily_log_entry)
         db.session.commit()
 
-        # POST to save the meal
+        # POST to save the meal and edit
         response = client.post(
-            "/diary/save_meal",
+            "/diary/save_meal_and_edit",
             data={
                 "log_date": date.today().isoformat(),
                 "meal_name": "Breakfast",
-                "new_meal_name": "My Saved Breakfast",
             },
-            follow_redirects=True,
+            follow_redirects=False,  # We want to check the redirect
         )
-        assert response.status_code == 200
+        assert response.status_code == 302  # Check for redirect
 
         # Assert that new MyMeal and MyMealItem objects are created
+        temp_meal_name = (
+            f"New Meal from Breakfast - {date.today().strftime('%Y-%m-%d')}"
+        )
         saved_meal = MyMeal.query.filter_by(
-            user_id=user.id, name="My Saved Breakfast"
+            user_id=user.id, name=temp_meal_name
         ).first()
         assert saved_meal is not None
         assert len(saved_meal.items) == 1
         assert saved_meal.items[0].fdc_id == 12345
         assert saved_meal.items[0].amount_grams == 100
+
+        # Check redirect location
+        assert response.location == f"/my_meals/edit/{saved_meal.id}"
+
+        # Follow redirect
+        redirect_response = client.get(response.location)
+        assert redirect_response.status_code == 200
+        assert bytes(temp_meal_name, "utf-8") in redirect_response.data
 
 
 def test_my_meals_list_view(auth_client_with_user):

@@ -187,35 +187,31 @@
                         </a>
                     </div>
                     {% else %}
-                    <div class="d-flex justify-content-end align-items-center flex-column flex-sm-row gap-2">
-                        <form action="{{ url_for('diary.save_meal') }}" method="post" class="d-flex align-items-right flex-sm-row">
+                    <div class="d-flex justify-content-end align-items-center flex-sm-row gap-2 w-lg-auto">
+                        <form action="{{ url_for('diary.save_meal_and_edit') }}" method="post" class="d-flex align-items-right flex-sm-row">
                             <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
                             <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                            <input type="text" name="new_meal_name" class="form-control form-control-sm mt-sm-0"
-                                placeholder="Save as new My Meal...">
-                            <button type="submit" class="btn btn-outline-success btn-sm mt-sm-0">
-                                <i class="bi bi-check2-circle"></i>
+                            <button type="submit" class="btn btn-outline-success btn-sm mt-sm-0 add-item-btn">
+                                <i class="bi bi-save"></i><span class="d-none d-lg-inline"> Save Meal</span>
                             </button>
                         </form>
-                        <div class="d-flex w-lg-auto justify-content-end gap-2">
-                            <button type="button" class="btn btn-outline-secondary btn-sm mt-sm-0 add-item-btn"
-                                data-food-id="{{ meal_name }}"
-                                data-food-type="diary_meal"
-                                data-food-name="Copy of {{ meal_name }} from {{ date.isoformat() }}"
-                                data-target="diary"
-                                data-source-log-date="{{ date.isoformat() }}">
-                                <i class="bi bi-clipboard"></i><span class="d-none d-lg-inline"> Copy Meal</span>
-                            </button>
-                        
-                            <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}"
-                                class="btn btn-outline-primary btn-sm mt-sm-0">
-                                <i class="bi bi-search"></i><span class="d-none d-lg-inline"> Search Food</span>
-                            </a>
-                            <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}"
-                                class="btn btn-outline-info btn-sm mt-sm-0">
-                                <i class="bi bi-upc-scan"></i><span class="d-none d-lg-inline"> Scan Barcode</span>
-                            </a>
-                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm mt-sm-0 add-item-btn"
+                            data-food-id="{{ meal_name }}"
+                            data-food-type="diary_meal"
+                            data-food-name="Copy of {{ meal_name }} from {{ date.isoformat() }}"
+                            data-target="diary"
+                            data-source-log-date="{{ date.isoformat() }}">
+                            <i class="bi bi-clipboard"></i><span class="d-none d-lg-inline"> Copy Meal</span>
+                        </button>
+                    
+                        <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name) }}"
+                            class="btn btn-outline-primary btn-sm mt-sm-0">
+                            <i class="bi bi-search"></i><span class="d-none d-lg-inline"> Search Food</span>
+                        </a>
+                        <a href="{{ url_for('search.search', target='diary', log_date=date.isoformat(), meal_name=meal_name, scan='true') }}"
+                            class="btn btn-outline-info btn-sm mt-sm-0">
+                            <i class="bi bi-upc-scan"></i><span class="d-none d-lg-inline"> Scan Barcode</span>
+                        </a>
                     </div>
                     {% endif %}
                 </div>
@@ -246,9 +242,9 @@
 
                             </small>
                         </div>
-                        <div class="col-lg-5 ">
+                        <div class="col-lg-5">
                             {% if not is_read_only %}
-                            <div class="d-flex justify-content-end align-items-center flex-column flex-sm-row gap-2">
+                            <div class="d-flex justify-content-end align-items-right flex-column flex-sm-row gap-2">
                                 <div class="d-flex w-lg-auto justify-content-end gap-2">
                                     {% if item.selected_portion and item.selected_portion.measure_unit_description != 'g' %}
                                     <small class="text-muted">

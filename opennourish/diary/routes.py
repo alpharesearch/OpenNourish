@@ -565,23 +565,33 @@ def delete_meal_item(meal_id, item_id):
     return redirect(url_for("diary.edit_meal", meal_id=meal_id))
 
 
-@diary_bp.route("/diary/save_meal", methods=["POST"])
+@diary_bp.route("/diary/save_meal_and_edit", methods=["POST"])
 @login_required
-def save_meal():
+def save_meal_and_edit():
     log_date_str = request.form.get("log_date")
     meal_name = request.form.get("meal_name")
-    new_meal_name = request.form.get("new_meal_name")
 
-    if log_date_str and meal_name and new_meal_name:
+    if log_date_str and meal_name:
         log_date = date.fromisoformat(log_date_str)
 
+        # Create a temporary name
+        new_meal_name = f"New Meal from {meal_name} - {log_date.strftime('%Y-%m-%d')}"
+
         new_meal = MyMeal(user_id=current_user.id, name=new_meal_name)
-        new_meal.usage_count = 1  # Increment usage count for new meal
         db.session.add(new_meal)
+
+        db.session.flush()
 
         log_items = DailyLog.query.filter_by(
             user_id=current_user.id, log_date=log_date, meal_name=meal_name
         ).all()
+
+        if not log_items:
+            flash(f"There are no items in {meal_name} to save.", "warning")
+            anchor = f"meal-{meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
+            return redirect(
+                url_for("diary.diary", log_date_str=log_date_str, _anchor=anchor)
+            )
 
         for item in log_items:
             new_meal_item = MyMealItem(
@@ -596,10 +606,8 @@ def save_meal():
             db.session.add(new_meal_item)
 
         db.session.commit()
-        flash(f'Meal "{new_meal_name}" saved.', "success")
-        return redirect(
-            url_for("diary.my_meals")
-        )  # This route doesn't exist yet, but we'll create it.
+        flash("Meal saved with a temporary name. You can now edit it.", "success")
+        return redirect(url_for("diary.edit_meal", meal_id=new_meal.id))
 
     flash("Invalid data.", "danger")
     return redirect(url_for("diary.diary", log_date_str=log_date_str))
