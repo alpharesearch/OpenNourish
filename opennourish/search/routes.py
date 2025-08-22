@@ -515,6 +515,7 @@ def add_item():
     portion_id_str = request.form.get("portion_id")
     return_url = request.form.get("return_url")
     friend_username = request.form.get("friend_username")
+    scale_factor = request.form.get("scale_factor", 1.0, type=float)
 
     # Ensure a 1-gram portion exists for USDA foods when they are added.
     # This is crucial for consistency across the application.
@@ -570,7 +571,7 @@ def add_item():
                     fdc_id=item.fdc_id,
                     my_food_id=item.my_food_id,
                     recipe_id=item.recipe_id,
-                    amount_grams=item.amount_grams,
+                    amount_grams=item.amount_grams * scale_factor,
                     serving_type=item.serving_type,
                     portion_id_fk=item.portion_id_fk,
                 )

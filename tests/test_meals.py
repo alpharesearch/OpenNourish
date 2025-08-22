@@ -279,3 +279,49 @@ def test_undo_anonymize_my_meal(auth_client_with_user):
         restored_meal = db.session.get(MyMeal, meal_id)
         assert restored_meal is not None
         assert restored_meal.user_id == user.id
+
+
+def test_add_my_meal_to_diary_with_scale_factor(auth_client_with_user):
+    """
+    Test adding a MyMeal to the diary with a scale factor.
+    """
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        # 1. Create a MyMeal with an item
+        meal = MyMeal(user_id=user.id, name="Scalable Meal")
+        db.session.add(meal)
+        db.session.commit()  # Commit to get meal.id
+
+        meal_item = MyMealItem(my_meal_id=meal.id, fdc_id=12345, amount_grams=200)
+        db.session.add(meal_item)
+        db.session.commit()
+        meal_id = meal.id
+
+        # 2. POST to add the meal to the diary with a scale factor
+        log_date = date.today()
+        scale_factor = 0.5
+        response = client.post(
+            "/search/add_item",
+            data={
+                "food_id": meal_id,
+                "food_type": "my_meal",
+                "target": "diary",
+                "log_date": log_date.isoformat(),
+                "meal_name": "Lunch",
+                "scale_factor": scale_factor,
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"expanded) added to your diary." in response.data
+
+        # 3. Verify the new DailyLog entry has the scaled amount
+        daily_log_entry = DailyLog.query.filter_by(
+            user_id=user.id,
+            log_date=log_date,
+            meal_name="Lunch",
+            fdc_id=12345,
+        ).first()
+
+        assert daily_log_entry is not None
+        assert daily_log_entry.amount_grams == meal_item.amount_grams * scale_factor
