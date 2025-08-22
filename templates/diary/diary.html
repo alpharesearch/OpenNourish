@@ -298,6 +298,11 @@
                                         ({{ '%.0f'|format(item.total_gram_weight) }}g)
                                     </small>
                                 {% endif %}
+                                <button type="button" class="btn btn-outline-secondary btn-sm mt-sm-0"
+                                        data-bs-toggle="modal" data-bs-target="#copyEntryModal"
+                                        data-log-id="{{ item.log_id }}"
+                                        data-log-date="{{ date.isoformat() }}"
+                                        data-friend-username="{{ username }}"><i class="bi bi-clipboard"></i></button>
                             </div>
                             {% endif %}
                         </div>
@@ -405,12 +410,20 @@
                     var button = event.relatedTarget;
                     var logId = button.getAttribute('data-log-id');
                     var logDate = button.getAttribute('data-log-date');
+                    var friendUsername = button.getAttribute('data-friend-username');
 
                     var modalLogIdInput = copyEntryModal.querySelector('#copy-modalLogId');
                     var modalLogDateInput = copyEntryModal.querySelector('#copy-modalLogDate');
+                    var copyForm = copyEntryModal.querySelector('#copyEntryForm');
 
                     modalLogIdInput.value = logId;
                     modalLogDateInput.value = logDate;
+
+                    if (friendUsername) {
+                        copyForm.action = "/user/" + friendUsername + "/copy_log";
+                    } else {
+                        copyForm.action = "{{ url_for('diary.copy_entry') }}";
+                    }
                 });
             }
 
