@@ -412,6 +412,51 @@ def move_entry():
         )
 
 
+@diary_bp.route("/diary/copy_entry", methods=["POST"])
+@login_required
+def copy_entry():
+    log_id = request.form.get("log_id")
+    target_date_str = request.form.get("target_date")
+    target_meal_name = request.form.get("target_meal_name")
+
+    log_entry_to_copy = db.session.get(DailyLog, log_id)
+
+    if not log_entry_to_copy or log_entry_to_copy.user_id != current_user.id:
+        flash(
+            "Diary entry not found or you do not have permission to copy it.", "danger"
+        )
+        return redirect(request.referrer or url_for("diary.diary"))
+
+    try:
+        target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
+
+        new_log_entry = DailyLog(
+            user_id=current_user.id,
+            log_date=target_date,
+            meal_name=target_meal_name,
+            fdc_id=log_entry_to_copy.fdc_id,
+            my_food_id=log_entry_to_copy.my_food_id,
+            recipe_id=log_entry_to_copy.recipe_id,
+            amount_grams=log_entry_to_copy.amount_grams,
+            serving_type=log_entry_to_copy.serving_type,
+            portion_id_fk=log_entry_to_copy.portion_id_fk,
+        )
+        db.session.add(new_log_entry)
+        db.session.commit()
+        flash("Diary entry copied successfully.", "success")
+        anchor = f"meal-{target_meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
+        return redirect(
+            url_for("diary.diary", log_date_str=target_date_str, _anchor=anchor)
+        )
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error copying diary entry: {e}")
+        flash("There was an error copying the diary entry.", "danger")
+        return redirect(
+            url_for("diary.diary", log_date_str=log_entry_to_copy.log_date.isoformat())
+        )
+
+
 @diary_bp.route("/my_meals/new", methods=["GET", "POST"])
 @login_required
 def new_meal():

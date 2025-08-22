@@ -395,3 +395,54 @@ def test_move_diary_entry(auth_client):
         assert moved_log is not None
         assert moved_log.log_date == target_date
         assert moved_log.meal_name == target_meal
+
+
+def test_copy_diary_entry(auth_client):
+    """
+    Tests copying a diary entry to a different date and meal.
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        # Add a dummy entry to copy
+        original_log_entry = DailyLog(
+            user_id=user.id,
+            log_date=date.today(),
+            meal_name="Breakfast",
+            amount_grams=150,
+            fdc_id=10002,  # Using a different fdc_id to avoid conflicts
+        )
+        db.session.add(original_log_entry)
+        db.session.commit()
+        original_log_id = original_log_entry.id
+
+    target_date = date.today() + timedelta(days=2)
+    target_meal = "Dinner"
+
+    response = auth_client.post(
+        "/diary/copy_entry",
+        data={
+            "log_id": original_log_id,
+            "target_date": target_date.strftime("%Y-%m-%d"),
+            "target_meal_name": target_meal,
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Diary entry copied successfully." in response.data
+
+    with auth_client.application.app_context():
+        # Check that the original log still exists
+        original_log = db.session.get(DailyLog, original_log_id)
+        assert original_log is not None
+        assert original_log.log_date == date.today()
+        assert original_log.meal_name == "Breakfast"
+
+        # Check that a new log was created
+        copied_log = DailyLog.query.filter_by(
+            log_date=target_date, meal_name=target_meal
+        ).first()
+        assert copied_log is not None
+        assert copied_log.id != original_log_id
+        assert copied_log.amount_grams == 150
+        assert copied_log.fdc_id == 10002
