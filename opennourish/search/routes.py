@@ -110,6 +110,8 @@ def search():
     target = request.values.get("target")
     recipe_id = request.values.get("recipe_id")
     log_date = request.values.get("log_date")
+    if not log_date:
+        log_date = get_user_today(current_user.timezone).isoformat()
     meal_name = request.values.get("meal_name")
 
     return_url = None
@@ -1185,6 +1187,7 @@ def add_item():
 @login_required
 def get_portions(food_type, food_id):
     portions = []
+    calories_per_100g = 0
     if food_type == "my_food":
         # Ensure the user has access to this MyFood item
         my_food = db.session.get(MyFood, food_id)
@@ -1198,6 +1201,7 @@ def get_portions(food_type, food_id):
             .order_by(UnifiedPortion.seq_num)
             .all()
         )
+        calories_per_100g = my_food.calories_per_100g
     elif food_type == "recipe":
         # Ensure the user has access to this recipe
         recipe = db.session.get(Recipe, food_id)
@@ -1212,6 +1216,7 @@ def get_portions(food_type, food_id):
             .order_by(UnifiedPortion.seq_num)
             .all()
         )
+        calories_per_100g = recipe.calories_per_100g
     elif food_type == "usda":
         usda_food = Food.query.filter_by(fdc_id=food_id).first()
         if not usda_food:
@@ -1221,36 +1226,59 @@ def get_portions(food_type, food_id):
             .order_by(UnifiedPortion.seq_num)
             .all()
         )
+        # Get calories for USDA food
+        calories_nutrient = (
+            FoodNutrient.query.filter_by(fdc_id=food_id, nutrient_id=1008)
+            .with_entities(FoodNutrient.amount)
+            .scalar()
+        )
+        calories_per_100g = calories_nutrient or 0.0
     elif food_type == "my_meal":
         # MyMeals are consumed as a whole. Return a single, default "serving" portion.
         # The add_item endpoint logic for my_meal ignores portion/amount, but we provide this for UI consistency.
         return jsonify(
-            [
-                {
-                    "id": -1,
-                    "description": "1 serving",
-                    "gram_weight": 1.0,
-                    "is_default": True,
-                }
-            ]
+            {
+                "portions": [
+                    {
+                        "id": -1,
+                        "description": "1 serving",
+                        "gram_weight": 1.0,
+                        "is_default": True,
+                    }
+                ],
+                "calories_per_100g": 0,
+            }
         )
     elif food_type == "diary_meal":
         # Diary meals are also consumed as a whole.
         return jsonify(
-            [
-                {
-                    "id": -1,
-                    "description": "1 serving",
-                    "gram_weight": 1.0,
-                    "is_default": True,
-                }
-            ]
+            {
+                "portions": [
+                    {
+                        "id": -1,
+                        "description": "1 serving",
+                        "gram_weight": 1.0,
+                        "is_default": True,
+                    }
+                ],
+                "calories_per_100g": 0,
+            }
         )
 
     if not portions:
         # Always return at least a 1-gram portion if none exist
         return jsonify(
-            [{"id": -1, "description": "g", "gram_weight": 1.0, "is_default": True}]
+            {
+                "portions": [
+                    {
+                        "id": -1,
+                        "description": "g",
+                        "gram_weight": 1.0,
+                        "is_default": True,
+                    }
+                ],
+                "calories_per_100g": calories_per_100g,
+            }
         )
 
     portions_data = [
@@ -1273,4 +1301,4 @@ def get_portions(food_type, food_id):
     if not default_found and portions_data:
         portions_data[0]["is_default"] = True
 
-    return jsonify(portions_data)
+    return jsonify({"portions": portions_data, "calories_per_100g": calories_per_100g})

@@ -68,9 +68,9 @@ def test_get_portions_api_endpoint(client_a, user_a_id):
         assert response.content_type == "application/json"
 
         json_data = response.get_json()
-        assert len(json_data) == 3
+        assert len(json_data["portions"]) == 3
 
-        for portion in json_data:
+        for portion in json_data["portions"]:
             assert "id" in portion
             assert "description" in portion
             assert "gram_weight" in portion

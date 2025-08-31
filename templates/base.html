@@ -83,6 +83,8 @@
                   </div>
                 </div>
               </div>
+              <div id="portionInfo" class="mb-3"></div>
+              <div id="remainingCaloriesInfo" class="mb-3"></div>
 
             </div>
             <div class="modal-footer">
@@ -109,15 +111,86 @@
                 const modalTarget = document.getElementById('modalTarget');
                 const modalRecipeId = document.getElementById('modalRecipeId');
                 const modalSourceLogDate = document.getElementById('modalSourceLogDate');
-            const modalMealId = document.getElementById('modalMealId');
-            const modalReturnUrl = document.getElementById('modalReturnUrl');
-            const modalFriendUsername = document.getElementById('modalFriendUsername');
-            const diaryFields = document.getElementById('diaryFields');
+                const modalMealId = document.getElementById('modalMealId');
+                const modalReturnUrl = document.getElementById('modalReturnUrl');
+                const modalFriendUsername = document.getElementById('modalFriendUsername');
+                const diaryFields = document.getElementById('diaryFields');
                 const modalLogDate = document.getElementById('modalLogDate');
                 const modalMealName = document.getElementById('modalMealName');
                 const modalPortionId = document.getElementById('modalPortionId');
+                const modalAmount = document.getElementById('modalAmount');
                 const modalAmountPortionFields = document.getElementById('modalAmountPortionFields');
                 const modalScaleFactorField = document.getElementById('modalScaleFactorField');
+                const portionInfo = document.getElementById('portionInfo');
+                const remainingCaloriesInfo = document.getElementById('remainingCaloriesInfo');
+
+                let lastFocusedElement;
+
+                const cancelButton = addItemModalEl.querySelector('.btn-outline-secondary[data-bs-dismiss="modal"]');
+                if (cancelButton) {
+                    cancelButton.addEventListener('click', function() {
+                        this.blur();
+                    });
+                }
+
+                let currentPortions = [];
+                let caloriesPer100g = 0;
+
+                function updatePortionInfo() {
+                    const selectedPortion = currentPortions.find(p => p.id == modalPortionId.value);
+                    const amount = parseFloat(modalAmount.value) || 0;
+
+                    if (selectedPortion && amount) {
+                        const gramWeight = selectedPortion.gram_weight * amount;
+                        const calories = (gramWeight / 100) * caloriesPer100g;
+                        portionInfo.innerHTML = `<strong>Selected:</strong> ${gramWeight.toFixed(1)}g, ${calories.toFixed(0)} kcal`;
+                    } else {
+                        portionInfo.innerHTML = '';
+                    }
+                }
+
+                function updateRemainingCalories() {
+                    const logDate = modalLogDate.value;
+                    if (!logDate) return;
+
+                    fetch(`/api/get-remaining-calories/${logDate}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                remainingCaloriesInfo.innerHTML = '';
+                                return;
+                            }
+                            const selectedPortion = currentPortions.find(p => p.id == modalPortionId.value);
+                            const amount = parseFloat(modalAmount.value) || 0;
+                            let caloriesToLog = 0;
+                            if (selectedPortion && amount) {
+                                const gramWeight = selectedPortion.gram_weight * amount;
+                                caloriesToLog = (gramWeight / 100) * caloriesPer100g;
+                            }
+
+                            const newRemaining = data.remaining_calories - caloriesToLog;
+
+                            remainingCaloriesInfo.innerHTML = `
+                                <strong>Remaining Today:</strong> ${data.remaining_calories.toFixed(0)} kcal <br>
+                                <strong>After Adding:</strong> ${newRemaining.toFixed(0)} kcal
+                            `;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching remaining calories:', error);
+                            remainingCaloriesInfo.innerHTML = '';
+                        });
+                }
+
+                modalAmount.addEventListener('input', () => {
+                    updatePortionInfo();
+                    updateRemainingCalories();
+                });
+                modalPortionId.addEventListener('change', () => {
+                    updatePortionInfo();
+                    updateRemainingCalories();
+                });
+                modalLogDate.addEventListener('change', updateRemainingCalories);
+
 
                 document.querySelectorAll('.add-item-btn').forEach(button => {
                     button.addEventListener('click', function() {
@@ -127,10 +200,10 @@
                         const foodName = this.dataset.foodName;
                         const target = this.dataset.target;
                         const recipeId = this.dataset.recipeId || '';
-                    const sourceLogDate = this.dataset.sourceLogDate || '';
-                    const mealId = this.dataset.mealId || '';
-                    const friendUsername = this.dataset.friendUsername || '';
-                    const logDate = this.dataset.logDate || '';
+                        const sourceLogDate = this.dataset.sourceLogDate || '';
+                        const mealId = this.dataset.mealId || '';
+                        const friendUsername = this.dataset.friendUsername || '';
+                        const logDate = this.dataset.logDate || '';
                         const mealName = this.dataset.mealName || '';
                         const returnUrl = this.dataset.returnUrl || '';
                         const apiFoodType = foodType === 'usda_food' ? 'usda' : foodType;
@@ -207,7 +280,9 @@
                                 .then(data => {
                                     modalPortionId.innerHTML = '';
                                     if (data.error) { throw new Error(data.error); }
-                                    data.forEach(portion => {
+                                    currentPortions = data.portions;
+                                    caloriesPer100g = data.calories_per_100g;
+                                    data.portions.forEach(portion => {
                                         const option = document.createElement('option');
                                         option.value = portion.id;
                                         option.textContent = portion.description;
@@ -216,6 +291,8 @@
                                         }
                                         modalPortionId.appendChild(option);
                                     });
+                                    updatePortionInfo();
+                                    updateRemainingCalories();
                                 })
                                 .catch(error => {
                                     modalPortionId.innerHTML = '';

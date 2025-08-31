@@ -418,8 +418,17 @@ def test_search_result_includes_details_link_for_usda_food(auth_client_with_data
     assert f'href="/food/{usda_food_fdc_id}"' in response.data.decode("utf-8")
 
 
-def test_usda_food_search_results_include_1g_portion(auth_client_with_data):
+def test_usda_food_search_results_include_1g_portion(
+    auth_client_with_data, monkeypatch
+):
     auth_client = auth_client_with_data
+
+    # Define a fixed date for the test
+    fixed_date = date(2025, 1, 1)
+    monkeypatch.setattr(
+        "opennourish.search.routes.get_user_today", lambda tz: fixed_date
+    )
+
     with auth_client.application.app_context():
         # Create a USDA food with an existing non-gram portion
         usda_food_fdc_id = 100003
@@ -461,7 +470,7 @@ def test_usda_food_search_results_include_1g_portion(auth_client_with_data):
     assert 'data-food-type="usda_food"' in response_data_str
     assert 'data-food-name="USDA Food with Cup Portion"' in response_data_str
     assert 'data-target="diary"' in response_data_str
-    assert 'data-log-date=""' in response_data_str
+    assert f'data-log-date="{fixed_date.isoformat()}"' in response_data_str
     assert 'data-meal-name=""' in response_data_str
     assert 'data-recipe-id=""' in response_data_str
     assert (

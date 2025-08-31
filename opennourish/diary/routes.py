@@ -1,4 +1,12 @@
-from flask import render_template, request, redirect, url_for, flash, current_app
+from flask import (
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    current_app,
+    jsonify,
+)
 from flask_login import current_user, login_required
 from . import diary_bp
 from models import (
@@ -872,3 +880,38 @@ def copy_meal_from_friend():
     db.session.commit()
     flash(f"Successfully copied {meal_name} from {friend_username}'s diary.", "success")
     return redirect(url_for("diary.diary", log_date_str=log_date_str))
+
+
+@diary_bp.route("/api/get-remaining-calories/<string:log_date_str>")
+@login_required
+def get_remaining_calories(log_date_str):
+    try:
+        log_date = date.fromisoformat(log_date_str)
+    except ValueError:
+        return jsonify({"error": "Invalid date format"}), 400
+
+    user_goal = db.session.get(UserGoal, current_user.id)
+    if not user_goal or not user_goal.calories:
+        return jsonify({"error": "Calorie goal not set"}), 404
+
+    daily_logs = DailyLog.query.filter_by(
+        user_id=current_user.id, log_date=log_date
+    ).all()
+
+    exercise_logs = ExerciseLog.query.filter_by(
+        user_id=current_user.id, log_date=log_date
+    ).all()
+
+    calories_consumed = calculate_nutrition_for_items(daily_logs)["calories"]
+    calories_burned = sum(log.calories_burned for log in exercise_logs)
+
+    remaining_calories = user_goal.calories + calories_burned - calories_consumed
+
+    return jsonify(
+        {
+            "remaining_calories": remaining_calories,
+            "goal_calories": user_goal.calories,
+            "calories_consumed": calories_consumed,
+            "calories_burned": calories_burned,
+        }
+    )
