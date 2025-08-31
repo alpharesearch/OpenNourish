@@ -15,6 +15,9 @@ from datetime import date, timedelta, datetime
 from opennourish.utils import (
     calculate_nutrition_for_items,
     calculate_weight_projection,
+    calculate_nutrient_density,
+    get_meal_based_nutrition,
+    calculate_intake_vs_goal_deviation,
 )
 from opennourish.time_utils import get_user_today, get_start_of_week
 from opennourish.decorators import onboarding_required
@@ -148,6 +151,37 @@ def index(log_date_str=None):
         .first()
     )
 
+    # --- Enhanced Analytics ---
+    # Calculate nutrient density for the day
+    nutrient_density = calculate_nutrient_density(daily_logs)
+
+    # Get meal-based nutrition breakdown
+    meal_nutrition = get_meal_based_nutrition(daily_logs)
+
+    # Calculate intake vs goal deviation
+    deviation_metrics = calculate_intake_vs_goal_deviation(user_goal, daily_logs)
+
+    # --- Scaled Daily Values ---
+    # FDA standard DVs based on a 2,000 calorie diet
+    fda_standard_dvs = {
+        "saturated_fat": 20,  # g
+        "cholesterol": 300,  # mg
+        "sodium": 2300,  # mg
+        "fiber": 28,  # g
+        "sugars": 90,  # g - Using NHS reference, as FDA has no DV for total sugars
+        "added_sugars": 50,  # g
+        "vitamin_d": 20,  # mcg
+        "calcium": 1300,  # mg
+        "iron": 18,  # mg
+        "potassium": 4700,  # mg
+    }
+
+    # Scale DVs based on user's calorie goal
+    scaling_factor = (user_goal.calories or 2000) / 2000
+    scaled_daily_values = {
+        key: value * scaling_factor for key, value in fda_standard_dvs.items()
+    }
+
     latest_checkin = (
         CheckIn.query.filter_by(user_id=current_user.id)
         .order_by(CheckIn.checkin_date.desc())
@@ -189,4 +223,8 @@ def index(log_date_str=None):
         last_completed_fast=last_completed_fast,
         now=datetime.utcnow(),
         latest_checkin=latest_checkin,
+        nutrient_density=nutrient_density,
+        meal_nutrition=meal_nutrition,
+        deviation_metrics=deviation_metrics,
+        scaled_daily_values=scaled_daily_values,
     )

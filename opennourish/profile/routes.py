@@ -19,6 +19,9 @@ from opennourish.time_utils import get_user_today
 from opennourish.utils import (
     calculate_nutrition_for_items,
     get_standard_meal_names_for_user,
+    calculate_nutrient_density,
+    get_meal_based_nutrition,
+    calculate_intake_vs_goal_deviation,
 )
 from constants import ALL_MEAL_TYPES
 
@@ -161,6 +164,34 @@ def dashboard(username, log_date_str=None):
         "fat": user_goal.fat * 7,
     }
 
+    # --- Enhanced Analytics (for friend's view) ---
+    nutrient_density = calculate_nutrient_density(daily_logs)
+    meal_nutrition = get_meal_based_nutrition(daily_logs)
+    deviation_metrics = calculate_intake_vs_goal_deviation(user_goal, daily_logs)
+    latest_checkin = (
+        CheckIn.query.filter_by(user_id=friend_user.id)
+        .order_by(CheckIn.checkin_date.desc())
+        .first()
+    )
+
+    # --- Scaled Daily Values ---
+    fda_standard_dvs = {
+        "saturated_fat": 20,  # g
+        "cholesterol": 300,  # mg
+        "sodium": 2300,  # mg
+        "fiber": 28,  # g
+        "sugars": 90,  # g
+        "added_sugars": 50,  # g
+        "vitamin_d": 20,  # mcg
+        "calcium": 1300,  # mg
+        "iron": 18,  # mg
+        "potassium": 4700,  # mg
+    }
+    scaling_factor = (user_goal.calories or 2000) / 2000
+    scaled_daily_values = {
+        key: value * scaling_factor for key, value in fda_standard_dvs.items()
+    }
+
     return render_template(
         "dashboard.html",
         date=date_obj,
@@ -187,6 +218,23 @@ def dashboard(username, log_date_str=None):
         weekly_goals=weekly_goals,
         days_elapsed_in_week=days_elapsed_in_week,
         current_user_measurement_system=getattr(current_user, "measurement_system", ""),
+        # Pass empty analytics data for now to prevent crashes
+        nutrient_density=nutrient_density,
+        meal_nutrition=meal_nutrition,
+        deviation_metrics=deviation_metrics,
+        latest_checkin=latest_checkin,
+        scaled_daily_values=scaled_daily_values,
+        # Friends cannot see each other's projections or fasting
+        projected_dates=[],
+        projected_weights=[],
+        trending_away=False,
+        days_to_goal=None,
+        goal_date_str=None,
+        at_goal_and_maintaining=False,
+        active_fast=None,
+        last_completed_fast=None,
+        now=None,
+        pending_received=current_user.pending_requests_received,
     )
 
 

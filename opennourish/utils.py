@@ -140,6 +140,151 @@ def calculate_weekly_nutrition_summary(weekly_logs):
     )
 
 
+def calculate_nutrient_density(daily_logs):
+    """
+    Calculates nutrient density (calories per gram) for a given set of daily logs.
+    Returns both overall and macro-specific densities.
+    """
+    if not daily_logs:
+        return {"overall": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0}
+
+    # Calculate total nutrition and grams for all foods in the logs
+    totals = calculate_nutrition_for_items(daily_logs)
+
+    # Calculate total weight (in grams) of consumed foods
+    total_weight_grams = sum(
+        log.amount_grams for log in daily_logs if log.amount_grams is not None
+    )
+
+    if total_weight_grams == 0:
+        return {"overall": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0}
+
+    # Calculate overall calorie density (calories per gram)
+    overall_density = totals["calories"] / total_weight_grams
+
+    # Calculate macro-specific densities
+    protein_density = (
+        (totals["protein"] * 4) / total_weight_grams if totals["protein"] > 0 else 0.0
+    )
+    carbs_density = (
+        (totals["carbs"] * 4) / total_weight_grams if totals["carbs"] > 0 else 0.0
+    )
+    fat_density = (totals["fat"] * 9) / total_weight_grams if totals["fat"] > 0 else 0.0
+
+    return {
+        "overall": round(overall_density, 2),
+        "protein": round(protein_density, 2),
+        "carbs": round(carbs_density, 2),
+        "fat": round(fat_density, 2),
+    }
+
+
+def get_meal_based_nutrition(daily_logs):
+    """
+    Groups logs by meal type and calculates nutrition totals for each.
+    Assumes the logs have a meal_type attribute or can be grouped in another way.
+    Returns data suitable for visualization of macronutrient distribution across meals.
+    """
+    # Group logs by meal type
+    meal_groups = {}
+
+    for log in daily_logs:
+        # For now, we'll group by index - this would normally use a proper meal_type field
+        # If there's no meal_type or it's not set, default to 'other'
+        if hasattr(log, "meal_name") and log.meal_name:
+            meal_name = log.meal_name
+        else:
+            meal_name = "Other"
+
+        if meal_name not in meal_groups:
+            meal_groups[meal_name] = []
+        meal_groups[meal_name].append(log)
+
+    # Calculate nutrition for each meal group
+    meal_nutrition = {}
+    for meal_name, logs in meal_groups.items():
+        totals = calculate_nutrition_for_items(logs)
+        meal_nutrition[meal_name] = {
+            "calories": round(totals["calories"], 2),
+            "protein": round(totals["protein"], 2),
+            "carbs": round(totals["carbs"], 2),
+            "fat": round(totals["fat"], 2),
+            "saturated_fat": round(totals["saturated_fat"], 2),
+            "trans_fat": round(totals["trans_fat"], 2),
+            "cholesterol": round(totals["cholesterol"], 2),
+            "sodium": round(totals["sodium"], 2),
+            "fiber": round(totals["fiber"], 2),
+            "sugars": round(totals["sugars"], 2),
+            "vitamin_d": round(totals["vitamin_d"], 2),
+            "calcium": round(totals["calcium"], 2),
+            "iron": round(totals["iron"], 2),
+            "potassium": round(totals["potassium"], 2),
+            "net_carbs": round(totals["net_carbs"], 2),
+            "grams": sum(
+                log.amount_grams for log in logs if log.amount_grams is not None
+            ),
+        }
+
+        # Ensure added_sugars key exists, defaulting to 0.0 if missing
+        if "added_sugars" in totals:
+            meal_nutrition[meal_name]["added_sugars"] = round(totals["added_sugars"], 2)
+        else:
+            meal_nutrition[meal_name]["added_sugars"] = 0.0
+
+    return meal_nutrition
+
+
+def calculate_intake_vs_goal_deviation(user_goals, daily_logs):
+    """
+    Calculate deviation from user goals (in percentage) for each macro.
+    Returns a dict with deviations per macro.
+    """
+    if not user_goals or not daily_logs:
+        return {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0}
+
+    totals = calculate_nutrition_for_items(daily_logs)
+
+    # Calculate percentage deviation from goal for each macro
+    deviations = {}
+    try:
+        if user_goals.calories and user_goals.calories > 0:
+            calories_deviation = (
+                (totals["calories"] - user_goals.calories) / user_goals.calories
+            ) * 100
+            deviations["calories"] = round(calories_deviation, 2)
+        else:
+            deviations["calories"] = 0.0
+
+        if user_goals.protein and user_goals.protein > 0:
+            protein_deviation = (
+                (totals["protein"] - user_goals.protein) / user_goals.protein
+            ) * 100
+            deviations["protein"] = round(protein_deviation, 2)
+        else:
+            deviations["protein"] = 0.0
+
+        if user_goals.carbs and user_goals.carbs > 0:
+            carbs_deviation = (
+                (totals["carbs"] - user_goals.carbs) / user_goals.carbs
+            ) * 100
+            deviations["carbs"] = round(carbs_deviation, 2)
+        else:
+            deviations["carbs"] = 0.0
+
+        if user_goals.fat and user_goals.fat > 0:
+            fat_deviation = ((totals["fat"] - user_goals.fat) / user_goals.fat) * 100
+            deviations["fat"] = round(fat_deviation, 2)
+        else:
+            deviations["fat"] = 0.0
+
+    except Exception as e:
+        current_app.logger.error(f"Error calculating intake vs goal deviation: {e}")
+        # Return zeros on error to avoid crashing the dashboard
+        return {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0}
+
+    return deviations
+
+
 # --- Unit Conversion Utilities ---
 
 

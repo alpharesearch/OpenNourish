@@ -367,7 +367,6 @@
         </div>
     </div>
     {% endif %}
-
     <div class="card mb-4">
         <div class="card-header">
             <h2 class="card-title mb-0">Fasting Status</h2>
@@ -411,6 +410,230 @@
             </ul>
         </div>
     </div>
+    <!-- Enhanced Analytics Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Enhanced Analytics</h2>
+        </div>
+        <div class="card-body">
+            {% if daily_logs %}
+            <div class="row">
+                <!-- Left Column: Meal-Based Nutrition -->
+                <div class="col-lg-6 mb-4">
+                    <h5 class="mb-3">Meal-Based Nutrition</h5>
+                    {% for meal_name, nutrition in meal_nutrition.items() %}
+                        <p><strong>{{ meal_name }}:</strong></p>
+                        <ul class="ps-3">
+                            <li>Calories: {{ "%.0f"|format(nutrition.calories) }}
+                                {% if goals.calories > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.calories / goals.calories) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Protein: {{ "%.1f"|format(nutrition.protein) }}g
+                                {% if goals.protein > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.protein / goals.protein) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Carbs: {{ "%.1f"|format(nutrition.carbs) }}g {% if nutrition.fiber %}(Net: {{ "%.1f"|format(nutrition.carbs - nutrition.fiber) }}g){% endif %}
+                                {% if goals.carbs > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.carbs / goals.carbs) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Fat: {{ "%.1f"|format(nutrition.fat) }}g
+                                {% if goals.fat > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.fat / goals.fat) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Saturated Fat: {{ "%.1f"|format(nutrition.saturated_fat) }}g
+                                {% if scaled_daily_values.saturated_fat > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.saturated_fat / scaled_daily_values.saturated_fat) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Trans Fat: {{ "%.1f"|format(nutrition.trans_fat) }}g</li>
+                            <li>Cholesterol: {{ "%.0f"|format(nutrition.cholesterol) }}mg
+                                {% if scaled_daily_values.cholesterol > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.cholesterol / scaled_daily_values.cholesterol) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Sodium: {{ "%.0f"|format(nutrition.sodium) }}mg
+                                {% if scaled_daily_values.sodium > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.sodium / scaled_daily_values.sodium) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Fiber: {{ "%.1f"|format(nutrition.fiber) }}g
+                                {% if scaled_daily_values.fiber > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.fiber / scaled_daily_values.fiber) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Sugars: {{ "%.1f"|format(nutrition.sugars) }}g
+                                {% if scaled_daily_values.sugars > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.sugars / scaled_daily_values.sugars) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Added Sugars: {{ "%.1f"|format(nutrition.added_sugars) }}g
+                                {% if scaled_daily_values.added_sugars > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.added_sugars / scaled_daily_values.added_sugars) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Vitamin D: {{ "%.0f"|format(nutrition.vitamin_d) }}mcg
+                                {% if scaled_daily_values.vitamin_d > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.vitamin_d / scaled_daily_values.vitamin_d) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Calcium: {{ "%.0f"|format(nutrition.calcium) }}mg
+                                {% if scaled_daily_values.calcium > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.calcium / scaled_daily_values.calcium) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Iron: {{ "%.1f"|format(nutrition.iron) }}mg
+                                {% if scaled_daily_values.iron > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.iron / scaled_daily_values.iron) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                            <li>Potassium: {{ "%.0f"|format(nutrition.potassium) }}mg
+                                {% if scaled_daily_values.potassium > 0 %}
+                                    <span class="text-muted">({{ "%.0f"|format((nutrition.potassium / scaled_daily_values.potassium) * 100) }}%)</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    {% else %}
+                        <p>No meal data available.</p>
+                    {% endfor %}
+                    <hr>
+                    <h5 class="mt-3">Total for the Day</h5>
+                    <ul class="ps-3">
+                        <li>Calories: {{ "%.0f"|format(totals.calories) }}
+                            {% if goals.calories > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.calories / goals.calories) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Protein: {{ "%.1f"|format(totals.protein) }}g
+                            {% if goals.protein > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.protein / goals.protein) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Carbs: {{ "%.1f"|format(totals.carbs) }}g (Net: {{ "%.1f"|format(totals.net_carbs) }}g)
+                            {% if goals.carbs > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.carbs / goals.carbs) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Fat: {{ "%.1f"|format(totals.fat) }}g
+                            {% if goals.fat > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.fat / goals.fat) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Saturated Fat: {{ "%.1f"|format(totals.saturated_fat) }}g
+                            {% if scaled_daily_values.saturated_fat > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.saturated_fat / scaled_daily_values.saturated_fat) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Trans Fat: {{ "%.1f"|format(totals.trans_fat) }}g</li>
+                        <li>Cholesterol: {{ "%.0f"|format(totals.cholesterol) }}mg
+                            {% if scaled_daily_values.cholesterol > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.cholesterol / scaled_daily_values.cholesterol) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Sodium: {{ "%.0f"|format(totals.sodium) }}mg
+                            {% if scaled_daily_values.sodium > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.sodium / scaled_daily_values.sodium) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Fiber: {{ "%.1f"|format(totals.fiber) }}g
+                            {% if scaled_daily_values.fiber > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.fiber / scaled_daily_values.fiber) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Sugars: {{ "%.1f"|format(totals.sugars) }}g
+                            {% if scaled_daily_values.sugars > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.sugars / scaled_daily_values.sugars) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Vitamin D: {{ "%.0f"|format(totals.vitamin_d) }}mcg
+                            {% if scaled_daily_values.vitamin_d > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.vitamin_d / scaled_daily_values.vitamin_d) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Calcium: {{ "%.0f"|format(totals.calcium) }}mg
+                            {% if scaled_daily_values.calcium > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.calcium / scaled_daily_values.calcium) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Iron: {{ "%.1f"|format(totals.iron) }}mg
+                            {% if scaled_daily_values.iron > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.iron / scaled_daily_values.iron) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                        <li>Potassium: {{ "%.0f"|format(totals.potassium) }}mg
+                            {% if scaled_daily_values.potassium > 0 %}
+                                <span class="text-muted">({{ "%.0f"|format((totals.potassium / scaled_daily_values.potassium) * 100) }}%)</span>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Right Column: Contains the other two cards -->
+                <div class="col-lg-6">
+                    <div class="row">
+                        <!-- Nutrient Density -->
+                        <div class="col-12 mb-4">
+                            <h5 class="mb-3">Nutrient Density</h5>
+                            <p><small class="text-muted">This section shows the energy density (calories per gram) of your food.</small></p>
+                            <p><strong>Overall:</strong> {{ "%.2f"|format(nutrient_density.overall) }} kcal/g</p>
+                            <p><strong>Protein:</strong> {{ "%.2f"|format(nutrient_density.protein) }} kcal/g</p>
+                            <p><strong>Carbs:</strong> {{ "%.2f"|format(nutrient_density.carbs) }} kcal/g</p>
+                            <p><strong>Fat:</strong> {{ "%.2f"|format(nutrient_density.fat) }} kcal/g</p>
+                            <small class="text-muted">Lower values generally indicate more nutrient-dense foods (e.g., vegetables), while higher values indicate more energy-dense foods (e.g., fats).</small>
+                            <hr>
+                            <small class="text-muted">
+                                <strong>Reference Values for Energy Density (kcal/g):</strong><br>
+                                Pure Protein: ~4<br>
+                                Pure Carbohydrates: ~4<br>
+                                Pure Fat: ~9<br>
+                                <em>Comparing your values to these references helps you understand the energy density of your diet.</em>
+                            </small>
+                        </div>
+
+                        <!-- Deviation Metrics -->
+                        <div class="col-12 mb-4">
+                            <h5 class="mb-3">Deviation from Goals</h5>
+                            {% set nutrients = [('Calories', 'calories'), ('Protein', 'protein'), ('Carbohydrates', 'carbs'), ('Fat', 'fat')] %}
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Nutrient</th>
+                                        <th>Deviation (%)</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for label, key in nutrients %}
+                                    <tr>
+                                        <td>{{ label }}</td>
+                                        <td>{{ "%.1f"|format(deviation_metrics[key]) }}%</td>
+                                        <td>
+                                            {% if deviation_metrics[key] > 5 %}
+                                                <span class="badge bg-danger">Exceeding</span>
+                                            {% elif deviation_metrics[key] < -5 %}
+                                                <span class="badge bg-warning">Below Goal</span>
+                                            {% else %}
+                                                <span class="badge bg-success">On Target</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p>No food logged for this day to generate analytics.</p>
+            {% endif %}
+        </div>
+    </div>
+
+
 
 
     <div class="card mb-4">
@@ -579,68 +802,67 @@
             const ctx = document.getElementById('projectionChart');
             if (!ctx) return;
 
-            const measurementSystem = {{ current_user_measurement_system| tojson
-        }};
-        const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
-        const conversionFactor = measurementSystem === 'us' ? 2.20462 : 1;
+            const measurementSystem = {{ current_user_measurement_system| tojson }};
+            const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
+            const conversionFactor = measurementSystem === 'us' ? 2.20462 : 1;
 
-        let projectedWeights = {{ projected_weights| tojson }}.map(w => w * conversionFactor);
-        let goalWeight = {{ goals.weight_goal_kg| tojson }} * conversionFactor;
+            let projectedWeights = {{ projected_weights| tojson }}.map(w => w * conversionFactor);
+            let goalWeight = {{ goals.weight_goal_kg| tojson }} * conversionFactor;
 
-        const goalData = Array(projectedWeights.length).fill(goalWeight);
+            const goalData = Array(projectedWeights.length).fill(goalWeight);
 
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: {{ projected_dates| tojson }},
-            datasets: [{
-                label: `Projected Weight (${weightUnit})`,
-                data: projectedWeights,
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1,
-                fill: false
-            }, {
-                label: `Goal Weight (${weightUnit})`,
-                data: goalData,
-                borderColor: 'rgb(255, 99, 132)',
-                borderDash: [5, 5],
-                fill: false
-            }]
-        },
-            options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Weight Projection'
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {{ projected_dates| tojson }},
+                    datasets: [{
+                        label: `Projected Weight (${weightUnit})`,
+                        data: projectedWeights,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        fill: false
+                    }, {
+                        label: `Goal Weight (${weightUnit})`,
+                        data: goalData,
+                        borderColor: 'rgb(255, 99, 132)',
+                        borderDash: [5, 5],
+                        fill: false
+                    }]
                 },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Weight Projection'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toFixed(1) + ' ' + weightUnit;
+                                    }
+                                    return label;
+                                }
                             }
-                            if (context.parsed.y !== null) {
-                                label += context.parsed.y.toFixed(1) + ' ' + weightUnit;
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: `Weight (${weightUnit})`
                             }
-                            return label;
                         }
                     }
                 }
-            },
-            scales: {
-                y: {
-                    title: {
-                        display: true,
-                        text: `Weight (${weightUnit})`
-                    }
-                }
-            }
-        }
-    });
-});
+            });
+        });
     </script>
     {% endif %}
     <script>

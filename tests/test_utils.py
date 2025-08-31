@@ -10,6 +10,7 @@ from models import (
     Recipe,
     RecipeIngredient,
     DailyLog,
+    UserGoal,
 )
 from opennourish import utils
 from datetime import date
@@ -306,3 +307,161 @@ def test_calculate_weekly_nutrition_summary_with_logs(user_for_utils):
         assert summary.avg_protein == pytest.approx(15.0)
         assert summary.avg_carbs == pytest.approx(30.0)
         assert summary.avg_fat == pytest.approx(7.5)
+
+
+# --- Enhanced Analytics Tests ---
+
+
+@pytest.fixture
+def analytics_data(auth_client_utils):
+    """Fixture for enhanced analytics test data."""
+    client, user_id = auth_client_utils
+    with client.application.app_context():
+        # Create a user goal
+        user_goal = UserGoal(
+            user_id=user_id, calories=2000, protein=150, carbs=250, fat=70
+        )
+        db.session.add(user_goal)
+
+        # Create some food items
+        food1 = MyFood(
+            user_id=user_id,
+            description="Chicken Breast",
+            calories_per_100g=165,
+            protein_per_100g=31,
+            carbs_per_100g=0,
+            fat_per_100g=3.6,
+        )
+        food2 = MyFood(
+            user_id=user_id,
+            description="Brown Rice",
+            calories_per_100g=111,
+            protein_per_100g=2.6,
+            carbs_per_100g=23,
+            fat_per_100g=0.9,
+        )
+        db.session.add_all([food1, food2])
+        db.session.commit()
+
+        # Create daily logs for different meals
+        log_date = date(2025, 8, 30)
+        daily_logs = [
+            DailyLog(
+                user_id=user_id,
+                my_food_id=food1.id,
+                amount_grams=200,
+                log_date=log_date,
+                meal_name="Lunch",
+            ),  # 330 kcal, 62p, 0c, 7.2f
+            DailyLog(
+                user_id=user_id,
+                my_food_id=food2.id,
+                amount_grams=150,
+                log_date=log_date,
+                meal_name="Lunch",
+            ),  # 166.5 kcal, 3.9p, 34.5c, 1.35f
+            DailyLog(
+                user_id=user_id,
+                my_food_id=food2.id,
+                amount_grams=100,
+                log_date=log_date,
+                meal_name="Snack",
+            ),  # 111 kcal, 2.6p, 23c, 0.9f
+        ]
+        db.session.add_all(daily_logs)
+        db.session.commit()
+
+        yield client, user_goal, daily_logs
+
+
+def test_calculate_nutrient_density(analytics_data):
+    """Test the calculate_nutrient_density function with data."""
+    client, _, daily_logs = analytics_data
+    with client.application.app_context():
+        # Total Cals: 330 + 166.5 + 111 = 607.5
+        # Total Grams: 200 + 150 + 100 = 450
+        # Total Protein: 62 + 3.9 + 2.6 = 68.5
+        # Total Carbs: 0 + 34.5 + 23 = 57.5
+        # Total Fat: 7.2 + 1.35 + 0.9 = 9.45
+        # Expected Overall Density: 607.5 / 450 = 1.35
+        # Expected Protein Density: (68.5 * 4) / 450 = 0.608
+        # Expected Carbs Density: (57.5 * 4) / 450 = 0.511
+        # Expected Fat Density: (9.45 * 9) / 450 = 0.189
+        density = utils.calculate_nutrient_density(daily_logs)
+        assert density["overall"] == pytest.approx(1.35)
+        assert density["protein"] == pytest.approx(0.61)
+        assert density["carbs"] == pytest.approx(0.51)
+        assert density["fat"] == pytest.approx(0.19)
+
+
+def test_calculate_nutrient_density_no_logs():
+    """Test nutrient density calculation with no logs."""
+    density = utils.calculate_nutrient_density([])
+    assert density == {"overall": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0}
+
+
+def test_get_meal_based_nutrition(analytics_data):
+    """Test the get_meal_based_nutrition function."""
+    client, _, daily_logs = analytics_data
+    with client.application.app_context():
+        meal_nutrition = utils.get_meal_based_nutrition(daily_logs)
+
+        assert "Lunch" in meal_nutrition
+        assert "Snack" in meal_nutrition
+        assert len(meal_nutrition) == 2
+
+        # Lunch: log1 + log2
+        # Cals: 330 + 166.5 = 496.5
+        # Prot: 62 + 3.9 = 65.9
+        # Carbs: 0 + 34.5 = 34.5
+        # Fat: 7.2 + 1.35 = 8.55
+        assert meal_nutrition["Lunch"]["calories"] == pytest.approx(496.5)
+        assert meal_nutrition["Lunch"]["protein"] == pytest.approx(65.9)
+        assert meal_nutrition["Lunch"]["carbs"] == pytest.approx(34.5)
+        assert meal_nutrition["Lunch"]["fat"] == pytest.approx(8.55)
+
+        # Snack: log3
+        assert meal_nutrition["Snack"]["calories"] == pytest.approx(111)
+        assert meal_nutrition["Snack"]["protein"] == pytest.approx(2.6)
+
+
+def test_get_meal_based_nutrition_no_logs():
+    """Test meal-based nutrition with no logs."""
+    meal_nutrition = utils.get_meal_based_nutrition([])
+    assert meal_nutrition == {}
+
+
+def test_calculate_intake_vs_goal_deviation(analytics_data):
+    """Test the deviation calculation from user goals."""
+    client, user_goal, daily_logs = analytics_data
+    with client.application.app_context():
+        # Totals: 607.5 kcal, 68.5p, 57.5c, 9.45f
+        # Goals: 2000 kcal, 150p, 250c, 70f
+        # Expected Deviations:
+        # Cals: (607.5 - 2000) / 2000 * 100 = -69.625
+        # Prot: (68.5 - 150) / 150 * 100 = -54.333
+        # Carbs: (57.5 - 250) / 250 * 100 = -77.0
+        # Fat: (9.45 - 70) / 70 * 100 = -86.5
+        deviation = utils.calculate_intake_vs_goal_deviation(user_goal, daily_logs)
+        assert deviation["calories"] == pytest.approx(-69.62)
+        assert deviation["protein"] == pytest.approx(-54.33)
+        assert deviation["carbs"] == pytest.approx(-77.0)
+        assert deviation["fat"] == pytest.approx(-86.5)
+
+
+def test_calculate_intake_vs_goal_deviation_no_logs(analytics_data):
+    """Test deviation calculation with no logs."""
+    client, user_goal, _ = analytics_data
+    with client.application.app_context():
+        deviation = utils.calculate_intake_vs_goal_deviation(user_goal, [])
+        assert deviation == {"calories": 0.0, "protein": 0.0, "carbs": 0.0, "fat": 0.0}
+
+
+def test_calculate_intake_vs_goal_deviation_zero_goal(analytics_data):
+    """Test deviation calculation when a goal is zero."""
+    client, user_goal, daily_logs = analytics_data
+    with client.application.app_context():
+        user_goal.fat = 0  # Set fat goal to 0
+        deviation = utils.calculate_intake_vs_goal_deviation(user_goal, daily_logs)
+        assert deviation["fat"] == 0.0  # Should not divide by zero
+        assert deviation["calories"] == pytest.approx(-69.62)
