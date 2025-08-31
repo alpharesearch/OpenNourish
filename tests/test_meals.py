@@ -281,9 +281,9 @@ def test_undo_anonymize_my_meal(auth_client_with_user):
         assert restored_meal.user_id == user.id
 
 
-def test_add_my_meal_to_diary_with_scale_factor(auth_client_with_user):
+def test_add_my_meal_to_diary_with_amount(auth_client_with_user):
     """
-    Test adding a MyMeal to the diary with a scale factor.
+    Test adding a MyMeal to the diary, scaling its ingredients by the given amount.
     """
     client, user = auth_client_with_user
     with client.application.app_context():
@@ -297,9 +297,9 @@ def test_add_my_meal_to_diary_with_scale_factor(auth_client_with_user):
         db.session.commit()
         meal_id = meal.id
 
-        # 2. POST to add the meal to the diary with a scale factor
+        # 2. POST to add the meal to the diary with an amount that acts as a scaler
         log_date = date.today()
-        scale_factor = 0.5
+        amount = 0.5
         response = client.post(
             "/search/add_item",
             data={
@@ -308,7 +308,8 @@ def test_add_my_meal_to_diary_with_scale_factor(auth_client_with_user):
                 "target": "diary",
                 "log_date": log_date.isoformat(),
                 "meal_name": "Lunch",
-                "scale_factor": scale_factor,
+                "amount": amount,
+                "portion_id": -1,  # My Meals have a virtual portion
             },
             follow_redirects=True,
         )
@@ -324,7 +325,7 @@ def test_add_my_meal_to_diary_with_scale_factor(auth_client_with_user):
         ).first()
 
         assert daily_log_entry is not None
-        assert daily_log_entry.amount_grams == meal_item.amount_grams * scale_factor
+        assert daily_log_entry.amount_grams == meal_item.amount_grams * amount
 
 
 def test_save_meal_from_diary_as_recipe(auth_client_with_user):

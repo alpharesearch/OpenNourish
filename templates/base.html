@@ -60,17 +60,13 @@
                   </select>
                 </div>
               </div>
-              <div id="modalScaleFactorField" class="mb-3" style="display: none;">
-                <label for="modalAmount" class="form-label">Scale Factor</label>
-                <input type="number" step="0.001" class="form-control" id="modalScaleFactor" name=                 
-                "scale_factor" value="1">
-              </div>
+              
               <div id="modalAmountPortionFields">
                 <div class="row">
                   <div class="col">
                     <div class="mb-3">
                       <label for="modalAmount" class="form-label">Quantity</label>
-                      <input type="number" step="0.01" class="form-control" id="modalAmount" name="amount" value="1" required>
+                      <input type="number" step="1.00" class="form-control" id="modalAmount" name="amount" value="1.00" required>
                     </div>
                   </div>
                   <div class="col">
@@ -120,7 +116,6 @@
                 const modalPortionId = document.getElementById('modalPortionId');
                 const modalAmount = document.getElementById('modalAmount');
                 const modalAmountPortionFields = document.getElementById('modalAmountPortionFields');
-                const modalScaleFactorField = document.getElementById('modalScaleFactorField');
                 const portionInfo = document.getElementById('portionInfo');
                 const remainingCaloriesInfo = document.getElementById('remainingCaloriesInfo');
 
@@ -225,12 +220,7 @@
                         modalLogDate.required = isDiaryTarget;
                         modalMealName.required = isDiaryTarget;
 
-                        const isMyMeal = apiFoodType === 'my_meal';
-                        modalScaleFactorField.style.display = isMyMeal ? 'block' : 'none';
-
-                        const isPortionless = isMyMeal || apiFoodType === 'diary_meal';
-                        modalAmountPortionFields.style.display = isPortionless ? 'none' : 'block';
-                        modalPortionId.required = !isPortionless;
+                        const isPortionless = apiFoodType === 'diary_meal';
 
                         // --- 4. POPULATE DIARY-SPECIFIC FIELDS (DATE & MEAL) ---
                         if (isDiaryTarget) {

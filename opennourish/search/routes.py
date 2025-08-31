@@ -517,7 +517,6 @@ def add_item():
     portion_id_str = request.form.get("portion_id")
     return_url = request.form.get("return_url")
     friend_username = request.form.get("friend_username")
-    scale_factor = request.form.get("scale_factor", 1.0, type=float)
 
     # Ensure a 1-gram portion exists for USDA foods when they are added.
     # This is crucial for consistency across the application.
@@ -573,7 +572,7 @@ def add_item():
                     fdc_id=item.fdc_id,
                     my_food_id=item.my_food_id,
                     recipe_id=item.recipe_id,
-                    amount_grams=item.amount_grams * scale_factor,
+                    amount_grams=item.amount_grams * amount,
                     serving_type=item.serving_type,
                     portion_id_fk=item.portion_id_fk,
                 )
@@ -1234,19 +1233,34 @@ def get_portions(food_type, food_id):
         )
         calories_per_100g = calories_nutrient or 0.0
     elif food_type == "my_meal":
-        # MyMeals are consumed as a whole. Return a single, default "serving" portion.
-        # The add_item endpoint logic for my_meal ignores portion/amount, but we provide this for UI consistency.
+        my_meal = db.session.get(MyMeal, food_id)
+        if not my_meal or my_meal.user_id != current_user.id:
+            return jsonify({"error": "Not Found or Unauthorized"}), 404
+
+        # Calculate total grams and calories for one serving of the meal
+        from opennourish.utils import calculate_nutrition_for_items
+
+        total_nutrition = calculate_nutrition_for_items(my_meal.items)
+        total_calories = total_nutrition["calories"]
+        total_grams = sum(item.amount_grams for item in my_meal.items)
+
+        # Avoid division by zero if meal is empty
+        calories_per_gram = (total_calories / total_grams) if total_grams > 0 else 0
+        calories_per_100g = calories_per_gram * 100
+
         return jsonify(
             {
                 "portions": [
                     {
-                        "id": -1,
+                        "id": -1,  # Using -1 as a special ID for this virtual portion
                         "description": "1 serving",
-                        "gram_weight": 1.0,
+                        "gram_weight": total_grams
+                        if total_grams > 0
+                        else 1.0,  # Use total_grams as the weight of "1 serving"
                         "is_default": True,
                     }
                 ],
-                "calories_per_100g": 0,
+                "calories_per_100g": calories_per_100g,
             }
         )
     elif food_type == "diary_meal":
