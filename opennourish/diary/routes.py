@@ -9,6 +9,7 @@ from models import (
     MyMeal,
     MyMealItem,
     Recipe,
+    RecipeIngredient,
     UserGoal,
     ExerciseLog,
     UnifiedPortion,
@@ -27,6 +28,10 @@ from opennourish.utils import (
 from .forms import MealForm
 from sqlalchemy.orm import joinedload, selectinload
 from constants import ALL_MEAL_TYPES
+from sqlalchemy import func
+
+# Import the update_recipe_nutrition function from recipes module
+from opennourish.recipes.routes import update_recipe_nutrition
 
 from types import SimpleNamespace
 
@@ -536,7 +541,7 @@ def edit_meal(meal_id):
 
     # Calculate total nutrition for the meal
     meal.totals = calculate_nutrition_for_items(meal.items)
-    
+
     return render_template("diary/edit_meal.html", meal=meal, form=form)
 
 
@@ -612,6 +617,85 @@ def save_meal_and_edit():
         db.session.commit()
         flash("Meal saved with a temporary name. You can now edit it.", "success")
         return redirect(url_for("diary.edit_meal", meal_id=new_meal.id))
+
+    flash("Invalid data.", "danger")
+    return redirect(url_for("diary.diary", log_date_str=log_date_str))
+
+
+@diary_bp.route("/diary/save_meal_as_recipe", methods=["POST"])
+@login_required
+def save_meal_as_recipe():
+    log_date_str = request.form.get("log_date")
+    meal_name = request.form.get("meal_name")
+
+    if log_date_str and meal_name:
+        log_date = date.fromisoformat(log_date_str)
+
+        # Create a unique recipe name for the new recipe
+        recipe_name = f"Recipe from {meal_name} - {log_date.strftime('%Y-%m-%d')}"
+
+        # Create a new recipe with an empty description initially
+        # The Recipe model expects 'name' and 'user_id', not 'description'
+        new_recipe = Recipe(
+            user_id=current_user.id,
+            name=recipe_name,
+            is_public=False,
+        )
+        db.session.add(new_recipe)
+
+        db.session.flush()  # Get the ID for the new recipe
+
+        log_items = DailyLog.query.filter_by(
+            user_id=current_user.id, log_date=log_date, meal_name=meal_name
+        ).all()
+
+        if not log_items:
+            flash(f"There are no items in {meal_name} to save as a recipe.", "warning")
+            anchor = f"meal-{meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
+            return redirect(
+                url_for("diary.diary", log_date_str=log_date_str, _anchor=anchor)
+            )
+
+        # Add each item from the diary meal to the recipe as ingredients
+        for index, item in enumerate(log_items):
+            # Calculate the next sequence number for the ingredient
+            max_seq_num = (
+                db.session.query(func.max(RecipeIngredient.seq_num))
+                .filter(RecipeIngredient.recipe_id == new_recipe.id)
+                .scalar()
+            )
+            next_seq_num = (max_seq_num or 0) + 1
+
+            # Create a RecipeIngredient with the item's data
+            ingredient = RecipeIngredient(
+                recipe_id=new_recipe.id,
+                fdc_id=item.fdc_id,
+                my_food_id=item.my_food_id,
+                recipe_id_link=item.recipe_id,
+                amount_grams=item.amount_grams,
+                serving_type=item.serving_type,
+                portion_id_fk=item.portion_id_fk,
+                seq_num=next_seq_num,
+            )
+            db.session.add(ingredient)
+
+        # Create the default 1-gram portion for this recipe (required by Recipe model)
+        gram_portion = UnifiedPortion(
+            recipe_id=new_recipe.id,
+            amount=1.0,
+            measure_unit_description="g",
+            portion_description="",
+            modifier="",
+            gram_weight=1.0,
+        )
+        db.session.add(gram_portion)
+
+        # Update the nutrition information for the new recipe
+        update_recipe_nutrition(new_recipe)
+
+        db.session.commit()
+        flash("Meal saved as a new recipe. You can now edit it.", "success")
+        return redirect(url_for("recipes.edit_recipe", recipe_id=new_recipe.id))
 
     flash("Invalid data.", "danger")
     return redirect(url_for("diary.diary", log_date_str=log_date_str))

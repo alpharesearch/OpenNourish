@@ -325,3 +325,107 @@ def test_add_my_meal_to_diary_with_scale_factor(auth_client_with_user):
 
         assert daily_log_entry is not None
         assert daily_log_entry.amount_grams == meal_item.amount_grams * scale_factor
+
+
+def test_save_meal_from_diary_as_recipe(auth_client_with_user):
+    """
+    Test saving a meal from the diary as a recipe.
+    """
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        # Create a DailyLog entry
+        daily_log_entry = DailyLog(
+            user_id=user.id,
+            log_date=date.today(),
+            meal_name="Breakfast",
+            fdc_id=12345,  # Example FDC ID
+            amount_grams=100,
+        )
+        db.session.add(daily_log_entry)
+        db.session.commit()
+
+        # POST to save the meal as a recipe
+        response = client.post(
+            "/diary/save_meal_as_recipe",
+            data={
+                "log_date": date.today().isoformat(),
+                "meal_name": "Breakfast",
+            },
+            follow_redirects=False,  # We want to check the redirect
+        )
+        assert response.status_code == 302  # Check for redirect
+
+        # Assert that a new recipe is created (we can't easily verify all details without importing Recipe model)
+        # but we know it will be redirected to the edit_recipe page
+
+        # Check redirect location - should go to recipes.edit_recipe
+        assert response.location.startswith("/recipes/")
+        assert response.location.endswith("/edit")
+
+        # Follow the redirect and check that page loads correctly
+        redirect_response = client.get(response.location)
+        assert redirect_response.status_code == 200
+
+
+def test_save_meal_as_recipe_creates_1g_portion(auth_client_with_user):
+    """
+    Test that saving a meal as recipe creates a default 1-gram portion.
+    """
+    from models import Recipe
+
+    client, user = auth_client_with_user
+    with client.application.app_context():
+        # Create a DailyLog entry
+        daily_log_entry = DailyLog(
+            user_id=user.id,
+            log_date=date.today(),
+            meal_name="Breakfast",
+            fdc_id=12345,  # Example FDC ID
+            amount_grams=100,
+        )
+        db.session.add(daily_log_entry)
+        db.session.commit()
+
+        # POST to save the meal as a recipe
+        response = client.post(
+            "/diary/save_meal_as_recipe",
+            data={
+                "log_date": date.today().isoformat(),
+                "meal_name": "Breakfast",
+            },
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 302
+
+        # Get the recipe ID from the redirect location
+        # The redirect should be to /recipes/{recipe_id}/edit
+        import re
+
+        match = re.search(r"/recipes/(\d+)/edit", response.location)
+        assert match is not None
+        recipe_id = int(match.group(1))
+
+        # Verify that a recipe was created with the correct ID
+        recipe = Recipe.query.get(recipe_id)
+        assert recipe is not None
+
+        # Check that the recipe has at least one portion (the required 1g portion)
+        assert len(recipe.portions) >= 1
+
+        # Find the 1-gram portion among all portions
+        gram_portion = None
+        for p in recipe.portions:
+            if (
+                p.gram_weight == 1.0
+                and p.amount == 1.0
+                and p.measure_unit_description == "g"
+            ):
+                gram_portion = p
+                break
+
+        # Verify that we found the 1-gram portion
+        assert gram_portion is not None, "Recipe should have a default 1-gram portion"
+
+        # Verify it's correctly linked to this recipe
+        assert gram_portion.recipe_id == recipe_id

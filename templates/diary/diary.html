@@ -188,13 +188,13 @@
                     </div>
                     {% else %}
                     <div class="d-flex justify-content-end align-items-center flex-sm-row gap-2 w-lg-auto">
-                        <form action="{{ url_for('diary.save_meal_and_edit') }}" method="post" class="d-flex align-items-right flex-sm-row">
-                            <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
-                            <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                            <button type="submit" class="btn btn-outline-success btn-sm mt-sm-0 add-item-btn">
-                                <i class="bi bi-save"></i><span class="d-none d-lg-inline"> Save Meal</span>
-                            </button>
-                        </form>
+                        <!-- Save Meal button now opens a modal -->
+                        <button type="button" class="btn btn-outline-success btn-sm mt-sm-0 save-meal-btn"
+                            data-log-date="{{ date.isoformat() }}"
+                            data-meal-name="{{ meal_name }}"
+                            data-bs-toggle="modal" data-bs-target="#saveMealModal">
+                            <i class="bi bi-save"></i><span class="d-none d-lg-inline"> Save Meal</span>
+                        </button>
                         <button type="button" class="btn btn-outline-secondary btn-sm mt-sm-0 add-item-btn"
                             data-food-id="{{ meal_name }}"
                             data-food-type="diary_meal"
@@ -312,6 +312,40 @@
         {% endfor %}
     </div>
 
+    <!-- Save Meal Modal -->
+    <div class="modal fade" id="saveMealModal" tabindex="-1" aria-labelledby="saveMealModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="saveMealModalLabel">Save Meal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Would you like to save this meal as:</p>
+                    <div class="d-grid gap-2">
+                        <form id="saveMealAsMealForm" method="POST" action="{{ url_for('diary.save_meal_and_edit') }}">
+                            <input type="hidden" name="log_date" id="save-meal-log-date" value="">
+                            <input type="hidden" name="meal_name" id="save-meal-meal-name" value="">
+                            <button type="submit" class="btn btn-outline-success btn-lg w-100">
+                                <i class="bi bi-book"></i> Save as New Meal
+                            </button>
+                        </form>
+                        <form id="saveMealAsRecipeForm" method="POST" action="{{ url_for('diary.save_meal_as_recipe') }}">
+                            <input type="hidden" name="log_date" id="save-recipe-log-date" value="">
+                            <input type="hidden" name="meal_name" id="save-recipe-meal-name" value="">
+                            <button type="submit" class="btn btn-outline-primary btn-lg w-100">
+                                <i class="bi bi-list-check"></i> Save as New Recipe
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Move Entry Modal -->
     <div class="modal fade" id="moveEntryModal" tabindex="-1" aria-labelledby="moveEntryModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -385,6 +419,22 @@
     {% block scripts %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Handle Save Meal Modal
+            var saveMealModal = document.getElementById('saveMealModal');
+            if (saveMealModal) {
+                saveMealModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    var logDate = button.getAttribute('data-log-date');
+                    var mealName = button.getAttribute('data-meal-name');
+                    
+                    // Set the hidden inputs in the forms
+                    document.getElementById('save-meal-log-date').value = logDate;
+                    document.getElementById('save-meal-meal-name').value = mealName;
+                    document.getElementById('save-recipe-log-date').value = logDate;
+                    document.getElementById('save-recipe-meal-name').value = mealName;
+                });
+            }
+
             var moveEntryModal = document.getElementById('moveEntryModal');
             if (moveEntryModal) {
                 moveEntryModal.addEventListener('show.bs.modal', function (event) {
