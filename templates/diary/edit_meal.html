@@ -6,6 +6,14 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">Edit Meal: {{ meal.name }}</h1>
         <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-success btn-sm add-item-btn"
+                data-food-id="{{ meal.id }}"
+                data-food-type="my_meal"
+                data-food-name="{{ meal.name }}"
+                data-target="diary"
+                data-return-url="{{ url_for('diary.my_meals') }}">
+                <i class="bi bi-plus-circle"></i> Add
+            </button>
             <form action="{{ url_for('diary.copy_meal', meal_id=meal.id) }}" method="POST" class="d-inline">
                 <button type="submit" class="btn btn-outline-success"><i class="bi bi-clipboard"></i> Clone</button>
             </form>
@@ -34,6 +42,12 @@
                     {% endif %}
                 </div>
             </form>
+            <small class="text-muted">
+                Calories: {{ meal.totals.calories|round(0) }} kcal |
+                Protein: {{ meal.totals.protein|round(1) }}g |
+                Carbs: {{ meal.totals.carbs|round(1) }}g (Net: {{ meal.totals.net_carbs|round(1) }}g) |
+                Fat: {{ meal.totals.fat|round(1) }}g
+            </small>
         </div>
     </div>
 

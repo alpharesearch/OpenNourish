@@ -533,6 +533,10 @@ def edit_meal(meal_id):
         item.nutrition_summary = calculate_nutrition_for_items(
             [temp_item_for_nutrition]
         )
+
+    # Calculate total nutrition for the meal
+    meal.totals = calculate_nutrition_for_items(meal.items)
+    
     return render_template("diary/edit_meal.html", meal=meal, form=form)
 
 
