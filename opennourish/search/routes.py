@@ -674,7 +674,7 @@ def add_item():
                 fdc_id=log.fdc_id,
                 my_food_id=log.my_food_id,
                 recipe_id=log.recipe_id,
-                amount_grams=log.amount_grams,
+                amount_grams=log.amount_grams * amount,
                 serving_type=log.serving_type,
                 portion_id_fk=log.portion_id_fk,
             )

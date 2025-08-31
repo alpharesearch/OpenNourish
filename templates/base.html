@@ -66,7 +66,7 @@
                   <div class="col">
                     <div class="mb-3">
                       <label for="modalAmount" class="form-label">Quantity</label>
-                      <input type="number" step="1.00" class="form-control" id="modalAmount" name="amount" value="1.00" required>
+                      <input type="number" step="any" class="form-control" id="modalAmount" name="amount" value="1.00" required>
                     </div>
                   </div>
                   <div class="col">
@@ -259,6 +259,7 @@
 
                         // --- 5. FETCH PORTIONS (IF APPLICABLE) ---
                         if (!isPortionless) {
+                            modalAmountPortionFields.style.display = 'block';
                             modalPortionId.innerHTML = '<option>Loading...</option>';
                             fetch(`/search/api/get-portions/${apiFoodType}/${foodId}`)
                                 .then(response => {
@@ -292,7 +293,17 @@
                                     console.error('Error fetching portions:', error.message);
                                 });
                         } else {
-                            modalPortionId.innerHTML = ''; // Clear portions dropdown for portionless items
+                            // For portionless items like 'diary_meal', create a dummy "Meal" option.
+                            modalAmountPortionFields.style.display = 'block';
+                            modalPortionId.innerHTML = '';
+                            const option = document.createElement('option');
+                            option.value = '0'; // A dummy value, backend should handle it.
+                            option.textContent = 'Meal';
+                            option.selected = true;
+                            modalPortionId.appendChild(option);
+                            // Also clear the info divs as they don't apply
+                            portionInfo.innerHTML = '';
+                            remainingCaloriesInfo.innerHTML = '';
                         }
 
                         // --- 6. SHOW MODAL ---
