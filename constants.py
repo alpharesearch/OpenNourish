@@ -28,36 +28,45 @@ CORE_NUTRIENT_IDS = {
     "potassium": 1092,
 }
 
+WATER = "Water"
+BREAKFAST = "Breakfast"
+SNACK_MORNING = "Snack (morning)"
+LUNCH = "Lunch"
+SNACK_AFTERNOON = "Snack (afternoon)"
+DINNER = "Dinner"
+SNACK_EVENING = "Snack (evening)"
+UNSPECIFIED = "Unspecified"
+
 MEAL_CONFIG = {
-    3: ["Breakfast", "Lunch", "Dinner"],
-    4: ["Water", "Breakfast", "Lunch", "Dinner"],
+    3: [BREAKFAST, LUNCH, DINNER],
+    4: [WATER, BREAKFAST, LUNCH, DINNER],
     6: [
-        "Breakfast",
-        "Snack (morning)",
-        "Lunch",
-        "Snack (afternoon)",
-        "Dinner",
-        "Snack (evening)",
+        BREAKFAST,
+        SNACK_MORNING,
+        LUNCH,
+        SNACK_AFTERNOON,
+        DINNER,
+        SNACK_EVENING,
     ],
     7: [
-        "Water",
-        "Breakfast",
-        "Snack (morning)",
-        "Lunch",
-        "Snack (afternoon)",
-        "Dinner",
-        "Snack (evening)",
+        WATER,
+        BREAKFAST,
+        SNACK_MORNING,
+        LUNCH,
+        SNACK_AFTERNOON,
+        DINNER,
+        SNACK_EVENING,
     ],
 }
 DEFAULT_MEAL_NAMES = MEAL_CONFIG[6]
 
 ALL_MEAL_TYPES = [
-    "Water",
-    "Breakfast",
-    "Snack (morning)",
-    "Lunch",
-    "Snack (afternoon)",
-    "Dinner",
-    "Snack (evening)",
-    "Unspecified",
+    WATER,
+    BREAKFAST,
+    SNACK_MORNING,
+    LUNCH,
+    SNACK_AFTERNOON,
+    DINNER,
+    SNACK_EVENING,
+    UNSPECIFIED,
 ]
