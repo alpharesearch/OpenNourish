@@ -1,5 +1,5 @@
 from models import db, User, FastingSession, UserGoal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytz
 
 
@@ -53,7 +53,7 @@ def test_edit_fast_start_time(auth_client):
         assert fast is not None
 
     # Edit the start time to be 1 hour earlier
-    new_start_time = datetime.utcnow() - timedelta(hours=1)
+    new_start_time = datetime.now(timezone.utc) - timedelta(hours=1)
     response = auth_client.post(
         "/fasting/edit_start_time",
         data={"start_time": new_start_time.strftime("%Y-%m-%dT%H:%M")},
@@ -67,7 +67,9 @@ def test_edit_fast_start_time(auth_client):
         fast = FastingSession.query.filter_by(status="active").first()
         assert fast is not None
         # The start_time from the form will not have seconds, so we compare against a truncated version
-        expected_start_time = new_start_time.replace(second=0, microsecond=0)
+        expected_start_time = new_start_time.replace(
+            second=0, microsecond=0, tzinfo=None
+        )
         assert fast.start_time == expected_start_time
 
 
@@ -83,7 +85,7 @@ def test_edit_fast_start_time_future_fail(auth_client):
         original_start_time = fast.start_time
 
     # Try to set start time to 1 hour in the future
-    future_start_time = datetime.utcnow() + timedelta(hours=1)
+    future_start_time = datetime.now(timezone.utc) + timedelta(hours=1)
     response = auth_client.post(
         "/fasting/edit_start_time",
         data={"start_time": future_start_time.strftime("%Y-%m-%dT%H:%M")},
@@ -202,8 +204,8 @@ def test_delete_fast(auth_client):
         user = User.query.filter_by(username="testuser").first()
         fast = FastingSession(
             user_id=user.id,
-            start_time=datetime.utcnow() - timedelta(hours=24),
-            end_time=datetime.utcnow() - timedelta(hours=8),
+            start_time=datetime.now(timezone.utc) - timedelta(hours=24),
+            end_time=datetime.now(timezone.utc) - timedelta(hours=8),
             status="completed",
             planned_duration_hours=16,
         )
@@ -232,8 +234,8 @@ def test_update_completed_fast(auth_client):
         user.timezone = "America/New_York"  # Set a non-UTC timezone
         fast = FastingSession(
             user_id=user.id,
-            start_time=datetime.utcnow() - timedelta(days=2),
-            end_time=datetime.utcnow() - timedelta(days=1),
+            start_time=datetime.now(timezone.utc) - timedelta(days=2),
+            end_time=datetime.now(timezone.utc) - timedelta(days=1),
             status="completed",
             planned_duration_hours=24,
         )

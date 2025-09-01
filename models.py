@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 import jwt
 from flask import current_app
 
@@ -97,7 +97,7 @@ class User(UserMixin, db.Model):
         return jwt.encode(
             {
                 purpose: self.id,
-                "exp": datetime.utcnow() + timedelta(seconds=expires_in),
+                "exp": datetime.now(timezone.utc) + timedelta(seconds=expires_in),
             },
             current_app.config["SECRET_KEY"],
             algorithm="HS256",

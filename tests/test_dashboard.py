@@ -11,7 +11,7 @@ from models import (
     MyFood,
     FastingSession,
 )
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from opennourish.time_utils import get_user_today
 
 
@@ -344,7 +344,7 @@ def test_dashboard_fasting_status(auth_client_onboarded):
         FastingSession.query.filter_by(user_id=user.id).delete()  # Clear old fasts
         fast = FastingSession(
             user_id=user.id,
-            start_time=datetime.utcnow() - timedelta(hours=10),
+            start_time=datetime.now(timezone.utc) - timedelta(hours=10),
             status="active",
             planned_duration_hours=24,  # Add required field
         )
