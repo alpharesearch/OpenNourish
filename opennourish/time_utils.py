@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-import pytz
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask_login import current_user
 from flask import current_app
 
@@ -9,9 +9,9 @@ from flask import current_app
 def get_user_today(user_timezone_str="UTC"):
     """Returns the current date for a given timezone string."""
     try:
-        user_tz = pytz.timezone(user_timezone_str)
-    except pytz.UnknownTimeZoneError:
-        user_tz = pytz.utc
+        user_tz = ZoneInfo(user_timezone_str)
+    except ZoneInfoNotFoundError:
+        user_tz = ZoneInfo("UTC")
     return datetime.now(user_tz).date()
 
 
@@ -21,12 +21,12 @@ def to_user_timezone(utc_dt, user_timezone_str="UTC"):
         return None
 
     try:
-        user_tz = pytz.timezone(user_timezone_str)
-    except pytz.UnknownTimeZoneError:
-        user_tz = pytz.utc
+        user_tz = ZoneInfo(user_timezone_str)
+    except ZoneInfoNotFoundError:
+        user_tz = ZoneInfo("UTC")
 
     if utc_dt.tzinfo is None:
-        utc_dt = pytz.utc.localize(utc_dt)
+        utc_dt = utc_dt.replace(tzinfo=ZoneInfo("UTC"))
 
     return utc_dt.astimezone(user_tz)
 
@@ -37,12 +37,12 @@ def to_utc(naive_dt, user_timezone_str="UTC"):
         return None
 
     try:
-        local_tz = pytz.timezone(user_timezone_str)
-    except pytz.UnknownTimeZoneError:
-        local_tz = pytz.utc
+        local_tz = ZoneInfo(user_timezone_str)
+    except ZoneInfoNotFoundError:
+        local_tz = ZoneInfo("UTC")
 
-    local_dt = local_tz.localize(naive_dt)
-    return local_dt.astimezone(pytz.utc)
+    local_dt = naive_dt.replace(tzinfo=local_tz)
+    return local_dt.astimezone(ZoneInfo("UTC"))
 
 
 def get_start_of_week(today, start_day="Monday"):
@@ -75,8 +75,8 @@ def _get_user_timezone_for_filter():
         user_tz_str = current_user.timezone
 
     try:
-        pytz.timezone(user_tz_str)
-    except pytz.UnknownTimeZoneError:
+        ZoneInfo(user_tz_str)
+    except ZoneInfoNotFoundError:
         current_app.logger.warning(
             f"Invalid timezone '{user_tz_str}' for user {getattr(current_user, 'id', 'anonymous')}. "
             "Falling back to UTC for formatting."

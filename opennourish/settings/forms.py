@@ -11,7 +11,7 @@ from wtforms import (
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional
 from models import User
 from flask_login import current_user
-import pytz
+from zoneinfo import available_timezones
 
 
 class SettingsForm(FlaskForm):
@@ -78,7 +78,7 @@ class SettingsForm(FlaskForm):
         validators=[DataRequired()],
     )
     timezone = SelectField(
-        "Timezone", choices=[(tz, tz) for tz in pytz.common_timezones]
+        "Timezone", choices=[(tz, tz) for tz in sorted(available_timezones())]
     )
     submit = SubmitField("Save Settings")
 

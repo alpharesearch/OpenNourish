@@ -1,6 +1,6 @@
 from models import db, User, FastingSession, UserGoal
 from datetime import datetime, timedelta, timezone
-import pytz
+from zoneinfo import ZoneInfo
 
 
 def test_fasting_index_no_active_fast(auth_client):
@@ -263,15 +263,15 @@ def test_update_completed_fast(auth_client):
         updated_fast = db.session.get(FastingSession, fast_id)
 
         # Convert naive form times to expected UTC for comparison
-        user_tz = pytz.timezone("America/New_York")
+        user_tz = ZoneInfo("America/New_York")
         expected_start_utc = (
-            user_tz.localize(new_start_time_naive)
-            .astimezone(pytz.utc)
+            new_start_time_naive.replace(tzinfo=user_tz)
+            .astimezone(ZoneInfo("UTC"))
             .replace(tzinfo=None)
         )
         expected_end_utc = (
-            user_tz.localize(new_end_time_naive)
-            .astimezone(pytz.utc)
+            new_end_time_naive.replace(tzinfo=user_tz)
+            .astimezone(ZoneInfo("UTC"))
             .replace(tzinfo=None)
         )
 

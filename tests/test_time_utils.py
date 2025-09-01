@@ -1,6 +1,5 @@
 import pytest
-from datetime import datetime, date
-import pytz
+from datetime import datetime, date, timezone
 from flask_login import login_user
 
 from opennourish.time_utils import (
@@ -33,7 +32,7 @@ def test_get_start_of_week():
 
 def test_get_user_today_with_timezone(monkeypatch):
     """Test get_user_today with a specific timezone."""
-    mock_now_utc = datetime(2025, 7, 30, 2, 0, 0, tzinfo=pytz.utc)
+    mock_now_utc = datetime(2025, 7, 30, 2, 0, 0, tzinfo=timezone.utc)
 
     class MockDateTime(datetime):
         @classmethod
@@ -47,7 +46,7 @@ def test_get_user_today_with_timezone(monkeypatch):
 
 def test_get_user_today_utc(monkeypatch):
     """Test get_user_today with the default UTC timezone."""
-    mock_now_utc = datetime(2025, 7, 30, 2, 0, 0, tzinfo=pytz.utc)
+    mock_now_utc = datetime(2025, 7, 30, 2, 0, 0, tzinfo=timezone.utc)
 
     class MockDateTime(datetime):
         @classmethod
@@ -63,7 +62,7 @@ def test_to_user_timezone():
     """Test converting a UTC datetime to a specific timezone."""
     utc_dt = datetime(2025, 7, 29, 12, 0, 0)
     local_dt = to_user_timezone(utc_dt, user_timezone_str="America/New_York")
-    assert local_dt.tzinfo.zone == "America/New_York"
+    assert local_dt.tzinfo.key == "America/New_York"
     assert local_dt.hour == 8
 
 
@@ -71,7 +70,7 @@ def test_to_utc():
     """Test converting a naive local datetime to UTC."""
     naive_local_dt = datetime(2025, 7, 29, 8, 0, 0)
     utc_dt = to_utc(naive_local_dt, user_timezone_str="America/New_York")
-    assert utc_dt.tzinfo.zone == "UTC"
+    assert utc_dt.tzinfo.key == "UTC"
     assert utc_dt.hour == 12
 
 
@@ -79,7 +78,7 @@ def test_invalid_timezone_fallback():
     """Test that an invalid timezone string falls back to UTC."""
     utc_dt = datetime(2025, 7, 29, 12, 0, 0)
     local_dt = to_user_timezone(utc_dt, user_timezone_str="Invalid/Timezone")
-    assert local_dt.tzinfo.zone == "UTC"
+    assert local_dt.tzinfo.key == "UTC"
     assert local_dt.hour == 12
 
 
