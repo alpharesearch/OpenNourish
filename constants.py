@@ -70,3 +70,5 @@ ALL_MEAL_TYPES = [
     SNACK_EVENING,
     UNSPECIFIED,
 ]
+
+USERS_ID = "users.id"

@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, datetime, timedelta, timezone
 import jwt
 from flask import current_app
+from constants import USERS_ID
 
 db = SQLAlchemy()
 
@@ -117,8 +118,8 @@ class User(UserMixin, db.Model):
 class Friendship(db.Model):
     __tablename__ = "friendships"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    requester_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    requester_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=False)
     status = db.Column(
         db.String, default="pending", nullable=False
     )  # 'pending', 'accepted'
@@ -132,7 +133,7 @@ class Friendship(db.Model):
 class FastingSession(db.Model):
     __tablename__ = "fasting_sessions"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=False)
     start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     end_time = db.Column(db.DateTime, nullable=True)
     planned_duration_hours = db.Column(db.Integer, nullable=False)
@@ -145,7 +146,7 @@ class FastingSession(db.Model):
 class UserGoal(db.Model):
     __tablename__ = "user_goals"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=False)
     goal_modifier = db.Column(db.String(50), nullable=True)
     diet_preset = db.Column(db.String(50), nullable=True)
     calories = db.Column(db.Float, default=2000)
@@ -164,7 +165,7 @@ class UserGoal(db.Model):
 class CheckIn(db.Model):
     __tablename__ = "check_ins"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=False)
     checkin_date = db.Column(db.Date, default=date.today)
     weight_kg = db.Column(db.Float)
     body_fat_percentage = db.Column(db.Float)
@@ -244,7 +245,7 @@ class FoodCategory(db.Model):
 class MyFood(db.Model):
     __tablename__ = "my_foods"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=True)
     description = db.Column(db.String)
     food_category_id = db.Column(
         db.Integer, db.ForeignKey("food_category.id"), nullable=True
@@ -280,7 +281,7 @@ class MyFood(db.Model):
 class DailyLog(db.Model):
     __tablename__ = "daily_logs"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=False)
     log_date = db.Column(db.Date, nullable=False)
     meal_name = db.Column(db.String)
     fdc_id = db.Column(db.Integer, nullable=True)
@@ -294,7 +295,7 @@ class DailyLog(db.Model):
 class Recipe(db.Model):
     __tablename__ = "recipes"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=True)
     name = db.Column(db.String)
     food_category_id = db.Column(
         db.Integer, db.ForeignKey("food_category.id"), nullable=True
@@ -363,7 +364,7 @@ class RecipeIngredient(db.Model):
 class MyMeal(db.Model):
     __tablename__ = "my_meals"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=True)
     name = db.Column(db.String, nullable=False)
     usage_count = db.Column(db.Integer, default=0, nullable=False)
     items = db.relationship("MyMealItem", backref="meal", cascade="all, delete-orphan")
@@ -401,7 +402,7 @@ class ExerciseActivity(db.Model):
 class ExerciseLog(db.Model):
     __tablename__ = "exercise_logs"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=False)
     log_date = db.Column(db.Date, default=date.today)
     activity_id = db.Column(
         db.Integer, db.ForeignKey("exercise_activities.id"), nullable=True
