@@ -463,7 +463,5 @@ def test_calculate_intake_vs_goal_deviation_zero_goal(analytics_data):
     with client.application.app_context():
         user_goal.fat = 0  # Set fat goal to 0
         deviation = utils.calculate_intake_vs_goal_deviation(user_goal, daily_logs)
-        assert deviation["fat"] == pytest.approx(
-            0.0
-        )  # Should not divide by zero
+        assert deviation["fat"] == pytest.approx(0.0)  # Should not divide by zero
         assert deviation["calories"] == pytest.approx(-69.62)
