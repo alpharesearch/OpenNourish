@@ -10,6 +10,8 @@ db = SQLAlchemy()
 
 PORTIONS_ID = "portions.id"
 CASCADE_ALL_DELETE_ORPHAN = "all, delete-orphan"
+MY_FOOD_ID = "my_foods.id"
+RECIPES_ID = "recipes.id"
 
 
 class SystemSetting(db.Model):
@@ -180,8 +182,8 @@ class UnifiedPortion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     # Foreign Keys to link to different parent types
-    my_food_id = db.Column(db.Integer, db.ForeignKey("my_foods.id"), nullable=True)
-    recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id"), nullable=True)
+    my_food_id = db.Column(db.Integer, db.ForeignKey(MY_FOOD_ID), nullable=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey(RECIPES_ID), nullable=True)
     fdc_id = db.Column(
         db.Integer, index=True, nullable=True
     )  # Logical link to usda_data.db
@@ -288,8 +290,8 @@ class DailyLog(db.Model):
     log_date = db.Column(db.Date, nullable=False)
     meal_name = db.Column(db.String)
     fdc_id = db.Column(db.Integer, nullable=True)
-    my_food_id = db.Column(db.Integer, db.ForeignKey("my_foods.id"), nullable=True)
-    recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id"), nullable=True)
+    my_food_id = db.Column(db.Integer, db.ForeignKey(MY_FOOD_ID), nullable=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey(RECIPES_ID), nullable=True)
     amount_grams = db.Column(db.Float)
     serving_type = db.Column(db.String(50), default="g")
     portion_id_fk = db.Column(db.Integer, db.ForeignKey(PORTIONS_ID), nullable=True)
@@ -343,11 +345,11 @@ class Recipe(db.Model):
 class RecipeIngredient(db.Model):
     __tablename__ = "recipe_ingredients"
     id = db.Column(db.Integer, primary_key=True)
-    recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id"), nullable=False)
+    recipe_id = db.Column(db.Integer, db.ForeignKey(RECIPES_ID), nullable=False)
     fdc_id = db.Column(db.Integer, nullable=True)
-    my_food_id = db.Column(db.Integer, db.ForeignKey("my_foods.id"), nullable=True)
+    my_food_id = db.Column(db.Integer, db.ForeignKey(MY_FOOD_ID), nullable=True)
     recipe_id_link = db.Column(
-        db.Integer, db.ForeignKey("recipes.id"), nullable=True
+        db.Integer, db.ForeignKey(RECIPES_ID), nullable=True
     )  # For nested recipes
     amount_grams = db.Column(db.Float)
     serving_type = db.Column(db.String(50), default="g")
@@ -381,8 +383,8 @@ class MyMealItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     my_meal_id = db.Column(db.Integer, db.ForeignKey("my_meals.id"), nullable=False)
     fdc_id = db.Column(db.Integer, nullable=True)
-    my_food_id = db.Column(db.Integer, db.ForeignKey("my_foods.id"), nullable=True)
-    recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id"), nullable=True)
+    my_food_id = db.Column(db.Integer, db.ForeignKey(MY_FOOD_ID), nullable=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey(RECIPES_ID), nullable=True)
     amount_grams = db.Column(db.Float)
     serving_type = db.Column(db.String(50), default="g")
     portion_id_fk = db.Column(db.Integer, db.ForeignKey(PORTIONS_ID), nullable=True)
