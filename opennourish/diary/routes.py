@@ -44,6 +44,11 @@ from opennourish.recipes.routes import update_recipe_nutrition
 from types import SimpleNamespace
 
 
+DIARY_ROUTE = "diary.diary"
+EDIT_MEAL_ROUTE = "diary.edit_meal"
+MY_MEALS_ROUTE = "diary.my_meals"
+
+
 @diary_bp.route("/diary/")
 @diary_bp.route("/diary/<string:log_date_str>")
 @login_required
@@ -290,7 +295,7 @@ def delete_log(log_id):
         anchor = f"meal-{meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
 
         redirect_info = {
-            "endpoint": "diary.diary",
+            "endpoint": DIARY_ROUTE,
             "params": {"log_date_str": log_date_str},
             "fragment": anchor,
         }
@@ -298,12 +303,10 @@ def delete_log(log_id):
             log_entry, "dailylog", redirect_info, success_message="Entry deleted."
         )
 
-        return redirect(
-            url_for("diary.diary", log_date_str=log_date_str, _anchor=anchor)
-        )
+        return redirect(url_for(DIARY_ROUTE, log_date_str=log_date_str, _anchor=anchor))
 
     flash("Entry not found or you do not have permission to delete it.", "danger")
-    return redirect(url_for("diary.diary"))
+    return redirect(url_for(DIARY_ROUTE))
 
 
 @diary_bp.route("/my_meals/<int:meal_id>/delete", methods=["POST"])
@@ -311,7 +314,7 @@ def delete_log(log_id):
 def delete_meal(meal_id):
     meal = db.session.get(MyMeal, meal_id)
     if meal and meal.user_id == current_user.id:
-        redirect_info = {"endpoint": "diary.my_meals"}
+        redirect_info = {"endpoint": MY_MEALS_ROUTE}
         prepare_undo_and_delete(
             meal,
             "mymeal",
@@ -319,10 +322,10 @@ def delete_meal(meal_id):
             delete_method="anonymize",
             success_message="Meal deleted.",
         )
-        return redirect(url_for("diary.my_meals"))
+        return redirect(url_for(MY_MEALS_ROUTE))
 
     flash("Meal not found or you do not have permission to delete it.", "danger")
-    return redirect(url_for("diary.my_meals"))
+    return redirect(url_for(MY_MEALS_ROUTE))
 
 
 @diary_bp.route("/my_meals/<int:meal_id>/copy", methods=["POST"])
@@ -335,7 +338,7 @@ def copy_meal(meal_id):
         friend_ids = [friend.id for friend in current_user.friends]
         if original_meal.user_id not in friend_ids:
             flash("You can only copy meals from your friends.", "danger")
-            return redirect(request.referrer or url_for("diary.my_meals"))
+            return redirect(request.referrer or url_for(MY_MEALS_ROUTE))
 
     new_meal = MyMeal(user_id=current_user.id, name=f"{original_meal.name} (Copy)")
     db.session.add(new_meal)
@@ -353,7 +356,7 @@ def copy_meal(meal_id):
 
     db.session.commit()
     flash(f"Successfully copied '{original_meal.name}' to your meals.", "success")
-    return redirect(url_for("diary.my_meals"))
+    return redirect(url_for(MY_MEALS_ROUTE))
 
 
 @diary_bp.route("/diary/update_entry/<int:log_id>", methods=["POST"])
@@ -362,7 +365,7 @@ def update_entry(log_id):
     log_entry = db.session.get(DailyLog, log_id)
     if not log_entry or log_entry.user_id != current_user.id:
         flash("Entry not found or you do not have permission to edit it.", "danger")
-        return redirect(url_for("diary.diary"))
+        return redirect(url_for(DIARY_ROUTE))
 
     amount = request.form.get("amount", type=float)
     portion_id = request.form.get("portion_id", type=int)
@@ -386,7 +389,7 @@ def update_entry(log_id):
     )
     return redirect(
         url_for(
-            "diary.diary", log_date_str=log_entry.log_date.isoformat(), _anchor=anchor
+            DIARY_ROUTE, log_date_str=log_entry.log_date.isoformat(), _anchor=anchor
         )
     )
 
@@ -404,7 +407,7 @@ def move_entry():
         flash(
             "Diary entry not found or you do not have permission to move it.", "danger"
         )
-        return redirect(request.referrer or url_for("diary.diary"))
+        return redirect(request.referrer or url_for(DIARY_ROUTE))
 
     try:
         target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
@@ -414,14 +417,14 @@ def move_entry():
         flash("Diary entry moved successfully.", "success")
         anchor = f"meal-{target_meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
         return redirect(
-            url_for("diary.diary", log_date_str=target_date_str, _anchor=anchor)
+            url_for(DIARY_ROUTE, log_date_str=target_date_str, _anchor=anchor)
         )
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error moving diary entry: {e}")
         flash("There was an error moving the diary entry.", "danger")
         return redirect(
-            url_for("diary.diary", log_date_str=log_entry.log_date.isoformat())
+            url_for(DIARY_ROUTE, log_date_str=log_entry.log_date.isoformat())
         )
 
 
@@ -438,7 +441,7 @@ def copy_entry():
         flash(
             "Diary entry not found or you do not have permission to copy it.", "danger"
         )
-        return redirect(request.referrer or url_for("diary.diary"))
+        return redirect(request.referrer or url_for(DIARY_ROUTE))
 
     try:
         target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
@@ -459,14 +462,14 @@ def copy_entry():
         flash("Diary entry copied successfully.", "success")
         anchor = f"meal-{target_meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
         return redirect(
-            url_for("diary.diary", log_date_str=target_date_str, _anchor=anchor)
+            url_for(DIARY_ROUTE, log_date_str=target_date_str, _anchor=anchor)
         )
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error copying diary entry: {e}")
         flash("There was an error copying the diary entry.", "danger")
         return redirect(
-            url_for("diary.diary", log_date_str=log_entry_to_copy.log_date.isoformat())
+            url_for(DIARY_ROUTE, log_date_str=log_entry_to_copy.log_date.isoformat())
         )
 
 
@@ -477,7 +480,7 @@ def new_meal():
     db.session.add(new_meal)
     db.session.commit()
     flash("New meal created. You can now add items to it.", "success")
-    return redirect(url_for("diary.edit_meal", meal_id=new_meal.id))
+    return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=new_meal.id))
 
 
 @diary_bp.route("/my_meals/edit/<int:meal_id>", methods=["GET", "POST"])
@@ -497,14 +500,14 @@ def edit_meal(meal_id):
 
     if not meal or meal.user_id != current_user.id:
         flash("Meal not found or you do not have permission to edit it.", "danger")
-        return redirect(url_for("diary.my_meals"))
+        return redirect(url_for(MY_MEALS_ROUTE))
 
     form = MealForm(obj=meal)
     if form.validate_on_submit():
         meal.name = form.name.data
         db.session.commit()
         flash("Meal name updated.", "success")
-        return redirect(url_for("diary.edit_meal", meal_id=meal.id))
+        return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=meal.id))
 
     for item in meal.items:
         item.available_portions = get_available_portions(
@@ -566,10 +569,10 @@ def delete_meal_item(meal_id, item_id):
         or item.my_meal_id != meal.id
     ):
         flash("Item not found or you do not have permission to delete it.", "danger")
-        return redirect(url_for("diary.edit_meal", meal_id=meal_id))
+        return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=meal_id))
 
     redirect_info = {
-        "endpoint": "diary.edit_meal",
+        "endpoint": EDIT_MEAL_ROUTE,
         "params": {"meal_id": meal_id},
     }
     prepare_undo_and_delete(
@@ -579,7 +582,7 @@ def delete_meal_item(meal_id, item_id):
         success_message="Meal item deleted.",
     )
 
-    return redirect(url_for("diary.edit_meal", meal_id=meal_id))
+    return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=meal_id))
 
 
 @diary_bp.route("/diary/save_meal_and_edit", methods=["POST"])
@@ -607,7 +610,7 @@ def save_meal_and_edit():
             flash(f"There are no items in {meal_name} to save.", "warning")
             anchor = f"meal-{meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
             return redirect(
-                url_for("diary.diary", log_date_str=log_date_str, _anchor=anchor)
+                url_for(DIARY_ROUTE, log_date_str=log_date_str, _anchor=anchor)
             )
 
         for item in log_items:
@@ -624,10 +627,10 @@ def save_meal_and_edit():
 
         db.session.commit()
         flash("Meal saved with a temporary name. You can now edit it.", "success")
-        return redirect(url_for("diary.edit_meal", meal_id=new_meal.id))
+        return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=new_meal.id))
 
     flash("Invalid data.", "danger")
-    return redirect(url_for("diary.diary", log_date_str=log_date_str))
+    return redirect(url_for(DIARY_ROUTE, log_date_str=log_date_str))
 
 
 @diary_bp.route("/diary/save_meal_as_recipe", methods=["POST"])
@@ -661,7 +664,7 @@ def save_meal_as_recipe():
             flash(f"There are no items in {meal_name} to save as a recipe.", "warning")
             anchor = f"meal-{meal_name.lower().replace(' ', '-').replace('(', '').replace(')', '')}"
             return redirect(
-                url_for("diary.diary", log_date_str=log_date_str, _anchor=anchor)
+                url_for(DIARY_ROUTE, log_date_str=log_date_str, _anchor=anchor)
             )
 
         # Add each item from the diary meal to the recipe as ingredients
@@ -706,7 +709,7 @@ def save_meal_as_recipe():
         return redirect(url_for("recipes.edit_recipe", recipe_id=new_recipe.id))
 
     flash("Invalid data.", "danger")
-    return redirect(url_for("diary.diary", log_date_str=log_date_str))
+    return redirect(url_for(DIARY_ROUTE, log_date_str=log_date_str))
 
 
 @diary_bp.route("/my_meals")
@@ -792,7 +795,7 @@ def update_meal_item(item_id):
     item = db.session.get(MyMealItem, item_id)
     if not item or item.meal.user_id != current_user.id:
         flash("Item not found or you do not have permission to edit it.", "danger")
-        return redirect(request.referrer or url_for("diary.my_meals"))
+        return redirect(request.referrer or url_for(MY_MEALS_ROUTE))
 
     quantity = request.form.get("quantity", type=float)
     portion_id = request.form.get("portion_id", type=int)
@@ -810,7 +813,7 @@ def update_meal_item(item_id):
     else:
         flash("Invalid data submitted.", "danger")
 
-    return redirect(url_for("diary.edit_meal", meal_id=item.my_meal_id))
+    return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=item.my_meal_id))
 
 
 @diary_bp.route("/diary/copy_meal_from_friend", methods=["POST"])
@@ -879,7 +882,7 @@ def copy_meal_from_friend():
 
     db.session.commit()
     flash(f"Successfully copied {meal_name} from {friend_username}'s diary.", "success")
-    return redirect(url_for("diary.diary", log_date_str=log_date_str))
+    return redirect(url_for(DIARY_ROUTE, log_date_str=log_date_str))
 
 
 @diary_bp.route("/api/get-remaining-calories/<string:log_date_str>")
