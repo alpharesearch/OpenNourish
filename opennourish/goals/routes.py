@@ -64,17 +64,16 @@ def goals():
         return redirect(url_for("goals.goals"))
 
     # Pre-populate form for GET request
-    if request.method == "GET":
-        if user_goal:
-            form.goal_modifier.data = user_goal.goal_modifier
-            form.diet_preset.data = user_goal.diet_preset
-            if current_user.measurement_system == "us":
-                form.weight_goal_lbs.data = kg_to_lbs(user_goal.weight_goal_kg)
-                form.waist_in_goal.data = cm_to_in(user_goal.waist_cm_goal)
-            else:
-                form.weight_goal_kg.data = user_goal.weight_goal_kg
-                form.waist_cm_goal.data = user_goal.waist_cm_goal
-            form.body_fat_percentage_goal.data = user_goal.body_fat_percentage_goal
+    if request.method == "GET" and user_goal:
+        form.goal_modifier.data = user_goal.goal_modifier
+        form.diet_preset.data = user_goal.diet_preset
+        if current_user.measurement_system == "us":
+            form.weight_goal_lbs.data = kg_to_lbs(user_goal.weight_goal_kg)
+            form.waist_in_goal.data = cm_to_in(user_goal.waist_cm_goal)
+        else:
+            form.weight_goal_kg.data = user_goal.weight_goal_kg
+            form.waist_cm_goal.data = user_goal.waist_cm_goal
+        form.body_fat_percentage_goal.data = user_goal.body_fat_percentage_goal
 
     # Calculate BMR for display (using data from User model and latest check-in)
     bmr, formula_name = None, None

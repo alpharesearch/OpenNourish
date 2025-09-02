@@ -5,6 +5,8 @@ from . import friends_bp
 from datetime import datetime, timedelta
 from opennourish.utils import prepare_undo_and_delete
 
+FRIENDS_PAGE_ROUTE = "friends.friends_page"
+
 
 @friends_bp.route("/", methods=["GET"])
 @login_required
@@ -63,22 +65,22 @@ def add_friend():
         and not current_user.is_verified
     ):
         flash("Please verify your email address to send friend requests.", "warning")
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ROUTE))
 
     username = request.form.get("username")
     if not username:
         flash("Username is required.", "danger")
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ROUTE))
 
     user_to_add = User.query.filter_by(username=username, is_private=False).first()
 
     if not user_to_add:
         flash("User not found.", "danger")
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ROUTE))
 
     if user_to_add == current_user:
         flash("You cannot add yourself as a friend.", "warning")
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ROUTE))
 
     existing_friendship = Friendship.query.filter(
         (
@@ -93,7 +95,7 @@ def add_friend():
 
     if existing_friendship:
         flash("Friendship already exists or is pending.", "warning")
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ROUTE))
 
     new_friendship = Friendship(
         requester_id=current_user.id, receiver_id=user_to_add.id
@@ -101,7 +103,7 @@ def add_friend():
     db.session.add(new_friendship)
     db.session.commit()
     flash(f"Friend request sent to {username}.", "success")
-    return redirect(url_for("friends.friends_page"))
+    return redirect(url_for(FRIENDS_PAGE_ROUTE))
 
 
 @friends_bp.route("/request/<int:request_id>/accept", methods=["POST"])
@@ -110,15 +112,15 @@ def accept_request(request_id):
     friend_request = db.session.get(Friendship, request_id)
     if not friend_request:
         flash("Friend request not found.", "danger")
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ROUTE))
     if friend_request.receiver_id != current_user.id:
         flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ROUTE))
 
     friend_request.status = "accepted"
     db.session.commit()
     flash("Friend request accepted.", "success")
-    return redirect(url_for("friends.friends_page"))
+    return redirect(url_for(FRIENDS_PAGE_ROUTE))
 
 
 @friends_bp.route("/request/<int:request_id>/decline", methods=["POST"])
@@ -127,18 +129,18 @@ def decline_request(request_id):
     friend_request = db.session.get(Friendship, request_id)
     if not friend_request:
         flash("Friend request not found.", "danger")
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ROUTE))
     if (
         friend_request.receiver_id != current_user.id
         and friend_request.requester_id != current_user.id
     ):
         flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ROUTE))
 
     db.session.delete(friend_request)
     db.session.commit()
     flash("Friend request declined.", "success")
-    return redirect(url_for("friends.friends_page"))
+    return redirect(url_for(FRIENDS_PAGE_ROUTE))
 
 
 @friends_bp.route("/friendship/<int:friend_id>/remove", methods=["POST"])
@@ -158,9 +160,9 @@ def remove_friend(friend_id):
         )
     ).first_or_404()
 
-    redirect_info = {"endpoint": "friends.friends_page"}
+    redirect_info = {"endpoint": FRIENDS_PAGE_ROUTE}
     prepare_undo_and_delete(
         friendship, "friendship", redirect_info, success_message="Friend removed."
     )
 
-    return redirect(url_for("friends.friends_page"))
+    return redirect(url_for(FRIENDS_PAGE_ROUTE))

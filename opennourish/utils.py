@@ -35,6 +35,11 @@ from sqlalchemy.inspection import inspect
 from datetime import date
 from decimal import Decimal
 
+NO_CACHE_HEADERS = "no-cache, no-store, must-revalidate"
+TYPST_NOT_FOUND_ERROR = "Typst executable not found. Please ensure Typst is installed and in your system's PATH."
+TYPST_NOT_FOUND_SHORT_ERROR = "Typst executable not found."
+TIMESTAMP_FORMAT = "%Y%m%dT%H%M%S"
+
 
 def _serialize_model_for_session(model_instance):
     """
@@ -860,7 +865,7 @@ def generate_nutrition_label_pdf(fdc_id):
                 cwd=tmpdir,
             )
 
-            timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+            timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
             response = send_file(
                 pdf_file_path,
                 as_attachment=False,
@@ -868,7 +873,7 @@ def generate_nutrition_label_pdf(fdc_id):
                 mimetype="application/pdf",
             )
             # Add headers to prevent caching
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Cache-Control"] = NO_CACHE_HEADERS
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
             return response
@@ -880,7 +885,7 @@ def generate_nutrition_label_pdf(fdc_id):
             return f"Error generating PDF: {e.stderr}", 500
         except FileNotFoundError:
             return (
-                "Typst executable not found. Please ensure Typst is installed and in your system's PATH.",
+                TYPST_NOT_FOUND_ERROR,
                 500,
             )
 
@@ -923,7 +928,7 @@ def generate_nutrition_label_svg(fdc_id):
                 mimetype="image/svg+xml",
             )
             # Add headers to prevent caching
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Cache-Control"] = NO_CACHE_HEADERS
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
             return response
@@ -935,7 +940,7 @@ def generate_nutrition_label_svg(fdc_id):
             return f"Error generating PDF: {e.stderr}", 500
         except FileNotFoundError:
             return (
-                "Typst executable not found. Please ensure Typst is installed and in your system's PATH.",
+                TYPST_NOT_FOUND_ERROR,
                 500,
             )
 
@@ -1285,7 +1290,7 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
                 cwd=tmpdir,
             )
 
-            timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+            timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
             safe_description = (
                 re.sub(r"[^\w\s-]", "", my_food.description).strip().replace(" ", "_")
             )
@@ -1297,7 +1302,7 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
                 mimetype="application/pdf",
             )
             # Add headers to prevent caching
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Cache-Control"] = NO_CACHE_HEADERS
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
             return response
@@ -1308,9 +1313,9 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
             )
             return f"Error generating PDF: {e.stderr}", 500
         except FileNotFoundError:
-            current_app.logger.error("Typst executable not found.")
+            current_app.logger.error(TYPST_NOT_FOUND_SHORT_ERROR)
             return (
-                "Typst executable not found. Please ensure Typst is installed and in your system's PATH.",
+                TYPST_NOT_FOUND_ERROR,
                 500,
             )
 
@@ -1647,7 +1652,7 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
                 cwd=tmpdir,
             )
 
-            timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+            timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
             safe_recipe_name = (
                 re.sub(r"[^\w\s-]", "", recipe.name).strip().replace(" ", "_")
             )
@@ -1659,7 +1664,7 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
                 mimetype="application/pdf",
             )
             # Add headers to prevent caching
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Cache-Control"] = NO_CACHE_HEADERS
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
             return response
@@ -1670,9 +1675,9 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
             )
             return f"Error generating PDF: {e.stderr}", 500
         except FileNotFoundError:
-            current_app.logger.error("Typst executable not found.")
+            current_app.logger.error(TYPST_NOT_FOUND_SHORT_ERROR)
             return (
-                "Typst executable not found. Please ensure Typst is installed and in your system's PATH.",
+                TYPST_NOT_FOUND_ERROR,
                 500,
             )
 
@@ -1717,7 +1722,7 @@ def generate_recipe_label_svg(recipe_id):
                 mimetype="image/svg+xml",
             )
             # Add headers to prevent caching
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Cache-Control"] = NO_CACHE_HEADERS
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
             return response
@@ -1728,9 +1733,9 @@ def generate_recipe_label_svg(recipe_id):
             )
             return f"Error generating SVG: {e.stderr}", 500
         except FileNotFoundError:
-            current_app.logger.error("Typst executable not found.")
+            current_app.logger.error(TYPST_NOT_FOUND_SHORT_ERROR)
             return (
-                "Typst executable not found. Please ensure Typst is installed and in your system's PATH.",
+                TYPST_NOT_FOUND_ERROR,
                 500,
             )
 

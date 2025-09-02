@@ -7,7 +7,7 @@ from flask import (
     flash,
     current_app,
 )
-from datetime import datetime
+from datetime import datetime, timezone
 from flask_login import login_required, current_user
 from models import (
     db,
@@ -38,6 +38,9 @@ from opennourish.utils import (
 )
 
 recipes_bp = Blueprint("recipes", __name__, template_folder="templates")
+
+INGREDIENTS_SECTION_FRAGMENT = "#ingredients-section"
+RECIPES_LIST_ROUTE = "recipes.recipes"
 
 
 @recipes_bp.route("/")
@@ -217,7 +220,7 @@ def edit_recipe(recipe_id):
 
     if recipe.user_id != current_user.id:
         flash("You are not authorized to edit this recipe.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
     # Ensure all portions have a seq_num
     if any(p.seq_num is None for p in recipe.portions):
@@ -346,7 +349,7 @@ def edit_recipe(recipe_id):
         get_available_portions=get_available_portions,
         search_term=query,
         ingredients_for_display=ingredients_for_display,
-        timestamp=datetime.utcnow().timestamp(),
+        timestamp=datetime.now(timezone.utc).timestamp(),
         total_ingredient_weight=total_ingredient_weight,
     )
 
@@ -358,7 +361,7 @@ def delete_ingredient(ingredient_id):
     recipe = ingredient.recipe
     if recipe.user_id != current_user.id:
         flash("You are not authorized to modify this recipe.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
     redirect_info = {
         "endpoint": "recipes.edit_recipe",
@@ -376,7 +379,8 @@ def delete_ingredient(ingredient_id):
     db.session.commit()
 
     return redirect(
-        url_for("recipes.edit_recipe", recipe_id=recipe.id) + "#ingredients-section"
+        url_for("recipes.edit_recipe", recipe_id=recipe.id)
+        + INGREDIENTS_SECTION_FRAGMENT
     )
 
 
@@ -387,7 +391,7 @@ def update_ingredient(ingredient_id):
     recipe = ingredient.recipe
     if recipe.user_id != current_user.id:
         flash("You are not authorized to modify this recipe.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
     amount = request.form.get("amount", type=float)
     portion_id = request.form.get("portion_id", type=int)
@@ -412,7 +416,8 @@ def update_ingredient(ingredient_id):
     db.session.commit()
     flash("Ingredient updated successfully.", "success")
     return redirect(
-        url_for("recipes.edit_recipe", recipe_id=recipe.id) + "#ingredients-section"
+        url_for("recipes.edit_recipe", recipe_id=recipe.id)
+        + INGREDIENTS_SECTION_FRAGMENT
     )
 
 
@@ -422,7 +427,7 @@ def move_recipe_ingredient_up(ingredient_id):
     ingredient_to_move = db.session.get(RecipeIngredient, ingredient_id)
     if not ingredient_to_move or ingredient_to_move.recipe.user_id != current_user.id:
         flash("Ingredient not found or unauthorized.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
     if ingredient_to_move.seq_num is None:
         # Assign sequence numbers to all ingredients of this recipe if any are missing
@@ -464,7 +469,7 @@ def move_recipe_ingredient_up(ingredient_id):
 
     return redirect(
         url_for("recipes.edit_recipe", recipe_id=ingredient_to_move.recipe_id)
-        + "#ingredients-section"
+        + INGREDIENTS_SECTION_FRAGMENT
     )
 
 
@@ -474,7 +479,7 @@ def move_recipe_ingredient_down(ingredient_id):
     ingredient_to_move = db.session.get(RecipeIngredient, ingredient_id)
     if not ingredient_to_move or ingredient_to_move.recipe.user_id != current_user.id:
         flash("Ingredient not found or unauthorized.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
     if ingredient_to_move.seq_num is None:
         # Assign sequence numbers to all ingredients of this recipe if any are missing
@@ -516,7 +521,7 @@ def move_recipe_ingredient_down(ingredient_id):
 
     return redirect(
         url_for("recipes.edit_recipe", recipe_id=ingredient_to_move.recipe_id)
-        + "#ingredients-section"
+        + INGREDIENTS_SECTION_FRAGMENT
     )
 
 
@@ -536,7 +541,7 @@ def view_recipe(recipe_id):
     is_friend = recipe.user and recipe.user in user.friends
     if not recipe.is_public and recipe.user_id != user.id and not is_friend:
         flash("You are not authorized to view this recipe.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
     # Ensure portions have sequence numbers before passing to the template
     ensure_portion_sequence([recipe])
@@ -606,7 +611,7 @@ def view_recipe(recipe_id):
         ingredients=ingredient_details,
         totals=total_nutrition,
         form=form,
-        timestamp=datetime.utcnow().timestamp(),
+        timestamp=datetime.now(timezone.utc).timestamp(),
     )
 
 
@@ -616,9 +621,9 @@ def delete_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.user_id != current_user.id:
         flash("You are not authorized to delete this recipe.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
-    redirect_info = {"endpoint": "recipes.recipes"}
+    redirect_info = {"endpoint": RECIPES_LIST_ROUTE}
     prepare_undo_and_delete(
         recipe,
         "recipe",
@@ -627,7 +632,7 @@ def delete_recipe(recipe_id):
         success_message="Recipe deleted.",
     )
 
-    return redirect(url_for("recipes.recipes"))
+    return redirect(url_for(RECIPES_LIST_ROUTE))
 
 
 @recipes_bp.route("/recipe/portion/auto_add/<int:recipe_id>", methods=["POST"])
@@ -737,7 +742,7 @@ def update_recipe_portion(portion_id):
     portion = db.session.get(UnifiedPortion, portion_id)
     if not portion or portion.recipe.user_id != current_user.id:
         flash("Portion not found or you do not have permission to edit it.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
     form = PortionForm(request.form, obj=portion)
     if form.validate_on_submit():
@@ -772,7 +777,7 @@ def delete_recipe_portion(portion_id):
         )
     else:
         flash("Portion not found or you do not have permission to delete it.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
 
 @recipes_bp.route("/<int:recipe_id>/generate_label_pdf")
@@ -781,7 +786,7 @@ def generate_label_pdf(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if not recipe.is_public and recipe.user_id != current_user.id:
         flash("You are not authorized to view this recipe.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
     return generate_recipe_label_pdf(recipe_id, label_only=True)
 
 
@@ -797,7 +802,7 @@ def generate_pdf_details(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if not recipe.is_public and recipe.user_id != current_user.id:
         flash("You are not authorized to view this recipe.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
     return generate_recipe_label_pdf(recipe_id, label_only=False)
 
 
@@ -816,7 +821,7 @@ def copy_recipe(recipe_id):
                 "You can only copy recipes from your friends or public recipes.",
                 "danger",
             )
-            return redirect(request.referrer or url_for("recipes.recipes"))
+            return redirect(request.referrer or url_for(RECIPES_LIST_ROUTE))
 
     # Create a new recipe for the current user
     new_recipe = Recipe(
@@ -868,7 +873,7 @@ def move_recipe_portion_up(portion_id):
     portion_to_move = db.session.get(UnifiedPortion, portion_id)
     if not portion_to_move or portion_to_move.recipe.user_id != current_user.id:
         flash("Portion not found or unauthorized.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
     if portion_to_move.seq_num is None:
         # Assign sequence numbers to all portions of this food if any are missing
@@ -918,7 +923,7 @@ def move_recipe_portion_down(portion_id):
     portion_to_move = db.session.get(UnifiedPortion, portion_id)
     if not portion_to_move or portion_to_move.recipe.user_id != current_user.id:
         flash("Portion not found or unauthorized.", "danger")
-        return redirect(url_for("recipes.recipes"))
+        return redirect(url_for(RECIPES_LIST_ROUTE))
 
     # Find the portion with the next higher seq_num
     portion_to_swap_with = (

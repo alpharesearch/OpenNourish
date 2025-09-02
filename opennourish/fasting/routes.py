@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from opennourish.utils import prepare_undo_and_delete
 
+FASTING_INDEX_ROUTE = "fasting.index"
+
 
 @fasting_bp.route("/")
 @login_required
@@ -52,7 +54,7 @@ def start_fast():
     ).first()
     if active_fast:
         flash("You already have an active fast.", "warning")
-        return redirect(url_for("fasting.index"))
+        return redirect(url_for(FASTING_INDEX_ROUTE))
 
     duration_str = request.form.get("duration")
     try:
@@ -71,7 +73,7 @@ def start_fast():
     db.session.add(new_fast)
     db.session.commit()
     flash("Fasting period started!", "success")
-    return redirect(url_for("fasting.index"))
+    return redirect(url_for(FASTING_INDEX_ROUTE))
 
 
 @fasting_bp.route("/end", methods=["POST"])
@@ -82,13 +84,13 @@ def end_fast():
     ).first()
     if not active_fast:
         flash("No active fast to end.", "warning")
-        return redirect(url_for("fasting.index"))
+        return redirect(url_for(FASTING_INDEX_ROUTE))
 
     active_fast.end_time = datetime.utcnow()
     active_fast.status = "completed"
     db.session.commit()
     flash("Fasting period completed!", "success")
-    return redirect(url_for("fasting.index"))
+    return redirect(url_for(FASTING_INDEX_ROUTE))
 
 
 @fasting_bp.route("/edit_start_time", methods=["POST"])
@@ -99,7 +101,7 @@ def edit_start_time():
     ).first()
     if not active_fast:
         flash("No active fast to edit.", "warning")
-        return redirect(url_for("fasting.index"))
+        return redirect(url_for(FASTING_INDEX_ROUTE))
 
     form = EditFastForm()
     if form.validate_on_submit():
@@ -121,7 +123,7 @@ def edit_start_time():
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
 
-    return redirect(url_for("fasting.index"))
+    return redirect(url_for(FASTING_INDEX_ROUTE))
 
 
 @fasting_bp.route("/update_fast/<int:fast_id>", methods=["POST"])
@@ -130,7 +132,7 @@ def update_fast(fast_id):
     fast = db.session.get(FastingSession, fast_id)
     if not fast or fast.user_id != current_user.id:
         flash("Fast not found.", "danger")
-        return redirect(url_for("fasting.index"))
+        return redirect(url_for(FASTING_INDEX_ROUTE))
 
     form = EditFastForm()
     if form.validate_on_submit():
@@ -158,7 +160,7 @@ def update_fast(fast_id):
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
 
-    return redirect(url_for("fasting.index"))
+    return redirect(url_for(FASTING_INDEX_ROUTE))
 
 
 @fasting_bp.route("/delete_fast/<int:fast_id>", methods=["POST"])
@@ -167,10 +169,10 @@ def delete_fast(fast_id):
     fast = db.session.get(FastingSession, fast_id)
     if fast and fast.user_id == current_user.id:
         page = request.args.get("page", 1, type=int)
-        redirect_info = {"endpoint": "fasting.index", "params": {"page": page}}
+        redirect_info = {"endpoint": FASTING_INDEX_ROUTE, "params": {"page": page}}
         prepare_undo_and_delete(
             fast, "fasting_session", redirect_info, success_message="Fast deleted."
         )
     else:
         flash("Fast not found or you do not have permission to delete it.", "danger")
-    return redirect(url_for("fasting.index"))
+    return redirect(url_for(FASTING_INDEX_ROUTE))

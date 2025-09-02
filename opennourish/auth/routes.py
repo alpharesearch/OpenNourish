@@ -16,6 +16,9 @@ from opennourish.utils import (
 )
 import os
 
+DASHBOARD_INDEX_ROUTE = "dashboard.index"
+AUTH_LOGIN_ROUTE = "auth.login"
+
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -29,11 +32,11 @@ def login():
         ).first()
         if user is None or not user.check_password(form.password.data):
             flash("Invalid username or password", "danger")
-            return redirect(url_for("auth.login"))
+            return redirect(url_for(AUTH_LOGIN_ROUTE))
 
         if not user.is_active:
             flash("This account has been disabled.", "warning")
-            return redirect(url_for("auth.login"))
+            return redirect(url_for(AUTH_LOGIN_ROUTE))
 
         # Retroactively grant admin rights if username matches INITIAL_ADMIN_USERNAME and they are not already an admin.
         admin_from_env = os.getenv("INITIAL_ADMIN_USERNAME")
@@ -68,7 +71,7 @@ def register():
             f"ALLOW_REGISTRATION is {get_allow_registration_status()}. Redirecting to login."
         )
         flash("New user registration is currently disabled.", "danger")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for(AUTH_LOGIN_ROUTE))
     if current_user.is_authenticated:
         return redirect(url_for("main.index"))
     form = RegistrationForm()
@@ -109,7 +112,7 @@ def register():
         # After registration, check if the user has existing goals
         user_goal = UserGoal.query.filter_by(user_id=user.id).first()
         if user_goal:
-            return redirect(url_for("dashboard.index"))
+            return redirect(url_for(DASHBOARD_INDEX_ROUTE))
         else:
             return redirect(url_for("goals.goals"))
     return render_template("register.html", title="Register", form=form)
@@ -119,7 +122,7 @@ def register():
 def reset_password_request():
     if not current_app.config.get("ENABLE_PASSWORD_RESET", False):
         flash("Password reset feature is currently disabled.", "warning")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for(AUTH_LOGIN_ROUTE))
 
     if current_user.is_authenticated:
         return redirect(url_for("main.index"))
@@ -130,7 +133,7 @@ def reset_password_request():
             token = user.get_token(purpose="reset-password")
             send_password_reset_email(user, token)
             flash("Check your email for the instructions to reset your password")
-            return redirect(url_for("auth.login"))
+            return redirect(url_for(AUTH_LOGIN_ROUTE))
         else:
             flash("Email address not found.", "danger")
     return render_template(
@@ -151,7 +154,7 @@ def reset_password(token):
         user.set_password(form.password.data)
         db.session.commit()
         flash("Your password has been reset.", "success")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for(AUTH_LOGIN_ROUTE))
     return render_template("reset_password.html", title="Reset Password", form=form)
 
 
@@ -159,7 +162,7 @@ def reset_password(token):
 def send_verification_email_route():
     if not current_user.is_authenticated:
         flash("Please log in to send a verification email.", "danger")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for(AUTH_LOGIN_ROUTE))
 
     if not current_app.config.get("ENABLE_EMAIL_VERIFICATION", False):
         flash("Email verification is not enabled.", "warning")
@@ -184,7 +187,7 @@ def verify_email(token):
 
     if not user:
         flash("That is an invalid or expired verification link.", "danger")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for(AUTH_LOGIN_ROUTE))
 
     # If user is already logged in and verified, just redirect
     if (
@@ -193,7 +196,7 @@ def verify_email(token):
         and user.is_verified
     ):
         flash("Your email is already verified.", "info")
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for(DASHBOARD_INDEX_ROUTE))
 
     user.is_verified = True
     db.session.commit()

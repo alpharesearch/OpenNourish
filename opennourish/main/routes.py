@@ -8,7 +8,7 @@ from flask import (
     current_app,
     jsonify,
 )
-from datetime import datetime
+from datetime import datetime, timezone
 from flask_login import current_user
 from models import db, Food
 import os
@@ -57,7 +57,7 @@ def food_detail(fdc_id):
         food=food,
         search_term=q,
         portions=portions,
-        timestamp=datetime.utcnow().timestamp(),
+        timestamp=datetime.now(timezone.utc).timestamp(),
     )
 
 

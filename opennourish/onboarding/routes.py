@@ -22,12 +22,14 @@ from opennourish.time_utils import get_user_today
 from . import onboarding_bp  # Import the blueprint from __init__.py
 from config import Config  # Import Config
 
+DASHBOARD_INDEX_ROUTE = "dashboard.index"
+
 
 @onboarding_bp.route("/step1", methods=["GET", "POST"])
 @login_required
 def step1():
     if current_user.has_completed_onboarding:
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for(DASHBOARD_INDEX_ROUTE))
 
     form = MeasurementSystemForm()
     if form.validate_on_submit():
@@ -47,7 +49,7 @@ def step1():
 @login_required
 def step2():
     if current_user.has_completed_onboarding:
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for(DASHBOARD_INDEX_ROUTE))
 
     form = PersonalInfoForm()
     if form.validate_on_submit():
@@ -135,7 +137,7 @@ def step2():
 @login_required
 def step3():
     if current_user.has_completed_onboarding:
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for(DASHBOARD_INDEX_ROUTE))
 
     form = InitialGoalsForm()
     form.diet_preset.choices = [("", "Select a Preset...")] + [
@@ -250,4 +252,4 @@ def finish_onboarding():
         current_user.has_completed_onboarding = True
         db.session.commit()
         flash("Onboarding complete! Welcome to OpenNourish.", "success")
-    return redirect(url_for("dashboard.index"))
+    return redirect(url_for(DASHBOARD_INDEX_ROUTE))

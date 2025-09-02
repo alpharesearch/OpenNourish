@@ -72,7 +72,7 @@ def test_delete_ingredient_success(client_with_recipe_ingredient):
 
 
 def test_delete_ingredient_unauthorized(client_with_recipe_ingredient):
-    client, recipe_id, ingredient_id, other_user_id = client_with_recipe_ingredient
+    client, _, ingredient_id, other_user_id = client_with_recipe_ingredient
 
     # Log in as other_user
     with client.session_transaction() as sess:

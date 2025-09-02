@@ -8,6 +8,8 @@ from datetime import timedelta
 from opennourish.time_utils import get_user_today, get_start_of_week
 from opennourish.utils import prepare_undo_and_delete
 
+LOG_EXERCISE_ROUTE = "exercise.log_exercise"
+
 
 @exercise_bp.route("/log", methods=["GET", "POST"])
 @login_required
@@ -50,7 +52,7 @@ def log_exercise():
         db.session.add(exercise_log)
         db.session.commit()
         flash("Exercise logged successfully!", "success")
-        return redirect(url_for(".log_exercise"))
+        return redirect(url_for(LOG_EXERCISE_ROUTE))
 
     if request.method == "GET":
         form.log_date.data = get_user_today(current_user.timezone)
@@ -122,7 +124,7 @@ def edit_exercise(log_id):
         abort(404)
     if exercise_log.user_id != current_user.id:
         flash("You do not have permission to edit this exercise log.", "danger")
-        return redirect(url_for(".log_exercise"))
+        return redirect(url_for(LOG_EXERCISE_ROUTE))
 
     form = ExerciseLogForm(prefix=f"form-{exercise_log.id}")
     form.activity.query = ExerciseActivity.query.order_by(ExerciseActivity.name).all()
@@ -161,7 +163,7 @@ def edit_exercise(log_id):
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
 
     return redirect(
-        url_for(".log_exercise", page=request.args.get("page", 1, type=int))
+        url_for(LOG_EXERCISE_ROUTE, page=request.args.get("page", 1, type=int))
     )
 
 
@@ -173,10 +175,10 @@ def delete_exercise(log_id):
         abort(404)
     if exercise_log.user_id != current_user.id:
         flash("You do not have permission to delete this exercise log.", "danger")
-        return redirect(url_for(".log_exercise"))
+        return redirect(url_for(LOG_EXERCISE_ROUTE))
 
     page = request.args.get("page", 1, type=int)
-    redirect_info = {"endpoint": "exercise.log_exercise", "params": {"page": page}}
+    redirect_info = {"endpoint": LOG_EXERCISE_ROUTE, "params": {"page": page}}
     prepare_undo_and_delete(
         exercise_log,
         "exercise_log",
@@ -184,4 +186,4 @@ def delete_exercise(log_id):
         success_message="Exercise log deleted successfully!",
     )
 
-    return redirect(url_for(".log_exercise", page=page))
+    return redirect(url_for(LOG_EXERCISE_ROUTE, page=page))

@@ -1,4 +1,5 @@
 from datetime import date
+import pytest
 from models import db, DailyLog, MyMeal, MyMealItem, Food, MyFood, UnifiedPortion
 
 
@@ -418,8 +419,8 @@ def test_save_meal_as_recipe_creates_1g_portion(auth_client_with_user):
         gram_portion = None
         for p in recipe.portions:
             if (
-                p.gram_weight == 1.0
-                and p.amount == 1.0
+                p.gram_weight == pytest.approx(1.0)
+                and p.amount == pytest.approx(1.0)
                 and p.measure_unit_description == "g"
             ):
                 gram_portion = p

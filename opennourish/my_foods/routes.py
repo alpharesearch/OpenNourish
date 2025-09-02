@@ -7,7 +7,7 @@ from flask import (
     Blueprint,
     current_app,
 )
-from datetime import datetime
+from datetime import datetime, timezone
 from flask_login import login_required, current_user
 from models import (
     db,
@@ -29,6 +29,9 @@ from opennourish.utils import (
 )
 
 my_foods_bp = Blueprint("my_foods", __name__)
+
+MY_FOODS_EDIT_ROUTE = "my_foods.edit_my_food"
+MY_FOODS_LIST_ROUTE = "my_foods.my_foods"
 
 
 @my_foods_bp.route("/")
@@ -161,7 +164,7 @@ def new_my_food():
             "Custom food added successfully! Nutritional values have been scaled to 100g.",
             "success",
         )
-        return redirect(url_for("my_foods.edit_my_food", food_id=my_food.id))
+        return redirect(url_for(MY_FOODS_EDIT_ROUTE, food_id=my_food.id))
 
     return render_template(
         "my_foods/new_my_food.html", form=form, portion_form=portion_form
@@ -174,7 +177,7 @@ def edit_my_food(food_id):
     my_food = MyFood.query.options(selectinload(MyFood.portions)).get_or_404(food_id)
     if my_food.user_id != current_user.id:
         flash("You are not authorized to edit this food.", "danger")
-        return redirect(url_for("my_foods.my_foods"))
+        return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
     ensure_portion_sequence([my_food])
     portions = sorted(
@@ -194,7 +197,7 @@ def edit_my_food(food_id):
 
         if not submitted_portion or submitted_portion.my_food_id != my_food.id:
             flash("Invalid portion selected for nutrient input.", "danger")
-            return redirect(url_for("my_foods.edit_my_food", food_id=my_food.id))
+            return redirect(url_for(MY_FOODS_EDIT_ROUTE, food_id=my_food.id))
 
         submitted_nutrients = {
             "calories": form.calories_per_100g.data,
@@ -263,7 +266,7 @@ def edit_my_food(food_id):
         portions=portions,
         selected_portion=selected_portion,
         scaled_nutrients=scaled_nutrients,
-        timestamp=datetime.utcnow().timestamp(),
+        timestamp=datetime.now(timezone.utc).timestamp(),
     )
 
 
@@ -271,7 +274,7 @@ def edit_my_food(food_id):
 @login_required
 def delete_my_food(food_id):
     my_food = MyFood.query.filter_by(id=food_id, user_id=current_user.id).first_or_404()
-    redirect_info = {"endpoint": "my_foods.my_foods"}
+    redirect_info = {"endpoint": MY_FOODS_LIST_ROUTE}
     prepare_undo_and_delete(
         my_food,
         "my_food",
@@ -279,7 +282,7 @@ def delete_my_food(food_id):
         delete_method="anonymize",
         success_message="Food deleted successfully!",
     )
-    return redirect(url_for("my_foods.my_foods"))
+    return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
 
 @my_foods_bp.route("/<int:food_id>/add_portion", methods=["POST"])
@@ -313,7 +316,7 @@ def add_my_food_portion(food_id):
     else:
         flash("Error adding portion.", "danger")
     return redirect(
-        url_for("my_foods.edit_my_food", food_id=my_food.id) + "#portions-table"
+        url_for(MY_FOODS_EDIT_ROUTE, food_id=my_food.id) + "#portions-table"
     )
 
 
@@ -323,7 +326,7 @@ def update_my_food_portion(portion_id):
     portion = db.session.get(UnifiedPortion, portion_id)
     if not portion or portion.my_food.user_id != current_user.id:
         flash("Portion not found or you do not have permission to edit it.", "danger")
-        return redirect(url_for("my_foods.my_foods"))
+        return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
     form = PortionForm(request.form, obj=portion)
     if form.validate_on_submit():
@@ -334,7 +337,7 @@ def update_my_food_portion(portion_id):
         current_app.logger.debug(f"PortionForm errors: {form.errors}")
         flash("Error updating portion.", "danger")
     return redirect(
-        url_for("my_foods.edit_my_food", food_id=portion.my_food_id) + "#portions-table"
+        url_for(MY_FOODS_EDIT_ROUTE, food_id=portion.my_food_id) + "#portions-table"
     )
 
 
@@ -345,7 +348,7 @@ def delete_my_food_portion(portion_id):
     if portion and portion.my_food and portion.my_food.user_id == current_user.id:
         food_id = portion.my_food_id
         redirect_info = {
-            "endpoint": "my_foods.edit_my_food",
+            "endpoint": MY_FOODS_EDIT_ROUTE,
             "params": {"food_id": food_id},
             "fragment": "portions-table",
         }
@@ -353,11 +356,11 @@ def delete_my_food_portion(portion_id):
             portion, "portion", redirect_info, success_message="Portion deleted."
         )
         return redirect(
-            url_for("my_foods.edit_my_food", food_id=food_id) + "#portions-table"
+            url_for(MY_FOODS_EDIT_ROUTE, food_id=food_id) + "#portions-table"
         )
     else:
         flash("Portion not found or you do not have permission to delete it.", "danger")
-        return redirect(url_for("my_foods.my_foods"))
+        return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
 
 @my_foods_bp.route("/copy_usda", methods=["POST"])
@@ -366,7 +369,7 @@ def copy_usda_food():
     fdc_id = request.form.get("fdc_id")
     if not fdc_id:
         flash("No USDA Food ID provided for copying.", "danger")
-        return redirect(request.referrer or url_for("my_foods.my_foods"))
+        return redirect(request.referrer or url_for(MY_FOODS_LIST_ROUTE))
 
     usda_food = (
         Food.query.options(joinedload(Food.nutrients).joinedload(FoodNutrient.nutrient))
@@ -439,7 +442,7 @@ def copy_usda_food():
 
     db.session.commit()
     flash(f"Successfully created '{new_food.description}' from USDA data.", "success")
-    return redirect(url_for("my_foods.edit_my_food", food_id=new_food.id))
+    return redirect(url_for(MY_FOODS_EDIT_ROUTE, food_id=new_food.id))
 
 
 @my_foods_bp.route("/<int:food_id>/copy", methods=["POST"])
@@ -455,7 +458,7 @@ def copy_my_food(food_id):
         and original_food.user_id != current_user.id
     ):
         flash("You can only copy foods from your friends or your own foods.", "danger")
-        return redirect(request.referrer or url_for("my_foods.my_foods"))
+        return redirect(request.referrer or url_for(MY_FOODS_LIST_ROUTE))
 
     new_food = MyFood(
         user_id=current_user.id,
@@ -495,7 +498,7 @@ def copy_my_food(food_id):
     flash(
         f"Successfully copied '{original_food.description}' to your foods.", "success"
     )
-    return redirect(url_for("my_foods.my_foods"))
+    return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
 
 @my_foods_bp.route("/<int:food_id>/generate_pdf_label", methods=["GET"])
@@ -520,7 +523,7 @@ def move_my_food_portion_up(portion_id):
     portion_to_move = db.session.get(UnifiedPortion, portion_id)
     if not portion_to_move or portion_to_move.my_food.user_id != current_user.id:
         flash("Portion not found or unauthorized.", "danger")
-        return redirect(url_for("my_foods.my_foods"))
+        return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
     # Find the portion with the next lower seq_num
     portion_to_swap_with = (
@@ -544,7 +547,7 @@ def move_my_food_portion_up(portion_id):
         flash("Portion is already at the top.", "info")
 
     return redirect(
-        url_for("my_foods.edit_my_food", food_id=portion_to_move.my_food_id)
+        url_for(MY_FOODS_EDIT_ROUTE, food_id=portion_to_move.my_food_id)
         + "#portions-table"
     )
 
@@ -555,7 +558,7 @@ def move_my_food_portion_down(portion_id):
     portion_to_move = db.session.get(UnifiedPortion, portion_id)
     if not portion_to_move or portion_to_move.my_food.user_id != current_user.id:
         flash("Portion not found or unauthorized.", "danger")
-        return redirect(url_for("my_foods.my_foods"))
+        return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
     # Find the portion with the next higher seq_num
     portion_to_swap_with = (
@@ -579,6 +582,6 @@ def move_my_food_portion_down(portion_id):
         flash("Portion is already at the bottom.", "info")
 
     return redirect(
-        url_for("my_foods.edit_my_food", food_id=portion_to_move.my_food_id)
+        url_for(MY_FOODS_EDIT_ROUTE, food_id=portion_to_move.my_food_id)
         + "#portions-table"
     )

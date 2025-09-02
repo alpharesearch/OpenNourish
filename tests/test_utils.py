@@ -378,15 +378,6 @@ def test_calculate_nutrient_density(analytics_data):
     """Test the calculate_nutrient_density function with data."""
     client, _, daily_logs = analytics_data
     with client.application.app_context():
-        # Total Cals: 330 + 166.5 + 111 = 607.5
-        # Total Grams: 200 + 150 + 100 = 450
-        # Total Protein: 62 + 3.9 + 2.6 = 68.5
-        # Total Carbs: 0 + 34.5 + 23 = 57.5
-        # Total Fat: 7.2 + 1.35 + 0.9 = 9.45
-        # Expected Overall Density: 607.5 / 450 = 1.35
-        # Expected Protein Density: (68.5 * 4) / 450 = 0.608
-        # Expected Carbs Density: (57.5 * 4) / 450 = 0.511
-        # Expected Fat Density: (9.45 * 9) / 450 = 0.189
         density = utils.calculate_nutrient_density(daily_logs)
         assert density["overall"] == pytest.approx(1.35)
         assert density["protein"] == pytest.approx(0.61)

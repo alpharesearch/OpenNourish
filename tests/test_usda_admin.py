@@ -259,7 +259,7 @@ def test_delete_usda_portion_key_user(key_user_client):
     with key_user_client.application.app_context():
         restored_portion = db.session.get(UnifiedPortion, portion_id)
         assert restored_portion is not None
-        assert restored_portion.gram_weight == 10.0
+        assert restored_portion.gram_weight == pytest.approx(10.0)
 
 
 def test_delete_usda_portion_unauthorized(auth_client):

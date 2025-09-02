@@ -8,6 +8,9 @@ from constants import USERS_ID
 
 db = SQLAlchemy()
 
+PORTIONS_ID = "portions.id"
+CASCADE_ALL_DELETE_ORPHAN = "all, delete-orphan"
+
 
 class SystemSetting(db.Model):
     __tablename__ = "system_settings"
@@ -48,7 +51,7 @@ class User(UserMixin, db.Model):
 
     # Relationships
     goals = db.relationship(
-        "UserGoal", backref="user", uselist=False, cascade="all, delete-orphan"
+        "UserGoal", backref="user", uselist=False, cascade=CASCADE_ALL_DELETE_ORPHAN
     )
     sent_friend_requests = db.relationship(
         "Friendship",
@@ -272,7 +275,7 @@ class MyFood(db.Model):
         "UnifiedPortion",
         foreign_keys=[UnifiedPortion.my_food_id],
         backref="my_food",
-        cascade="all, delete-orphan",
+        cascade=CASCADE_ALL_DELETE_ORPHAN,
     )
     user = db.relationship("User")
     food_category = db.relationship("FoodCategory", backref="my_foods")
@@ -289,7 +292,7 @@ class DailyLog(db.Model):
     recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id"), nullable=True)
     amount_grams = db.Column(db.Float)
     serving_type = db.Column(db.String(50), default="g")
-    portion_id_fk = db.Column(db.Integer, db.ForeignKey("portions.id"), nullable=True)
+    portion_id_fk = db.Column(db.Integer, db.ForeignKey(PORTIONS_ID), nullable=True)
 
 
 class Recipe(db.Model):
@@ -307,7 +310,7 @@ class Recipe(db.Model):
     ingredients = db.relationship(
         "RecipeIngredient",
         backref="recipe",
-        cascade="all, delete-orphan",
+        cascade=CASCADE_ALL_DELETE_ORPHAN,
         foreign_keys="RecipeIngredient.recipe_id",
         order_by="RecipeIngredient.seq_num.asc().nulls_last()",
     )
@@ -315,7 +318,7 @@ class Recipe(db.Model):
         "UnifiedPortion",
         foreign_keys=[UnifiedPortion.recipe_id],
         backref="recipe",
-        cascade="all, delete-orphan",
+        cascade=CASCADE_ALL_DELETE_ORPHAN,
     )
     user = db.relationship("User")
     food_category = db.relationship("FoodCategory", backref="recipes")
@@ -348,7 +351,7 @@ class RecipeIngredient(db.Model):
     )  # For nested recipes
     amount_grams = db.Column(db.Float)
     serving_type = db.Column(db.String(50), default="g")
-    portion_id_fk = db.Column(db.Integer, db.ForeignKey("portions.id"), nullable=True)
+    portion_id_fk = db.Column(db.Integer, db.ForeignKey(PORTIONS_ID), nullable=True)
     seq_num = db.Column(db.Integer)
 
     @property
@@ -367,7 +370,9 @@ class MyMeal(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=True)
     name = db.Column(db.String, nullable=False)
     usage_count = db.Column(db.Integer, default=0, nullable=False)
-    items = db.relationship("MyMealItem", backref="meal", cascade="all, delete-orphan")
+    items = db.relationship(
+        "MyMealItem", backref="meal", cascade=CASCADE_ALL_DELETE_ORPHAN
+    )
     user = db.relationship("User")
 
 
@@ -380,7 +385,7 @@ class MyMealItem(db.Model):
     recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id"), nullable=True)
     amount_grams = db.Column(db.Float)
     serving_type = db.Column(db.String(50), default="g")
-    portion_id_fk = db.Column(db.Integer, db.ForeignKey("portions.id"), nullable=True)
+    portion_id_fk = db.Column(db.Integer, db.ForeignKey(PORTIONS_ID), nullable=True)
 
     @property
     def food(self):
