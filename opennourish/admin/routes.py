@@ -234,19 +234,19 @@ def email_settings():
         get_setting_from_db(current_app, "ENABLE_EMAIL_VERIFICATION", "False").lower()
         == "true"
     )
-
+    NOT_SET = "Not Set"
     # Pass environment variables to the template for display purposes
     env_vars = {
-        "MAIL_SERVER": os.getenv("MAIL_SERVER", "Not Set"),
-        "MAIL_PORT": os.getenv("MAIL_PORT", "Not Set"),
-        "MAIL_USE_TLS": os.getenv("MAIL_USE_TLS", "Not Set"),
-        "MAIL_USE_SSL": os.getenv("MAIL_USE_SSL", "Not Set"),
-        "MAIL_USERNAME": os.getenv("MAIL_USERNAME", "Not Set"),
-        "MAIL_PASSWORD": "********" if os.getenv("MAIL_PASSWORD") else "Not Set",
-        "MAIL_FROM": os.getenv("MAIL_FROM", "Not Set"),
-        "MAIL_SUPPRESS_SEND": os.getenv("MAIL_SUPPRESS_SEND", "Not Set"),
-        "ENABLE_PASSWORD_RESET": os.getenv("ENABLE_PASSWORD_RESET", "Not Set"),
-        "ENABLE_EMAIL_VERIFICATION": os.getenv("ENABLE_EMAIL_VERIFICATION", "Not Set"),
+        "MAIL_SERVER": os.getenv("MAIL_SERVER", NOT_SET),
+        "MAIL_PORT": os.getenv("MAIL_PORT", NOT_SET),
+        "MAIL_USE_TLS": os.getenv("MAIL_USE_TLS", NOT_SET),
+        "MAIL_USE_SSL": os.getenv("MAIL_USE_SSL", NOT_SET),
+        "MAIL_USERNAME": os.getenv("MAIL_USERNAME", NOT_SET),
+        "MAIL_PASSWORD": "********" if os.getenv("MAIL_PASSWORD") else NOT_SET,
+        "MAIL_FROM": os.getenv("MAIL_FROM", NOT_SET),
+        "MAIL_SUPPRESS_SEND": os.getenv("MAIL_SUPPRESS_SEND", NOT_SET),
+        "ENABLE_PASSWORD_RESET": os.getenv("ENABLE_PASSWORD_RESET", NOT_SET),
+        "ENABLE_EMAIL_VERIFICATION": os.getenv("ENABLE_EMAIL_VERIFICATION", NOT_SET),
     }
 
     return render_template(
