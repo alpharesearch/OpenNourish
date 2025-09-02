@@ -370,15 +370,6 @@ def create_app(config_class=Config):
                     f"Created friendship between {test_user.username} and {user.username}"
                 )
 
-                # UserGoal
-                # current_app.logger.debug(f"UserGoal columns: {[c.name for c in UserGoal.__table__.columns]}")
-                # Get latest check-in for initial goal weight/body_fat, if available
-                latest_checkin = (
-                    CheckIn.query.filter_by(user_id=user.id)
-                    .order_by(CheckIn.checkin_date.desc())
-                    .first()
-                )
-
                 goal = UserGoal(
                     user_id=user.id,
                     calories=random.randint(1800, 2500),

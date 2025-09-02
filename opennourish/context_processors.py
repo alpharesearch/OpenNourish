@@ -15,7 +15,7 @@ def utility_processor():
             return None
         return get_user_today(current_user.timezone).isoformat()
 
-    return dict(
-        standard_meal_names=get_standard_meal_names(),
-        current_log_date_str=get_current_log_date_str(),
-    )
+    return {
+        "standard_meal_names": get_standard_meal_names(),
+        "current_log_date_str": get_current_log_date_str(),
+    }

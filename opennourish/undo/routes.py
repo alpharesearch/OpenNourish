@@ -52,11 +52,11 @@ def undo_last_action():
     restored = False
 
     if undo_method == "reinsert":
-        ModelClass = MODEL_MAP.get(item_type)
-        if ModelClass:
+        model_class = MODEL_MAP.get(item_type)
+        if model_class:
             # For reinsert, item_data is the dictionary of the object's attributes
             # Convert date/datetime strings back to objects
-            mapper = inspect(ModelClass)
+            mapper = inspect(model_class)
             for key, value in item_data.items():
                 if isinstance(value, str):
                     column = mapper.columns.get(key)
@@ -69,7 +69,7 @@ def undo_last_action():
                                 item_data[key] = date.fromisoformat(value)
                         elif isinstance(column.type, Date):
                             item_data[key] = date.fromisoformat(value)
-            new_item = ModelClass(**item_data)
+            new_item = model_class(**item_data)
             db.session.add(new_item)
             db.session.commit()
             restored = True
@@ -77,13 +77,13 @@ def undo_last_action():
             flash(f"Unknown item type '{item_type}' for re-insertion.", "danger")
 
     elif undo_method == "reassign_owner":
-        ModelClass = MODEL_MAP.get(item_type)
-        if ModelClass:
+        model_class = MODEL_MAP.get(item_type)
+        if model_class:
             # For reassign_owner, item_data contains 'item_id' and 'original_user_id'
             item_id = item_data.get("item_id")
             original_user_id = item_data.get("original_user_id")
 
-            item_to_restore = db.session.get(ModelClass, item_id)
+            item_to_restore = db.session.get(model_class, item_id)
             if item_to_restore:
                 item_to_restore.user_id = original_user_id
                 db.session.commit()

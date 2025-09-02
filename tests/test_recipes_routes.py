@@ -110,7 +110,7 @@ def test_update_ingredient_success(client_with_recipe_ingredient):
 
 
 def test_update_ingredient_invalid_amount(client_with_recipe_ingredient):
-    client, recipe_id, ingredient_id, _ = client_with_recipe_ingredient
+    client, _, ingredient_id, _ = client_with_recipe_ingredient
     response = client.post(
         f"/recipes/recipe/ingredient/{ingredient_id}/update",
         data={"amount": "-1", "portion_id": "1"},
