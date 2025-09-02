@@ -1,7 +1,7 @@
 # nginx/Dockerfile
 
 # Start from the official Nginx image
-FROM nginx:latest
+FROM nginx:1.29
 
 # Install dependencies needed by our entrypoint script
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
