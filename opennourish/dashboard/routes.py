@@ -11,7 +11,7 @@ from models import (
     ExerciseLog,
     FastingSession,
 )
-from datetime import date, timedelta, datetime, timezone
+from datetime import date, timedelta, datetime
 from opennourish.utils import (
     calculate_nutrition_for_items,
     calculate_weight_projection,
@@ -221,7 +221,7 @@ def index(log_date_str=None):
         at_goal_and_maintaining=at_goal_and_maintaining,
         active_fast=active_fast,
         last_completed_fast=last_completed_fast,
-        now=datetime.now(timezone.utc),
+        now=datetime.utcnow(),
         latest_checkin=latest_checkin,
         nutrient_density=nutrient_density,
         meal_nutrition=meal_nutrition,
