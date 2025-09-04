@@ -81,7 +81,11 @@ def search():
     selected_category_id = request.values.get("food_category_id", type=int)
 
     # Fetch all food categories for the dropdown
-    food_categories = FoodCategory.query.order_by(FoodCategory.description).all()
+    user_categories = FoodCategory.query.filter_by(user_id=current_user.id).all()
+    usda_categories = FoodCategory.query.filter_by(user_id=None).all()
+    food_categories = sorted(
+        user_categories + usda_categories, key=lambda c: c.description
+    )
 
     # Separate page parameters for each category
     usda_page = request.values.get("usda_page", 1, type=int)

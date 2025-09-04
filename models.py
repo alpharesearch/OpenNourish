@@ -243,8 +243,13 @@ class UnifiedPortion(db.Model):
 class FoodCategory(db.Model):
     __tablename__ = "food_category"
     id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=True)
+    code = db.Column(db.Integer, nullable=True)
     description = db.Column(db.String, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "description", name="_user_category_uc"),
+    )
 
 
 class MyFood(db.Model):

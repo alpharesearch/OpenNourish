@@ -28,7 +28,12 @@
 
                         <div class="mb-3">
                             {{ form.food_category.label(class="form-label") }}
-                            {{ form.food_category(class="form-select") }}
+                            {{ form.food_category(class="form-control", list="category-list") }}
+                            <datalist id="category-list">
+                                {% for category in categories %}
+                                    <option value="{{ category.description }}">
+                                {% endfor %}
+                            </datalist>
                         </div>
 
                         <hr>

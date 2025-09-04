@@ -34,6 +34,31 @@ MY_FOODS_EDIT_ROUTE = "my_foods.edit_my_food"
 MY_FOODS_LIST_ROUTE = "my_foods.my_foods"
 
 
+def _get_or_create_food_category(category_name, user_id):
+    if not category_name:
+        return None
+    category_name = category_name.strip()
+    # Try to find user-specific category first
+    category = FoodCategory.query.filter(
+        func.lower(FoodCategory.description) == func.lower(category_name),
+        FoodCategory.user_id == user_id,
+    ).first()
+    if category:
+        return category.id
+    # Try to find global category
+    category = FoodCategory.query.filter(
+        func.lower(FoodCategory.description) == func.lower(category_name),
+        FoodCategory.user_id.is_(None),
+    ).first()
+    if category:
+        return category.id
+    # Create new user-specific category
+    new_category = FoodCategory(description=category_name, user_id=user_id)
+    db.session.add(new_category)
+    db.session.flush()
+    return new_category.id
+
+
 @my_foods_bp.route("/")
 @login_required
 def my_foods():
@@ -66,9 +91,6 @@ def my_foods():
 @login_required
 def new_my_food():
     form = MyFoodForm()
-    form.food_category.choices = [("", "-- Select a Category --")] + [
-        (c.id, c.description) for c in FoodCategory.query.order_by(FoodCategory.code)
-    ]
     portion_form = PortionForm()
 
     # Change form labels for the 'new' page context
@@ -103,13 +125,15 @@ def new_my_food():
 
         factor = 100.0 / gram_weight
 
+        category_id = _get_or_create_food_category(
+            form.food_category.data, current_user.id
+        )
+
         my_food = MyFood(
             user_id=current_user.id,
             description=form.description.data,
             ingredients=form.ingredients.data,
-            food_category_id=form.food_category.data
-            if form.food_category.data
-            else None,
+            food_category_id=category_id,
         )
 
         nutrient_fields = [
@@ -166,8 +190,18 @@ def new_my_food():
         )
         return redirect(url_for(MY_FOODS_EDIT_ROUTE, food_id=my_food.id))
 
+    # GET request
+    user_categories = FoodCategory.query.filter_by(user_id=current_user.id).all()
+    usda_categories = FoodCategory.query.filter_by(user_id=None).all()
+    all_categories = sorted(
+        user_categories + usda_categories, key=lambda c: c.description
+    )
+
     return render_template(
-        "my_foods/new_my_food.html", form=form, portion_form=portion_form
+        "my_foods/new_my_food.html",
+        form=form,
+        portion_form=portion_form,
+        categories=all_categories,
     )
 
 
@@ -186,9 +220,6 @@ def edit_my_food(food_id):
     )
 
     form = MyFoodForm(obj=my_food)
-    form.food_category.choices = [("", "-- Select a Category --")] + [
-        (c.id, c.description) for c in FoodCategory.query.order_by(FoodCategory.code)
-    ]
     portion_form = PortionForm()
 
     if form.validate_on_submit():
@@ -224,7 +255,9 @@ def edit_my_food(food_id):
         my_food.ingredients = form.ingredients.data
         my_food.fdc_id = form.fdc_id.data
         my_food.upc = form.upc.data
-        my_food.food_category_id = form.food_category.data or None
+        my_food.food_category_id = _get_or_create_food_category(
+            form.food_category.data, current_user.id
+        )
 
         for key, value in nutrients_100g.items():
             field_name = key + "_per_100g"
@@ -245,6 +278,15 @@ def edit_my_food(food_id):
         )
 
     # GET Request Logic
+    if my_food.food_category:
+        form.food_category.data = my_food.food_category.description
+
+    user_categories = FoodCategory.query.filter_by(user_id=current_user.id).all()
+    usda_categories = FoodCategory.query.filter_by(user_id=None).all()
+    all_categories = sorted(
+        user_categories + usda_categories, key=lambda c: c.description
+    )
+
     selected_portion_id = request.args.get("portion_id", type=int)
     selected_portion = (
         db.session.get(UnifiedPortion, selected_portion_id)
@@ -267,6 +309,7 @@ def edit_my_food(food_id):
         selected_portion=selected_portion,
         scaled_nutrients=scaled_nutrients,
         timestamp=datetime.now(timezone.utc).timestamp(),
+        categories=all_categories,
     )
 
 
