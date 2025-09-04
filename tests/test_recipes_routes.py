@@ -68,7 +68,7 @@ def test_delete_ingredient_success(client_with_recipe_ingredient):
     assert response.status_code == 200
     assert b"Ingredient deleted." in response.data
     assert b"Undo" in response.data
-    assert RecipeIngredient.query.get(ingredient_id) is None
+    assert db.session.get(RecipeIngredient, ingredient_id) is None
 
 
 def test_delete_ingredient_unauthorized(client_with_recipe_ingredient):
@@ -83,7 +83,7 @@ def test_delete_ingredient_unauthorized(client_with_recipe_ingredient):
     )
     assert response.status_code == 200
     assert b"You are not authorized to modify this recipe." in response.data
-    assert RecipeIngredient.query.get(ingredient_id) is not None
+    assert db.session.get(RecipeIngredient, ingredient_id) is not None
 
 
 def test_update_ingredient_success(client_with_recipe_ingredient):
@@ -105,7 +105,7 @@ def test_update_ingredient_success(client_with_recipe_ingredient):
     )
     assert response.status_code == 200
     assert b"Ingredient updated successfully." in response.data
-    ingredient = RecipeIngredient.query.get(ingredient_id)
+    ingredient = db.session.get(RecipeIngredient, ingredient_id)
     assert ingredient.amount_grams == 100
 
 
@@ -154,7 +154,7 @@ def test_move_ingredient_up_down(client_with_recipe_ingredient):
         )
         db.session.add(ingredient2)
         # Set seq_num for the first ingredient
-        ingredient1 = RecipeIngredient.query.get(ingredient_id)
+        ingredient1 = db.session.get(RecipeIngredient, ingredient_id)
         ingredient1.seq_num = 1
         db.session.commit()
         ingredient2_id = ingredient2.id
@@ -212,7 +212,7 @@ def test_delete_recipe_success(client_with_recipe_ingredient):
     assert response.status_code == 200
     assert b"Recipe deleted." in response.data
     assert b"Undo" in response.data
-    assert Recipe.query.get(recipe_id).user_id is None
+    assert db.session.get(Recipe, recipe_id).user_id is None
 
 
 def test_delete_recipe_unauthorized(client_with_recipe_ingredient):
@@ -222,7 +222,7 @@ def test_delete_recipe_unauthorized(client_with_recipe_ingredient):
     response = client.post(f"/recipes/{recipe_id}/delete", follow_redirects=True)
     assert response.status_code == 200
     assert b"You are not authorized to delete this recipe." in response.data
-    assert Recipe.query.get(recipe_id).user_id is not None
+    assert db.session.get(Recipe, recipe_id).user_id is not None
 
 
 def test_copy_recipe(client_with_recipe_ingredient):
@@ -240,7 +240,7 @@ def test_copy_recipe(client_with_recipe_ingredient):
     assert response.status_code == 200
 
     with client.application.app_context():
-        original_recipe = Recipe.query.get(recipe_id)
+        original_recipe = db.session.get(Recipe, recipe_id)
         copied_recipe = Recipe.query.filter(Recipe.user_id == other_user_id).first()
         assert copied_recipe is not None
         assert copied_recipe.name == "Test Recipe (Copy)"

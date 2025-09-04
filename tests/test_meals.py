@@ -1,6 +1,6 @@
 from datetime import date
 import pytest
-from models import db, DailyLog, MyMeal, MyMealItem, Food, MyFood, UnifiedPortion
+from models import db, DailyLog, MyMeal, MyMealItem, Food, MyFood, UnifiedPortion, Recipe
 
 
 def test_save_meal_from_diary_and_edit(auth_client_with_user):
@@ -373,7 +373,6 @@ def test_save_meal_as_recipe_creates_1g_portion(auth_client_with_user):
     """
     Test that saving a meal as recipe creates a default 1-gram portion.
     """
-    from models import Recipe
 
     client, user = auth_client_with_user
     with client.application.app_context():
@@ -409,7 +408,7 @@ def test_save_meal_as_recipe_creates_1g_portion(auth_client_with_user):
         recipe_id = int(match.group(1))
 
         # Verify that a recipe was created with the correct ID
-        recipe = Recipe.query.get(recipe_id)
+        recipe = db.session.get(Recipe, recipe_id)
         assert recipe is not None
 
         # Check that the recipe has at least one portion (the required 1g portion)
