@@ -68,11 +68,18 @@ You are a data extraction assistant. Your task is to extract nutrition informati
 
 **Instructions:**
 1.  Adhere strictly to the YAML structure provided in the template below for each food item.
-2.  Each new food item must begin with a hyphen (`-`).
-3.  Use the exact field names as specified in the template.
-4.  Ensure that `gram_weight` and all fields under `nutrition_facts` are numbers only, without any text or units.
-5.  If a specific nutritional value (e.g., trans_fat_grams) is not mentioned in the source text, use a value of `0`.
-6.  Do not make up any data that is not present in the provided text.
+2.  Ensure that `gram_weight` and all fields under `nutrition_facts` are numbers only.
+3.  If a specific nutritional value is not mentioned, use `0`.
+
+**--- CATEGORY RULES (VERY IMPORTANT) ---**
+1.  **PRIORITIZE EXISTING CATEGORIES:** First, review the list of "Your Available Categories" provided below. If a suitable category from this list fits the food item, use its exact name.
+2.  **CREATE NEW CATEGORIES SPARINGLY:** Only create a new category if none of the available ones are a good fit.
+3.  **NEW CATEGORIES MUST BE GENERAL:** A new category should be a broad, reusable group like "Breakfast," "Snacks," "Desserts," or "Condiments."
+4.  **DO NOT CREATE A CATEGORY FROM THE FOOD'S NAME:** You must not create a new category like "Classic Waffle" for a food named "Classic Waffle." This is incorrect. Use a general category like "Breakfast" instead.
+5.  **LEAVE CATEGORY BLANK IF UNSURE:** If no category seems appropriate, it is perfectly acceptable to leave the `category` field blank.
+
+**Your Available Categories:**
+{{ categories|join(', ') }}
 
 **YAML Template for a single food item:**
 ```yaml
@@ -100,7 +107,8 @@ You are a data extraction assistant. Your task is to extract nutrition informati
     calcium_milligrams: 0
     iron_milligrams: 0
     potassium_milligrams: 0
-```</pre>
+```
+Now, please process the following text and generate the YAML list, following all of the rules above:</pre>
                 </div>
             </div>
         </div>

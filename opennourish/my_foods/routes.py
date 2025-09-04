@@ -35,8 +35,8 @@ MY_FOODS_EDIT_ROUTE = "my_foods.edit_my_food"
 MY_FOODS_LIST_ROUTE = "my_foods.my_foods"
 
 
-def _get_or_create_food_category(category_name, user_id):
-    if not category_name:
+def _get_or_create_food_category(category_name, user_id, food_description):
+    if not category_name or category_name.lower() == food_description.lower():
         return None
     category_name = category_name.strip()
     # Try to find user-specific category first
@@ -117,7 +117,7 @@ def _process_yaml_import(yaml_stream):
             processed_in_file.add(description.lower())
 
             category_id = _get_or_create_food_category(
-                item.get("category"), current_user.id
+                item.get("category"), current_user.id, description
             )
 
             if gram_weight > 0:
@@ -225,7 +225,20 @@ def import_foods():
             flash("No file selected or text provided.", "danger")
             return redirect(request.url)
 
-    return render_template("my_foods/import_my_foods.html")
+    user_categories = FoodCategory.query.filter_by(user_id=current_user.id).all()
+    usda_categories = FoodCategory.query.filter_by(user_id=None).all()
+    all_category_names = sorted(
+        list(
+            set(
+                [c.description for c in user_categories]
+                + [c.description for c in usda_categories]
+            )
+        )
+    )
+
+    return render_template(
+        "my_foods/import_my_foods.html", categories=all_category_names
+    )
 
 
 @my_foods_bp.route("/")
@@ -295,7 +308,7 @@ def new_my_food():
         factor = 100.0 / gram_weight
 
         category_id = _get_or_create_food_category(
-            form.food_category.data, current_user.id
+            form.food_category.data, current_user.id, form.description.data
         )
 
         my_food = MyFood(
@@ -425,7 +438,7 @@ def edit_my_food(food_id):
         my_food.fdc_id = form.fdc_id.data
         my_food.upc = form.upc.data
         my_food.food_category_id = _get_or_create_food_category(
-            form.food_category.data, current_user.id
+            form.food_category.data, current_user.id, form.description.data
         )
 
         for key, value in nutrients_100g.items():

@@ -93,40 +93,61 @@ def test_import_my_foods_happy_path_textarea(auth_client):
 def test_import_category_handling(auth_client):
     with auth_client.application.app_context():
         # Existing global category
-        global_cat = FoodCategory(description="Global Category", user_id=None)
+        global_cat = FoodCategory(description="Breakfast", user_id=None)
         db.session.add(global_cat)
         # Existing private category
-        private_cat = FoodCategory(description="Private Category", user_id=1)
+        private_cat = FoodCategory(description="User Snacks", user_id=1)
         db.session.add(private_cat)
         db.session.commit()
+        global_cat_id = global_cat.id
+        private_cat_id = private_cat.id
 
     yaml_content = """
 - description: "Food with Global Category"
-  category: "Global Category"
-  serving: {gram_weight: 100}
+  category: "Breakfast"
+  serving: {gram_weight: 100, unit: "g"}
   nutrition_facts: {calories: 100}
 - description: "Food with Private Category"
-  category: "Private Category"
-  serving: {gram_weight: 100}
+  category: "User Snacks"
+  serving: {gram_weight: 100, unit: "g"}
   nutrition_facts: {calories: 100}
-- description: "Food with New Category"
-  category: "New Category"
-  serving: {gram_weight: 100}
+- description: "Food with New General Category"
+  category: "Soups"
+  serving: {gram_weight: 100, unit: "g"}
+  nutrition_facts: {calories: 100}
+- description: "My Test Bar"
+  category: "My Test Bar"
+  serving: {gram_weight: 100, unit: "g"}
   nutrition_facts: {calories: 100}
 """
     data = {"file": (io.BytesIO(yaml_content.encode("utf-8")), "import.yaml")}
     auth_client.post(url_for("my_foods.import_foods"), data=data, follow_redirects=True)
 
     with auth_client.application.app_context():
+        # Assert correct linking for existing categories
         food1 = MyFood.query.filter_by(description="Food with Global Category").first()
-        assert food1.food_category.description == "Global Category"
+        assert food1.food_category_id == global_cat_id
 
         food2 = MyFood.query.filter_by(description="Food with Private Category").first()
-        assert food2.food_category.description == "Private Category"
+        assert food2.food_category_id == private_cat_id
 
-        food3 = MyFood.query.filter_by(description="Food with New Category").first()
-        assert food3.food_category.description == "New Category"
+        # Assert new category creation
+        food3 = MyFood.query.filter_by(
+            description="Food with New General Category"
+        ).first()
+        assert food3.food_category.description == "Soups"
         assert food3.food_category.user_id == 1
+
+        # Assert bad category was not created
+        food4 = MyFood.query.filter_by(description="My Test Bar").first()
+        assert food4.food_category_id is None
+
+        # Assert total number of new categories
+        new_categories = FoodCategory.query.filter(
+            FoodCategory.id > private_cat_id
+        ).all()
+        assert len(new_categories) == 1
+        assert new_categories[0].description == "Soups"
 
 
 def test_import_duplicate_handling(auth_client):
