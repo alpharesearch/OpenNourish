@@ -84,4 +84,3 @@ class PortionForm(FlaskForm):
 
 class CategoryForm(FlaskForm):
     description = StringField("Category Name", validators=[DataRequired()])
-    submit = SubmitField("Save")
