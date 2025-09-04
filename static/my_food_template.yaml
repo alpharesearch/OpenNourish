@@ -1,0 +1,57 @@
+# OpenNourish Custom Food Import Template
+#
+# Instructions:
+# 1. You can add multiple food items in this file. Copy and paste the entire block
+#    (starting with the hyphen '-') for each new food.
+# 2. Fill in the details for your food item below.
+# 3. For nutrition_facts, enter the values exactly as they appear on the label for the serving size you define.
+# -------------------------------------------------------------------------------------------------
+
+-
+  # [REQUIRED] The name of the food item.
+  description: ""
+
+  # [OPTIONAL] A brief description of the ingredients.
+  ingredients: ""
+
+  # [OPTIONAL] The category this food belongs to.
+  # The system will try to match this to an existing category (yours or a standard one).
+  # If no match is found, a new private category will be created for you.
+  category: ""
+
+  # [REQUIRED] Define the serving size that the nutrition facts correspond to.
+  serving:
+    # The numeric amount of the serving (e.g., 1, 2, 0.5).
+    amount: 1
+    # The unit of the serving (e.g., "slice", "cup", "bar").
+    unit: ""
+    # The total weight of this serving in grams. THIS IS A CRITICAL FIELD.
+    gram_weight: 0
+
+  # [REQUIRED] Nutrition facts for the single serving defined above.
+  nutrition_facts:
+    calories: 0
+    
+    # --- Macronutrients ---
+    protein_grams: 0
+    carbohydrates_grams: 0
+    fat_grams: 0
+    
+    # --- Fats ---
+    saturated_fat_grams: 0
+    trans_fat_grams: 0
+    
+    # --- Other ---
+    cholesterol_milligrams: 0
+    sodium_milligrams: 0
+    
+    # --- Carbohydrates ---
+    fiber_grams: 0
+    total_sugars_grams: 0
+    added_sugars_grams: 0
+    
+    # --- Vitamins & Minerals ---
+    vitamin_d_micrograms: 0
+    calcium_milligrams: 0
+    iron_milligrams: 0
+    potassium_milligrams: 0

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Import Custom Foods</h1>
+        <div>
+            <a href="{{ url_for('my_foods.my_foods') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-return-left"></i> Back to My Foods</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Upload YAML File</h2>
+        </div>
+        <div class="card-body">
+            <p>
+                Upload a YAML file containing your custom food items. You can download a template to see the required format.
+            </p>
+            <p>
+                <a href="{{ url_for('static', filename='my_food_template.yaml') }}" class="btn btn-outline-info" download>
+                    <i class="bi bi-download"></i> Download Template
+                </a>
+            </p>
+            <hr>
+            <form method="POST" action="{{ url_for('my_foods.import_foods') }}" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="file" class="form-label">YAML File</label>
+                    <input class="form-control" type="file" id="file" name="file" accept=".yaml,.yml" required>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Upload and Import</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">How to Use an AI Assistant to Create Your Import File</h2>
+        </div>
+        <div class="card-body">
+            <p>You can use any AI assistant (like ChatGPT, Gemini, etc.) to help you create a YAML import file from unstructured text, like a PDF or a website. Just follow these steps:</p>
+            <ol>
+                <li>Copy the complete prompt from the text box below.</li>
+                <li>Paste it into your AI assistant.</li>
+                <li>Copy the nutritional information from your source (PDF, website, etc.) and paste it directly below the prompt in the AI's input box.</li>
+                <li>The AI will generate the YAML content for you.</li>
+                <li>Review the generated YAML for accuracy, save it as a <code>.yaml</code> file, and upload it here.</li>
+            </ol>
+            <div class="card bg-light">
+                <div class="card-body">
+                    <pre id="prompt-text" style="white-space: pre-wrap; word-wrap: break-word;">
+You are a data extraction assistant. Your task is to extract nutrition information for one or more food items from the text provided by the user and format it as a YAML list.
+
+**Instructions:**
+1.  Adhere strictly to the YAML structure provided in the template below for each food item.
+2.  Each new food item must begin with a hyphen (`-`).
+3.  Use the exact field names as specified in the template.
+4.  Ensure that `gram_weight` and all fields under `nutrition_facts` are numbers only, without any text or units.
+5.  If a specific nutritional value (e.g., trans_fat_grams) is not mentioned in the source text, use a value of `0`.
+6.  Do not make up any data that is not present in the provided text.
+
+**YAML Template for a single food item:**
+```yaml
+-
+  description: ""
+  ingredients: ""
+  category: ""
+  serving:
+    amount: 1
+    unit: ""
+    gram_weight: 0
+  nutrition_facts:
+    calories: 0
+    protein_grams: 0
+    carbohydrates_grams: 0
+    fat_grams: 0
+    saturated_fat_grams: 0
+    trans_fat_grams: 0
+    cholesterol_milligrams: 0
+    sodium_milligrams: 0
+    fiber_grams: 0
+    total_sugars_grams: 0
+    added_sugars_grams: 0
+    vitamin_d_micrograms: 0
+    calcium_milligrams: 0
+    iron_milligrams: 0
+    potassium_milligrams: 0
+```</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

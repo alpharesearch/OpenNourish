@@ -9,6 +9,7 @@ from flask import (
 )
 from datetime import datetime, timezone
 from flask_login import login_required, current_user
+import yaml
 from models import (
     db,
     MyFood,
@@ -57,6 +58,166 @@ def _get_or_create_food_category(category_name, user_id):
     db.session.add(new_category)
     db.session.flush()
     return new_category.id
+
+
+@my_foods_bp.route("/import", methods=["GET", "POST"])
+@login_required
+def import_foods():
+    if request.method == "POST":
+        if "file" not in request.files:
+            flash("No file part in the request.", "danger")
+            return redirect(request.url)
+        file = request.files["file"]
+        if file.filename == "":
+            flash("No file selected.", "danger")
+            return redirect(request.url)
+
+        if file and (file.filename.endswith(".yaml") or file.filename.endswith(".yml")):
+            try:
+                food_data = yaml.safe_load(file)
+                if not isinstance(food_data, list):
+                    flash("YAML file must contain a list of food items.", "danger")
+                    return redirect(request.url)
+
+                existing_descriptions = {
+                    f.description.lower()
+                    for f in MyFood.query.filter_by(user_id=current_user.id).all()
+                }
+                processed_in_file = set()
+                skipped_items = []
+                success_count = 0
+
+                for item in food_data:
+                    description = item.get("description")
+                    if not description:
+                        skipped_items.append(("Unnamed Item", "Missing description"))
+                        continue
+
+                    if description.lower() in processed_in_file:
+                        skipped_items.append((description, "Duplicate in file"))
+                        continue
+
+                    if description.lower() in existing_descriptions:
+                        skipped_items.append((description, "Already exists"))
+                        continue
+
+                    serving = item.get("serving", {})
+                    gram_weight = serving.get("gram_weight")
+                    nutrition_facts = item.get("nutrition_facts", {})
+                    calories = nutrition_facts.get("calories")
+
+                    if gram_weight is None or gram_weight < 0 or calories is None:
+                        skipped_items.append(
+                            (description, "Invalid data (serving/calories)")
+                        )
+                        continue
+
+                    processed_in_file.add(description.lower())
+
+                    category_id = _get_or_create_food_category(
+                        item.get("category"), current_user.id
+                    )
+
+                    if gram_weight > 0:
+                        factor = 100.0 / gram_weight
+                    else:
+                        factor = 1.0
+
+                    my_food = MyFood(
+                        user_id=current_user.id,
+                        description=description,
+                        ingredients=item.get("ingredients", ""),
+                        food_category_id=category_id,
+                        calories_per_100g=nutrition_facts.get("calories", 0) * factor,
+                        protein_per_100g=nutrition_facts.get("protein_grams", 0)
+                        * factor,
+                        carbs_per_100g=nutrition_facts.get("carbohydrates_grams", 0)
+                        * factor,
+                        fat_per_100g=nutrition_facts.get("fat_grams", 0) * factor,
+                        saturated_fat_per_100g=nutrition_facts.get(
+                            "saturated_fat_grams", 0
+                        )
+                        * factor,
+                        trans_fat_per_100g=nutrition_facts.get("trans_fat_grams", 0)
+                        * factor,
+                        cholesterol_mg_per_100g=nutrition_facts.get(
+                            "cholesterol_milligrams", 0
+                        )
+                        * factor,
+                        sodium_mg_per_100g=nutrition_facts.get("sodium_milligrams", 0)
+                        * factor,
+                        fiber_per_100g=nutrition_facts.get("fiber_grams", 0) * factor,
+                        sugars_per_100g=nutrition_facts.get("total_sugars_grams", 0)
+                        * factor,
+                        added_sugars_per_100g=nutrition_facts.get(
+                            "added_sugars_grams", 0
+                        )
+                        * factor,
+                        vitamin_d_mcg_per_100g=nutrition_facts.get(
+                            "vitamin_d_micrograms", 0
+                        )
+                        * factor,
+                        calcium_mg_per_100g=nutrition_facts.get("calcium_milligrams", 0)
+                        * factor,
+                        iron_mg_per_100g=nutrition_facts.get("iron_milligrams", 0)
+                        * factor,
+                        potassium_mg_per_100g=nutrition_facts.get(
+                            "potassium_milligrams", 0
+                        )
+                        * factor,
+                    )
+                    db.session.add(my_food)
+                    db.session.flush()
+
+                    # Create user-defined portion
+                    user_portion = UnifiedPortion(
+                        my_food_id=my_food.id,
+                        amount=serving.get("amount", 1),
+                        measure_unit_description=serving.get("unit", ""),
+                        gram_weight=gram_weight,
+                    )
+                    db.session.add(user_portion)
+
+                    # Create 1-gram portion only if gram_weight is specified
+                    if gram_weight > 0:
+                        gram_portion = UnifiedPortion(
+                            my_food_id=my_food.id,
+                            amount=1.0,
+                            measure_unit_description="g",
+                            gram_weight=1.0,
+                        )
+                        db.session.add(gram_portion)
+
+                    success_count += 1
+
+                db.session.commit()
+
+                # Flash summary message
+                summary_message = (
+                    f"Import complete. Successfully added {success_count} new foods."
+                )
+                if skipped_items:
+                    skipped_count = len(skipped_items)
+                    summary_message += f" {skipped_count} items were skipped."
+                    flash(summary_message, "warning")
+                    # Optional: flash details about skipped items if needed
+                    skipped_details = ", ".join(
+                        [f"{name} ({reason})" for name, reason in skipped_items]
+                    )
+                    flash(f"Skipped items: {skipped_details}", "info")
+                else:
+                    flash(summary_message, "success")
+
+                return redirect(url_for("my_foods.my_foods"))
+
+            except yaml.YAMLError as e:
+                flash(f"Error parsing YAML file: {e}", "danger")
+                return redirect(request.url)
+        else:
+            flash("Invalid file type. Please upload a .yaml or .yml file.", "danger")
+            return redirect(request.url)
+
+    return render_template("my_foods/import_my_foods.html")
 
 
 @my_foods_bp.route("/")
