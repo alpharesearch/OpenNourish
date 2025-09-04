@@ -140,32 +140,33 @@ document.addEventListener('DOMContentLoaded', function () {
     if (prevLink || nextLink) {
         let touchstartX = 0;
         let touchendX = 0;
-        const swipeThreshold = 100; // minimum distance for a swipe in pixels
+        let touchstartY = 0;
+        let touchendY = 0;
+        const swipeThreshold = 100;
 
         document.addEventListener('touchstart', function (event) {
             touchstartX = event.changedTouches[0].screenX;
+            touchstartY = event.changedTouches[0].screenY;
         }, { passive: true });
 
         document.addEventListener('touchend', function (event) {
             touchendX = event.changedTouches[0].screenX;
+            touchendY = event.changedTouches[0].screenY;
             handleSwipe();
         }, { passive: true });
 
         function handleSwipe() {
-            const swipeDistance = touchendX - touchstartX;
+            const swipeDistanceX = touchendX - touchstartX;
+            const swipeDistanceY = touchendY - touchstartY;
 
-            if (Math.abs(swipeDistance) < swipeThreshold) {
-                return; // not a swipe
-            }
-
-            if (touchendX < touchstartX && nextLink) {
-                // Swiped left
-                window.location.href = nextLink.href;
-            }
-
-            if (touchendX > touchstartX && prevLink) {
-                // Swiped right
-                window.location.href = prevLink.href;
+            if (Math.abs(swipeDistanceX) > swipeThreshold && Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY)) {
+                if (swipeDistanceX < 0 && nextLink) {
+                    // Swiped left
+                    window.location.href = nextLink.href;
+                } else if (swipeDistanceX > 0 && prevLink) {
+                    // Swiped right
+                    window.location.href = prevLink.href;
+                }
             }
         }
     }

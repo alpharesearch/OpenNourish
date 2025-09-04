@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
+<a id="prev-page-link" href="{{ url_for('exercise.log_exercise') }}" style="display: none;"></a>
+<a id="next-page-link" href="{{ url_for('fasting.index') }}" style="display: none;"></a>
 <div class="container mt-4">
     <!-- PAGE HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -189,7 +191,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 {% if chart_labels and weight_data %}
 <script>
     const ctx = document.getElementById('progressChart');
@@ -239,4 +243,44 @@
     });
 </script>
 {% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const prevLink = document.getElementById('prev-page-link');
+    const nextLink = document.getElementById('next-page-link');
+
+    if (prevLink || nextLink) {
+        let touchstartX = 0;
+        let touchendX = 0;
+        let touchstartY = 0;
+        let touchendY = 0;
+        const swipeThreshold = 100;
+
+        document.addEventListener('touchstart', function (event) {
+            touchstartX = event.changedTouches[0].screenX;
+            touchstartY = event.changedTouches[0].screenY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', function (event) {
+            touchendX = event.changedTouches[0].screenX;
+            touchendY = event.changedTouches[0].screenY;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const swipeDistanceX = touchendX - touchstartX;
+            const swipeDistanceY = touchendY - touchstartY;
+
+            if (Math.abs(swipeDistanceX) > swipeThreshold && Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY)) {
+                if (swipeDistanceX < 0 && nextLink) {
+                    // Swiped left
+                    window.location.href = nextLink.href;
+                } else if (swipeDistanceX > 0 && prevLink) {
+                    // Swiped right
+                    window.location.href = prevLink.href;
+                }
+            }
+        }
+    }
+});
+</script>
 {% endblock %}
