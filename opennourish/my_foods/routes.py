@@ -161,6 +161,7 @@ def _process_yaml_import(yaml_stream):
                 amount=serving.get("amount", 1),
                 measure_unit_description=serving.get("unit", ""),
                 gram_weight=gram_weight,
+                seq_num=1,
             )
             db.session.add(user_portion)
 
@@ -171,6 +172,7 @@ def _process_yaml_import(yaml_stream):
                     amount=1.0,
                     measure_unit_description="g",
                     gram_weight=1.0,
+                    seq_num=2,
                 )
                 db.session.add(gram_portion)
 
@@ -233,7 +235,7 @@ def my_foods():
     view_mode = request.args.get("view", "user")  # 'user' or 'friends'
     per_page = 10
 
-    query = MyFood.query
+    query = MyFood.query.options(selectinload(MyFood.portions))
     if view_mode == "friends":
         friend_ids = [friend.id for friend in current_user.friends]
         # Eager load the 'user' relationship to get usernames efficiently
