@@ -14,6 +14,7 @@ from models import (
     FastingSession,
     Friendship,
     UnifiedPortion,
+    FoodCategory,
 )
 from sqlalchemy import inspect
 from sqlalchemy.types import Date, DateTime
@@ -32,6 +33,7 @@ MODEL_MAP = {
     "fasting_session": FastingSession,
     "friendship": Friendship,
     "portion": UnifiedPortion,
+    "food_category": FoodCategory,
 }
 
 

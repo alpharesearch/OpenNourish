@@ -17,7 +17,7 @@ from models import (
     UnifiedPortion,
     FoodCategory,
 )
-from opennourish.my_foods.forms import MyFoodForm, PortionForm
+from opennourish.my_foods.forms import MyFoodForm, PortionForm, CategoryForm
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 from opennourish.utils import (
@@ -628,3 +628,87 @@ def move_my_food_portion_down(portion_id):
         url_for(MY_FOODS_EDIT_ROUTE, food_id=portion_to_move.my_food_id)
         + "#portions-table"
     )
+
+
+@my_foods_bp.route("/categories/manage", methods=["GET", "POST"])
+@login_required
+def manage_categories():
+    form = CategoryForm()
+    if form.validate_on_submit():
+        new_category_name = form.description.data
+        existing_category = FoodCategory.query.filter(
+            func.lower(FoodCategory.description) == func.lower(new_category_name),
+            FoodCategory.user_id == current_user.id,
+        ).first()
+        if existing_category:
+            flash("A category with this name already exists.", "danger")
+        else:
+            new_category = FoodCategory(
+                description=new_category_name, user_id=current_user.id
+            )
+            db.session.add(new_category)
+            db.session.commit()
+            flash("Category added successfully.", "success")
+        return redirect(url_for("my_foods.manage_categories"))
+
+    categories = (
+        FoodCategory.query.filter_by(user_id=current_user.id)
+        .order_by(FoodCategory.description)
+        .all()
+    )
+    return render_template(
+        "my_foods/manage_categories.html", categories=categories, form=form
+    )
+
+
+@my_foods_bp.route("/categories/<int:category_id>/edit", methods=["POST"])
+@login_required
+def edit_category(category_id):
+    category = FoodCategory.query.get_or_404(category_id)
+    if category.user_id != current_user.id:
+        flash("You are not authorized to edit this category.", "danger")
+        return redirect(url_for("my_foods.manage_categories"))
+
+    new_name = request.form.get("description")
+    if not new_name:
+        flash("Category name cannot be empty.", "danger")
+        return redirect(url_for("my_foods.manage_categories"))
+
+    existing_category = FoodCategory.query.filter(
+        func.lower(FoodCategory.description) == func.lower(new_name),
+        FoodCategory.user_id == current_user.id,
+        FoodCategory.id != category_id,
+    ).first()
+
+    if existing_category:
+        flash("Another category with this name already exists.", "danger")
+    else:
+        category.description = new_name
+        db.session.commit()
+        flash("Category updated successfully.", "success")
+
+    return redirect(url_for("my_foods.manage_categories"))
+
+
+@my_foods_bp.route("/categories/<int:category_id>/delete", methods=["POST"])
+@login_required
+def delete_category(category_id):
+    category = FoodCategory.query.get_or_404(category_id)
+    if category.user_id != current_user.id:
+        flash("You are not authorized to delete this category.", "danger")
+        return redirect(url_for("my_foods.manage_categories"))
+
+    # Set food_category_id to None for all foods using this category
+    MyFood.query.filter_by(food_category_id=category_id).update(
+        {"food_category_id": None}
+    )
+
+    redirect_info = {"endpoint": "my_foods.manage_categories"}
+    prepare_undo_and_delete(
+        category,
+        "food_category",
+        redirect_info,
+        success_message="Category deleted successfully!",
+    )
+
+    return redirect(url_for("my_foods.manage_categories"))

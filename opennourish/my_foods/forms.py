@@ -80,3 +80,8 @@ class PortionForm(FlaskForm):
         "Gram Weight", validators=[DataRequired(), NumberRange(min=0.01)]
     )
     submit = SubmitField("Add Portion")
+
+
+class CategoryForm(FlaskForm):
+    description = StringField("Category Name", validators=[DataRequired()])
+    submit = SubmitField("Save")
