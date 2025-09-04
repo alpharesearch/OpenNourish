@@ -77,6 +77,7 @@ class ManualPagination:
 @login_required
 def search():
     search_term = request.values.get("search_term", "")
+    search_term_for_display = search_term
     per_page = request.values.get("per_page", 10, type=int)
     selected_category_id = request.values.get("food_category_id", type=int)
 
@@ -127,6 +128,11 @@ def search():
         return_url = url_for("diary.edit_meal", meal_id=recipe_id)
 
     if search_term:
+        if search_term == '*':
+            search_term_for_display = ''
+        else:
+            search_term_for_display = search_term
+
         user_ids_to_search = [current_user.id]
         if search_friends:
             friend_ids = [friend.id for friend in current_user.friends]
@@ -136,19 +142,20 @@ def search():
         if search_usda:
             usda_query = Food.query
 
-            # Handle numeric search as potential UPC
-            if search_term.isdigit() and len(search_term) > 5:
-                usda_query = usda_query.filter(
-                    or_(
-                        Food.description.ilike(f"%{search_term}%"),
-                        Food.upc == search_term,
+            if search_term != '*':
+                # Handle numeric search as potential UPC
+                if search_term.isdigit() and len(search_term) > 5:
+                    usda_query = usda_query.filter(
+                        or_(
+                            Food.description.ilike(f"%{search_term}%"),
+                            Food.upc == search_term,
+                        )
                     )
-                )
-            else:
-                # Standard description search
-                search_words = search_term.split()
-                for word in search_words:
-                    usda_query = usda_query.filter(Food.description.ilike(f"%{word}%"))
+                else:
+                    # Standard description search
+                    search_words = search_term.split()
+                    for word in search_words:
+                        usda_query = usda_query.filter(Food.description.ilike(f"%{word}%"))
 
             if selected_category_id:
                 usda_query = usda_query.filter(
@@ -184,14 +191,17 @@ def search():
                     portion_count = portion_counts.get(fdc_id, 0)
 
                     # Secondary sort key: Relevance
-                    if description == search_term_lower:
-                        relevance = 1
-                    elif description.startswith(search_term_lower):
-                        relevance = 2
-                    elif f" {search_term_lower} " in f" {description} ":
-                        relevance = 3
+                    if search_term != '*':
+                        if description == search_term_lower:
+                            relevance = 1
+                        elif description.startswith(search_term_lower):
+                            relevance = 2
+                        elif f" {search_term_lower} " in f" {description} ":
+                            relevance = 3
+                        else:
+                            relevance = 4
                     else:
-                        relevance = 4
+                        relevance = 0
 
                     # Tertiary sort key: Description length (ascending)
                     length = len(description)
@@ -256,19 +266,20 @@ def search():
 
         if search_my_foods:
             my_foods_query = MyFood.query.filter(MyFood.user_id.in_(user_ids_to_search))
-            if search_term.isdigit() and len(search_term) > 5:
-                my_foods_query = my_foods_query.filter(
-                    or_(
-                        MyFood.description.ilike(f"%{search_term}%"),
-                        MyFood.upc == search_term,
-                    )
-                )
-            else:
-                search_words = search_term.split()
-                for word in search_words:
+            if search_term != '*':
+                if search_term.isdigit() and len(search_term) > 5:
                     my_foods_query = my_foods_query.filter(
-                        MyFood.description.ilike(f"%{word}%")
+                        or_(
+                            MyFood.description.ilike(f"%{search_term}%"),
+                            MyFood.upc == search_term,
+                        )
                     )
+                else:
+                    search_words = search_term.split()
+                    for word in search_words:
+                        my_foods_query = my_foods_query.filter(
+                            MyFood.description.ilike(f"%{word}%")
+                        )
 
             if selected_category_id:
                 my_foods_query = my_foods_query.filter(
@@ -299,17 +310,18 @@ def search():
             # Combine the visibility filters with OR
             recipes_query = Recipe.query.filter(or_(*recipe_visibility_filters))
 
-            # Apply the search term filter
-            if search_term.isdigit() and len(search_term) > 5:
-                recipes_query = recipes_query.filter(
-                    or_(
-                        Recipe.name.ilike(f"%{search_term}%"), Recipe.upc == search_term
+            if search_term != '*':
+                # Apply the search term filter
+                if search_term.isdigit() and len(search_term) > 5:
+                    recipes_query = recipes_query.filter(
+                        or_(
+                            Recipe.name.ilike(f"%{search_term}%"), Recipe.upc == search_term
+                        )
                     )
-                )
-            else:
-                search_words = search_term.split()
-                for word in search_words:
-                    recipes_query = recipes_query.filter(Recipe.name.ilike(f"%{word}%"))
+                else:
+                    search_words = search_term.split()
+                    for word in search_words:
+                        recipes_query = recipes_query.filter(Recipe.name.ilike(f"%{word}%"))
 
             # Apply category filter if any
             if selected_category_id:
@@ -323,9 +335,10 @@ def search():
             )
 
         if search_my_meals:
-            my_meals_pagination = MyMeal.query.filter(
-                MyMeal.name.ilike(f"%{search_term}%"), MyMeal.user_id == current_user.id
-            ).paginate(page=my_meals_page, per_page=per_page, error_out=False)
+            my_meals_query = MyMeal.query.filter(MyMeal.user_id == current_user.id)
+            if search_term != '*':
+                my_meals_query = my_meals_query.filter(MyMeal.name.ilike(f"%{search_term}%"))
+            my_meals_pagination = my_meals_query.paginate(page=my_meals_page, per_page=per_page, error_out=False)
     else:
         # No search term, so show frequently used items
         if search_my_foods:
@@ -481,7 +494,7 @@ def search():
 
     return render_template(
         "search/search.html",
-        search_term=search_term,
+        search_term=search_term_for_display,
         usda_foods_pagination=usda_foods_pagination,
         my_foods_pagination=my_foods_pagination,
         recipes_pagination=recipes_pagination,

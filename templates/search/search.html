@@ -496,6 +496,19 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
+
+    const categorySelect = document.querySelector('select[name="food_category_id"]');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            if (this.value) { // If a category is selected (not "All Categories")
+                const searchInput = document.querySelector('input[name="search_term"]');
+                if (!searchInput.value) {
+                    searchInput.value = '*';
+                }
+                searchInput.form.submit();
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
