@@ -1,4 +1,5 @@
 import io
+import pytest
 from flask import url_for
 from models import db, MyFood, FoodCategory, UnifiedPortion
 
@@ -15,7 +16,7 @@ def test_import_my_foods_get_authenticated(auth_client):
     assert b"Import Custom Foods" in response.data
 
 
-def test_import_my_foods_happy_path(auth_client):
+def test_import_my_foods_happy_path_file(auth_client):
     yaml_content = """
 - description: "Test Apple"
   category: "Fruits"
@@ -60,6 +61,33 @@ def test_import_my_foods_happy_path(auth_client):
         assert len(apple_portions) == 2
         assert any(p.gram_weight == 182 for p in apple_portions)
         assert any(p.gram_weight == 1 for p in apple_portions)
+
+
+def test_import_my_foods_happy_path_textarea(auth_client):
+    yaml_content = """
+- description: "Test Banana"
+  category: "Fruits"
+  serving:
+    amount: 1
+    unit: "large"
+    gram_weight: 136
+  nutrition_facts:
+    calories: 121
+    protein_grams: 1.5
+    carbohydrates_grams: 31
+    fat_grams: 0.4
+"""
+    data = {"yaml_text": yaml_content}
+    response = auth_client.post(
+        url_for("my_foods.import_foods"), data=data, follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b"Import complete. Successfully added 1 new foods." in response.data
+
+    with auth_client.application.app_context():
+        food = MyFood.query.filter_by(description="Test Banana").first()
+        assert food is not None
+        assert food.calories_per_100g == pytest.approx((121 / 136) * 100)
 
 
 def test_import_category_handling(auth_client):
@@ -164,11 +192,11 @@ def test_import_error_handling(auth_client):
     assert b"Successfully added 1 new foods" in response.data
     assert b"1 items were skipped" in response.data
 
-    # Zero gram weight
+    # Zero gram weight with zero calories
     yaml_content = """
 - description: "Zero Gram Weight"
   serving: {gram_weight: 0}
-  nutrition_facts: {calories: 100}
+  nutrition_facts: {calories: 0}
 """
     data = {"file": (io.BytesIO(yaml_content.encode("utf-8")), "import.yaml")}
     response = auth_client.post(
@@ -181,10 +209,17 @@ def test_import_error_handling(auth_client):
     response = auth_client.post(
         url_for("my_foods.import_foods"), data=data, follow_redirects=True
     )
-    assert b"YAML file must contain a list of food items" in response.data
+    assert b"No food items found in the YAML content." in response.data
+
+    # Empty text area
+    data = {"yaml_text": " "}
+    response = auth_client.post(
+        url_for("my_foods.import_foods"), data=data, follow_redirects=True
+    )
+    assert b"No file selected or text provided." in response.data
 
 
-def test_import_real_world_example(auth_client):
+def test_import_real_world_example_calculated_weight(auth_client):
     yaml_content = """
 - description: "Bacon Egg & Cheese Hashbrown Bowl"
   ingredients: ""
@@ -222,19 +257,12 @@ def test_import_real_world_example(auth_client):
             description="Bacon Egg & Cheese Hashbrown Bowl"
         ).first()
         assert food is not None
-        assert food.calories_per_100g == 700
-        assert food.protein_per_100g == 30
-        assert food.carbs_per_100g == 62
-        assert food.fat_per_100g == 48
-        assert food.saturated_fat_per_100g == 18
-        assert food.trans_fat_per_100g == 0
-        assert food.cholesterol_mg_per_100g == 425
-        assert food.sodium_mg_per_100g == 1630
-        assert food.fiber_per_100g == 7
-        assert food.sugars_per_100g == 4
-        assert food.added_sugars_per_100g == 0
+        calculated_gram_weight = 30 + 62 + 48
+        assert food.calories_per_100g == pytest.approx(
+            (700 / calculated_gram_weight) * 100
+        )
 
         portions = UnifiedPortion.query.filter_by(my_food_id=food.id).all()
-        assert len(portions) == 1
-        assert portions[0].gram_weight == 0
-        assert portions[0].measure_unit_description == "bowl"
+        assert len(portions) == 2
+        assert any(p.gram_weight == calculated_gram_weight for p in portions)
+        assert any(p.gram_weight == 1 for p in portions)

@@ -26,9 +26,24 @@
             <form method="POST" action="{{ url_for('my_foods.import_foods') }}" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label for="file" class="form-label">YAML File</label>
-                    <input class="form-control" type="file" id="file" name="file" accept=".yaml,.yml" required>
+                    <input class="form-control" type="file" id="file" name="file" accept=".yaml,.yml">
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Upload and Import</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Or Paste YAML Content</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('my_foods.import_foods') }}">
+                <div class="mb-3">
+                    <label for="yaml_text" class="form-label">YAML Content</label>
+                    <textarea class="form-control" id="yaml_text" name="yaml_text" rows="10"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-file-earmark-arrow-down"></i> Import from Text</button>
             </form>
         </div>
     </div>
