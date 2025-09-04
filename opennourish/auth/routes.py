@@ -26,9 +26,9 @@ def login():
         return redirect(url_for("main.index"))
     form = LoginForm()
     if form.validate_on_submit():
+        login_identifier = form.username_or_email.data.lower()
         user = User.query.filter(
-            (User.username == form.username_or_email.data)
-            | (User.email == form.username_or_email.data)
+            (User.username == login_identifier) | (User.email == login_identifier)
         ).first()
         if user is None or not user.check_password(form.password.data):
             flash("Invalid username or password", "danger")
@@ -76,7 +76,7 @@ def register():
         return redirect(url_for("main.index"))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
+        user = User(username=form.username.data.lower(), email=form.email.data.lower())
         user.set_password(form.password.data)
 
         # Grant admin rights based on environment variable or if it's the first user

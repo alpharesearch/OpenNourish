@@ -1,6 +1,15 @@
 from datetime import date
 import pytest
-from models import db, DailyLog, MyMeal, MyMealItem, Food, MyFood, UnifiedPortion, Recipe
+from models import (
+    db,
+    DailyLog,
+    MyMeal,
+    MyMealItem,
+    Food,
+    MyFood,
+    UnifiedPortion,
+    Recipe,
+)
 
 
 def test_save_meal_from_diary_and_edit(auth_client_with_user):

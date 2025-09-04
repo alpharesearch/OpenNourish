@@ -83,8 +83,8 @@ class SettingsForm(FlaskForm):
     submit = SubmitField("Save Settings")
 
     def validate_email(self, email):
-        if email.data != current_user.email:
-            user = User.query.filter_by(email=email.data).first()
+        if email.data.lower() != current_user.email:
+            user = User.query.filter(User.email == email.data.lower()).first()
             if user:
                 raise ValidationError("This email is already registered.")
 

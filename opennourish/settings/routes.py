@@ -48,8 +48,9 @@ def settings():
         user = db.session.get(User, current_user.id)
 
         # Check if email has changed and unverify if so
-        if user.email != settings_form.email.data:
-            user.email = settings_form.email.data
+        new_email = settings_form.email.data.lower()
+        if user.email != new_email:
+            user.email = new_email
             user.is_verified = False
             flash(
                 "Your email address has been changed and your email verification status has been reset. Please verify your new email.",
