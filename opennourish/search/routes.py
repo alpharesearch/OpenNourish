@@ -170,6 +170,8 @@ def search():
 
             if all_matching_foods_query:
                 matching_fdc_ids = [food.fdc_id for food in all_matching_foods_query]
+                if len(matching_fdc_ids) > 5000:
+                    matching_fdc_ids = matching_fdc_ids[:5000]
                 food_descriptions = {
                     food.fdc_id: food.description for food in all_matching_foods_query
                 }
