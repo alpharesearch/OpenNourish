@@ -71,4 +71,16 @@ ALL_MEAL_TYPES = [
     UNSPECIFIED,
 ]
 
+# Constant for friends page endpoint
+FRIENDS_PAGE_ENDPOINT = "friends.friends_page"
+
+# Constant for food detail endpoint
+MAIN_FOOD_DETAIL_ENDPOINT = "main.food_detail"
+
+# Constant for portions table anchor
+PORTIONS_TABLE_ANCHOR = "#portions-table"
+
+# Constant for tracking progress endpoint
+TRACKING_PROGRESS_ENDPOINT = "tracking.progress"
+
 USERS_ID = "users.id"

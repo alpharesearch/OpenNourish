@@ -15,14 +15,14 @@ def category_fixture(auth_client_with_user):
 
 
 def test_manage_categories_get(auth_client_with_user):
-    client, user = auth_client_with_user
+    client, _ = auth_client_with_user
     response = client.get(url_for("my_foods.manage_categories"))
     assert response.status_code == 200
     assert b"Manage Categories" in response.data
 
 
 def test_add_category_post(auth_client_with_user):
-    client, user = auth_client_with_user
+    client, _ = auth_client_with_user
     response = client.post(
         url_for("my_foods.manage_categories"),
         data={"description": "New Category"},
@@ -36,7 +36,7 @@ def test_add_category_post(auth_client_with_user):
 
 
 def test_add_existing_category_post(category_fixture):
-    client, user, category = category_fixture
+    client, _, category = category_fixture
     response = client.post(
         url_for("my_foods.manage_categories"),
         data={"description": "Test Category"},
@@ -47,7 +47,7 @@ def test_add_existing_category_post(category_fixture):
 
 
 def test_edit_category_post(category_fixture):
-    client, user, category = category_fixture
+    client, _, category = category_fixture
     response = client.post(
         url_for("my_foods.edit_category", category_id=category.id),
         data={"description": "Updated Category"},
@@ -61,7 +61,7 @@ def test_edit_category_post(category_fixture):
 
 
 def test_delete_category_post(category_fixture):
-    client, user, category = category_fixture
+    client, _, category = category_fixture
     response = client.post(
         url_for("my_foods.delete_category", category_id=category.id),
         follow_redirects=True,

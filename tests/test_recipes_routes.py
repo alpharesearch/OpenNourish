@@ -60,7 +60,7 @@ def client_with_recipe_ingredient(client):
 
 
 def test_delete_ingredient_success(client_with_recipe_ingredient):
-    client, recipe_id, ingredient_id, _ = client_with_recipe_ingredient
+    client, _, ingredient_id, _ = client_with_recipe_ingredient
 
     response = client.post(
         f"/recipes/ingredients/{ingredient_id}/delete", follow_redirects=True
@@ -121,7 +121,7 @@ def test_update_ingredient_invalid_amount(client_with_recipe_ingredient):
 
 
 def test_update_ingredient_no_portion(client_with_recipe_ingredient):
-    client, recipe_id, ingredient_id, _ = client_with_recipe_ingredient
+    client, _, ingredient_id, _ = client_with_recipe_ingredient
     response = client.post(
         f"/recipes/recipe/ingredient/{ingredient_id}/update",
         data={"amount": "1"},
@@ -132,7 +132,7 @@ def test_update_ingredient_no_portion(client_with_recipe_ingredient):
 
 
 def test_update_ingredient_portion_not_found(client_with_recipe_ingredient):
-    client, recipe_id, ingredient_id, _ = client_with_recipe_ingredient
+    client, _, ingredient_id, _ = client_with_recipe_ingredient
     response = client.post(
         f"/recipes/recipe/ingredient/{ingredient_id}/update",
         data={"amount": "1", "portion_id": "999"},

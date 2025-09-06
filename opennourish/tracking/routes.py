@@ -11,6 +11,7 @@ from opennourish.utils import (
     prepare_undo_and_delete,
 )
 from opennourish.time_utils import get_user_today
+from constants import TRACKING_PROGRESS_ENDPOINT
 
 
 @tracking_bp.route("/progress", methods=["GET", "POST"])
@@ -37,7 +38,7 @@ def progress():
         db.session.add(checkin)
         db.session.commit()
         flash("Your check-in has been recorded.", "success")
-        return redirect(url_for("tracking.progress"))
+        return redirect(url_for(TRACKING_PROGRESS_ENDPOINT))
 
     if request.method == "GET":
         form.checkin_date.data = get_user_today(current_user.timezone)
@@ -117,7 +118,7 @@ def update_check_in(check_in_id):
     check_in = CheckIn.query.get_or_404(check_in_id)
     if check_in.user_id != current_user.id:
         flash("Entry not found or you do not have permission to edit it.", "danger")
-        return redirect(url_for("tracking.progress"))
+        return redirect(url_for(TRACKING_PROGRESS_ENDPOINT))
 
     form = CheckInForm(request.form, prefix=f"form-{check_in.id}")
     if form.validate_on_submit():
@@ -135,7 +136,7 @@ def update_check_in(check_in_id):
         check_in.body_fat_percentage = form.body_fat_percentage.data
         db.session.commit()
         flash("Your check-in has been updated.", "success")
-    return redirect(url_for("tracking.progress"))
+    return redirect(url_for(TRACKING_PROGRESS_ENDPOINT))
 
 
 @tracking_bp.route("/check-in/<int:check_in_id>/delete", methods=["POST"])
@@ -144,10 +145,10 @@ def delete_check_in(check_in_id):
     check_in = CheckIn.query.get_or_404(check_in_id)
     if check_in.user_id != current_user.id:
         flash("Entry not found or you do not have permission to delete it.", "danger")
-        return redirect(url_for("tracking.progress"))
+        return redirect(url_for(TRACKING_PROGRESS_ENDPOINT))
 
     page = request.args.get("page", 1, type=int)
-    redirect_info = {"endpoint": "tracking.progress", "params": {"page": page}}
+    redirect_info = {"endpoint": TRACKING_PROGRESS_ENDPOINT, "params": {"page": page}}
     prepare_undo_and_delete(
         check_in,
         "check_in",
@@ -155,4 +156,4 @@ def delete_check_in(check_in_id):
         success_message="Your check-in has been deleted.",
     )
 
-    return redirect(url_for("tracking.progress", page=page))
+    return redirect(url_for(TRACKING_PROGRESS_ENDPOINT, page=page))

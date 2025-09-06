@@ -33,6 +33,9 @@ my_foods_bp = Blueprint("my_foods", __name__)
 
 MY_FOODS_EDIT_ROUTE = "my_foods.edit_my_food"
 MY_FOODS_LIST_ROUTE = "my_foods.my_foods"
+IMPORT_FOODS_ROUTE = "my_foods.import_foods"
+MANAGE_CATEGORIES_ROUTE = "my_foods.manage_categories"
+PORTIONS_TABLE_FRAGMENT = "#portions-table"
 
 
 def _get_or_create_food_category(category_name, user_id, food_description):
@@ -65,10 +68,10 @@ def _process_yaml_import(yaml_stream):
         food_data = yaml.safe_load(yaml_stream)
         if not food_data:
             flash("No food items found in the YAML content.", "info")
-            return redirect(url_for("my_foods.import_foods"))
+            return redirect(url_for(IMPORT_FOODS_ROUTE))
         if not isinstance(food_data, list):
             flash("YAML file must contain a list of food items.", "danger")
-            return redirect(url_for("my_foods.import_foods"))
+            return redirect(url_for(IMPORT_FOODS_ROUTE))
 
         existing_descriptions = {
             f.description.lower()
@@ -200,7 +203,7 @@ def _process_yaml_import(yaml_stream):
 
     except yaml.YAMLError as e:
         flash(f"Error parsing YAML file: {e}", "danger")
-        return redirect(url_for("my_foods.import_foods"))
+        return redirect(url_for(IMPORT_FOODS_ROUTE))
 
 
 @my_foods_bp.route("/import", methods=["GET", "POST"])
@@ -541,7 +544,7 @@ def add_my_food_portion(food_id):
     else:
         flash("Error adding portion.", "danger")
     return redirect(
-        url_for(MY_FOODS_EDIT_ROUTE, food_id=my_food.id) + "#portions-table"
+        url_for(MY_FOODS_EDIT_ROUTE, food_id=my_food.id) + PORTIONS_TABLE_FRAGMENT
     )
 
 
@@ -562,7 +565,8 @@ def update_my_food_portion(portion_id):
         current_app.logger.debug(f"PortionForm errors: {form.errors}")
         flash("Error updating portion.", "danger")
     return redirect(
-        url_for(MY_FOODS_EDIT_ROUTE, food_id=portion.my_food_id) + "#portions-table"
+        url_for(MY_FOODS_EDIT_ROUTE, food_id=portion.my_food_id)
+        + PORTIONS_TABLE_FRAGMENT
     )
 
 
@@ -581,7 +585,7 @@ def delete_my_food_portion(portion_id):
             portion, "portion", redirect_info, success_message="Portion deleted."
         )
         return redirect(
-            url_for(MY_FOODS_EDIT_ROUTE, food_id=food_id) + "#portions-table"
+            url_for(MY_FOODS_EDIT_ROUTE, food_id=food_id) + PORTIONS_TABLE_FRAGMENT
         )
     else:
         flash("Portion not found or you do not have permission to delete it.", "danger")
@@ -773,7 +777,7 @@ def move_my_food_portion_up(portion_id):
 
     return redirect(
         url_for(MY_FOODS_EDIT_ROUTE, food_id=portion_to_move.my_food_id)
-        + "#portions-table"
+        + PORTIONS_TABLE_FRAGMENT
     )
 
 
@@ -808,7 +812,7 @@ def move_my_food_portion_down(portion_id):
 
     return redirect(
         url_for(MY_FOODS_EDIT_ROUTE, food_id=portion_to_move.my_food_id)
-        + "#portions-table"
+        + PORTIONS_TABLE_FRAGMENT
     )
 
 
@@ -831,7 +835,7 @@ def manage_categories():
             db.session.add(new_category)
             db.session.commit()
             flash("Category added successfully.", "success")
-        return redirect(url_for("my_foods.manage_categories"))
+        return redirect(url_for(MANAGE_CATEGORIES_ROUTE))
 
     categories = (
         FoodCategory.query.filter_by(user_id=current_user.id)
@@ -849,12 +853,12 @@ def edit_category(category_id):
     category = FoodCategory.query.get_or_404(category_id)
     if category.user_id != current_user.id:
         flash("You are not authorized to edit this category.", "danger")
-        return redirect(url_for("my_foods.manage_categories"))
+        return redirect(url_for(MANAGE_CATEGORIES_ROUTE))
 
     new_name = request.form.get("description")
     if not new_name:
         flash("Category name cannot be empty.", "danger")
-        return redirect(url_for("my_foods.manage_categories"))
+        return redirect(url_for(MANAGE_CATEGORIES_ROUTE))
 
     existing_category = FoodCategory.query.filter(
         func.lower(FoodCategory.description) == func.lower(new_name),
@@ -869,7 +873,7 @@ def edit_category(category_id):
         db.session.commit()
         flash("Category updated successfully.", "success")
 
-    return redirect(url_for("my_foods.manage_categories"))
+    return redirect(url_for(MANAGE_CATEGORIES_ROUTE))
 
 
 @my_foods_bp.route("/categories/<int:category_id>/delete", methods=["POST"])
@@ -878,14 +882,14 @@ def delete_category(category_id):
     category = FoodCategory.query.get_or_404(category_id)
     if category.user_id != current_user.id:
         flash("You are not authorized to delete this category.", "danger")
-        return redirect(url_for("my_foods.manage_categories"))
+        return redirect(url_for(MANAGE_CATEGORIES_ROUTE))
 
     # Set food_category_id to None for all foods using this category
     MyFood.query.filter_by(food_category_id=category_id).update(
         {"food_category_id": None}
     )
 
-    redirect_info = {"endpoint": "my_foods.manage_categories"}
+    redirect_info = {"endpoint": MANAGE_CATEGORIES_ROUTE}
     prepare_undo_and_delete(
         category,
         "food_category",
@@ -893,4 +897,4 @@ def delete_category(category_id):
         success_message="Category deleted successfully!",
     )
 
-    return redirect(url_for("my_foods.manage_categories"))
+    return redirect(url_for(MANAGE_CATEGORIES_ROUTE))

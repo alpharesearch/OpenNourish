@@ -30,6 +30,11 @@ from sqlalchemy import or_, func, and_
 import math
 
 
+# Define constants for repeated literals
+DIARY_ROUTE_NAME = "diary.diary"
+NOT_FOUND_OR_UNAUTHORIZED_ERROR = "Not Found or Unauthorized"
+
+
 class ManualPagination:
     """A duck-typed pagination object for manual pagination."""
 
@@ -121,7 +126,7 @@ def search():
 
     return_url = None
     if target == "diary":
-        return_url = url_for("diary.diary", log_date_str=log_date)
+        return_url = url_for(DIARY_ROUTE_NAME, log_date_str=log_date)
     elif target == "recipe":
         return_url = url_for("recipes.edit_recipe", recipe_id=recipe_id)
     elif target == "meal":
@@ -573,17 +578,17 @@ def add_item():
         my_meal = db.session.get(MyMeal, food_id)
         if not my_meal:
             flash("My Meal not found.", "danger")
-            return redirect(request.referrer or url_for("diary.diary"))
+            return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
 
         # Check if the user is trying to access a meal that is not theirs
         # and the owner has been deleted.
         if my_meal.user_id != current_user.id and not my_meal.user:
             flash("This meal belongs to a deleted user and cannot be added.", "info")
-            return redirect(request.referrer or url_for("diary.diary"))
+            return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
 
         if my_meal.user_id != current_user.id:
             flash("You are not authorized to add this meal.", "danger")
-            return redirect(request.referrer or url_for("diary.diary"))
+            return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
 
         if target == "diary":
             log_date = (
@@ -609,7 +614,7 @@ def add_item():
             flash(f'"{my_meal.name}" (expanded) added to your diary.', "success")
             if return_url:
                 return redirect(return_url)
-            return redirect(url_for("diary.diary", log_date_str=log_date_str))
+            return redirect(url_for(DIARY_ROUTE_NAME, log_date_str=log_date_str))
 
         elif target == "recipe":
             target_recipe = db.session.get(Recipe, recipe_id)
@@ -651,7 +656,7 @@ def add_item():
 
         else:
             flash(f"Cannot add a meal to the selected target: {target}.", "danger")
-            return redirect(request.referrer or url_for("diary.diary"))
+            return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
 
     elif food_type == "diary_meal":
         source_log_date_str = request.form.get("source_log_date")
@@ -668,7 +673,7 @@ def add_item():
                 source_user_id = friend_user.id
             else:
                 flash(f"Friend '{friend_username}' not found.", "danger")
-                return redirect(request.referrer or url_for("diary.diary"))
+                return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
 
         if (
             source_meal_name == target_meal_name
@@ -678,7 +683,7 @@ def add_item():
             flash("Source and target meal cannot be the same.", "warning")
             if return_url:
                 return redirect(return_url)
-            return redirect(url_for("diary.diary", log_date_str=log_date_str))
+            return redirect(url_for(DIARY_ROUTE_NAME, log_date_str=log_date_str))
 
         source_log_date = date.fromisoformat(source_log_date_str)
         source_logs = DailyLog.query.filter_by(
@@ -691,7 +696,7 @@ def add_item():
             flash(f"No items found in {source_meal_name} to copy.", "warning")
             if return_url:
                 return redirect(return_url)
-            return redirect(url_for("diary.diary", log_date_str=log_date_str))
+            return redirect(url_for(DIARY_ROUTE_NAME, log_date_str=log_date_str))
 
         target_log_date = date.fromisoformat(target_log_date_str)
         for log in source_logs:
@@ -715,7 +720,7 @@ def add_item():
         )
         if return_url:
             return redirect(return_url)
-        return redirect(url_for("diary.diary", log_date_str=log_date_str))
+        return redirect(url_for(DIARY_ROUTE_NAME, log_date_str=log_date_str))
 
     portion = None
     if portion_id_str:
@@ -789,7 +794,7 @@ def add_item():
                             "info",
                         )
                         return redirect(
-                            url_for("diary.diary", log_date_str=log_date_str)
+                            url_for(DIARY_ROUTE_NAME, log_date_str=log_date_str)
                         )
                     daily_log = DailyLog(
                         user_id=current_user.id,
@@ -814,7 +819,7 @@ def add_item():
                             "info",
                         )
                         return redirect(
-                            url_for("diary.diary", log_date_str=log_date_str)
+                            url_for(DIARY_ROUTE_NAME, log_date_str=log_date_str)
                         )
                     daily_log = DailyLog(
                         user_id=current_user.id,
@@ -834,7 +839,7 @@ def add_item():
                 flash("Invalid food type for diary.", "danger")
             if return_url:
                 return redirect(return_url)
-            return redirect(url_for("diary.diary", log_date_str=log_date_str))
+            return redirect(url_for(DIARY_ROUTE_NAME, log_date_str=log_date_str))
 
         elif target == "recipe":
             if not recipe_id:
@@ -1222,7 +1227,7 @@ def get_portions(food_type, food_id):
             my_food.user_id != current_user.id
             and my_food.user_id not in [friend.id for friend in current_user.friends]
         ):
-            return jsonify({"error": "Not Found or Unauthorized"}), 404
+            return jsonify({"error": NOT_FOUND_OR_UNAUTHORIZED_ERROR}), 404
         portions = (
             UnifiedPortion.query.filter_by(my_food_id=food_id)
             .order_by(UnifiedPortion.seq_num)
@@ -1237,7 +1242,7 @@ def get_portions(food_type, food_id):
             and recipe.user_id != current_user.id
             and recipe.user_id not in [friend.id for friend in current_user.friends]
         ):
-            return jsonify({"error": "Not Found or Unauthorized"}), 404
+            return jsonify({"error": NOT_FOUND_OR_UNAUTHORIZED_ERROR}), 404
         portions = (
             UnifiedPortion.query.filter_by(recipe_id=food_id)
             .order_by(UnifiedPortion.seq_num)
@@ -1263,7 +1268,7 @@ def get_portions(food_type, food_id):
     elif food_type == "my_meal":
         my_meal = db.session.get(MyMeal, food_id)
         if not my_meal or my_meal.user_id != current_user.id:
-            return jsonify({"error": "Not Found or Unauthorized"}), 404
+            return jsonify({"error": NOT_FOUND_OR_UNAUTHORIZED_ERROR}), 404
 
         # Calculate total grams and calories for one serving of the meal
         from opennourish.utils import calculate_nutrition_for_items

@@ -23,7 +23,7 @@ from opennourish.utils import (
     get_meal_based_nutrition,
     calculate_intake_vs_goal_deviation,
 )
-from constants import ALL_MEAL_TYPES
+from constants import ALL_MEAL_TYPES, FRIENDS_PAGE_ENDPOINT
 
 
 def _get_friend_user_or_404(username):
@@ -60,7 +60,7 @@ def _get_friend_user_or_404(username):
 def dashboard(username, log_date_str=None):
     friend_user = _get_friend_user_or_404(username)
     if friend_user is None:
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ENDPOINT))
 
     time_range = request.args.get("time_range", "3_month")  # Default to 3 months
 
@@ -244,7 +244,7 @@ def dashboard(username, log_date_str=None):
 def diary(username, log_date_str=None):
     friend_user = _get_friend_user_or_404(username)
     if friend_user is None:
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ENDPOINT))
 
     if log_date_str:
         log_date = date.fromisoformat(log_date_str)
@@ -383,7 +383,7 @@ def copy_log_from_friend(username):
             "Friend not found or you do not have permission to view their diary.",
             "danger",
         )
-        return redirect(url_for("friends.friends_page"))
+        return redirect(url_for(FRIENDS_PAGE_ENDPOINT))
 
     log_id = request.form.get("log_id")
     target_date_str = request.form.get("target_date")

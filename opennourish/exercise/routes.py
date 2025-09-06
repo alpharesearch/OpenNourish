@@ -8,6 +8,8 @@ from datetime import timedelta
 from opennourish.time_utils import get_user_today, get_start_of_week
 from opennourish.utils import prepare_undo_and_delete
 
+from constants import TRACKING_PROGRESS_ENDPOINT
+
 LOG_EXERCISE_ROUTE = "exercise.log_exercise"
 
 
@@ -20,7 +22,7 @@ def log_exercise():
     if form.validate_on_submit():
         user_weight_kg = get_user_weight_kg()
         if user_weight_kg is None:
-            return redirect(url_for("tracking.progress"))
+            return redirect(url_for(TRACKING_PROGRESS_ENDPOINT))
 
         calories_burned = 0
         manual_description = None
@@ -132,7 +134,7 @@ def edit_exercise(log_id):
     if form.validate_on_submit():
         user_weight_kg = get_user_weight_kg()
         if user_weight_kg is None:
-            return redirect(url_for("tracking.progress"))
+            return redirect(url_for(TRACKING_PROGRESS_ENDPOINT))
 
         exercise_log.log_date = form.log_date.data
         exercise_log.duration_minutes = form.duration_minutes.data

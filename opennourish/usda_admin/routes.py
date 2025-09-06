@@ -4,6 +4,7 @@ from models import db, UnifiedPortion, Food
 from flask_login import login_required
 from opennourish.decorators import key_user_required
 from opennourish.utils import prepare_undo_and_delete
+from constants import MAIN_FOOD_DETAIL_ENDPOINT, PORTIONS_TABLE_ANCHOR
 
 
 def _mark_portions_as_modified(fdc_id):
@@ -26,7 +27,7 @@ def add_usda_portion():
 
     if not all([fdc_id, gram_weight]):
         flash("Gram weight is a required field.", "danger")
-        return redirect(url_for("main.food_detail", fdc_id=fdc_id))
+        return redirect(url_for(MAIN_FOOD_DETAIL_ENDPOINT, fdc_id=fdc_id))
 
     food = db.session.get(Food, fdc_id)
     if not food:
@@ -46,7 +47,9 @@ def add_usda_portion():
     _mark_portions_as_modified(fdc_id)  # Mark all portions for this food as modified
     db.session.commit()
     flash("Portion added successfully.", "success")
-    return redirect(url_for("main.food_detail", fdc_id=fdc_id) + "#portions-table")
+    return redirect(
+        url_for(MAIN_FOOD_DETAIL_ENDPOINT, fdc_id=fdc_id) + PORTIONS_TABLE_ANCHOR
+    )
 
 
 @usda_admin_bp.route("/usda_portion/<int:portion_id>/edit", methods=["POST"])
@@ -67,13 +70,14 @@ def edit_usda_portion(portion_id):
 
     if not portion.gram_weight:
         flash("Gram weight is a required field.", "danger")
-        return redirect(url_for("main.food_detail", fdc_id=portion.fdc_id))
+        return redirect(url_for(MAIN_FOOD_DETAIL_ENDPOINT, fdc_id=portion.fdc_id))
 
     _mark_portions_as_modified(portion.fdc_id)
     db.session.commit()
     flash("Portion updated successfully.", "success")
     return redirect(
-        url_for("main.food_detail", fdc_id=portion.fdc_id) + "#portions-table"
+        url_for(MAIN_FOOD_DETAIL_ENDPOINT, fdc_id=portion.fdc_id)
+        + PORTIONS_TABLE_ANCHOR
     )
 
 
@@ -89,15 +93,16 @@ def delete_usda_portion(portion_id):
     fdc_id = portion.fdc_id
     _mark_portions_as_modified(fdc_id)
     redirect_info = {
-        "endpoint": "main.food_detail",
+        "endpoint": MAIN_FOOD_DETAIL_ENDPOINT,
         "params": {"fdc_id": fdc_id},
         "fragment": "portions-table",
     }
+
     prepare_undo_and_delete(
         portion, "portion", redirect_info, success_message="Portion deleted."
     )
     return redirect(
-        url_for("main.food_detail", fdc_id=fdc_id, _anchor="portions-table")
+        url_for(MAIN_FOOD_DETAIL_ENDPOINT, fdc_id=fdc_id, _anchor="portions-table")
     )
 
 

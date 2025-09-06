@@ -39,8 +39,10 @@ from opennourish.utils import (
 
 recipes_bp = Blueprint("recipes", __name__, template_folder="templates")
 
+
 INGREDIENTS_SECTION_FRAGMENT = "#ingredients-section"
 RECIPES_LIST_ROUTE = "recipes.recipes"
+EDIT_RECIPE_ROUTE = "recipes.edit_recipe"
 
 
 @recipes_bp.route("/")
@@ -118,7 +120,7 @@ def new_recipe():
 
         db.session.commit()
         flash("Recipe created successfully. Now add ingredients.", "success")
-        return redirect(url_for("recipes.edit_recipe", recipe_id=new_recipe.id))
+        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=new_recipe.id))
     return render_template(
         "recipes/edit_recipe.html",
         form=form,
@@ -286,7 +288,7 @@ def edit_recipe(recipe_id):
         update_recipe_nutrition(recipe)
         db.session.commit()
         flash("Recipe updated successfully.", "success")
-        return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
+        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id))
 
     # If it's a POST request but not a form submission (e.g., auto_add_portion),
     # or if form validation fails, ensure form fields are populated from request.form
@@ -364,7 +366,7 @@ def delete_ingredient(ingredient_id):
         return redirect(url_for(RECIPES_LIST_ROUTE))
 
     redirect_info = {
-        "endpoint": "recipes.edit_recipe",
+        "endpoint": EDIT_RECIPE_ROUTE,
         "params": {"recipe_id": recipe.id},
         "fragment": "ingredients-section",
     }
@@ -379,8 +381,7 @@ def delete_ingredient(ingredient_id):
     db.session.commit()
 
     return redirect(
-        url_for("recipes.edit_recipe", recipe_id=recipe.id)
-        + INGREDIENTS_SECTION_FRAGMENT
+        url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id) + INGREDIENTS_SECTION_FRAGMENT
     )
 
 
@@ -398,16 +399,16 @@ def update_ingredient(ingredient_id):
 
     if amount is None or amount <= 0:
         flash("Amount must be a positive number.", "danger")
-        return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
+        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id))
 
     if portion_id is None:
         flash("Portion is required.", "danger")
-        return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
+        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id))
 
     portion_obj = db.session.get(UnifiedPortion, portion_id)
     if not portion_obj:
         flash("Selected portion not found.", "danger")
-        return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
+        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id))
 
     ingredient.amount_grams = amount * portion_obj.gram_weight
     ingredient.serving_type = portion_obj.full_description_str
@@ -416,8 +417,7 @@ def update_ingredient(ingredient_id):
     db.session.commit()
     flash("Ingredient updated successfully.", "success")
     return redirect(
-        url_for("recipes.edit_recipe", recipe_id=recipe.id)
-        + INGREDIENTS_SECTION_FRAGMENT
+        url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id) + INGREDIENTS_SECTION_FRAGMENT
     )
 
 
@@ -443,7 +443,7 @@ def move_recipe_ingredient_up(ingredient_id):
         db.session.commit()
         flash("Assigned sequence numbers to all ingredients. Please try again.", "info")
         return redirect(
-            url_for("recipes.edit_recipe", recipe_id=ingredient_to_move.recipe_id)
+            url_for(EDIT_RECIPE_ROUTE, recipe_id=ingredient_to_move.recipe_id)
         )
 
     # Find the ingredient with the next lower seq_num
@@ -468,7 +468,7 @@ def move_recipe_ingredient_up(ingredient_id):
         flash("Ingredient is already at the top.", "info")
 
     return redirect(
-        url_for("recipes.edit_recipe", recipe_id=ingredient_to_move.recipe_id)
+        url_for(EDIT_RECIPE_ROUTE, recipe_id=ingredient_to_move.recipe_id)
         + INGREDIENTS_SECTION_FRAGMENT
     )
 
@@ -495,7 +495,7 @@ def move_recipe_ingredient_down(ingredient_id):
         db.session.commit()
         flash("Assigned sequence numbers to all ingredients. Please try again.", "info")
         return redirect(
-            url_for("recipes.edit_recipe", recipe_id=ingredient_to_move.recipe_id)
+            url_for(EDIT_RECIPE_ROUTE, recipe_id=ingredient_to_move.recipe_id)
         )
 
     # Find the ingredient with the next higher seq_num
@@ -520,7 +520,7 @@ def move_recipe_ingredient_down(ingredient_id):
         flash("Ingredient is already at the bottom.", "info")
 
     return redirect(
-        url_for("recipes.edit_recipe", recipe_id=ingredient_to_move.recipe_id)
+        url_for(EDIT_RECIPE_ROUTE, recipe_id=ingredient_to_move.recipe_id)
         + INGREDIENTS_SECTION_FRAGMENT
     )
 
@@ -643,12 +643,12 @@ def auto_add_recipe_portion(recipe_id):
     )
     if recipe.user_id != current_user.id:
         flash("You are not authorized to modify this recipe.", "danger")
-        return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
+        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id))
 
     servings_from_form = request.form.get("servings", type=float)
     if servings_from_form is None or servings_from_form <= 0:
         flash("Invalid servings value provided.", "danger")
-        return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
+        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id))
 
     # Use final_weight_grams from the form if available
     final_weight_from_form = request.form.get("final_weight_grams", type=float)
@@ -686,7 +686,7 @@ def auto_add_recipe_portion(recipe_id):
 
     return redirect(
         url_for(
-            "recipes.edit_recipe",
+            EDIT_RECIPE_ROUTE,
             recipe_id=recipe.id,
             servings_param=servings_from_form,
             name_param=name_from_form,
@@ -702,7 +702,7 @@ def add_recipe_portion(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.user_id != current_user.id:
         flash("You are not authorized to modify this recipe.", "danger")
-        return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
+        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id))
 
     form = PortionForm()
     if form.validate_on_submit():
@@ -733,7 +733,7 @@ def add_recipe_portion(recipe_id):
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
 
-    return redirect(url_for("recipes.edit_recipe", recipe_id=recipe.id))
+    return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id))
 
 
 @recipes_bp.route("/recipe/portion/update/<int:portion_id>", methods=["POST"])
@@ -754,7 +754,7 @@ def update_recipe_portion(portion_id):
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
     return redirect(
-        url_for("recipes.edit_recipe", recipe_id=portion.recipe_id) + "#portions-table"
+        url_for(EDIT_RECIPE_ROUTE, recipe_id=portion.recipe_id) + "#portions-table"
     )
 
 
@@ -765,7 +765,7 @@ def delete_recipe_portion(portion_id):
     if portion and portion.recipe and portion.recipe.user_id == current_user.id:
         recipe_id = portion.recipe_id
         redirect_info = {
-            "endpoint": "recipes.edit_recipe",
+            "endpoint": EDIT_RECIPE_ROUTE,
             "params": {"recipe_id": recipe_id},
             "fragment": "portions-table",
         }
@@ -773,7 +773,7 @@ def delete_recipe_portion(portion_id):
             portion, "portion", redirect_info, success_message="Portion deleted."
         )
         return redirect(
-            url_for("recipes.edit_recipe", recipe_id=recipe_id) + "#portions-table"
+            url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe_id) + "#portions-table"
         )
     else:
         flash("Portion not found or you do not have permission to delete it.", "danger")
@@ -864,7 +864,7 @@ def copy_recipe(recipe_id):
 
     db.session.commit()
     flash(f"Successfully copied '{original_recipe.name}' to your recipes.", "success")
-    return redirect(url_for("recipes.edit_recipe", recipe_id=new_recipe.id))
+    return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=new_recipe.id))
 
 
 @recipes_bp.route("/portion/<int:portion_id>/move_up", methods=["POST"])
@@ -886,9 +886,7 @@ def move_recipe_portion_up(portion_id):
             p.seq_num = i + 1
         db.session.commit()
         flash("Assigned sequence numbers to all portions. Please try again.", "info")
-        return redirect(
-            url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id)
-        )
+        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=portion_to_move.recipe_id))
 
     # Find the portion with the next lower seq_num
     portion_to_swap_with = (
@@ -912,7 +910,7 @@ def move_recipe_portion_up(portion_id):
         flash("Portion is already at the top.", "info")
 
     return redirect(
-        url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id)
+        url_for(EDIT_RECIPE_ROUTE, recipe_id=portion_to_move.recipe_id)
         + "#portions-table"
     )
 
@@ -947,6 +945,6 @@ def move_recipe_portion_down(portion_id):
         flash("Portion is already at the bottom.", "info")
 
     return redirect(
-        url_for("recipes.edit_recipe", recipe_id=portion_to_move.recipe_id)
+        url_for(EDIT_RECIPE_ROUTE, recipe_id=portion_to_move.recipe_id)
         + "#portions-table"
     )
