@@ -45,7 +45,12 @@
                     {% for ingredient in ingredients %}
                         <li class="list-group-item d-flex align-items-center">
                             <span class="d-inline-block text-end me-2" style="width: 60px;">{{ '%.2f'|format(ingredient.quantity) }}</span>
-                            <span class="d-inline-block me-2" style="width: 120px;">{{ ingredient.portion_description }}</span>
+                            <span class="d-inline-block me-2" style="width: 140px;">
+                                {{ ingredient.portion_description }} 
+                                {% if ingredient.selected_portion and ingredient.selected_portion.measure_unit_description != 'g' %}
+                                <span class="text-muted small ms-1">({{ '%.0f'|format(ingredient.amount_grams) }}g)</span>
+                                {% endif %}
+                            </span>
                             <span class="flex-grow-1">
                                 {% if ingredient.fdc_id %}
                                     <a href="{{ url_for('main.food_detail', fdc_id=ingredient.fdc_id) }}">{{ ingredient.description }}</a>

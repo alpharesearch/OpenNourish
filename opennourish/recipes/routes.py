@@ -61,21 +61,15 @@ def _process_ingredient_for_display(ingredient, usda_foods_map):
 
     quantity = ingredient.amount_grams
     portion_description = "g"
+    selected_portion = None
 
-    if food_object:
-        available_portions = get_available_portions(food_object)
-        available_portions.sort(key=lambda p: p.gram_weight, reverse=True)
+    if ingredient.portion_id_fk:
+        selected_portion = db.session.get(UnifiedPortion, ingredient.portion_id_fk)
 
-        for p in available_portions:
-            if p.gram_weight > 0.1:
-                if (
-                    abs(ingredient.amount_grams % p.gram_weight) < 0.01
-                    or abs(p.gram_weight - (ingredient.amount_grams % p.gram_weight))
-                    < 0.01
-                ):
-                    quantity = round(ingredient.amount_grams / p.gram_weight, 2)
-                    portion_description = remove_leading_one(p.full_description_str)
-                    break
+    if selected_portion and selected_portion.gram_weight > 0:
+        quantity = ingredient.amount_grams / selected_portion.gram_weight
+        portion_description = selected_portion.full_description_str
+    # No else needed, defaults are already set
 
     return {
         "description": description,
@@ -85,6 +79,7 @@ def _process_ingredient_for_display(ingredient, usda_foods_map):
         "fdc_id": ingredient.fdc_id,
         "my_food_id": ingredient.my_food_id,
         "recipe_id_link": ingredient.recipe_id_link,
+        "selected_portion": selected_portion,
     }
 
 
