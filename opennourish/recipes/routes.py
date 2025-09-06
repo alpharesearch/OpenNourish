@@ -43,6 +43,7 @@ recipes_bp = Blueprint("recipes", __name__, template_folder="templates")
 INGREDIENTS_SECTION_FRAGMENT = "#ingredients-section"
 RECIPES_LIST_ROUTE = "recipes.recipes"
 EDIT_RECIPE_ROUTE = "recipes.edit_recipe"
+PORTION_TABLE_FRAGMENT = "#portions-table"
 
 
 def _process_ingredient_for_display(ingredient, usda_foods_map):
@@ -755,7 +756,7 @@ def update_recipe_portion(portion_id):
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
     return redirect(
-        url_for(EDIT_RECIPE_ROUTE, recipe_id=portion.recipe_id) + "#portions-table"
+        url_for(EDIT_RECIPE_ROUTE, recipe_id=portion.recipe_id) + PORTION_TABLE_FRAGMENT
     )
 
 
@@ -774,7 +775,7 @@ def delete_recipe_portion(portion_id):
             portion, "portion", redirect_info, success_message="Portion deleted."
         )
         return redirect(
-            url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe_id) + "#portions-table"
+            url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe_id) + PORTION_TABLE_FRAGMENT
         )
     else:
         flash("Portion not found or you do not have permission to delete it.", "danger")
@@ -912,7 +913,7 @@ def move_recipe_portion_up(portion_id):
 
     return redirect(
         url_for(EDIT_RECIPE_ROUTE, recipe_id=portion_to_move.recipe_id)
-        + "#portions-table"
+        + PORTION_TABLE_FRAGMENT
     )
 
 
@@ -947,5 +948,5 @@ def move_recipe_portion_down(portion_id):
 
     return redirect(
         url_for(EDIT_RECIPE_ROUTE, recipe_id=portion_to_move.recipe_id)
-        + "#portions-table"
+        + PORTION_TABLE_FRAGMENT
     )
