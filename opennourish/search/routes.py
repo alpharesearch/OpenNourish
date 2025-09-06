@@ -32,6 +32,8 @@ import math
 
 # Define constants for repeated literals
 DIARY_ROUTE_NAME = "diary.diary"
+EDIT_RECIPE_ROUTE = "recipes.edit_recipe"
+EDIT_MEAL_ROUTE = "diary.edit_meal"
 NOT_FOUND_OR_UNAUTHORIZED_ERROR = "Not Found or Unauthorized"
 
 
@@ -128,9 +130,9 @@ def search():
     if target == "diary":
         return_url = url_for(DIARY_ROUTE_NAME, log_date_str=log_date)
     elif target == "recipe":
-        return_url = url_for("recipes.edit_recipe", recipe_id=recipe_id)
+        return_url = url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe_id)
     elif target == "meal":
-        return_url = url_for("diary.edit_meal", meal_id=recipe_id)
+        return_url = url_for(EDIT_MEAL_ROUTE, meal_id=recipe_id)
 
     if search_term:
         if search_term == "*":
@@ -652,7 +654,7 @@ def add_item():
             )
             if return_url:
                 return redirect(return_url)
-            return redirect(url_for("recipes.edit_recipe", recipe_id=target_recipe.id))
+            return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=target_recipe.id))
 
         else:
             flash(f"Cannot add a meal to the selected target: {target}.", "danger")
@@ -891,9 +893,7 @@ def add_item():
                             "This food belongs to a deleted user and cannot be added as an ingredient.",
                             "info",
                         )
-                        return redirect(
-                            url_for("recipes.edit_recipe", recipe_id=recipe_id)
-                        )
+                        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe_id))
                     # Calculate the next seq_num for the ingredient
                     max_seq_num = (
                         db.session.query(func.max(RecipeIngredient.seq_num))
@@ -933,7 +933,7 @@ def add_item():
                         "info",
                     )
                     return redirect(
-                        url_for("recipes.edit_recipe", recipe_id=target_recipe.id)
+                        url_for(EDIT_RECIPE_ROUTE, recipe_id=target_recipe.id)
                     )
 
                 if sub_recipe.id == target_recipe.id:
@@ -966,14 +966,12 @@ def add_item():
                     f"{sub_recipe.name} added as ingredient to recipe {target_recipe.name}.",
                     "success",
                 )
-                return redirect(
-                    url_for("recipes.edit_recipe", recipe_id=target_recipe.id)
-                )
+                return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=target_recipe.id))
             else:
                 flash("Invalid food type for recipe.", "danger")
             if return_url:
                 return redirect(return_url)
-            return redirect(url_for("recipes.edit_recipe", recipe_id=target_recipe.id))
+            return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=target_recipe.id))
 
         elif target == "meal":
             my_meal_id = recipe_id
@@ -1016,7 +1014,7 @@ def add_item():
                             "This food belongs to a deleted user and cannot be added to a meal.",
                             "info",
                         )
-                        return redirect(url_for("diary.edit_meal", meal_id=my_meal_id))
+                        return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=my_meal_id))
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         my_food_id=food.id,
@@ -1040,7 +1038,7 @@ def add_item():
                             "This recipe belongs to a deleted user and cannot be added to a meal.",
                             "info",
                         )
-                        return redirect(url_for("diary.edit_meal", meal_id=my_meal_id))
+                        return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=my_meal_id))
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         recipe_id=recipe.id,
@@ -1063,7 +1061,7 @@ def add_item():
                             "This meal belongs to a deleted user and cannot be added to another meal.",
                             "info",
                         )
-                        return redirect(url_for("diary.edit_meal", meal_id=my_meal_id))
+                        return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=my_meal_id))
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
                         my_meal_id_link=sub_my_meal.id,
@@ -1081,7 +1079,7 @@ def add_item():
                 flash("Invalid food type for meal.", "danger")
             if return_url:
                 return redirect(return_url)
-            return redirect(url_for("diary.edit_meal", meal_id=my_meal_id))
+            return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=my_meal_id))
 
         elif target == "my_foods":
             if food_type == "usda":

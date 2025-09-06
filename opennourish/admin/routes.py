@@ -19,6 +19,10 @@ from models import (
 from opennourish.utils import encrypt_value
 
 
+USER_NOT_FOUND_MSG = "User not found."
+ADMIN_USERS_ROUTE = "admin.users"
+
+
 @admin_bp.route("/")
 @login_required
 @admin_required
@@ -276,8 +280,8 @@ def make_key_user(user_id):
         db.session.commit()
         flash(f"User {user.username} has been made a key user.", "success")
     else:
-        flash("User not found.", "danger")
-    return redirect(url_for("admin.users"))
+        flash(USER_NOT_FOUND_MSG, "danger")
+    return redirect(url_for(ADMIN_USERS_ROUTE))
 
 
 @admin_bp.route("/users/<int:user_id>/remove-key-user", methods=["POST"])
@@ -290,8 +294,8 @@ def remove_key_user(user_id):
         db.session.commit()
         flash(f"User {user.username} is no longer a key user.", "success")
     else:
-        flash("User not found.", "danger")
-    return redirect(url_for("admin.users"))
+        flash(USER_NOT_FOUND_MSG, "danger")
+    return redirect(url_for(ADMIN_USERS_ROUTE))
 
 
 @admin_bp.route("/users/<int:user_id>/disable", methods=["POST"])
@@ -307,8 +311,8 @@ def disable_user(user_id):
             db.session.commit()
             flash(f"User {user.username} has been disabled.", "success")
     else:
-        flash("User not found.", "danger")
-    return redirect(url_for("admin.users"))
+        flash(USER_NOT_FOUND_MSG, "danger")
+    return redirect(url_for(ADMIN_USERS_ROUTE))
 
 
 @admin_bp.route("/users/<int:user_id>/enable", methods=["POST"])
@@ -321,8 +325,8 @@ def enable_user(user_id):
         db.session.commit()
         flash(f"User {user.username} has been enabled.", "success")
     else:
-        flash("User not found.", "danger")
-    return redirect(url_for("admin.users"))
+        flash(USER_NOT_FOUND_MSG, "danger")
+    return redirect(url_for(ADMIN_USERS_ROUTE))
 
 
 @admin_bp.route("/users/<int:user_id>/verify", methods=["POST"])
@@ -335,8 +339,8 @@ def verify_user(user_id):
         db.session.commit()
         flash(f"User {user.username} has been marked as verified.", "success")
     else:
-        flash("User not found.", "danger")
-    return redirect(url_for("admin.users"))
+        flash(USER_NOT_FOUND_MSG, "danger")
+    return redirect(url_for(ADMIN_USERS_ROUTE))
 
 
 @admin_bp.route("/users/<int:user_id>/unverify", methods=["POST"])
@@ -349,8 +353,8 @@ def unverify_user(user_id):
         db.session.commit()
         flash(f"User {user.username} has been marked as unverified.", "success")
     else:
-        flash("User not found.", "danger")
-    return redirect(url_for("admin.users"))
+        flash(USER_NOT_FOUND_MSG, "danger")
+    return redirect(url_for(ADMIN_USERS_ROUTE))
 
 
 @admin_bp.route("/users/<int:user_id>/make-public", methods=["POST"])
@@ -363,8 +367,8 @@ def make_user_public(user_id):
         db.session.commit()
         flash(f"User {user.username} has been made public.", "success")
     else:
-        flash("User not found.", "danger")
-    return redirect(url_for("admin.users"))
+        flash(USER_NOT_FOUND_MSG, "danger")
+    return redirect(url_for(ADMIN_USERS_ROUTE))
 
 
 @admin_bp.route("/users/<int:user_id>/make-private", methods=["POST"])
@@ -377,8 +381,8 @@ def make_user_private(user_id):
         db.session.commit()
         flash(f"User {user.username} has been made private.", "success")
     else:
-        flash("User not found.", "danger")
-    return redirect(url_for("admin.users"))
+        flash(USER_NOT_FOUND_MSG, "danger")
+    return redirect(url_for(ADMIN_USERS_ROUTE))
 
 
 @admin_bp.route("/users/<int:user_id>/complete_onboarding", methods=["POST"])
@@ -393,8 +397,8 @@ def complete_onboarding(user_id):
             f"User {user.username} has been marked as completed onboarding.", "success"
         )
     else:
-        flash("User not found.", "danger")
-    return redirect(url_for("admin.users"))
+        flash(USER_NOT_FOUND_MSG, "danger")
+    return redirect(url_for(ADMIN_USERS_ROUTE))
 
 
 @admin_bp.route("/users/<int:user_id>/reset_onboarding", methods=["POST"])
@@ -407,8 +411,8 @@ def reset_onboarding(user_id):
         db.session.commit()
         flash(f"User {user.username} has been marked as pending onboarding.", "success")
     else:
-        flash("User not found.", "danger")
-    return redirect(url_for("admin.users"))
+        flash(USER_NOT_FOUND_MSG, "danger")
+    return redirect(url_for(ADMIN_USERS_ROUTE))
 
 
 @admin_bp.route("/cleanup")

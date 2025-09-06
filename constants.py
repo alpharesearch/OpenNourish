@@ -83,4 +83,10 @@ PORTIONS_TABLE_ANCHOR = "#portions-table"
 # Constant for tracking progress endpoint
 TRACKING_PROGRESS_ENDPOINT = "tracking.progress"
 
+# Constant for usda not found message
+USDA_PORTION_NOT_FOUND_MSG = "USDA portion not found."
+
+# Constant for dashboard index route
+DASHBOARD_INDEX_ROUTE = "dashboard.index"
+
 USERS_ID = "users.id"

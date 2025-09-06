@@ -47,6 +47,7 @@ from types import SimpleNamespace
 DIARY_ROUTE = "diary.diary"
 EDIT_MEAL_ROUTE = "diary.edit_meal"
 MY_MEALS_ROUTE = "diary.my_meals"
+DASHBOARD_ROUTE = "dashboard.dashboard"
 
 
 @diary_bp.route("/diary/")
@@ -825,12 +826,12 @@ def copy_meal_from_friend():
 
     if not all([friend_username, log_date_str, meal_name]):
         flash("Missing data to copy the meal.", "danger")
-        return redirect(url_for("dashboard.dashboard"))
+        return redirect(url_for(DASHBOARD_ROUTE))
 
     friend_user = User.query.filter_by(username=friend_username).first()
     if not friend_user:
         flash("Friend not found.", "danger")
-        return redirect(url_for("dashboard.dashboard"))
+        return redirect(url_for(DASHBOARD_ROUTE))
 
     # Verify friendship
     is_friend = Friendship.query.filter(
@@ -848,7 +849,7 @@ def copy_meal_from_friend():
 
     if not is_friend:
         flash(f"You are not friends with {friend_username}.", "danger")
-        return redirect(url_for("dashboard.dashboard"))
+        return redirect(url_for(DASHBOARD_ROUTE))
 
     log_date = date.fromisoformat(log_date_str)
 

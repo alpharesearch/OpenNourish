@@ -18,12 +18,13 @@ import os
 
 DASHBOARD_INDEX_ROUTE = "dashboard.index"
 AUTH_LOGIN_ROUTE = "auth.login"
+MAIN_INDEX_ROUTE = "main.index"
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("main.index"))
+        return redirect(url_for(MAIN_INDEX_ROUTE))
     form = LoginForm()
     if form.validate_on_submit():
         login_identifier = form.username_or_email.data.lower()
@@ -48,7 +49,7 @@ def login():
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get("next")
         if not next_page or urlsplit(next_page).netloc != "":
-            next_page = url_for("main.index")
+            next_page = url_for(MAIN_INDEX_ROUTE)
         return redirect(next_page)
     return render_template(
         "login.html",
@@ -61,7 +62,7 @@ def login():
 @auth_bp.route("/logout")
 def logout():
     logout_user()
-    return redirect(url_for("main.index"))
+    return redirect(url_for(MAIN_INDEX_ROUTE))
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -73,7 +74,7 @@ def register():
         flash("New user registration is currently disabled.", "danger")
         return redirect(url_for(AUTH_LOGIN_ROUTE))
     if current_user.is_authenticated:
-        return redirect(url_for("main.index"))
+        return redirect(url_for(MAIN_INDEX_ROUTE))
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(username=form.username.data.lower(), email=form.email.data.lower())
@@ -125,7 +126,7 @@ def reset_password_request():
         return redirect(url_for(AUTH_LOGIN_ROUTE))
 
     if current_user.is_authenticated:
-        return redirect(url_for("main.index"))
+        return redirect(url_for(MAIN_INDEX_ROUTE))
     form = ResetPasswordRequestForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
@@ -144,7 +145,7 @@ def reset_password_request():
 @auth_bp.route("/reset_password/<token>", methods=["GET", "POST"])
 def reset_password(token):
     if current_user.is_authenticated:
-        return redirect(url_for("main.index"))
+        return redirect(url_for(MAIN_INDEX_ROUTE))
     user = User.verify_token(token, purpose="reset-password")
     if not user:
         flash("That is an invalid or expired token", "danger")
@@ -166,7 +167,7 @@ def send_verification_email_route():
 
     if not current_app.config.get("ENABLE_EMAIL_VERIFICATION", False):
         flash("Email verification is not enabled.", "warning")
-        return redirect(url_for("main.index"))
+        return redirect(url_for(MAIN_INDEX_ROUTE))
 
     if current_user.is_verified:
         flash("Your email is already verified.", "info")

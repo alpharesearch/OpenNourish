@@ -35,6 +35,8 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from opennourish.time_utils import register_template_filters
 from constants import MEAL_CONFIG, DEFAULT_MEAL_NAMES
 
+DEFAULT_MAIL_FROM = "no-reply@example.com"
+
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 mail = Mail()
@@ -100,8 +102,8 @@ def create_app(config_class=Config):
                 app, "MAIL_PASSWORD", decrypt=True, default=""
             )
             app.config["MAIL_FROM"] = (
-                get_setting_from_db(app, "MAIL_FROM", default="no-reply@example.com")
-                or "no-reply@example.com"
+                get_setting_from_db(app, "MAIL_FROM", default=DEFAULT_MAIL_FROM)
+                or DEFAULT_MAIL_FROM
             )
             app.config["MAIL_SUPPRESS_SEND"] = (
                 get_setting_from_db(app, "MAIL_SUPPRESS_SEND", default="True").lower()
@@ -131,7 +133,7 @@ def create_app(config_class=Config):
             app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME", "")
             app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD", "")
             app.config["MAIL_FROM"] = (
-                os.getenv("MAIL_FROM", "no-reply@example.com") or "no-reply@example.com"
+                os.getenv("MAIL_FROM", DEFAULT_MAIL_FROM) or DEFAULT_MAIL_FROM
             )
             app.config["MAIL_SUPPRESS_SEND"] = (
                 os.getenv("MAIL_SUPPRESS_SEND", "True").lower() == "true"

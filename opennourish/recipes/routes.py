@@ -45,6 +45,48 @@ RECIPES_LIST_ROUTE = "recipes.recipes"
 EDIT_RECIPE_ROUTE = "recipes.edit_recipe"
 
 
+def _process_ingredient_for_display(ingredient, usda_foods_map):
+    description = "Unknown Food"
+    food_object = None
+    if hasattr(ingredient, "usda_food") and ingredient.usda_food:
+        description = ingredient.usda_food.description
+        food_object = ingredient.usda_food
+    elif ingredient.my_food:
+        description = ingredient.my_food.description
+        food_object = ingredient.my_food
+    elif ingredient.linked_recipe:
+        description = ingredient.linked_recipe.name
+        food_object = ingredient.linked_recipe
+
+    quantity = ingredient.amount_grams
+    portion_description = "g"
+
+    if food_object:
+        available_portions = get_available_portions(food_object)
+        available_portions.sort(key=lambda p: p.gram_weight, reverse=True)
+
+        for p in available_portions:
+            if p.gram_weight > 0.1:
+                if (
+                    abs(ingredient.amount_grams % p.gram_weight) < 0.01
+                    or abs(p.gram_weight - (ingredient.amount_grams % p.gram_weight))
+                    < 0.01
+                ):
+                    quantity = round(ingredient.amount_grams / p.gram_weight, 2)
+                    portion_description = remove_leading_one(p.full_description_str)
+                    break
+
+    return {
+        "description": description,
+        "quantity": quantity,
+        "portion_description": portion_description,
+        "amount_grams": ingredient.amount_grams,
+        "fdc_id": ingredient.fdc_id,
+        "my_food_id": ingredient.my_food_id,
+        "recipe_id_link": ingredient.recipe_id_link,
+    }
+
+
 @recipes_bp.route("/")
 @login_required
 def recipes():
@@ -558,51 +600,10 @@ def view_recipe(recipe_id):
 
     total_nutrition = calculate_nutrition_for_items(recipe.ingredients)
 
-    ingredient_details = []
-    for ingredient in recipe.ingredients:
-        description = "Unknown Food"
-        food_object = None
-        if hasattr(ingredient, "usda_food") and ingredient.usda_food:
-            description = ingredient.usda_food.description
-            food_object = ingredient.usda_food
-        elif ingredient.my_food:
-            description = ingredient.my_food.description
-            food_object = ingredient.my_food
-        elif ingredient.linked_recipe:
-            description = ingredient.linked_recipe.name
-            food_object = ingredient.linked_recipe
-
-        quantity = ingredient.amount_grams
-        portion_description = "g"
-
-        if food_object:
-            available_portions = get_available_portions(food_object)
-            available_portions.sort(key=lambda p: p.gram_weight, reverse=True)
-
-            for p in available_portions:
-                if p.gram_weight > 0.1:
-                    if (
-                        abs(ingredient.amount_grams % p.gram_weight) < 0.01
-                        or abs(
-                            p.gram_weight - (ingredient.amount_grams % p.gram_weight)
-                        )
-                        < 0.01
-                    ):
-                        quantity = round(ingredient.amount_grams / p.gram_weight, 2)
-                        portion_description = remove_leading_one(p.full_description_str)
-                        break
-
-        ingredient_details.append(
-            {
-                "description": description,
-                "quantity": quantity,
-                "portion_description": portion_description,
-                "amount_grams": ingredient.amount_grams,
-                "fdc_id": ingredient.fdc_id,
-                "my_food_id": ingredient.my_food_id,
-                "recipe_id_link": ingredient.recipe_id_link,
-            }
-        )
+    ingredient_details = [
+        _process_ingredient_for_display(ingredient, usda_foods_map)
+        for ingredient in recipe.ingredients
+    ]
 
     form = AddToLogForm()
     return render_template(
