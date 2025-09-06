@@ -283,6 +283,7 @@ class MyFood(db.Model):
         foreign_keys=[UnifiedPortion.my_food_id],
         backref="my_food",
         cascade=CASCADE_ALL_DELETE_ORPHAN,
+        order_by="UnifiedPortion.seq_num.asc().nulls_last()",
     )
     user = db.relationship("User")
     food_category = db.relationship("FoodCategory", backref="my_foods")

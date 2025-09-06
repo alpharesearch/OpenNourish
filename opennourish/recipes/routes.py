@@ -226,6 +226,7 @@ def edit_recipe(recipe_id):
         available_portions = []
 
         if food_object:
+            ensure_portion_sequence([food_object])
             available_portions = get_available_portions(food_object)
             available_portions.sort(key=lambda p: p.gram_weight, reverse=True)
 
