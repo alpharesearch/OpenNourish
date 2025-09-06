@@ -224,22 +224,19 @@ def edit_recipe(recipe_id):
         display_quantity = ing.amount_grams
         display_portion_description = "g"
         available_portions = []
+        selected_portion = None
+
+        if ing.portion_id_fk:
+            selected_portion = db.session.get(UnifiedPortion, ing.portion_id_fk)
 
         if food_object:
             ensure_portion_sequence([food_object])
             available_portions = get_available_portions(food_object)
-            available_portions.sort(key=lambda p: p.gram_weight, reverse=True)
 
-            for p in available_portions:
-                if p.gram_weight > 0.1:
-                    if (
-                        abs(ing.amount_grams % p.gram_weight) < 0.01
-                        or abs(p.gram_weight - (ing.amount_grams % p.gram_weight))
-                        < 0.01
-                    ):
-                        display_quantity = round(ing.amount_grams / p.gram_weight, 2)
-                        display_portion_description = p.full_description_str
-                        break
+        if selected_portion and selected_portion.gram_weight > 0:
+            display_quantity = ing.amount_grams / selected_portion.gram_weight
+            display_portion_description = selected_portion.full_description_str
+        # No else needed, defaults are already set
 
         ingredients_for_display.append(
             {
@@ -261,6 +258,8 @@ def edit_recipe(recipe_id):
                 "quantity": display_quantity,
                 "portion_description": display_portion_description,
                 "available_portions": available_portions,
+                "selected_portion": selected_portion,
+                "total_gram_weight": ing.amount_grams,
             }
         )
 

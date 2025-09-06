@@ -258,6 +258,11 @@
                         <!-- Ingredient Form -->
                         <div class="col-md-6">
                             <div class="d-sm-flex justify-content-end align-items-center gap-2">
+                                {% if ingredient.selected_portion and ingredient.selected_portion.measure_unit_description != 'g' %}
+                                <small class="text-muted">
+                                    ({{ '%.0f'|format(ingredient.total_gram_weight) }}g)
+                                </small>
+                                {% endif %}
                                 <form id="update-ingredient-form-{{ ingredient.id }}" action="{{ url_for('recipes.update_ingredient', ingredient_id=ingredient.id) }}"
                                     method="POST" class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 mb-2 mb-sm-0">
                                     <input type="number" step="any" name="amount" class="form-control form-control-sm mb-2 mb-sm-0"
@@ -266,7 +271,7 @@
                                         {% set food_item = ingredient.food or ingredient.my_food or
                                         ingredient.linked_recipe %}
                                         {% if food_item %}
-                                        {% for portion in ingredient.available_portions %}
+                                        {% for portion in ingredient.available_portions|sort(attribute='seq_num') %}
                                         <option value="{{ portion.id }}" {% if ingredient.portion_id_fk==portion.id %}selected{%
                                             endif %}>{{ portion.full_description_str }}</option>
                                         {% endfor %}
