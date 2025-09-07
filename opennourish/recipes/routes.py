@@ -30,7 +30,6 @@ from opennourish.utils import (
     calculate_recipe_nutrition_per_100g,
     ensure_portion_sequence,
     get_available_portions,
-    remove_leading_one,
     update_recipe_nutrition,
     generate_recipe_label_pdf,
     generate_recipe_label_svg,
@@ -48,16 +47,12 @@ PORTION_TABLE_FRAGMENT = "#portions-table"
 
 def _process_ingredient_for_display(ingredient, usda_foods_map):
     description = "Unknown Food"
-    food_object = None
     if hasattr(ingredient, "usda_food") and ingredient.usda_food:
         description = ingredient.usda_food.description
-        food_object = ingredient.usda_food
     elif ingredient.my_food:
         description = ingredient.my_food.description
-        food_object = ingredient.my_food
     elif ingredient.linked_recipe:
         description = ingredient.linked_recipe.name
-        food_object = ingredient.linked_recipe
 
     quantity = ingredient.amount_grams
     portion_description = "g"

@@ -1398,27 +1398,28 @@ def _generate_typst_content_recipe(
 
             ing.quantity = ing.amount_grams
             ing.portion_description = "g"
+            selected_portion = None
+
+            if ing.portion_id_fk:
+                selected_portion = db.session.get(UnifiedPortion, ing.portion_id_fk)
 
             if food_object:
                 available_portions = get_available_portions(food_object)
                 available_portions.sort(key=lambda p: p.gram_weight, reverse=True)
+                if selected_portion and selected_portion.gram_weight > 0:
+                    ing.quantity = ing.amount_grams / selected_portion.gram_weight
+                    ing.portion_description = selected_portion.full_description_str
+            ingredient_line = ""
+            if ing.portion_description.strip().lower() != "g":
+                ingredient_line = " ({}g)".format(round(ing.amount_grams))
 
-                for p in available_portions:
-                    if p.gram_weight > 0.1:
-                        if (
-                            abs(ing.amount_grams % p.gram_weight) < 0.01
-                            or abs(p.gram_weight - (ing.amount_grams % p.gram_weight))
-                            < 0.01
-                        ):
-                            ing.quantity = round(ing.amount_grams / p.gram_weight, 2)
-                            ing.portion_description = p.full_description_str
-                            break
             ingredients_str = (
                 ingredients_str
                 + _sanitize_for_typst(
                     "{:.2f}".format(ing.quantity)
                     + " "
                     + ing.portion_description
+                    + ingredient_line
                     + " "
                     + ing.description
                 )
