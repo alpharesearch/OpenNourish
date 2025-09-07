@@ -13,9 +13,11 @@ from flask_login import current_user
 from models import db, Food
 import os
 from opennourish.utils import (
+    ensure_portion_sequence,
+)
+from opennourish.typst_utils import (
     generate_nutrition_label_pdf,
     generate_nutrition_label_svg,
-    ensure_portion_sequence,
 )
 
 main_bp = Blueprint("main", __name__)

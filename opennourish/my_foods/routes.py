@@ -22,11 +22,13 @@ from opennourish.my_foods.forms import MyFoodForm, PortionForm, CategoryForm
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 from opennourish.utils import (
-    generate_myfood_label_pdf,
     ensure_portion_sequence,
     get_nutrients_for_display,
     convert_display_nutrients_to_100g,
     prepare_undo_and_delete,
+)
+from opennourish.typst_utils import (
+    generate_myfood_label_pdf,
 )
 
 my_foods_bp = Blueprint("my_foods", __name__)

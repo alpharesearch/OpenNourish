@@ -31,9 +31,11 @@ from opennourish.utils import (
     ensure_portion_sequence,
     get_available_portions,
     update_recipe_nutrition,
+    prepare_undo_and_delete,
+)
+from opennourish.typst_utils import (
     generate_recipe_label_pdf,
     generate_recipe_label_svg,
-    prepare_undo_and_delete,
 )
 
 recipes_bp = Blueprint("recipes", __name__, template_folder="templates")
