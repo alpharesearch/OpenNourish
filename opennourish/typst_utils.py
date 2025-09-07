@@ -809,7 +809,7 @@ def _generate_typst_content_recipe(
     food_portions = UnifiedPortion.query.filter_by(recipe_id=recipe.id).all()
     if food_portions:
         portions_list = [
-            f"{_sanitize_for_typst(p.full_description_str_1)} ({p.gram_weight}g)"
+            f"{_sanitize_for_typst(p.full_description_str_1)} ({p.gram_weight:.2f}g)"
             for p in food_portions
         ]
         portions_str = "\\ ".join(portions_list)
