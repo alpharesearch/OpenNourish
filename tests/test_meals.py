@@ -335,7 +335,7 @@ def test_add_my_meal_to_diary_with_amount(auth_client_with_user):
         ).first()
 
         assert daily_log_entry is not None
-        assert daily_log_entry.amount_grams == meal_item.amount_grams * amount
+        assert daily_log_entry.amount_grams == pytest.approx(meal_item.amount_grams * amount)
 
 
 def test_save_meal_from_diary_as_recipe(auth_client_with_user):
