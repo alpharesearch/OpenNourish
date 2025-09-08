@@ -400,12 +400,6 @@ def test_get_meal_based_nutrition(analytics_data):
         assert "Lunch" in meal_nutrition
         assert "Snack" in meal_nutrition
         assert len(meal_nutrition) == 2
-
-        # Lunch: log1 + log2
-        # Cals: 330 + 166.5 = 496.5
-        # Prot: 62 + 3.9 = 65.9
-        # Carbs: 0 + 34.5 = 34.5
-        # Fat: 7.2 + 1.35 = 8.55
         assert meal_nutrition["Lunch"]["calories"] == pytest.approx(496.5)
         assert meal_nutrition["Lunch"]["protein"] == pytest.approx(65.9)
         assert meal_nutrition["Lunch"]["carbs"] == pytest.approx(34.5)
