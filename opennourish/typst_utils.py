@@ -22,6 +22,14 @@ NO_CACHE_HEADERS = "no-cache, no-store, must-revalidate"
 TYPST_NOT_FOUND_ERROR = "Typst executable not found. Please ensure Typst is installed and in your system's PATH."
 TYPST_NOT_FOUND_SHORT_ERROR = "Typst executable not found."
 TIMESTAMP_FORMAT = "%Y%m%dT%H%M%S"
+TOTAL_LIPID_FAT = "Total lipid (fat)"
+FATTY_ACIDS_TOTAL_SATURATED = "Fatty acids, total saturated"
+FATTY_ACIDS_TOTAL_TRANS = "Fatty acids, total trans"
+CARBOHYDRATE_BY_DIFFERENCE = "Carbohydrate, by difference"
+FIBER_TOTAL_DIETARY = "Fiber, total dietary"
+SUGARS_TOTAL_INCLUDING_NLEA = "Sugars, total including NLEA"
+SUGARS_ADDED = "Sugars, added"
+VITAMIN_D = "Vitamin D"
 
 
 def _get_nutrition_label_data(fdc_id):
@@ -40,45 +48,45 @@ def _get_nutrition_label_data(fdc_id):
             "unit": "kcal",
             "format": ".0f",
         },
-        "Total lipid (fat)": {
-            "names": ["Total lipid (fat)", "Lipids"],
+        TOTAL_LIPID_FAT: {
+            "names": [TOTAL_LIPID_FAT, "Lipids"],
             "unit": "g",
             "format": ".1f",
         },
-        "Fatty acids, total saturated": {
-            "names": ["Fatty acids, total saturated"],
+        FATTY_ACIDS_TOTAL_SATURATED: {
+            "names": [FATTY_ACIDS_TOTAL_SATURATED],
             "unit": "g",
             "format": ".1f",
         },
-        "Fatty acids, total trans": {
-            "names": ["Fatty acids, total trans"],
+        FATTY_ACIDS_TOTAL_TRANS: {
+            "names": [FATTY_ACIDS_TOTAL_TRANS],
             "unit": "g",
             "format": ".1f",
         },
         "Cholesterol": {"names": ["Cholesterol"], "unit": "mg", "format": ".0f"},
         "Sodium": {"names": ["Sodium", "Sodium, Na"], "unit": "mg", "format": ".0f"},
-        "Carbohydrate, by difference": {
-            "names": ["Carbohydrate, by difference", "Carbohydrates"],
+        CARBOHYDRATE_BY_DIFFERENCE: {
+            "names": [CARBOHYDRATE_BY_DIFFERENCE, "Carbohydrates"],
             "unit": "g",
             "format": ".1f",
         },
-        "Fiber, total dietary": {
-            "names": ["Fiber, total dietary", "Total dietary fiber (AOAC 2011.25)"],
+        FIBER_TOTAL_DIETARY: {
+            "names": [FIBER_TOTAL_DIETARY, "Total dietary fiber (AOAC 2011.25)"],
             "unit": "g",
             "format": ".1f",
         },
-        "Sugars, total including NLEA": {
-            "names": ["Sugars, total including NLEA", "Sugars, total", "Total Sugars"],
+        SUGARS_TOTAL_INCLUDING_NLEA: {
+            "names": [SUGARS_TOTAL_INCLUDING_NLEA, "Sugars, total", "Total Sugars"],
             "unit": "g",
             "format": ".1f",
         },
-        "Sugars, added": {"names": ["Sugars, added"], "unit": "g", "format": ".1f"},
+        SUGARS_ADDED: {"names": [SUGARS_ADDED], "unit": "g", "format": ".1f"},
         "Protein": {
             "names": ["Protein", "Adjusted Protein"],
             "unit": "g",
             "format": ".1f",
         },
-        "Vitamin D": {
+        VITAMIN_D: {
             "names": ["Vitamin D (D2 + D3)"],
             "unit": "mcg",
             "format": ".0f",
@@ -401,17 +409,17 @@ def _get_nutrition_label_data_myfood(my_food_id):
     # All values are per 100g.
     nutrients_for_label = {
         "Energy": my_food.calories_per_100g or 0,
-        "Total lipid (fat)": my_food.fat_per_100g or 0,
-        "Fatty acids, total saturated": my_food.saturated_fat_per_100g or 0,
-        "Fatty acids, total trans": my_food.trans_fat_per_100g or 0,
+        TOTAL_LIPID_FAT: my_food.fat_per_100g or 0,
+        FATTY_ACIDS_TOTAL_SATURATED: my_food.saturated_fat_per_100g or 0,
+        FATTY_ACIDS_TOTAL_TRANS: my_food.trans_fat_per_100g or 0,
         "Cholesterol": my_food.cholesterol_mg_per_100g or 0,
         "Sodium": my_food.sodium_mg_per_100g or 0,
-        "Carbohydrate, by difference": my_food.carbs_per_100g or 0,
-        "Fiber, total dietary": my_food.fiber_per_100g or 0,
-        "Sugars, total including NLEA": my_food.sugars_per_100g or 0,
-        "Sugars, added": my_food.added_sugars_per_100g or 0,
+        CARBOHYDRATE_BY_DIFFERENCE: my_food.carbs_per_100g or 0,
+        FIBER_TOTAL_DIETARY: my_food.fiber_per_100g or 0,
+        SUGARS_TOTAL_INCLUDING_NLEA: my_food.sugars_per_100g or 0,
+        SUGARS_ADDED: my_food.added_sugars_per_100g or 0,
         "Protein": my_food.protein_per_100g or 0,
-        "Vitamin D": my_food.vitamin_d_mcg_per_100g or 0,
+        VITAMIN_D: my_food.vitamin_d_mcg_per_100g or 0,
         "Calcium": my_food.calcium_mg_per_100g or 0,
         "Iron": my_food.iron_mg_per_100g or 0,
         "Potassium": my_food.potassium_mg_per_100g or 0,
@@ -939,17 +947,17 @@ def _get_nutrition_label_data_recipe(recipe_id):
     # All values are per 100g.
     nutrients_for_label = {
         "Energy": recipe.calories_per_100g or 0,
-        "Total lipid (fat)": recipe.fat_per_100g or 0,
-        "Fatty acids, total saturated": recipe.saturated_fat_per_100g or 0,
-        "Fatty acids, total trans": recipe.trans_fat_per_100g or 0,
+        TOTAL_LIPID_FAT: recipe.fat_per_100g or 0,
+        FATTY_ACIDS_TOTAL_SATURATED: recipe.saturated_fat_per_100g or 0,
+        FATTY_ACIDS_TOTAL_TRANS: recipe.trans_fat_per_100g or 0,
         "Cholesterol": recipe.cholesterol_mg_per_100g or 0,
         "Sodium": recipe.sodium_mg_per_100g or 0,
-        "Carbohydrate, by difference": recipe.carbs_per_100g or 0,
-        "Fiber, total dietary": recipe.fiber_per_100g or 0,
-        "Sugars, total including NLEA": recipe.sugars_per_100g or 0,
-        "Sugars, added": recipe.added_sugars_per_100g or 0,
+        CARBOHYDRATE_BY_DIFFERENCE: recipe.carbs_per_100g or 0,
+        FIBER_TOTAL_DIETARY: recipe.fiber_per_100g or 0,
+        SUGARS_TOTAL_INCLUDING_NLEA: recipe.sugars_per_100g or 0,
+        SUGARS_ADDED: recipe.added_sugars_per_100g or 0,
         "Protein": recipe.protein_per_100g or 0,
-        "Vitamin D": recipe.vitamin_d_mcg_per_100g or 0,
+        VITAMIN_D: recipe.vitamin_d_mcg_per_100g or 0,
         "Calcium": recipe.calcium_mg_per_100g or 0,
         "Iron": recipe.iron_mg_per_100g or 0,
         "Potassium": recipe.potassium_mg_per_100g or 0,
