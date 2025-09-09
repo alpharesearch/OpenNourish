@@ -732,7 +732,7 @@ def test_auto_add_recipe_portion_from_servings(auth_client_with_user):
         # Expected weight = 400g total / 4 servings = 100g per serving
         assert new_portion.gram_weight == pytest.approx(100.0)
         assert new_portion.measure_unit_description == "serving"
-        assert new_portion.amount == 1.0
+        assert new_portion.amount == pytest.approx(1.0)
 
 
 def test_auto_add_recipe_portion_with_final_weight(auth_client_with_user):
@@ -783,7 +783,7 @@ def test_auto_add_recipe_portion_with_final_weight(auth_client_with_user):
         # Expected weight = 500g final weight / 5 servings = 100g per serving
         assert new_portion.gram_weight == pytest.approx(100.0)
         assert new_portion.measure_unit_description == "serving"
-        assert new_portion.amount == 1.0
+        assert new_portion.amount == pytest.approx(1.0)
 
 
 def test_recipe_edit_ingredient_dropdown_1g_portion_uniqueness(auth_client_with_user):
@@ -1063,7 +1063,7 @@ def test_add_recipe_portion_success(auth_client_with_user):
         assert len(portions) == 1
         new_portion = portions[0]
         assert new_portion.portion_description == "cup"
-        assert new_portion.gram_weight == 150.0
+        assert new_portion.gram_weight == pytest.approx(150.0)
 
 
 def test_add_recipe_portion_invalid_data(auth_client_with_user):
@@ -1146,7 +1146,7 @@ def test_update_recipe_portion_success(recipe_with_portion):
         updated_portion = db.session.get(UnifiedPortion, portion_id)
         assert updated_portion is not None
         assert updated_portion.portion_description == "big slice"
-        assert updated_portion.gram_weight == 75.0
+        assert updated_portion.gram_weight == pytest.approx(75.0)
 
 
 def test_update_recipe_portion_invalid_data(recipe_with_portion):
@@ -1171,7 +1171,7 @@ def test_update_recipe_portion_invalid_data(recipe_with_portion):
 
     with client.application.app_context():
         portion = db.session.get(UnifiedPortion, portion_id)
-        assert portion.gram_weight == 50.0  # Should not have changed
+        assert portion.gram_weight == pytest.approx(50.0)  # Should not have changed
 
 
 def test_update_recipe_portion_unauthorized(auth_client_user_two):

@@ -188,7 +188,7 @@ def test_update_meal_item_portion(auth_client_with_user):
 
     with client.application.app_context():
         updated_item = db.session.get(MyMealItem, item_id)
-        assert updated_item.amount_grams == 75.0  # 0.5 * 150.0
+        assert updated_item.amount_grams == pytest.approx(75.0)  # 0.5 * 150.0
         assert updated_item.portion_id_fk == portion2_id
 
 

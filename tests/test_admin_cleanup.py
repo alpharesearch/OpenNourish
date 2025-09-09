@@ -145,7 +145,7 @@ def test_non_admin_users_are_blocked_from_cleanup_feature(client, admin_and_user
 
 
 def test_cleanup_page_handles_no_orphans(client, admin_and_user):
-    admin, _ = admin_and_user
+    _, _ = admin_and_user
     client.post(
         "/auth/login",
         data={"username_or_email": "admin_cleanup", "password": "adminpass"},

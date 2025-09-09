@@ -8,6 +8,7 @@ from models import (
     Recipe,
     User,
 )
+import pytest
 
 
 def test_seed_exercise_activities_command(app_with_db):
@@ -27,7 +28,7 @@ def test_seed_exercise_activities_command(app_with_db):
         assert ExerciseActivity.query.count() > 0
         activity = ExerciseActivity.query.filter_by(name="Walking").first()
         assert activity is not None
-        assert activity.met_value == 3.5
+        assert activity.met_value == pytest.approx(3.5)
 
     # Run the seeder again to test idempotency
     result = runner.invoke(args=["seed-exercise-activities"])
@@ -180,7 +181,7 @@ def test_exercise_seed_activities_command(app_with_db):
         assert ExerciseActivity.query.count() > 0
         activity = ExerciseActivity.query.filter_by(name="Running").first()
         assert activity is not None
-        assert activity.met_value == 9.8
+        assert abs(activity.met_value - 9.8) < 1e-6
         initial_count = ExerciseActivity.query.count()
 
     # Run the seeder again to test idempotency

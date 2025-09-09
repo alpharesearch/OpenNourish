@@ -178,7 +178,7 @@ def test_update_my_food_portion(auth_client):
     with auth_client.application.app_context():
         updated_portion = db.session.get(UnifiedPortion, portion_id)
         assert updated_portion.portion_description == "large piece"
-        assert updated_portion.gram_weight == 40.0
+        assert updated_portion.gram_weight == pytest.approx(40.0)
 
 
 def test_add_my_food_portion(auth_client):
@@ -210,7 +210,7 @@ def test_add_my_food_portion(auth_client):
             my_food_id=food_id, portion_description="new portion"
         ).first()
         assert added_portion is not None
-        assert added_portion.gram_weight == 75.0
+        assert added_portion.gram_weight == pytest.approx(75.0)
 
 
 def test_delete_my_food_portion(auth_client):
@@ -455,7 +455,7 @@ def test_edit_my_food_with_invalid_data_type(auth_client):
     with auth_client.application.app_context():
         food_in_db = db.session.get(MyFood, food_id)
         assert food_in_db.description == "Test Food"
-        assert food_in_db.calories_per_100g == 100.0
+        assert food_in_db.calories_per_100g == pytest.approx(100.0)
 
 
 def test_reorder_my_food_portions(auth_client):

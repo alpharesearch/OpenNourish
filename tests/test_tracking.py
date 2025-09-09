@@ -26,9 +26,9 @@ def test_check_in_crud_lifecycle(auth_client):
             user_id=user.id, checkin_date=date.today()
         ).first()
         assert check_in is not None
-        assert check_in.weight_kg == 75.5
-        assert check_in.body_fat_percentage == 15.0
-        assert check_in.waist_cm == 80.0
+        assert check_in.weight_kg == pytest.approx(75.5)
+        assert check_in.body_fat_percentage == pytest.approx(15.0)
+        assert check_in.waist_cm == pytest.approx(80.0)
         created_check_in_id = check_in.id
 
     # 2. Read
@@ -54,9 +54,9 @@ def test_check_in_crud_lifecycle(auth_client):
     with auth_client.application.app_context():
         check_in = db.session.get(CheckIn, created_check_in_id)
         assert check_in is not None
-        assert check_in.weight_kg == 76.0
-        assert check_in.body_fat_percentage == 15.5
-        assert check_in.waist_cm == 81.0
+        assert check_in.weight_kg == pytest.approx(76.0)
+        assert check_in.body_fat_percentage == pytest.approx(15.5)
+        assert check_in.waist_cm == pytest.approx(81.0)
 
     # 4. Delete
     response = auth_client.post(
@@ -105,7 +105,7 @@ def test_user_cannot_edit_other_users_check_in(auth_client_user_two):
     """
     Tests that a user cannot edit another user's check-in.
     """
-    client, user_one_from_fixture, user_two_from_fixture = auth_client_user_two
+    client, user_one_from_fixture, _ = auth_client_user_two
 
     with client.application.app_context():
         # Re-fetch user_one within the current app context
@@ -133,4 +133,4 @@ def test_user_cannot_edit_other_users_check_in(auth_client_user_two):
     with client.application.app_context():
         # Verify the check-in was NOT updated
         check_in_after_attempt = db.session.get(CheckIn, check_in_id)
-        assert check_in_after_attempt.weight_kg == 70.0
+        assert check_in_after_attempt.weight_kg == pytest.approx(70.0)

@@ -32,7 +32,7 @@ def test_food_nutrient_association(client):
 
         retrieved_food = db.session.get(Food, 101)
         assert len(retrieved_food.nutrients) == 1
-        assert retrieved_food.nutrients[0].amount == 10.5
+        assert retrieved_food.nutrients[0].amount == pytest.approx(10.5)
 
 
 def test_food_search_returns_result(client):

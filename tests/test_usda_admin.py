@@ -170,10 +170,10 @@ def test_edit_usda_portion_key_user(key_user_client):
 
     with key_user_client.application.app_context():
         updated_portion = db.session.get(UnifiedPortion, portion_id)
-        assert updated_portion.gram_weight == 155.5
+        assert updated_portion.gram_weight == pytest.approx(155.5)
         assert updated_portion.measure_unit_description == "updated cup"
         assert updated_portion.portion_description == "fluffed"
-        assert updated_portion.amount == 1.5
+        assert updated_portion.amount == pytest.approx(1.5)
         assert updated_portion.modifier == "new modifier"
 
 

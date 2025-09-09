@@ -12,6 +12,7 @@ from models import (
     Friendship,
 )
 from datetime import date
+import pytest
 
 
 def test_update_meals_per_day(client, auth_client):
@@ -127,7 +128,7 @@ def test_update_metric_height(client, auth_client):
             user_id = sess["_user_id"]
         user = db.session.get(User, user_id)
         assert user.measurement_system == "metric"
-        assert user.height_cm == 175.5
+        assert user.height_cm == pytest.approx(175.5)
 
 
 def test_update_us_height(client, auth_client):
@@ -154,7 +155,7 @@ def test_update_us_height(client, auth_client):
         user = db.session.get(User, user_id)
         assert user.measurement_system == "us"
         # 5 feet 10 inches = 70 inches = 177.8 cm
-        assert user.height_cm == 177.8
+        assert user.height_cm == pytest.approx(177.8)
 
 
 def test_update_navbar_preference(client, auth_client):

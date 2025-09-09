@@ -161,7 +161,7 @@ def test_admin_can_disable_and_enable_registration(admin_client):
 
 def test_admin_can_toggle_email_verification(admin_client):
     """Test that the admin can enable and disable email verification."""
-    admin_client_instance, admin_user, app = admin_client
+    admin_client_instance, _, _ = admin_client
 
     # 1. Disable email verification
     response = admin_client_instance.post(

@@ -66,7 +66,7 @@ def test_get_display_weight():
 # Test get_display_waist
 def test_get_display_waist():
     assert get_display_waist(76.2, "us") == pytest.approx(30.0, abs=0.01)
-    assert get_display_waist(76.2, "metric") == 76.2
+    assert get_display_waist(76.2, "metric") == pytest.approx(76.2)
     assert get_display_waist(None, "us") is None
 
 

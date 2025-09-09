@@ -166,4 +166,4 @@ def test_end_to_end_add_via_modal_workflow(client_a, user_a_id):
         ).first()
         assert log_entry is not None
         assert log_entry.recipe_id == recipe.id
-        assert log_entry.amount_grams == 300.0
+        assert log_entry.amount_grams == pytest.approx(300.0)

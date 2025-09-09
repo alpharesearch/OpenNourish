@@ -208,7 +208,7 @@ def test_add_recipe_to_diary(auth_client_with_data):
             user_id=user_id, recipe_id=recipe_id, log_date=date.today()
         ).first()
         assert daily_log is not None
-        assert daily_log.amount_grams == 125.0
+        assert daily_log.amount_grams == pytest.approx(125.0)
 
 
 def test_add_item_to_recipe(auth_client_with_data):
@@ -1030,7 +1030,7 @@ def test_get_portions_empty_meal(auth_client_with_data):
     assert response.status_code == 200
     json_data = response.get_json()
     assert json_data["calories_per_100g"] == 0
-    assert json_data["portions"][0]["gram_weight"] == 1.0
+    assert json_data["portions"][0]["gram_weight"] == pytest.approx(1.0)
 
 
 def test_get_portions_diary_meal(auth_client):
@@ -1040,7 +1040,7 @@ def test_get_portions_diary_meal(auth_client):
     assert response.status_code == 200
     json_data = response.get_json()
     assert json_data["portions"][0]["description"] == "1 serving"
-    assert json_data["portions"][0]["gram_weight"] == 1.0
+    assert json_data["portions"][0]["gram_weight"] == pytest.approx(1.0)
 
 
 def test_get_portions_no_portions_exist(auth_client_with_data):

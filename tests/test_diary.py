@@ -9,6 +9,7 @@ from models import (
     UnifiedPortion,
 )
 from datetime import date, timedelta
+import pytest
 
 
 def test_add_usda_food_to_diary(auth_client):
@@ -161,7 +162,7 @@ def test_add_usda_food_with_portion(auth_client):
     with auth_client.application.app_context():
         log_entry = DailyLog.query.filter_by(fdc_id=10002).first()
         assert log_entry is not None
-        assert log_entry.amount_grams == 56.0  # 2 * 28.0
+        assert log_entry.amount_grams == pytest.approx(56.0)  # 2 * 28.0
 
 
 def test_add_my_food_with_portion(auth_client):
@@ -200,7 +201,7 @@ def test_add_my_food_with_portion(auth_client):
     with auth_client.application.app_context():
         log_entry = DailyLog.query.filter_by(my_food_id=my_food_id).first()
         assert log_entry is not None
-        assert log_entry.amount_grams == 120.0  # 3 * 40.0
+        assert log_entry.amount_grams == pytest.approx(120.0)  # 3 * 40.0
 
 
 def test_diary_display_3_meals_empty_day(auth_client):
@@ -351,7 +352,7 @@ def test_update_diary_entry(auth_client):
 
     with auth_client.application.app_context():
         updated_log = db.session.get(DailyLog, log_id)
-        assert updated_log.amount_grams == 100.0  # 2 * 50.0
+        assert updated_log.amount_grams == pytest.approx(100.0)  # 2 * 50.0
         assert updated_log.portion_id_fk == portion2_id
         assert updated_log.serving_type == "serving"
 
