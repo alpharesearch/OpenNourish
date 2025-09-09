@@ -373,3 +373,159 @@ def test_reorder_usda_portions_unauthorized(auth_client):
     with auth_client.application.app_context():
         portion_after = db.session.get(UnifiedPortion, portion_id)
         assert portion_after.seq_num == 1
+
+
+def test_add_usda_portion_no_gram_weight(key_user_client):
+    """Test adding a portion with no gram weight fails."""
+    with key_user_client.application.app_context():
+        food = Food(fdc_id=121212, description="Test Food")
+        db.session.add(food)
+        db.session.commit()
+        fdc_id = food.fdc_id
+
+    response = key_user_client.post(
+        url_for("usda_admin.add_usda_portion"),
+        data={"fdc_id": fdc_id, "gram_weight": ""},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Gram weight is a required field." in response.data
+
+
+def test_add_usda_portion_invalid_fdc_id(key_user_client):
+    """Test adding a portion with an invalid fdc_id."""
+    response = key_user_client.post(
+        url_for("usda_admin.add_usda_portion"),
+        data={"fdc_id": 999999, "gram_weight": "100"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"USDA Food not found." in response.data
+
+
+def test_edit_usda_portion_invalid_portion_id(key_user_client):
+    """Test editing a portion with an invalid portion_id."""
+    response = key_user_client.post(
+        url_for("usda_admin.edit_usda_portion", portion_id=999999),
+        data={"gram_weight": "100"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"USDA portion not found." in response.data
+
+
+def test_edit_usda_portion_no_gram_weight(key_user_client):
+    """Test editing a portion to have no gram weight fails."""
+    with key_user_client.application.app_context():
+        food = Food(fdc_id=131313, description="Test Food")
+        portion = UnifiedPortion(fdc_id=food.fdc_id, gram_weight=100)
+        db.session.add_all([food, portion])
+        db.session.commit()
+        portion_id = portion.id
+        fdc_id = food.fdc_id
+
+    response = key_user_client.post(
+        url_for("usda_admin.edit_usda_portion", portion_id=portion_id),
+        data={"gram_weight": ""},
+        follow_redirects=False,  # Don't follow the redirect
+    )
+
+    assert response.status_code == 302  # Check for redirect
+    assert f"/food/{fdc_id}" in response.location
+
+    # Now, check the flash message in the session
+    with key_user_client.session_transaction() as session:
+        flashes = session.get("_flashes", [])
+        assert len(flashes) > 0
+        assert flashes[0][0] == "danger"
+        assert flashes[0][1] == "Gram weight is a required field."
+
+
+def test_delete_usda_portion_invalid_portion_id(key_user_client):
+    """Test deleting a portion with an invalid portion_id."""
+    response = key_user_client.post(
+        url_for("usda_admin.delete_usda_portion", portion_id=999999),
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"USDA portion not found." in response.data
+
+
+def test_move_usda_portion_up_invalid_portion_id(key_user_client):
+    """Test moving a portion up with an invalid portion_id."""
+    response = key_user_client.post(
+        url_for("usda_admin.move_usda_portion_up", portion_id=999999),
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"USDA portion not found." in response.data
+
+
+def test_move_usda_portion_up_assigns_seq_num(key_user_client):
+    """Test that move_up assigns sequence numbers if they are missing."""
+    with key_user_client.application.app_context():
+        food = Food(fdc_id=141414, description="Test Food")
+        p1 = UnifiedPortion(fdc_id=food.fdc_id, gram_weight=10, seq_num=None)
+        p2 = UnifiedPortion(fdc_id=food.fdc_id, gram_weight=20, seq_num=None)
+        db.session.add_all([food, p1, p2])
+        db.session.commit()
+        p1_id, p2_id = p1.id, p2.id
+
+    response = key_user_client.post(
+        url_for("usda_admin.move_usda_portion_up", portion_id=p2_id),
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert (
+        b"Assigned sequence numbers to all portions. Please try again." in response.data
+    )
+
+    with key_user_client.application.app_context():
+        p1_new = db.session.get(UnifiedPortion, p1_id)
+        p2_new = db.session.get(UnifiedPortion, p2_id)
+        assert p1_new.seq_num == 1
+        assert p2_new.seq_num == 2
+
+
+def test_move_usda_portion_up_already_at_top(key_user_client):
+    """Test moving the top portion up."""
+    with key_user_client.application.app_context():
+        food = Food(fdc_id=151515, description="Test Food")
+        p1 = UnifiedPortion(fdc_id=food.fdc_id, gram_weight=10, seq_num=1)
+        db.session.add_all([food, p1])
+        db.session.commit()
+        p1_id = p1.id
+
+    response = key_user_client.post(
+        url_for("usda_admin.move_usda_portion_up", portion_id=p1_id),
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Portion is already at the top." in response.data
+
+
+def test_move_usda_portion_down_invalid_portion_id(key_user_client):
+    """Test moving a portion down with an invalid portion_id."""
+    response = key_user_client.post(
+        url_for("usda_admin.move_usda_portion_down", portion_id=999999),
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"USDA portion not found." in response.data
+
+
+def test_move_usda_portion_down_already_at_bottom(key_user_client):
+    """Test moving the bottom portion down."""
+    with key_user_client.application.app_context():
+        food = Food(fdc_id=161616, description="Test Food")
+        p1 = UnifiedPortion(fdc_id=food.fdc_id, gram_weight=10, seq_num=1)
+        db.session.add_all([food, p1])
+        db.session.commit()
+        p1_id = p1.id
+
+    response = key_user_client.post(
+        url_for("usda_admin.move_usda_portion_down", portion_id=p1_id),
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Portion is already at the bottom." in response.data
