@@ -16,6 +16,7 @@ from models import (
 )
 from datetime import date
 from flask import url_for
+from opennourish.search.routes import ManualPagination
 
 
 @pytest.fixture
@@ -97,7 +98,14 @@ def test_search_finds_all_food_types(auth_client_with_data):
 
     search_term = "Search"
     response = auth_client.post(
-        "/search/", data={"search_term": search_term, "search_usda": True}
+        "/search/",
+        data={
+            "search_term": search_term,
+            "search_usda": True,
+            "search_my_foods": True,
+            "search_recipes": True,
+            "search_my_meals": True,
+        },
     )
     assert response.status_code == 200
 
@@ -768,3 +776,470 @@ def test_copy_friend_diary_meal(auth_client_with_data):
         fdc_ids = {item.fdc_id for item in user_lunch_items}
         assert 99998 in fdc_ids
         assert 99999 in fdc_ids
+
+
+@pytest.fixture
+def search_coverage_data(auth_client):
+    with auth_client.application.app_context():
+        user1 = User.query.filter_by(username="testuser").first()
+        if not user1:
+            user1 = User(username="testuser", email="test@test.com")
+            user1.set_password("password")
+            db.session.add(user1)
+            db.session.commit()
+
+        user2 = User(username="user2", email="user2@example.com")
+        user2.set_password("password")
+        deleted_user = User(username="deleteduser", email="deleted@example.com")
+        deleted_user.set_password("password")
+        db.session.add_all([user2, deleted_user])
+        db.session.commit()
+
+        # Data for user2 (not a friend)
+        my_food_user2 = MyFood(
+            user_id=user2.id, description="User2 Food", calories_per_100g=100
+        )
+        recipe_user2 = Recipe(user_id=user2.id, name="User2 Recipe", instructions="...")
+        db.session.add_all([my_food_user2, recipe_user2])
+        db.session.commit()
+
+        # Data for deleted user
+        my_food_deleted = MyFood(
+            user_id=deleted_user.id,
+            description="Deleted User Food",
+            calories_per_100g=100,
+        )
+        recipe_deleted = Recipe(
+            user_id=deleted_user.id, name="Deleted User Recipe", instructions="..."
+        )
+        public_recipe_deleted = Recipe(
+            user_id=deleted_user.id,
+            name="Orphaned Public Recipe",
+            instructions="...",
+            is_public=True,
+        )
+        db.session.add_all([my_food_deleted, recipe_deleted, public_recipe_deleted])
+        db.session.commit()
+
+        portion_my_food_deleted = UnifiedPortion(
+            my_food_id=my_food_deleted.id,
+            gram_weight=100,
+            portion_description="serving",
+        )
+        portion_recipe_deleted = UnifiedPortion(
+            recipe_id=recipe_deleted.id, gram_weight=200, portion_description="serving"
+        )
+        db.session.add_all([portion_my_food_deleted, portion_recipe_deleted])
+        db.session.commit()
+
+        # "Delete" the user
+        db.session.delete(deleted_user)
+        db.session.commit()
+
+        # Target recipe for current user
+        target_recipe = Recipe(
+            user_id=user1.id, name="My Target Recipe", instructions="..."
+        )
+        db.session.add(target_recipe)
+        db.session.commit()
+    return auth_client
+
+
+def test_add_meal_to_recipe(auth_client_with_data):
+    auth_client = auth_client_with_data
+    with auth_client.application.app_context():
+        my_meal = MyMeal.query.filter_by(name="Test My Meal").first()
+        target_recipe = Recipe.query.filter_by(name="Target Recipe").first()
+        my_food = MyFood.query.filter_by(description="Test My Food").first()
+        my_meal_id = my_meal.id
+        target_recipe_id = target_recipe.id
+        my_food_id = my_food.id
+
+        response = auth_client.post(
+            url_for("search.add_item"),
+            data={
+                "food_id": my_meal_id,
+                "food_type": "my_meal",
+                "target": "recipe",
+                "recipe_id": target_recipe_id,
+                "amount": 1,
+            },
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 302
+        with auth_client.session_transaction() as session:
+            flashes = session.get("_flashes", [])
+            assert len(flashes) > 0
+            assert (
+                flashes[0][1]
+                == '"Test My Meal" (expanded) added to recipe Target Recipe.'
+            )
+
+        # follow redirect to check final state
+        response = auth_client.get(response.location, follow_redirects=True)
+        assert response.status_code == 200
+
+        with auth_client.application.app_context():
+            target_recipe = db.session.get(Recipe, target_recipe_id)
+            assert len(target_recipe.ingredients) == 2
+            assert any(
+                i.fdc_id == 100001 and i.amount_grams == 50
+                for i in target_recipe.ingredients
+            )
+            assert any(
+                i.my_food_id == my_food_id and i.amount_grams == 30
+                for i in target_recipe.ingredients
+            )
+
+
+def test_add_item_invalid_portion_id(auth_client_with_data):
+    auth_client = auth_client_with_data
+    with auth_client.application.app_context():
+        usda_food = Food.query.filter_by(description="Test USDA Food").first()
+        log_date_str = date.today().isoformat()
+        usda_food_id = usda_food.fdc_id
+
+    response = auth_client.post(
+        url_for("search.add_item"),
+        data={
+            "food_id": usda_food_id,
+            "food_type": "usda",
+            "target": "diary",
+            "log_date": log_date_str,
+            "meal_name": "Breakfast",
+            "amount": 150,
+            "portion_id": "999999",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Test USDA Food added to your diary." in response.data
+
+
+def test_add_item_from_deleted_user(search_coverage_data):
+    client = search_coverage_data
+    with client.application.app_context():
+        deleted_food = MyFood.query.filter_by(description="Deleted User Food").first()
+        deleted_recipe = Recipe.query.filter_by(name="Deleted User Recipe").first()
+        portion_food = UnifiedPortion.query.filter_by(
+            my_food_id=deleted_food.id
+        ).first()
+        portion_recipe = UnifiedPortion.query.filter_by(
+            recipe_id=deleted_recipe.id
+        ).first()
+        target_recipe = Recipe.query.filter_by(name="My Target Recipe").first()
+        log_date_str = date.today().isoformat()
+
+    # Test adding MyFood from deleted user to diary
+    response = client.post(
+        url_for("search.add_item"),
+        data={
+            "food_id": deleted_food.id,
+            "food_type": "my_food",
+            "target": "diary",
+            "log_date": log_date_str,
+            "meal_name": "Lunch",
+            "amount": 1,
+            "portion_id": portion_food.id,
+        },
+        follow_redirects=True,
+    )
+    assert b"This food belongs to a deleted user and cannot be added." in response.data
+
+    # Test adding Recipe from deleted user to recipe
+    response = client.post(
+        url_for("search.add_item"),
+        data={
+            "food_id": deleted_recipe.id,
+            "food_type": "recipe",
+            "target": "recipe",
+            "recipe_id": target_recipe.id,
+            "amount": 1,
+            "portion_id": portion_recipe.id,
+        },
+        follow_redirects=True,
+    )
+    assert (
+        b"This recipe belongs to a deleted user and cannot be added as an ingredient."
+        in response.data
+    )
+
+
+def test_add_recipe_to_itself(auth_client_with_data):
+    client = auth_client_with_data
+    with client.application.app_context():
+        recipe = Recipe.query.filter_by(name="Test Recipe").first()
+        portion = UnifiedPortion(
+            recipe_id=recipe.id, gram_weight=100, portion_description="serving"
+        )
+        db.session.add(portion)
+        db.session.commit()
+        portion_id = portion.id
+        recipe_id = recipe.id
+
+        response = client.post(
+            url_for("search.add_item"),
+            data={
+                "food_id": recipe_id,
+                "food_type": "recipe",
+                "target": "recipe",
+                "recipe_id": recipe_id,
+                "amount": 1,
+                "portion_id": portion_id,
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"A recipe cannot be an ingredient of itself." in response.data
+
+
+def test_get_portions_unauthorized(search_coverage_data):
+    client = search_coverage_data
+    with client.application.app_context():
+        food_user2 = MyFood.query.filter_by(description="User2 Food").first()
+        recipe_user2 = Recipe.query.filter_by(name="User2 Recipe").first()
+
+    # Test my_food
+    response = client.get(f"/search/api/get-portions/my_food/{food_user2.id}")
+    assert response.status_code == 404
+    assert b"Not Found or Unauthorized" in response.data
+
+    # Test recipe
+    response = client.get(f"/search/api/get-portions/recipe/{recipe_user2.id}")
+    assert response.status_code == 404
+    assert b"Not Found or Unauthorized" in response.data
+
+
+def test_get_portions_not_found(auth_client):
+    response = auth_client.get("/search/api/get-portions/usda/99999999")
+    assert response.status_code == 404
+    assert b"Not Found" in response.data
+
+
+def test_get_portions_empty_meal(auth_client_with_data):
+    client = auth_client_with_data
+    with client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        empty_meal = MyMeal(user_id=user.id, name="Empty Meal")
+        db.session.add(empty_meal)
+        db.session.commit()
+        meal_id = empty_meal.id
+
+    response = client.get(f"/search/api/get-portions/my_meal/{meal_id}")
+    assert response.status_code == 200
+    json_data = response.get_json()
+    assert json_data["calories_per_100g"] == 0
+    assert json_data["portions"][0]["gram_weight"] == 1.0
+
+
+def test_get_portions_diary_meal(auth_client):
+    response = auth_client.get(
+        "/search/api/get-portions/diary_meal/1"
+    )  # id is not used
+    assert response.status_code == 200
+    json_data = response.get_json()
+    assert json_data["portions"][0]["description"] == "1 serving"
+    assert json_data["portions"][0]["gram_weight"] == 1.0
+
+
+def test_get_portions_no_portions_exist(auth_client_with_data):
+    client = auth_client_with_data
+    with client.application.app_context():
+        my_food = MyFood.query.filter_by(description="Test My Food").first()
+        UnifiedPortion.query.filter_by(my_food_id=my_food.id).delete()
+        db.session.commit()
+        food_id = my_food.id
+
+    response = client.get(f"/search/api/get-portions/my_food/{food_id}")
+    assert response.status_code == 200
+    json_data = response.get_json()
+    assert len(json_data["portions"]) == 1
+    assert json_data["portions"][0]["description"] == "g"
+
+
+def test_search_my_food_by_upc(auth_client_with_data):
+    client = auth_client_with_data
+    upc = "123456789012"
+    with client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        food = MyFood(
+            user_id=user.id, description="UPC Food", upc=upc, calories_per_100g=1
+        )
+        db.session.add(food)
+        db.session.commit()
+
+    response = client.post(
+        "/search/", data={"search_term": upc, "search_my_foods": "true"}
+    )
+    assert response.status_code == 200
+    assert b"UPC Food" in response.data
+
+
+def test_search_finds_orphaned_public_recipe(search_coverage_data):
+    client = search_coverage_data
+    response = client.post(
+        "/search/",
+        data={"search_term": "Orphaned Public Recipe", "search_recipes": "true"},
+    )
+    assert response.status_code == 200
+    assert b"Orphaned Public Recipe" in response.data
+
+
+def test_search_frequent_items(auth_client_with_data):
+    client = auth_client_with_data
+    with client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        my_food = MyFood.query.filter_by(description="Test My Food").first()
+        recipe = Recipe.query.filter_by(name="Test Recipe").first()
+        # Log items to make them "frequent"
+        db.session.add(
+            DailyLog(user_id=user.id, my_food_id=my_food.id, log_date=date.today())
+        )
+        db.session.add(
+            DailyLog(user_id=user.id, recipe_id=recipe.id, log_date=date.today())
+        )
+        db.session.commit()
+
+    response = client.get("/search/?search_my_foods=true&search_recipes=true")
+    assert response.status_code == 200
+    assert b"Test My Food" in response.data
+    assert b"Test Recipe" in response.data
+
+
+def test_manual_pagination():
+    pagination = ManualPagination(page=2, per_page=10, total=30, items=[])
+    assert pagination.has_prev
+    assert pagination.has_next
+    assert list(pagination.iter_pages()) == [1, 2, 3]
+
+
+def test_search_return_url_for_meal(auth_client_with_data):
+    client = auth_client_with_data
+    with client.application.app_context():
+        meal = MyMeal.query.filter_by(name="Test My Meal").first()
+        meal_id = meal.id
+    response = client.get(f"/search/?target=meal&recipe_id={meal_id}")
+    assert response.status_code == 200
+    assert f"/my_meals/edit/{meal_id}" in response.data.decode()
+
+
+def test_search_no_results(auth_client):
+    response = auth_client.get(
+        "/search/?search_term=nonexistentfood123asdf&search_usda=true&search_my_foods=false&search_recipes=false&search_my_meals=false"
+    )
+    assert response.status_code == 200
+    assert b"Search" in response.data
+
+
+def test_add_non_usda_to_my_foods(auth_client_with_data):
+    client = auth_client_with_data
+    with client.application.app_context():
+        my_food = MyFood.query.filter_by(description="Test My Food").first()
+        food_id = my_food.id
+        portion = UnifiedPortion(my_food_id=food_id, gram_weight=100)
+        db.session.add(portion)
+        db.session.commit()
+        portion_id = portion.id
+
+    response = client.post(
+        url_for("search.add_item"),
+        data={
+            "food_id": food_id,
+            "food_type": "my_food",
+            "target": "my_foods",
+            "portion_id": portion_id,
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        flashes = session.get("_flashes", [])
+        assert len(flashes) > 0
+        assert (
+            flashes[0][1]
+            == "Only USDA foods can be copied to My Foods via this method."
+        )
+
+
+def test_add_item_exception(auth_client_with_data, monkeypatch):
+    client = auth_client_with_data
+    with client.application.app_context():
+        usda_food = Food.query.filter_by(description="Test USDA Food").first()
+        food_id = usda_food.fdc_id
+        portion = UnifiedPortion(fdc_id=food_id, gram_weight=1)
+        db.session.add(portion)
+        db.session.commit()
+        portion_id = portion.id
+
+    def mock_commit():
+        raise Exception("DB error")
+
+    monkeypatch.setattr(db.session, "commit", mock_commit)
+
+    response = client.post(
+        url_for("search.add_item"),
+        data={
+            "food_id": food_id,
+            "food_type": "usda",
+            "target": "diary",
+            "log_date": date.today().isoformat(),
+            "meal_name": "Breakfast",
+            "amount": 1,
+            "portion_id": portion_id,
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"An error occurred: DB error" in response.data
+
+
+def test_add_invalid_food_type_to_recipe(auth_client_with_data):
+    client = auth_client_with_data
+    with client.application.app_context():
+        target_recipe = Recipe.query.filter_by(name="Target Recipe").first()
+        dummy_portion = UnifiedPortion(gram_weight=1)
+        db.session.add(dummy_portion)
+        db.session.commit()
+        portion_id = dummy_portion.id
+        target_recipe_id = target_recipe.id
+
+        response = client.post(
+            url_for("search.add_item"),
+            data={
+                "food_id": 1,
+                "food_type": "invalid_type",
+                "target": "recipe",
+                "recipe_id": target_recipe_id,
+                "amount": 1,
+                "portion_id": portion_id,
+            },
+            follow_redirects=True,
+        )
+        assert b"Invalid food type for recipe." in response.data
+
+
+def test_add_meal_to_meal(auth_client_with_data):
+    client = auth_client_with_data
+    with client.application.app_context():
+        meal1 = MyMeal.query.filter_by(name="Test My Meal").first()
+        meal2 = MyMeal.query.filter_by(name="Target Meal").first()
+        meal1_id = meal1.id
+        meal2_id = meal2.id
+
+    response = client.post(
+        url_for("search.add_item"),
+        data={
+            "food_id": meal1_id,
+            "food_type": "my_meal",
+            "target": "meal",
+            "recipe_id": meal2_id,
+            "amount": 1,
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        flashes = session.get("_flashes", [])
+        assert len(flashes) > 0
+        assert flashes[0][1] == "Cannot add a meal to the selected target: meal."
