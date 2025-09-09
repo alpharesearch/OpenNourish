@@ -35,6 +35,9 @@ DIARY_ROUTE_NAME = "diary.diary"
 EDIT_RECIPE_ROUTE = "recipes.edit_recipe"
 EDIT_MEAL_ROUTE = "diary.edit_meal"
 NOT_FOUND_OR_UNAUTHORIZED_ERROR = "Not Found or Unauthorized"
+SEARCH_SEARCH_ROUTE = "search.search"
+USDA_FOOD_NOT_FOUND = "USDA Food not found."
+MY_FOOD_NOT_FOUND = "My Food not found."
 
 
 class ManualPagination:
@@ -761,7 +764,7 @@ def add_item():
                 flash("Log date is required for diary entries.", "danger")
                 return redirect(
                     url_for(
-                        "search.search",
+                        SEARCH_SEARCH_ROUTE,
                         target=target,
                         recipe_id=recipe_id,
                         log_date=log_date_str,
@@ -786,7 +789,7 @@ def add_item():
                     db.session.commit()
                     flash(f"{food.description} added to your diary.", "success")
                 else:
-                    flash("USDA Food not found.", "danger")
+                    flash(USDA_FOOD_NOT_FOUND, "danger")
             elif food_type == "my_food":
                 food = db.session.get(MyFood, food_id)
                 if food:
@@ -811,7 +814,7 @@ def add_item():
                     db.session.commit()
                     flash(f"{food.description} added to your diary.", "success")
                 else:
-                    flash("My Food not found.", "danger")
+                    flash(MY_FOOD_NOT_FOUND, "danger")
             elif food_type == "recipe":
                 recipe = db.session.get(Recipe, food_id)
                 if recipe:
@@ -847,14 +850,14 @@ def add_item():
             if not recipe_id:
                 flash("Recipe ID is required to add to a recipe.", "danger")
                 return redirect(
-                    url_for("search.search", target=target, recipe_id=recipe_id)
+                    url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
                 )
 
             target_recipe = db.session.get(Recipe, recipe_id)
             if not target_recipe or target_recipe.user_id != current_user.id:
                 flash("Recipe not found or not authorized.", "danger")
                 return redirect(
-                    url_for("search.search", target=target, recipe_id=recipe_id)
+                    url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
                 )
 
             if food_type == "usda":
@@ -884,7 +887,7 @@ def add_item():
                         "success",
                     )
                 else:
-                    flash("USDA Food not found.", "danger")
+                    flash(USDA_FOOD_NOT_FOUND, "danger")
             elif food_type == "my_food":
                 food = db.session.get(MyFood, food_id)
                 if food:
@@ -918,13 +921,13 @@ def add_item():
                         "success",
                     )
                 else:
-                    flash("My Food not found.", "danger")
+                    flash(MY_FOOD_NOT_FOUND, "danger")
             elif food_type == "recipe":
                 sub_recipe = db.session.get(Recipe, food_id)
                 if not sub_recipe:
                     flash("Sub-recipe not found.", "danger")
                     return redirect(
-                        url_for("search.search", target=target, recipe_id=recipe_id)
+                        url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
                     )
 
                 if sub_recipe.user_id != current_user.id and not sub_recipe.user:
@@ -939,7 +942,7 @@ def add_item():
                 if sub_recipe.id == target_recipe.id:
                     flash("A recipe cannot be an ingredient of itself.", "danger")
                     return redirect(
-                        url_for("search.search", target=target, recipe_id=recipe_id)
+                        url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
                     )
 
                 # If we reach here, it's a valid sub-recipe and not self-nesting
@@ -978,14 +981,14 @@ def add_item():
             if not my_meal_id:
                 flash("Meal ID is required to add to a meal.", "danger")
                 return redirect(
-                    url_for("search.search", target=target, recipe_id=recipe_id)
+                    url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
                 )
 
             target_my_meal = db.session.get(MyMeal, my_meal_id)
             if not target_my_meal or target_my_meal.user_id != current_user.id:
                 flash("My Meal not found or not authorized.", "danger")
                 return redirect(
-                    url_for("search.search", target=target, recipe_id=recipe_id)
+                    url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
                 )
 
             if food_type == "usda":
@@ -1005,7 +1008,7 @@ def add_item():
                         "success",
                     )
                 else:
-                    flash("USDA Food not found.", "danger")
+                    flash(USDA_FOOD_NOT_FOUND, "danger")
             elif food_type == "my_food":
                 food = db.session.get(MyFood, food_id)
                 if food:
@@ -1029,7 +1032,7 @@ def add_item():
                         "success",
                     )
                 else:
-                    flash("My Food not found.", "danger")
+                    flash(MY_FOOD_NOT_FOUND, "danger")
             elif food_type == "recipe":
                 recipe = db.session.get(Recipe, food_id)
                 if recipe:
@@ -1198,19 +1201,21 @@ def add_item():
                     "danger",
                 )
                 return redirect(
-                    url_for("search.search", target=target, recipe_id=recipe_id)
+                    url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
                 )
 
         else:
             flash("Invalid target for adding item.", "danger")
             return redirect(
-                url_for("search.search", target=target, recipe_id=recipe_id)
+                url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
             )
 
     except Exception as e:
         db.session.rollback()
         flash(f"An error occurred: {e}", "danger")
-        return redirect(url_for("search.search", target=target, recipe_id=recipe_id))
+        return redirect(
+            url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
+        )
 
 
 @search_bp.route("/api/get-portions/<food_type>/<int:food_id>", methods=["GET"])

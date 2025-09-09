@@ -1,4 +1,5 @@
 from models import db, User, MyFood, Food, FoodNutrient, Nutrient, UnifiedPortion
+import pytest
 
 
 def test_create_my_food(auth_client):
@@ -32,10 +33,10 @@ def test_create_my_food(auth_client):
         ).first()
         assert my_food is not None
         # Verify that the values have been correctly scaled to 100g (doubled in this case)
-        assert my_food.calories_per_100g == 450.0
-        assert my_food.protein_per_100g == 10.0
-        assert my_food.carbs_per_100g == 60.0
-        assert my_food.fat_per_100g == 20.0
+        assert my_food.calories_per_100g == pytest.approx(450.0)
+        assert my_food.protein_per_100g == pytest.approx(10.0)
+        assert my_food.carbs_per_100g == pytest.approx(60.0)
+        assert my_food.fat_per_100g == pytest.approx(20.0)
 
         # Verify the user-defined portion was created
         user_portion = UnifiedPortion.query.filter_by(
@@ -104,10 +105,10 @@ def test_copy_usda_food_from_search(auth_client):
             user_id=user.id, description="USDA Test Apple"
         ).first()
         assert my_food is not None
-        assert my_food.calories_per_100g == 52.0
-        assert my_food.protein_per_100g == 0.3
-        assert my_food.carbs_per_100g == 13.8
-        assert my_food.fat_per_100g == 0.2
+        assert my_food.calories_per_100g == pytest.approx(52.0)
+        assert my_food.protein_per_100g == pytest.approx(0.3)
+        assert my_food.carbs_per_100g == pytest.approx(13.8)
+        assert my_food.fat_per_100g == pytest.approx(0.2)
 
 
 def test_copy_usda_food_direct(auth_client):
@@ -139,7 +140,7 @@ def test_copy_usda_food_direct(auth_client):
     with auth_client.application.app_context():
         my_food = MyFood.query.filter_by(description="USDA Direct Copy").first()
         assert my_food is not None
-        assert my_food.calories_per_100g == 150.0
+        assert my_food.calories_per_100g == pytest.approx(150.0)
         assert len(my_food.portions) == 1
         assert my_food.portions[0].portion_description == "slice"
 
@@ -289,7 +290,7 @@ def test_edit_my_food(auth_client):
         updated_food = db.session.get(MyFood, food_id)
         assert updated_food is not None
         assert updated_food.description == "Updated Food"
-        assert updated_food.calories_per_100g == 150.0
+        assert updated_food.calories_per_100g == pytest.approx(150.0)
 
 
 def test_edit_my_food_with_portion_scaling(auth_client):
@@ -345,9 +346,9 @@ def test_edit_my_food_with_portion_scaling(auth_client):
         updated_food = db.session.get(MyFood, food_id)
         assert updated_food is not None
         # The 250 kcal for 50g should be 500 kcal per 100g
-        assert updated_food.calories_per_100g == 500.0
+        assert updated_food.calories_per_100g == pytest.approx(500.0)
         # The 12.5g protein for 50g should be 25g protein per 100g
-        assert updated_food.protein_per_100g == 25.0
+        assert updated_food.protein_per_100g == pytest.approx(25.0)
 
 
 def test_delete_my_food(auth_client):

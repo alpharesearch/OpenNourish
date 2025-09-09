@@ -852,7 +852,7 @@ def get_nutrients_for_display(my_food, portion):
     If the portion's gram_weight is 1.0, it returns values per 100g, as this is considered the base 'per gram' unit.
     """
     # If portion is None, or has 0 or 1.0 gram_weight, we want to show the base 100g values.
-    if not portion or not portion.gram_weight or portion.gram_weight == 1.0:
+    if not portion or not portion.gram_weight or abs(portion.gram_weight - 1.0) < 1e-9:
         scaling_factor = 1.0
     # Otherwise, scale from per-100g to the portion's weight.
     else:
@@ -891,7 +891,7 @@ def convert_display_nutrients_to_100g(display_nutrients, portion):
     If the portion's gram_weight is 1.0, it assumes the display values are already per 100g.
     """
     # If portion is None, or has 0 or 1.0 gram_weight, assume display values are per 100g.
-    if not portion or not portion.gram_weight or portion.gram_weight == 1.0:
+    if not portion or not portion.gram_weight or abs(portion.gram_weight - 1.0) < 1e-9:
         scaling_factor = 1.0
     # Otherwise, scale from the portion's weight up to 100g.
     else:
