@@ -6,6 +6,7 @@ from flask import (
     flash,
     Blueprint,
     current_app,
+    Response,
 )
 from datetime import datetime, timezone
 from flask_login import login_required, current_user
@@ -900,3 +901,145 @@ def delete_category(category_id):
     )
 
     return redirect(url_for(MANAGE_CATEGORIES_ROUTE))
+
+
+def _export_my_foods_to_yaml():
+    """
+    Export user's custom foods to YAML format, ensuring data integrity
+    by scaling nutritional values to the exported serving size.
+    """
+    my_foods = (
+        MyFood.query.options(selectinload(MyFood.portions))
+        .filter_by(user_id=current_user.id)
+        .all()
+    )
+
+    export_data = []
+
+    for food in my_foods:
+        # Get the first portion (typically the default one)
+        first_portion = None
+        if food.portions:
+            sorted_portions = sorted(
+                food.portions,
+                key=lambda p: p.seq_num if p.seq_num is not None else float("inf"),
+            )
+            first_portion = sorted_portions[0] if sorted_portions else None
+
+        # Determine if the first portion is valid for scaling.
+        # It must exist and have a gram weight greater than 0.
+        use_first_portion = (
+            first_portion
+            and first_portion.gram_weight
+            and first_portion.gram_weight > 0
+        )
+
+        if use_first_portion:
+            # If the portion is valid, use its details for the export.
+            serving_info = {
+                "amount": first_portion.amount or 1,
+                "unit": first_portion.measure_unit_description or "",
+                "gram_weight": first_portion.gram_weight,
+            }
+            # Scale nutrition facts to match the portion's gram weight for data consistency.
+            scaling_factor = first_portion.gram_weight / 100.0
+            nutrition_facts = {
+                "calories": round((food.calories_per_100g or 0) * scaling_factor),
+                "protein_grams": round(
+                    (food.protein_per_100g or 0) * scaling_factor, 2
+                ),
+                "carbohydrates_grams": round(
+                    (food.carbs_per_100g or 0) * scaling_factor, 2
+                ),
+                "fat_grams": round((food.fat_per_100g or 0) * scaling_factor, 2),
+                "saturated_fat_grams": round(
+                    (food.saturated_fat_per_100g or 0) * scaling_factor, 2
+                ),
+                "trans_fat_grams": round(
+                    (food.trans_fat_per_100g or 0) * scaling_factor, 2
+                ),
+                "cholesterol_milligrams": round(
+                    (food.cholesterol_mg_per_100g or 0) * scaling_factor, 2
+                ),
+                "sodium_milligrams": round(
+                    (food.sodium_mg_per_100g or 0) * scaling_factor, 2
+                ),
+                "fiber_grams": round((food.fiber_per_100g or 0) * scaling_factor, 2),
+                "total_sugars_grams": round(
+                    (food.sugars_per_100g or 0) * scaling_factor, 2
+                ),
+                "added_sugars_grams": round(
+                    (food.added_sugars_per_100g or 0) * scaling_factor, 2
+                ),
+                "vitamin_d_micrograms": round(
+                    (food.vitamin_d_mcg_per_100g or 0) * scaling_factor, 2
+                ),
+                "calcium_milligrams": round(
+                    (food.calcium_mg_per_100g or 0) * scaling_factor, 2
+                ),
+                "iron_milligrams": round(
+                    (food.iron_mg_per_100g or 0) * scaling_factor, 2
+                ),
+                "potassium_milligrams": round(
+                    (food.potassium_mg_per_100g or 0) * scaling_factor, 2
+                ),
+            }
+        else:
+            # Fallback to a 100g serving if the first portion is invalid or missing.
+            # This prevents data corruption on re-import.
+            serving_info = {"amount": 100, "unit": "g", "gram_weight": 100.0}
+            # Use the raw per-100g values, ensuring they are rounded for consistency.
+            nutrition_facts = {
+                "calories": round(food.calories_per_100g or 0),
+                "protein_grams": round(food.protein_per_100g or 0, 2),
+                "carbohydrates_grams": round(food.carbs_per_100g or 0, 2),
+                "fat_grams": round(food.fat_per_100g or 0, 2),
+                "saturated_fat_grams": round(food.saturated_fat_per_100g or 0, 2),
+                "trans_fat_grams": round(food.trans_fat_per_100g or 0, 2),
+                "cholesterol_milligrams": round(food.cholesterol_mg_per_100g or 0, 2),
+                "sodium_milligrams": round(food.sodium_mg_per_100g or 0, 2),
+                "fiber_grams": round(food.fiber_per_100g or 0, 2),
+                "total_sugars_grams": round(food.sugars_per_100g or 0, 2),
+                "added_sugars_grams": round(food.added_sugars_per_100g or 0, 2),
+                "vitamin_d_micrograms": round(food.vitamin_d_mcg_per_100g or 0, 2),
+                "calcium_milligrams": round(food.calcium_mg_per_100g or 0, 2),
+                "iron_milligrams": round(food.iron_mg_per_100g or 0, 2),
+                "potassium_milligrams": round(food.potassium_mg_per_100g or 0, 2),
+            }
+
+        # Get category name
+        category = ""
+        if food.food_category:
+            category = food.food_category.description
+
+        food_item = {
+            "description": food.description,
+            "ingredients": food.ingredients or "",
+            "category": category,
+            "serving": serving_info,
+            "nutrition_facts": nutrition_facts,
+        }
+
+        export_data.append(food_item)
+
+    # Generate YAML content
+    yaml_content = yaml.dump(
+        export_data, default_flow_style=False, sort_keys=False, indent=2
+    )
+
+    # Create response with proper headers for download
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"my_foods_export_{timestamp}.yaml"
+
+    return Response(
+        yaml_content,
+        mimetype="application/x-yaml",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@my_foods_bp.route("/export", methods=["GET"])
+@login_required
+def export_my_foods():
+    """Export user's custom foods to YAML file."""
+    return _export_my_foods_to_yaml()
