@@ -102,11 +102,12 @@ def _process_yaml_import(yaml_stream):
 
             # Determine gram_weight for calculation from the correct source
             gram_weight = None
-            if "portions" in item and item["portions"]:
-                # New format: use gram_weight from the first portion
+            is_new_format = "portions" in item and item["portions"]
+            is_legacy_format = "serving" in item
+
+            if is_new_format:
                 gram_weight = item["portions"][0].get("gram_weight")
-            elif "serving" in item:
-                # Legacy format: use gram_weight from the serving block
+            elif is_legacy_format:
                 gram_weight = item["serving"].get("gram_weight")
 
             nutrition_facts = item.get("nutrition_facts", {})
@@ -121,7 +122,15 @@ def _process_yaml_import(yaml_stream):
                 protein = nutrition_facts.get("protein_grams", 0) or 0
                 carbs = nutrition_facts.get("carbohydrates_grams", 0) or 0
                 fat = nutrition_facts.get("fat_grams", 0) or 0
-                gram_weight = protein + carbs + fat
+                calculated_gram_weight = protein + carbs + fat
+
+                # BUG FIX: Update the original item dict with the calculated weight
+                if calculated_gram_weight > 0:
+                    gram_weight = calculated_gram_weight
+                    if is_new_format:
+                        item["portions"][0]["gram_weight"] = gram_weight
+                    elif is_legacy_format:
+                        item["serving"]["gram_weight"] = gram_weight
 
             if calories > 0 and gram_weight <= 0:
                 skipped_items.append(
@@ -168,7 +177,7 @@ def _process_yaml_import(yaml_stream):
             db.session.flush()
 
             # Create Portions based on format
-            if "portions" in item and item["portions"]:
+            if is_new_format:
                 # New format: create all portions from the list
                 for i, p_data in enumerate(item["portions"]):
                     portion = UnifiedPortion(
@@ -183,14 +192,14 @@ def _process_yaml_import(yaml_stream):
                         seq_num=i + 1,
                     )
                     db.session.add(portion)
-            elif "serving" in item:
+            elif is_legacy_format:
                 # Legacy format: create from serving block + 1g portion
                 serving = item.get("serving", {})
                 user_portion = UnifiedPortion(
                     my_food_id=my_food.id,
                     amount=serving.get("amount", 1),
                     measure_unit_description=serving.get("unit", ""),
-                    gram_weight=gram_weight,  # Use the already calculated gram_weight
+                    gram_weight=gram_weight,  # Use the corrected gram_weight
                     seq_num=1,
                 )
                 db.session.add(user_portion)

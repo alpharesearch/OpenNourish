@@ -377,3 +377,34 @@ def test_import_mixed_formats_in_one_file(auth_client):
         cereal_portions = UnifiedPortion.query.filter_by(my_food_id=cereal.id).all()
         assert len(cereal_portions) == 1
         assert cereal_portions[0].gram_weight == 40
+
+
+def test_import_updates_gram_weight_from_macros(auth_client):
+    """Tests that the calculated gram_weight from macros is saved correctly."""
+    yaml_content = """
+- description: "Macro Food"
+  portions:
+    - amount: 1
+      measure_unit_description: "serving"
+      gram_weight: 0 # Intentionally 0 to trigger calculation
+  nutrition_facts:
+    calories: 500
+    protein_grams: 25
+    carbohydrates_grams: 50
+    fat_grams: 25
+"""
+    data = {"file": (io.BytesIO(yaml_content.encode("utf-8")), "import.yaml")}
+    auth_client.post(url_for("my_foods.import_foods"), data=data, follow_redirects=True)
+
+    with auth_client.application.app_context():
+        food = MyFood.query.filter_by(description="Macro Food").first()
+        assert food is not None
+        calculated_weight = 25 + 50 + 25
+
+        # Check that the per-100g values are correct based on calculated weight
+        assert food.calories_per_100g == pytest.approx((500 / calculated_weight) * 100)
+
+        # Check that the portion's gram_weight was updated
+        portion = UnifiedPortion.query.filter_by(my_food_id=food.id).first()
+        assert portion is not None
+        assert portion.gram_weight == calculated_weight
