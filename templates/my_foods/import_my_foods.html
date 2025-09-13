@@ -88,39 +88,29 @@ You are a data extraction assistant. Your task is to extract nutrition informati
 
 **YAML Template Example:**
 ```yaml
--
-  description: "Example Food"
-  upc: "123456789012"
-  fdc_id: null
-  ingredients: "Ingredient A, Ingredient B"
-  category: "Snacks"
-  portions:
-    - amount: 1
-      measure_unit_description: "bar"
-      gram_weight: 45
-      portion_description: "One serving"
-      modifier: ""
-    - amount: 1
-      measure_unit_description: "g"
-      gram_weight: 1
-      portion_description: ""
-      modifier: ""
+- description: Waffle House Classic Waffle
+  ingredients: Egg, Milk, Soy, Tree Nuts, Wheat
+  category: Restaurant Foods
+  serving:
+    amount: 1
+    unit: waffle
+    gram_weight: 0
   nutrition_facts:
-    calories: 203
-    protein_grams: 4.5
-    carbohydrates_grams: 22.5
-    fat_grams: 9.9
-    saturated_fat_grams: 4.1
+    calories: 410
+    protein_grams: 8
+    carbohydrates_grams: 55
+    fat_grams: 18
+    saturated_fat_grams: 10
     trans_fat_grams: 0
-    cholesterol_milligrams: 2.3
-    sodium_milligrams: 81
-    fiber_grams: 1.8
-    total_sugars_grams: 11.3
-    added_sugars_grams: 9
+    cholesterol_milligrams: 50
+    sodium_milligrams: 870
+    fiber_grams: 2
+    total_sugars_grams: 15
+    added_sugars_grams: 0
     vitamin_d_micrograms: 0
-    calcium_milligrams: 9
-    iron_milligrams: 0.9
-    potassium_milligrams: 112.5
+    calcium_milligrams: 0
+    iron_milligrams: 0
+    potassium_milligrams: 0
 ```
 Now, please process the following text and generate the YAML list, following all of the rules above:</pre>
                 </div>
