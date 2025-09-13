@@ -3,55 +3,65 @@
 # Instructions:
 # 1. You can add multiple food items in this file. Copy and paste the entire block
 #    (starting with the hyphen '-') for each new food.
-# 2. Fill in the details for your food item below.
-# 3. For nutrition_facts, enter the values exactly as they appear on the label for the serving size you define.
+# 2. The `nutrition_facts` block MUST contain the nutritional values for the *first* serving size listed in the `portions` block.
+# 3. The `portions` list can contain one or more serving sizes for the food.
 # -------------------------------------------------------------------------------------------------
 
 -
   # [REQUIRED] The name of the food item.
-  description: ""
+  description: "Example Food"
+
+  # [OPTIONAL] The UPC barcode of the food item.
+  upc: "123456789012"
+
+  # [OPTIONAL] The FDC ID from the USDA database, if this is a copy of a USDA food.
+  fdc_id: null
 
   # [OPTIONAL] A brief description of the ingredients.
-  ingredients: ""
+  ingredients: "Ingredient A, Ingredient B"
 
   # [OPTIONAL] The category this food belongs to.
   # The system will try to match this to an existing category (yours or a standard one).
   # If no match is found, a new private category will be created for you.
-  category: ""
+  category: "Snacks"
 
-  # [REQUIRED] Define the serving size that the nutrition facts correspond to.
-  serving:
-    # The numeric amount of the serving (e.g., 1, 2, 0.5).
-    amount: 1
-    # The unit of the serving (e.g., "slice", "cup", "bar").
-    unit: ""
-    # The total weight of this serving in grams. THIS IS A CRITICAL FIELD.
-    gram_weight: 0
+  # [REQUIRED] A list of all available serving sizes for the food.
+  portions:
+    - amount: 1
+      measure_unit_description: "bar"
+      gram_weight: 45
+      portion_description: "One serving" # Optional description for the portion
+      modifier: "" # Optional modifier, e.g., "chopped", "melted"
+    - amount: 1
+      measure_unit_description: "g"
+      gram_weight: 1
+      portion_description: ""
+      modifier: ""
 
-  # [REQUIRED] Nutrition facts for the single serving defined above.
+  # [REQUIRED] Nutrition facts for the *first* portion listed above (e.g., for the 45g bar).
   nutrition_facts:
-    calories: 0
+    calories: 203
     
     # --- Macronutrients ---
-    protein_grams: 0
-    carbohydrates_grams: 0
-    fat_grams: 0
+    protein_grams: 4.5
+    carbohydrates_grams: 22.5
+    fat_grams: 9.9
     
     # --- Fats ---
-    saturated_fat_grams: 0
+    saturated_fat_grams: 4.1
     trans_fat_grams: 0
     
     # --- Other ---
-    cholesterol_milligrams: 0
-    sodium_milligrams: 0
+    cholesterol_milligrams: 2.3
+    sodium_milligrams: 81
     
     # --- Carbohydrates ---
-    fiber_grams: 0
-    total_sugars_grams: 0
-    added_sugars_grams: 0
+    fiber_grams: 1.8
+    total_sugars_grams: 11.3
+    added_sugars_grams: 9
     
     # --- Vitamins & Minerals ---
     vitamin_d_micrograms: 0
-    calcium_milligrams: 0
-    iron_milligrams: 0
-    potassium_milligrams: 0
+    calcium_milligrams: 9
+    iron_milligrams: 0.9
+    potassium_milligrams: 112.5

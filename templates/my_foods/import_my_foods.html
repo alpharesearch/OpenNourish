@@ -71,8 +71,8 @@ You are a data extraction assistant. Your task is to extract nutrition informati
 
 **Instructions:**
 1.  Adhere strictly to the YAML structure provided in the template below for each food item.
-2.  Ensure that all numerical fields (like `gram_weight` and all fields under `nutrition_per_100g`) are numbers only.
-3.  The `nutrition_per_100g` block **must** contain the nutritional values for a 100-gram serving of the food.
+2.  The `nutrition_facts` block must contain the nutritional values for the **first** serving size listed in the `portions` block.
+3.  Ensure that all numerical fields (like `gram_weight` and all fields under `nutrition_facts`) are numbers only.
 4.  The `portions` field must be a list of all available serving sizes for the food.
 5.  Optional fields like `upc`, `fdc_id`, `ingredients`, and `category` can be included if available.
 
@@ -105,22 +105,22 @@ You are a data extraction assistant. Your task is to extract nutrition informati
       gram_weight: 1
       portion_description: ""
       modifier: ""
-  nutrition_per_100g:
-    calories: 450
-    protein_grams: 10
-    carbohydrates_grams: 50
-    fat_grams: 22
-    saturated_fat_grams: 9
+  nutrition_facts:
+    calories: 203
+    protein_grams: 4.5
+    carbohydrates_grams: 22.5
+    fat_grams: 9.9
+    saturated_fat_grams: 4.1
     trans_fat_grams: 0
-    cholesterol_milligrams: 5
-    sodium_milligrams: 180
-    fiber_grams: 4
-    total_sugars_grams: 25
-    added_sugars_grams: 20
+    cholesterol_milligrams: 2.3
+    sodium_milligrams: 81
+    fiber_grams: 1.8
+    total_sugars_grams: 11.3
+    added_sugars_grams: 9
     vitamin_d_micrograms: 0
-    calcium_milligrams: 20
-    iron_milligrams: 2
-    potassium_milligrams: 250
+    calcium_milligrams: 9
+    iron_milligrams: 0.9
+    potassium_milligrams: 112.5
 ```
 Now, please process the following text and generate the YAML list, following all of the rules above:</pre>
                 </div>
