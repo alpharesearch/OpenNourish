@@ -71,8 +71,10 @@ You are a data extraction assistant. Your task is to extract nutrition informati
 
 **Instructions:**
 1.  Adhere strictly to the YAML structure provided in the template below for each food item.
-2.  Ensure that `gram_weight` and all fields under `nutrition_facts` are numbers only.
-3.  If a specific nutritional value is not mentioned, use `0`.
+2.  Ensure that all numerical fields (like `gram_weight` and all fields under `nutrition_per_100g`) are numbers only.
+3.  The `nutrition_per_100g` block **must** contain the nutritional values for a 100-gram serving of the food.
+4.  The `portions` field must be a list of all available serving sizes for the food.
+5.  Optional fields like `upc`, `fdc_id`, `ingredients`, and `category` can be included if available.
 
 **--- CATEGORY RULES (VERY IMPORTANT) ---**
 1.  **PRIORITIZE EXISTING CATEGORIES:** First, review the list of "Your Available Categories" provided below. If a suitable category from this list fits the food item, use its exact name.
@@ -84,32 +86,41 @@ You are a data extraction assistant. Your task is to extract nutrition informati
 **Your Available Categories:**
 {{ categories|join(', ') }}
 
-**YAML Template for a single food item:**
+**YAML Template Example:**
 ```yaml
 -
-  description: ""
-  ingredients: ""
-  category: ""
-  serving:
-    amount: 1
-    unit: ""
-    gram_weight: 0
-  nutrition_facts:
-    calories: 0
-    protein_grams: 0
-    carbohydrates_grams: 0
-    fat_grams: 0
-    saturated_fat_grams: 0
+  description: "Example Food"
+  upc: "123456789012"
+  fdc_id: null
+  ingredients: "Ingredient A, Ingredient B"
+  category: "Snacks"
+  portions:
+    - amount: 1
+      measure_unit_description: "bar"
+      gram_weight: 45
+      portion_description: "One serving"
+      modifier: ""
+    - amount: 1
+      measure_unit_description: "g"
+      gram_weight: 1
+      portion_description: ""
+      modifier: ""
+  nutrition_per_100g:
+    calories: 450
+    protein_grams: 10
+    carbohydrates_grams: 50
+    fat_grams: 22
+    saturated_fat_grams: 9
     trans_fat_grams: 0
-    cholesterol_milligrams: 0
-    sodium_milligrams: 0
-    fiber_grams: 0
-    total_sugars_grams: 0
-    added_sugars_grams: 0
+    cholesterol_milligrams: 5
+    sodium_milligrams: 180
+    fiber_grams: 4
+    total_sugars_grams: 25
+    added_sugars_grams: 20
     vitamin_d_micrograms: 0
-    calcium_milligrams: 0
-    iron_milligrams: 0
-    potassium_milligrams: 0
+    calcium_milligrams: 20
+    iron_milligrams: 2
+    potassium_milligrams: 250
 ```
 Now, please process the following text and generate the YAML list, following all of the rules above:</pre>
                 </div>

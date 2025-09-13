@@ -98,89 +98,154 @@ def _process_yaml_import(yaml_stream):
                 skipped_items.append((description, "Already exists"))
                 continue
 
-            serving = item.get("serving", {})
-            gram_weight = serving.get("gram_weight")
-            nutrition_facts = item.get("nutrition_facts", {})
-            calories = nutrition_facts.get("calories")
-
-            if gram_weight is None or gram_weight < 0 or calories is None:
-                skipped_items.append((description, "Invalid data (serving/calories)"))
-                continue
-
-            # If gram_weight is 0 or not provided, calculate it from macros
-            if not gram_weight or gram_weight <= 0:
-                protein = nutrition_facts.get("protein_grams", 0) or 0
-                carbs = nutrition_facts.get("carbohydrates_grams", 0) or 0
-                fat = nutrition_facts.get("fat_grams", 0) or 0
-                gram_weight = protein + carbs + fat
-
-            if calories > 0 and gram_weight <= 0:
-                skipped_items.append(
-                    (description, "Foods with calories must have a gram weight > 0")
-                )
-                continue
-
             processed_in_file.add(description.lower())
 
             category_id = _get_or_create_food_category(
                 item.get("category"), current_user.id, description
             )
 
-            if gram_weight > 0:
-                factor = 100.0 / gram_weight
-            else:
-                factor = 1.0
-
             my_food = MyFood(
                 user_id=current_user.id,
                 description=description,
                 ingredients=item.get("ingredients", ""),
                 food_category_id=category_id,
-                calories_per_100g=nutrition_facts.get("calories", 0) * factor,
-                protein_per_100g=nutrition_facts.get("protein_grams", 0) * factor,
-                carbs_per_100g=nutrition_facts.get("carbohydrates_grams", 0) * factor,
-                fat_per_100g=nutrition_facts.get("fat_grams", 0) * factor,
-                saturated_fat_per_100g=nutrition_facts.get("saturated_fat_grams", 0)
-                * factor,
-                trans_fat_per_100g=nutrition_facts.get("trans_fat_grams", 0) * factor,
-                cholesterol_mg_per_100g=nutrition_facts.get("cholesterol_milligrams", 0)
-                * factor,
-                sodium_mg_per_100g=nutrition_facts.get("sodium_milligrams", 0) * factor,
-                fiber_per_100g=nutrition_facts.get("fiber_grams", 0) * factor,
-                sugars_per_100g=nutrition_facts.get("total_sugars_grams", 0) * factor,
-                added_sugars_per_100g=nutrition_facts.get("added_sugars_grams", 0)
-                * factor,
-                vitamin_d_mcg_per_100g=nutrition_facts.get("vitamin_d_micrograms", 0)
-                * factor,
-                calcium_mg_per_100g=nutrition_facts.get("calcium_milligrams", 0)
-                * factor,
-                iron_mg_per_100g=nutrition_facts.get("iron_milligrams", 0) * factor,
-                potassium_mg_per_100g=nutrition_facts.get("potassium_milligrams", 0)
-                * factor,
+                upc=item.get("upc") or None,
+                fdc_id=item.get("fdc_id") or None,
             )
-            db.session.add(my_food)
-            db.session.flush()
 
-            # Create user-defined portion
-            user_portion = UnifiedPortion(
-                my_food_id=my_food.id,
-                amount=serving.get("amount", 1),
-                measure_unit_description=serving.get("unit", ""),
-                gram_weight=gram_weight,
-                seq_num=1,
-            )
-            db.session.add(user_portion)
-
-            # Create 1-gram portion only if gram_weight is specified
-            if gram_weight > 0:
-                gram_portion = UnifiedPortion(
-                    my_food_id=my_food.id,
-                    amount=1.0,
-                    measure_unit_description="g",
-                    gram_weight=1.0,
-                    seq_num=2,
+            # Check for new format vs old format
+            if "portions" in item and "nutrition_per_100g" in item:
+                # New format: direct assignment of per-100g nutrients
+                nutrition = item.get("nutrition_per_100g", {})
+                my_food.calories_per_100g = nutrition.get("calories")
+                my_food.protein_per_100g = nutrition.get("protein_grams")
+                my_food.carbs_per_100g = nutrition.get("carbohydrates_grams")
+                my_food.fat_per_100g = nutrition.get("fat_grams")
+                my_food.saturated_fat_per_100g = nutrition.get("saturated_fat_grams")
+                my_food.trans_fat_per_100g = nutrition.get("trans_fat_grams")
+                my_food.cholesterol_mg_per_100g = nutrition.get(
+                    "cholesterol_milligrams"
                 )
-                db.session.add(gram_portion)
+                my_food.sodium_mg_per_100g = nutrition.get("sodium_milligrams")
+                my_food.fiber_per_100g = nutrition.get("fiber_grams")
+                my_food.sugars_per_100g = nutrition.get("total_sugars_grams")
+                my_food.added_sugars_per_100g = nutrition.get("added_sugars_grams")
+                my_food.vitamin_d_mcg_per_100g = nutrition.get("vitamin_d_micrograms")
+                my_food.calcium_mg_per_100g = nutrition.get("calcium_milligrams")
+                my_food.iron_mg_per_100g = nutrition.get("iron_milligrams")
+                my_food.potassium_mg_per_100g = nutrition.get("potassium_milligrams")
+
+                db.session.add(my_food)
+                db.session.flush()
+
+                # Create portions from the list
+                portions_data = item.get("portions", [])
+                for i, p_data in enumerate(portions_data):
+                    portion = UnifiedPortion(
+                        my_food_id=my_food.id,
+                        amount=p_data.get("amount", 1),
+                        measure_unit_description=p_data.get(
+                            "measure_unit_description", ""
+                        ),
+                        gram_weight=p_data.get("gram_weight", 0),
+                        portion_description=p_data.get("portion_description", ""),
+                        modifier=p_data.get("modifier", ""),
+                        seq_num=i + 1,
+                    )
+                    db.session.add(portion)
+            else:
+                # Old format: calculate from serving size
+                serving = item.get("serving", {})
+                gram_weight = serving.get("gram_weight")
+                nutrition_facts = item.get("nutrition_facts", {})
+                calories = nutrition_facts.get("calories")
+
+                if gram_weight is None or gram_weight < 0 or calories is None:
+                    skipped_items.append(
+                        (description, "Invalid data (serving/calories)")
+                    )
+                    continue
+
+                if not gram_weight or gram_weight <= 0:
+                    protein = nutrition_facts.get("protein_grams", 0) or 0
+                    carbs = nutrition_facts.get("carbohydrates_grams", 0) or 0
+                    fat = nutrition_facts.get("fat_grams", 0) or 0
+                    gram_weight = protein + carbs + fat
+
+                if calories > 0 and gram_weight <= 0:
+                    skipped_items.append(
+                        (
+                            description,
+                            "Foods with calories must have a gram weight > 0",
+                        )
+                    )
+                    continue
+
+                factor = 100.0 / gram_weight if gram_weight > 0 else 1.0
+
+                # Assign calculated nutrients
+                my_food.calories_per_100g = nutrition_facts.get("calories", 0) * factor
+                my_food.protein_per_100g = (
+                    nutrition_facts.get("protein_grams", 0) * factor
+                )
+                my_food.carbs_per_100g = (
+                    nutrition_facts.get("carbohydrates_grams", 0) * factor
+                )
+                my_food.fat_per_100g = nutrition_facts.get("fat_grams", 0) * factor
+                my_food.saturated_fat_per_100g = (
+                    nutrition_facts.get("saturated_fat_grams", 0) * factor
+                )
+                my_food.trans_fat_per_100g = (
+                    nutrition_facts.get("trans_fat_grams", 0) * factor
+                )
+                my_food.cholesterol_mg_per_100g = (
+                    nutrition_facts.get("cholesterol_milligrams", 0) * factor
+                )
+                my_food.sodium_mg_per_100g = (
+                    nutrition_facts.get("sodium_milligrams", 0) * factor
+                )
+                my_food.fiber_per_100g = nutrition_facts.get("fiber_grams", 0) * factor
+                my_food.sugars_per_100g = (
+                    nutrition_facts.get("total_sugars_grams", 0) * factor
+                )
+                my_food.added_sugars_per_100g = (
+                    nutrition_facts.get("added_sugars_grams", 0) * factor
+                )
+                my_food.vitamin_d_mcg_per_100g = (
+                    nutrition_facts.get("vitamin_d_micrograms", 0) * factor
+                )
+                my_food.calcium_mg_per_100g = (
+                    nutrition_facts.get("calcium_milligrams", 0) * factor
+                )
+                my_food.iron_mg_per_100g = (
+                    nutrition_facts.get("iron_milligrams", 0) * factor
+                )
+                my_food.potassium_mg_per_100g = (
+                    nutrition_facts.get("potassium_milligrams", 0) * factor
+                )
+
+                db.session.add(my_food)
+                db.session.flush()
+
+                # Create portions from old 'serving' block
+                user_portion = UnifiedPortion(
+                    my_food_id=my_food.id,
+                    amount=serving.get("amount", 1),
+                    measure_unit_description=serving.get("unit", ""),
+                    gram_weight=gram_weight,
+                    seq_num=1,
+                )
+                db.session.add(user_portion)
+
+                if gram_weight > 0:
+                    gram_portion = UnifiedPortion(
+                        my_food_id=my_food.id,
+                        amount=1.0,
+                        measure_unit_description="g",
+                        gram_weight=1.0,
+                        seq_num=2,
+                    )
+                    db.session.add(gram_portion)
 
             success_count += 1
 
@@ -904,10 +969,7 @@ def delete_category(category_id):
 
 
 def _export_my_foods_to_yaml():
-    """
-    Export user's custom foods to YAML format, ensuring data integrity
-    by scaling nutritional values to the exported serving size.
-    """
+    """Export user's custom foods to YAML format, including all portions and data."""
     my_foods = (
         MyFood.query.options(selectinload(MyFood.portions))
         .filter_by(user_id=current_user.id)
@@ -917,107 +979,82 @@ def _export_my_foods_to_yaml():
     export_data = []
 
     for food in my_foods:
-        # Get the first portion (typically the default one)
-        first_portion = None
-        if food.portions:
-            sorted_portions = sorted(
-                food.portions,
-                key=lambda p: p.seq_num if p.seq_num is not None else float("inf"),
-            )
-            first_portion = sorted_portions[0] if sorted_portions else None
-
-        # Determine if the first portion is valid for scaling.
-        # It must exist and have a gram weight greater than 0.
-        use_first_portion = (
-            first_portion
-            and first_portion.gram_weight
-            and first_portion.gram_weight > 0
+        # Export all portions, sorted by sequence number
+        portions_data = []
+        sorted_portions = sorted(
+            food.portions,
+            key=lambda p: p.seq_num if p.seq_num is not None else float("inf"),
         )
+        for p in sorted_portions:
+            portions_data.append(
+                {
+                    "amount": p.amount,
+                    "measure_unit_description": p.measure_unit_description or "",
+                    "gram_weight": p.gram_weight,
+                    "portion_description": p.portion_description or "",
+                    "modifier": p.modifier or "",
+                }
+            )
 
-        if use_first_portion:
-            # If the portion is valid, use its details for the export.
-            serving_info = {
-                "amount": first_portion.amount or 1,
-                "unit": first_portion.measure_unit_description or "",
-                "gram_weight": first_portion.gram_weight,
-            }
-            # Scale nutrition facts to match the portion's gram weight for data consistency.
-            scaling_factor = first_portion.gram_weight / 100.0
-            nutrition_facts = {
-                "calories": round((food.calories_per_100g or 0) * scaling_factor),
-                "protein_grams": round(
-                    (food.protein_per_100g or 0) * scaling_factor, 2
-                ),
-                "carbohydrates_grams": round(
-                    (food.carbs_per_100g or 0) * scaling_factor, 2
-                ),
-                "fat_grams": round((food.fat_per_100g or 0) * scaling_factor, 2),
-                "saturated_fat_grams": round(
-                    (food.saturated_fat_per_100g or 0) * scaling_factor, 2
-                ),
-                "trans_fat_grams": round(
-                    (food.trans_fat_per_100g or 0) * scaling_factor, 2
-                ),
-                "cholesterol_milligrams": round(
-                    (food.cholesterol_mg_per_100g or 0) * scaling_factor, 2
-                ),
-                "sodium_milligrams": round(
-                    (food.sodium_mg_per_100g or 0) * scaling_factor, 2
-                ),
-                "fiber_grams": round((food.fiber_per_100g or 0) * scaling_factor, 2),
-                "total_sugars_grams": round(
-                    (food.sugars_per_100g or 0) * scaling_factor, 2
-                ),
-                "added_sugars_grams": round(
-                    (food.added_sugars_per_100g or 0) * scaling_factor, 2
-                ),
-                "vitamin_d_micrograms": round(
-                    (food.vitamin_d_mcg_per_100g or 0) * scaling_factor, 2
-                ),
-                "calcium_milligrams": round(
-                    (food.calcium_mg_per_100g or 0) * scaling_factor, 2
-                ),
-                "iron_milligrams": round(
-                    (food.iron_mg_per_100g or 0) * scaling_factor, 2
-                ),
-                "potassium_milligrams": round(
-                    (food.potassium_mg_per_100g or 0) * scaling_factor, 2
-                ),
-            }
-        else:
-            # Fallback to a 100g serving if the first portion is invalid or missing.
-            # This prevents data corruption on re-import.
-            serving_info = {"amount": 100, "unit": "g", "gram_weight": 100.0}
-            # Use the raw per-100g values, ensuring they are rounded for consistency.
-            nutrition_facts = {
-                "calories": round(food.calories_per_100g or 0),
-                "protein_grams": round(food.protein_per_100g or 0, 2),
-                "carbohydrates_grams": round(food.carbs_per_100g or 0, 2),
-                "fat_grams": round(food.fat_per_100g or 0, 2),
-                "saturated_fat_grams": round(food.saturated_fat_per_100g or 0, 2),
-                "trans_fat_grams": round(food.trans_fat_per_100g or 0, 2),
-                "cholesterol_milligrams": round(food.cholesterol_mg_per_100g or 0, 2),
-                "sodium_milligrams": round(food.sodium_mg_per_100g or 0, 2),
-                "fiber_grams": round(food.fiber_per_100g or 0, 2),
-                "total_sugars_grams": round(food.sugars_per_100g or 0, 2),
-                "added_sugars_grams": round(food.added_sugars_per_100g or 0, 2),
-                "vitamin_d_micrograms": round(food.vitamin_d_mcg_per_100g or 0, 2),
-                "calcium_milligrams": round(food.calcium_mg_per_100g or 0, 2),
-                "iron_milligrams": round(food.iron_mg_per_100g or 0, 2),
-                "potassium_milligrams": round(food.potassium_mg_per_100g or 0, 2),
-            }
+        # Export nutrition facts as they are stored (per 100g)
+        nutrition_per_100g = {
+            "calories": food.calories_per_100g
+            if food.calories_per_100g is not None
+            else 0,
+            "protein_grams": round(food.protein_per_100g, 2)
+            if food.protein_per_100g is not None
+            else 0,
+            "carbohydrates_grams": round(food.carbs_per_100g, 2)
+            if food.carbs_per_100g is not None
+            else 0,
+            "fat_grams": round(food.fat_per_100g, 2)
+            if food.fat_per_100g is not None
+            else 0,
+            "saturated_fat_grams": round(food.saturated_fat_per_100g, 2)
+            if food.saturated_fat_per_100g is not None
+            else 0,
+            "trans_fat_grams": round(food.trans_fat_per_100g, 2)
+            if food.trans_fat_per_100g is not None
+            else 0,
+            "cholesterol_milligrams": food.cholesterol_mg_per_100g
+            if food.cholesterol_mg_per_100g is not None
+            else 0,
+            "sodium_milligrams": food.sodium_mg_per_100g
+            if food.sodium_mg_per_100g is not None
+            else 0,
+            "fiber_grams": round(food.fiber_per_100g, 2)
+            if food.fiber_per_100g is not None
+            else 0,
+            "total_sugars_grams": round(food.sugars_per_100g, 2)
+            if food.sugars_per_100g is not None
+            else 0,
+            "added_sugars_grams": round(food.added_sugars_per_100g, 2)
+            if food.added_sugars_per_100g is not None
+            else 0,
+            "vitamin_d_micrograms": food.vitamin_d_mcg_per_100g
+            if food.vitamin_d_mcg_per_100g is not None
+            else 0,
+            "calcium_milligrams": food.calcium_mg_per_100g
+            if food.calcium_mg_per_100g is not None
+            else 0,
+            "iron_milligrams": round(food.iron_mg_per_100g, 2)
+            if food.iron_mg_per_100g is not None
+            else 0,
+            "potassium_milligrams": food.potassium_mg_per_100g
+            if food.potassium_mg_per_100g is not None
+            else 0,
+        }
 
-        # Get category name
-        category = ""
-        if food.food_category:
-            category = food.food_category.description
+        category = food.food_category.description if food.food_category else ""
 
         food_item = {
             "description": food.description,
+            "upc": food.upc or "",
+            "fdc_id": food.fdc_id or None,
             "ingredients": food.ingredients or "",
             "category": category,
-            "serving": serving_info,
-            "nutrition_facts": nutrition_facts,
+            "portions": portions_data,
+            "nutrition_per_100g": nutrition_per_100g,
         }
 
         export_data.append(food_item)

@@ -287,3 +287,112 @@ def test_import_real_world_example_calculated_weight(auth_client):
         assert len(portions) == 2
         assert any(p.gram_weight == calculated_gram_weight for p in portions)
         assert any(p.gram_weight == 1 for p in portions)
+
+
+def test_import_my_foods_new_format_happy_path(auth_client):
+    """Tests importing a food using the new format with all fields."""
+    yaml_content = """
+- description: "New Format Protein Bar"
+  upc: "987654321098"
+  fdc_id: 654321
+  ingredients: "Protein blend, nuts, seeds"
+  category: "Snacks"
+  portions:
+    - amount: 1
+      measure_unit_description: "bar"
+      gram_weight: 60
+      portion_description: "One bar"
+      modifier: ""
+    - amount: 0.5
+      measure_unit_description: "bar"
+      gram_weight: 30
+      portion_description: "Half a bar"
+      modifier: "broken"
+  nutrition_per_100g:
+    calories: 400
+    protein_grams: 30
+    carbohydrates_grams: 35
+    fat_grams: 15
+"""
+    data = {"file": (io.BytesIO(yaml_content.encode("utf-8")), "import.yaml")}
+    response = auth_client.post(
+        url_for("my_foods.import_foods"), data=data, follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b"Import complete. Successfully added 1 new foods." in response.data
+
+    with auth_client.application.app_context():
+        food = MyFood.query.filter_by(description="New Format Protein Bar").first()
+        assert food is not None
+        # Check direct assignment of nutrients
+        assert food.calories_per_100g == 400
+        assert food.protein_per_100g == 30
+        # Check other fields
+        assert food.upc == "987654321098"
+        assert food.fdc_id == 654321
+        assert food.food_category.description == "Snacks"
+
+        # Check portions
+        portions = (
+            UnifiedPortion.query.filter_by(my_food_id=food.id)
+            .order_by(UnifiedPortion.seq_num)
+            .all()
+        )
+        assert len(portions) == 2
+
+        assert portions[0].seq_num == 1
+        assert portions[0].measure_unit_description == "bar"
+        assert portions[0].gram_weight == 60
+        assert portions[0].portion_description == "One bar"
+
+        assert portions[1].seq_num == 2
+        assert portions[1].measure_unit_description == "bar"
+        assert portions[1].gram_weight == 30
+        assert portions[1].modifier == "broken"
+
+
+def test_import_mixed_formats_in_one_file(auth_client):
+    """Tests importing a file with both old and new format foods."""
+    yaml_content = """
+- description: "Old Style Yogurt"
+  category: "Dairy"
+  serving:
+    amount: 1
+    unit: "container"
+    gram_weight: 150
+  nutrition_facts:
+    calories: 120
+    protein_grams: 10
+- description: "New Style Cereal"
+  category: "Breakfast"
+  portions:
+    - amount: 1
+      measure_unit_description: "cup"
+      gram_weight: 40
+  nutrition_per_100g:
+    calories: 380
+    protein_grams: 8
+"""
+    data = {"file": (io.BytesIO(yaml_content.encode("utf-8")), "import.yaml")}
+    response = auth_client.post(
+        url_for("my_foods.import_foods"), data=data, follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b"Import complete. Successfully added 2 new foods." in response.data
+
+    with auth_client.application.app_context():
+        # Test old style import
+        yogurt = MyFood.query.filter_by(description="Old Style Yogurt").first()
+        assert yogurt is not None
+        assert yogurt.calories_per_100g == pytest.approx((120 / 150) * 100)
+        yogurt_portions = UnifiedPortion.query.filter_by(my_food_id=yogurt.id).all()
+        assert len(yogurt_portions) == 2  # 1 from serving, 1 for 1g
+        assert any(p.gram_weight == 150 for p in yogurt_portions)
+
+        # Test new style import
+        cereal = MyFood.query.filter_by(description="New Style Cereal").first()
+        assert cereal is not None
+        assert cereal.calories_per_100g == 380
+        cereal_portions = UnifiedPortion.query.filter_by(my_food_id=cereal.id).all()
+        assert len(cereal_portions) == 1
+        assert cereal_portions[0].gram_weight == 40
