@@ -6,8 +6,10 @@ from flask import (
     url_for,
     flash,
     current_app,
+    Response,
 )
 from datetime import datetime, timezone
+import yaml
 from flask_login import login_required, current_user
 from models import (
     db,
@@ -24,7 +26,7 @@ from opennourish.recipes.forms import RecipeForm
 from opennourish.diary.forms import AddToLogForm
 from opennourish.my_foods.forms import PortionForm
 from sqlalchemy import func
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload, selectinload, subqueryload
 from opennourish.utils import (
     calculate_nutrition_for_items,
     calculate_recipe_nutrition_per_100g,
@@ -45,6 +47,358 @@ INGREDIENTS_SECTION_FRAGMENT = "#ingredients-section"
 RECIPES_LIST_ROUTE = "recipes.recipes"
 EDIT_RECIPE_ROUTE = "recipes.edit_recipe"
 PORTION_TABLE_FRAGMENT = "#portions-table"
+IMPORT_RECIPES_ROUTE = "recipes.import_recipes"
+
+
+def _get_or_create_food_category(category_name, user_id, food_description):
+    if not category_name or category_name.lower() == food_description.lower():
+        return None
+    category_name = category_name.strip()
+    # Try to find user-specific category first
+    category = FoodCategory.query.filter(
+        func.lower(FoodCategory.description) == func.lower(category_name),
+        FoodCategory.user_id == user_id,
+    ).first()
+    if category:
+        return category
+    # Try to find global category
+    category = FoodCategory.query.filter(
+        func.lower(FoodCategory.description) == func.lower(category_name),
+        FoodCategory.user_id.is_(None),
+    ).first()
+    if category:
+        return category
+    # Create new user-specific category
+    new_category = FoodCategory(description=category_name, user_id=user_id)
+    db.session.add(new_category)
+    db.session.flush()
+    return new_category
+
+
+def _process_recipe_yaml_import(yaml_stream):
+    try:
+        data = yaml.safe_load(yaml_stream)
+        if not data:
+            flash("No data found in the YAML content.", "info")
+            return redirect(url_for(IMPORT_RECIPES_ROUTE))
+
+        dependent_foods = data.get("dependent_my_foods", [])
+        recipes_to_import = data.get("recipes", [])
+
+        if not isinstance(dependent_foods, list) or not isinstance(
+            recipes_to_import, list
+        ):
+            flash(
+                "YAML file must contain 'dependent_my_foods' and 'recipes' as lists.",
+                "danger",
+            )
+            return redirect(url_for(IMPORT_RECIPES_ROUTE))
+
+        # --- Pass 1: Process Dependent MyFoods ---
+        existing_food_descriptions = {
+            f.description.lower()
+            for f in MyFood.query.filter_by(user_id=current_user.id).all()
+        }
+        my_foods_map = {f.lower(): f for f in existing_food_descriptions}
+        new_foods_count = 0
+
+        for food_item in dependent_foods:
+            description = food_item.get("description")
+            if not description or description.lower() in existing_food_descriptions:
+                continue  # Skip if no description or already exists
+
+            # Create new MyFood
+            category = _get_or_create_food_category(
+                food_item.get("category"), current_user.id, description
+            )
+            nutrition_facts = food_item.get("nutrition_facts", {})
+            first_portion = food_item["portions"][0] if "portions" in food_item else {}
+            gram_weight = first_portion.get("gram_weight", 0)
+            factor = 100.0 / gram_weight if gram_weight > 0 else 0
+
+            new_food = MyFood(
+                user_id=current_user.id,
+                description=description,
+                food_category=category,
+                ingredients=food_item.get("ingredients"),
+                upc=food_item.get("upc"),
+                calories_per_100g=nutrition_facts.get("calories", 0) * factor,
+                protein_per_100g=nutrition_facts.get("protein_grams", 0) * factor,
+                carbs_per_100g=nutrition_facts.get("carbohydrates_grams", 0) * factor,
+                fat_per_100g=nutrition_facts.get("fat_grams", 0) * factor,
+            )
+            db.session.add(new_food)
+            db.session.flush()
+
+            for p_data in food_item.get("portions", []):
+                portion = UnifiedPortion(
+                    my_food_id=new_food.id,
+                    amount=p_data.get("amount", 1),
+                    measure_unit_description=p_data.get("measure_unit_description"),
+                    gram_weight=p_data.get("gram_weight"),
+                )
+                db.session.add(portion)
+
+            existing_food_descriptions.add(description.lower())
+            my_foods_map[description.lower()] = new_food
+            new_foods_count += 1
+
+        # --- Pass 2: Process Recipes ---
+        existing_recipe_names = {
+            r.name.lower()
+            for r in Recipe.query.filter_by(user_id=current_user.id).all()
+        }
+        recipes_map = {}
+        new_recipes_count = 0
+
+        for recipe_data in recipes_to_import:
+            name = recipe_data.get("name")
+            if not name or name.lower() in existing_recipe_names:
+                continue
+
+            category = _get_or_create_food_category(
+                recipe_data.get("category"), current_user.id, name
+            )
+
+            new_recipe = Recipe(
+                user_id=current_user.id,
+                name=name,
+                servings=recipe_data.get("servings", 1),
+                instructions=recipe_data.get("instructions"),
+                is_public=False,  # Always import as private
+                food_category=category,
+            )
+            db.session.add(new_recipe)
+            db.session.flush()
+
+            for portion_data in recipe_data.get("portions", []):
+                portion = UnifiedPortion(
+                    recipe_id=new_recipe.id,
+                    amount=portion_data.get("amount"),
+                    measure_unit_description=portion_data.get(
+                        "measure_unit_description"
+                    ),
+                    gram_weight=portion_data.get("gram_weight"),
+                )
+                db.session.add(portion)
+
+            recipes_map[name.lower()] = new_recipe
+            existing_recipe_names.add(name.lower())
+            new_recipes_count += 1
+
+        # --- Pass 3: Link Ingredients ---
+        for recipe_data in recipes_to_import:
+            recipe_name = recipe_data.get("name")
+            if not recipe_name or recipe_name.lower() not in recipes_map:
+                continue
+
+            recipe_obj = recipes_map[recipe_name.lower()]
+            for ing_data in recipe_data.get("ingredients", []):
+                ing_type = ing_data.get("type")
+                identifier = ing_data.get("identifier")
+                amount_grams = ing_data.get("amount_grams")
+
+                ingredient = RecipeIngredient(
+                    recipe_id=recipe_obj.id, amount_grams=amount_grams
+                )
+
+                if ing_type == "usda":
+                    ingredient.fdc_id = identifier
+                elif ing_type == "my_food":
+                    food_obj = MyFood.query.filter(
+                        func.lower(MyFood.description) == identifier.lower(),
+                        MyFood.user_id == current_user.id,
+                    ).first()
+                    if food_obj:
+                        ingredient.my_food_id = food_obj.id
+                elif ing_type == "recipe":
+                    # Check both existing and newly imported recipes
+                    nested_recipe_obj = Recipe.query.filter(
+                        func.lower(Recipe.name) == identifier.lower(),
+                        Recipe.user_id == current_user.id,
+                    ).first()
+                    if nested_recipe_obj:
+                        ingredient.recipe_id_link = nested_recipe_obj.id
+
+                db.session.add(ingredient)
+
+            update_recipe_nutrition(recipe_obj)
+
+        db.session.commit()
+        flash(
+            f"Import successful! Added {new_recipes_count} new recipes and {new_foods_count} new foods.",
+            "success",
+        )
+        return redirect(url_for(RECIPES_LIST_ROUTE))
+
+    except yaml.YAMLError as e:
+        flash(f"Error parsing YAML file: {e}", "danger")
+        return redirect(url_for(IMPORT_RECIPES_ROUTE))
+    except Exception as e:
+        db.session.rollback()
+        flash(f"An unexpected error occurred during import: {e}", "danger")
+        current_app.logger.error(f"Recipe import failed: {e}")
+        return redirect(url_for(IMPORT_RECIPES_ROUTE))
+
+
+@recipes_bp.route("/import", methods=["GET", "POST"])
+@login_required
+def import_recipes():
+    if request.method == "POST":
+        if "file" in request.files and request.files["file"].filename != "":
+            file = request.files["file"]
+            if file and (
+                file.filename.endswith(".yaml") or file.filename.endswith(".yml")
+            ):
+                return _process_recipe_yaml_import(file.stream)
+            else:
+                flash("Invalid file type. Please upload a .yaml file.", "danger")
+        elif "yaml_text" in request.form and request.form["yaml_text"].strip():
+            return _process_recipe_yaml_import(request.form["yaml_text"])
+        else:
+            flash("No file or text provided.", "info")
+        return redirect(url_for(IMPORT_RECIPES_ROUTE))
+
+    return render_template("recipes/import_recipes.html")
+
+
+@recipes_bp.route("/export", methods=["GET"])
+@login_required
+def export_recipes():
+    user_recipes = (
+        Recipe.query.options(
+            subqueryload(Recipe.ingredients).subqueryload(RecipeIngredient.my_food),
+            subqueryload(Recipe.ingredients).subqueryload(
+                RecipeIngredient.linked_recipe
+            ),
+            subqueryload(Recipe.portions),
+            subqueryload(Recipe.food_category),
+        )
+        .filter_by(user_id=current_user.id)
+        .all()
+    )
+
+    dependent_my_foods = {}
+    recipes_to_export_data = []
+
+    # Use a set to keep track of recipes to include, ensuring no duplicates
+    recipes_to_process = set(user_recipes)
+    processed_recipe_ids = set()
+
+    while recipes_to_process:
+        recipe = recipes_to_process.pop()
+        if recipe.id in processed_recipe_ids:
+            continue
+        processed_recipe_ids.add(recipe.id)
+
+        ingredients_data = []
+        for ing in recipe.ingredients:
+            ing_info = {
+                "amount_grams": ing.amount_grams,
+            }
+            portion = db.session.get(UnifiedPortion, ing.portion_id_fk)
+            if portion:
+                ing_info["portion"] = {
+                    "amount": portion.amount,
+                    "measure_unit_description": portion.measure_unit_description,
+                }
+
+            if ing.fdc_id:
+                ing_info["type"] = "usda"
+                ing_info["identifier"] = ing.fdc_id
+            elif ing.my_food_id:
+                ing_info["type"] = "my_food"
+                ing_info["identifier"] = ing.my_food.description
+                if ing.my_food.id not in dependent_my_foods:
+                    dependent_my_foods[ing.my_food.id] = ing.my_food
+            elif ing.recipe_id_link:
+                ing_info["type"] = "recipe"
+                ing_info["identifier"] = ing.linked_recipe.name
+                # If the linked recipe is also a user recipe, ensure it's processed
+                if (
+                    ing.linked_recipe.user_id == current_user.id
+                    and ing.linked_recipe.id not in processed_recipe_ids
+                ):
+                    recipes_to_process.add(ing.linked_recipe)
+
+            ingredients_data.append(ing_info)
+
+        portions_data = [
+            {
+                "amount": p.amount,
+                "measure_unit_description": p.measure_unit_description,
+                "gram_weight": p.gram_weight,
+            }
+            for p in recipe.portions
+        ]
+
+        recipe_data = {
+            "name": recipe.name,
+            "servings": recipe.servings,
+            "instructions": recipe.instructions,
+            "category": recipe.food_category.description
+            if recipe.food_category
+            else "",
+            "is_public": recipe.is_public,
+            "portions": portions_data,
+            "ingredients": ingredients_data,
+        }
+        recipes_to_export_data.append(recipe_data)
+
+    # Format dependent MyFoods for export
+    my_foods_export_data = []
+    for food in dependent_my_foods.values():
+        food_portions_data = [
+            {
+                "amount": p.amount,
+                "measure_unit_description": p.measure_unit_description or "",
+                "gram_weight": p.gram_weight,
+            }
+            for p in food.portions
+        ]
+        first_portion = food.portions[0] if food.portions else None
+        nutrition_facts = {}
+        if first_portion and first_portion.gram_weight > 0:
+            scaling_factor = first_portion.gram_weight / 100.0
+            nutrition_facts = {
+                "calories": (food.calories_per_100g or 0) * scaling_factor,
+                "protein_grams": (food.protein_per_100g or 0) * scaling_factor,
+                "carbohydrates_grams": (food.carbs_per_100g or 0) * scaling_factor,
+                "fat_grams": (food.fat_per_100g or 0) * scaling_factor,
+            }
+
+        my_foods_export_data.append(
+            {
+                "description": food.description,
+                "category": food.food_category.description
+                if food.food_category
+                else "",
+                "ingredients": food.ingredients or "",
+                "upc": food.upc or "",
+                "portions": food_portions_data,
+                "nutrition_facts": nutrition_facts,
+            }
+        )
+
+    # Final YAML structure
+    export_payload = {
+        "format_version": 1.0,
+        "exported_on": datetime.now(timezone.utc).isoformat(),
+        "dependent_my_foods": my_foods_export_data,
+        "recipes": recipes_to_export_data,
+    }
+
+    yaml_content = yaml.dump(
+        export_payload, default_flow_style=False, sort_keys=False, indent=2
+    )
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"recipes_export_{timestamp}.yaml"
+
+    return Response(
+        yaml_content,
+        mimetype="application/x-yaml",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 def _process_ingredient_for_display(ingredient, usda_foods_map):

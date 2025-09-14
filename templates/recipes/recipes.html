@@ -15,9 +15,17 @@
                 My Recipes
             {% endif %}
         </h1>
-        <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Create New Recipe
-        </a>
+        <div class="btn-group">
+            <a href="{{ url_for('recipes.import_recipes') }}" class="btn btn-outline-success">
+                <i class="bi bi-upload"></i> Import Recipes
+            </a>
+            <a href="{{ url_for('recipes.export_recipes') }}" class="btn btn-outline-info">
+                <i class="bi bi-download"></i> Export Recipes
+            </a>
+            <a href="{{ url_for('recipes.new_recipe') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create New Recipe
+            </a>
+        </div>
     </div>
 
     <!-- RECIPES LIST CARD -->

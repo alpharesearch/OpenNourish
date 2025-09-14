@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Import Recipes</h1>
+        <div>
+            <a href="{{ url_for('recipes.recipes') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-return-left"></i> Back to Recipes</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Upload YAML File</h2>
+        </div>
+        <div class="card-body">
+            <p>
+                Upload a YAML file containing your recipes and their dependent "MyFood" items.
+            </p>
+            <p class="mt-3">
+                <strong>Note:</strong> You can export your existing recipes using the "Export Recipes" button on the recipes page.
+            </p>
+            <hr>
+            <form method="POST" action="{{ url_for('recipes.import_recipes') }}" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="file" class="form-label">YAML File</label>
+                    <input class="form-control" type="file" id="file" name="file" accept=".yaml,.yml">
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Upload and Import</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Or Paste YAML Content</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('recipes.import_recipes') }}">
+                <div class="mb-3">
+                    <label for="yaml_text" class="form-label">YAML Content</label>
+                    <textarea class="form-control" id="yaml_text" name="yaml_text" rows="10"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-file-earmark-arrow-down"></i> Import from Text</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
