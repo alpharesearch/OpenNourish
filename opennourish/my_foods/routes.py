@@ -189,7 +189,7 @@ def _process_yaml_import(yaml_stream):
                         gram_weight=p_data.get("gram_weight", 0),
                         portion_description=p_data.get("portion_description", ""),
                         modifier=p_data.get("modifier", ""),
-                        seq_num=i + 1,
+                        seq_num=i + 1,  # Assign sequence number
                     )
                     db.session.add(portion)
             elif is_legacy_format:
@@ -389,6 +389,7 @@ def new_my_food():
             portion_description=portion_form.portion_description.data,
             modifier=portion_form.modifier.data,
             gram_weight=portion_form.gram_weight.data,
+            seq_num=1,
         )
         db.session.add(new_portion)
 
@@ -400,6 +401,7 @@ def new_my_food():
             portion_description="",
             modifier="",
             gram_weight=1.0,
+            seq_num=2,
         )
         db.session.add(gram_portion)
 
@@ -747,7 +749,7 @@ def copy_my_food(food_id):
     db.session.add(new_food)
     db.session.flush()
 
-    for orig_portion in original_food.portions:
+    for i, orig_portion in enumerate(original_food.portions):
         new_portion = UnifiedPortion(
             my_food_id=new_food.id,
             amount=orig_portion.amount,
@@ -755,6 +757,7 @@ def copy_my_food(food_id):
             portion_description=orig_portion.portion_description,
             modifier=orig_portion.modifier,
             gram_weight=orig_portion.gram_weight,
+            seq_num=i + 1,
         )
         db.session.add(new_portion)
 

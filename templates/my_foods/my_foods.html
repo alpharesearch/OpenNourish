@@ -59,7 +59,7 @@
                             {% endif %}
                         {% endif %}
                         <small class="text-muted">
-                            {% set main_portion = food.portions|sort(attribute='seq_num')|first %}
+                            {% set main_portion = food.portions|rejectattr('seq_num', 'none')|sort(attribute='seq_num')|first %}
                             {% if main_portion and main_portion.gram_weight > 0 %}
                                 Calories: {{ (food.calories_per_100g / 100 * main_portion.gram_weight)|round(0) }} kcal per {{ main_portion.amount }} {{ main_portion.measure_unit_description }} |
                             {% else %}
