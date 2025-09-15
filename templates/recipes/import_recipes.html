@@ -39,7 +39,7 @@
             <form method="POST" action="{{ url_for('recipes.import_recipes') }}">
                 <div class="mb-3">
                     <label for="yaml_text" class="form-label">YAML Content</label>
-                    <textarea class="form-control" id="yaml_text" name="yaml_text" rows="10"></textarea>
+                    <textarea class="form-control" id="yaml_text" name="yaml_text" rows="15"></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-file-earmark-arrow-down"></i> Import from Text</button>
             </form>
@@ -69,21 +69,33 @@ You are a data extraction assistant. Your task is to extract recipe details from
 2.  The `name` should be the recipe's title.
 3.  The `servings` should be a single number representing the total yield.
 4.  The `instructions` should be a multi-line string preserving the steps.
-5.  The `ingredients` field must be a simple list of strings, with each string being one full ingredient line from the recipe.
+5.  The `ingredients` field must be a list of objects. Each object must have `name`, `quantity`, `unit`, and `notes` keys.
+    - `name`: The clean name of the ingredient (e.g., "all-purpose flour").
+    - `quantity`: A number representing the amount.
+    - `unit`: The unit of measurement (e.g., "cup", "tablespoon").
+    - `notes`: Any extra information, like "sifted" or "melted". If none, use an empty string.
 
 **YAML Template Example:**
 ```yaml
-name: "Simple Pancakes"
+name: "Simple Fluffy Pancakes"
 servings: 4
 instructions: |
   1. Mix dry ingredients.
   2. Add wet ingredients and whisk until smooth.
   3. Cook on a hot griddle.
 ingredients:
-  - "1 1/2 cups all-purpose flour"
-  - "2 tablespoons sugar"
-  - "1 large egg"
-  - "1 cup milk"
+  - name: "all-purpose flour"
+    quantity: 1.5
+    unit: "cup"
+    notes: "sifted"
+  - name: "granulated sugar"
+    quantity: 2
+    unit: "tablespoons"
+    notes: ""
+  - name: "egg"
+    quantity: 1
+    unit: "large"
+    notes: ""
 ```
 
 Now, please process the following text and generate the YAML document, following all of the rules above:</pre>

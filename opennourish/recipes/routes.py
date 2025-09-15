@@ -105,19 +105,46 @@ def _process_recipe_yaml_import(yaml_stream):
             db.session.add(new_recipe)
             db.session.flush()
 
-            for ingredient_text in data["ingredients"]:
+            for ingredient_data in data["ingredients"]:
+                # Ensure ingredient_data is a dictionary
+                if not isinstance(ingredient_data, dict):
+                    flash(
+                        f"Skipping invalid ingredient entry: {ingredient_data}",
+                        "warning",
+                    )
+                    continue
+
+                ingredient_name = ingredient_data.get("name")
+                if not ingredient_name:
+                    flash("Skipping ingredient with no name.", "warning")
+                    continue
+
                 placeholder_food = MyFood(
                     user_id=current_user.id,
-                    description=ingredient_text,
+                    description=ingredient_name,
                     is_placeholder=True,
                 )
                 db.session.add(placeholder_food)
                 db.session.flush()
 
+                # Create a placeholder portion for this ingredient
+                quantity = ingredient_data.get("quantity") or 1.0
+                placeholder_portion = UnifiedPortion(
+                    my_food_id=placeholder_food.id,
+                    amount=quantity,
+                    measure_unit_description=ingredient_data.get("unit", ""),
+                    modifier=ingredient_data.get("notes", ""),
+                    gram_weight=1.0,  # Placeholder gram weight
+                )
+                db.session.add(placeholder_portion)
+                db.session.flush()
+
                 ingredient = RecipeIngredient(
                     recipe_id=new_recipe.id,
                     my_food_id=placeholder_food.id,
-                    amount_grams=100,  # Default amount
+                    portion_id_fk=placeholder_portion.id,
+                    # amount_grams is quantity * gram_weight. Since gram_weight is 1, it's just the quantity.
+                    amount_grams=quantity,
                 )
                 db.session.add(ingredient)
 

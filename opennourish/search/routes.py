@@ -1031,26 +1031,42 @@ def add_item():
                         )
                     )
 
-            # Store the ID of the placeholder MyFood to potentially delete it later
-            placeholder_my_food_id = original_ingredient.my_food_id
+            # Get the placeholder MyFood and its associated placeholder UnifiedPortion
+            placeholder_my_food = original_ingredient.my_food
+            placeholder_portion = (
+                db.session.get(UnifiedPortion, original_ingredient.portion_id_fk)
+                if original_ingredient.portion_id_fk
+                else None
+            )
 
-            # Portion handling for rematch
-            portion = None
+            if not (placeholder_my_food and placeholder_my_food.is_placeholder):
+                flash("Original ingredient is not a placeholder.", "danger")
+                return redirect(
+                    url_for(EDIT_RECIPE_ROUTE, recipe_id=original_ingredient.recipe_id)
+                )
+
+            # Store the original quantity from the placeholder portion
+            original_quantity = (
+                placeholder_portion.amount if placeholder_portion else 1.0
+            )
+
+            # Get the newly selected portion from the form
+            new_portion = None
             if portion_id_str:
                 try:
-                    portion_id_int = int(portion_id_str)
-                    portion = db.session.get(UnifiedPortion, portion_id_int)
+                    new_portion_id = int(portion_id_str)
+                    new_portion = db.session.get(UnifiedPortion, new_portion_id)
                 except (ValueError, TypeError):
                     flash("Invalid portion ID.", "danger")
                     return redirect(request.referrer)
 
-            if not portion:
+            if not new_portion:
                 flash("A valid portion is required for rematching.", "danger")
                 return redirect(
                     url_for(EDIT_RECIPE_ROUTE, recipe_id=original_ingredient.recipe_id)
                 )
 
-            # Update the ingredient to point to the new food
+            # Update the ingredient to point to the new food and new portion
             original_ingredient.my_food_id = None
             original_ingredient.fdc_id = None
             original_ingredient.recipe_id_link = None
@@ -1062,22 +1078,23 @@ def add_item():
             elif food_type == "recipe":
                 original_ingredient.recipe_id_link = food_id
 
-            original_ingredient.portion_id_fk = portion.id
-            original_ingredient.amount_grams = amount * portion.gram_weight
+            original_ingredient.portion_id_fk = new_portion.id
+            # Recalculate amount_grams based on original quantity and new portion's gram weight
+            original_ingredient.amount_grams = (
+                original_quantity * new_portion.gram_weight
+            )
 
-            # Check if the old placeholder is still used by any other ingredient
-            if placeholder_my_food_id:
-                other_uses = RecipeIngredient.query.filter(
-                    RecipeIngredient.my_food_id == placeholder_my_food_id,
-                    RecipeIngredient.id != ingredient_id_to_replace,
-                ).count()
-                if other_uses == 0:
-                    placeholder_to_delete = db.session.get(
-                        MyFood, placeholder_my_food_id
-                    )
-                    if placeholder_to_delete:
-                        db.session.delete(placeholder_to_delete)
+            # Clean up: Delete the old placeholder MyFood and its portion if no longer used
+            other_uses = RecipeIngredient.query.filter(
+                RecipeIngredient.my_food_id == placeholder_my_food.id,
+                RecipeIngredient.id != ingredient_id_to_replace,
+            ).count()
 
+            if other_uses == 0:
+                # The placeholder portion is tied to the placeholder food, so it can be deleted too
+                if placeholder_portion:
+                    db.session.delete(placeholder_portion)
+                db.session.delete(placeholder_my_food)
             update_recipe_nutrition(original_ingredient.recipe)
             db.session.commit()
 

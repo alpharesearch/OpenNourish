@@ -1,9 +1,34 @@
 from flask import url_for
 from models import db, Recipe, MyFood, RecipeIngredient, User, UnifiedPortion
+import pytest
+
+
+@pytest.fixture
+def mock_llm_recipe_parse(monkeypatch):
+    """Mocks the _parse_recipe_with_llm function."""
+
+    def mock_parse(text_input):
+        # This mock now returns the new, structured format
+        return {
+            "name": "LLM-Generated Pancakes",
+            "servings": 4,
+            "instructions": "1. Mix flour and sugar.\n2. Add egg and milk.\n3. Cook on griddle.",
+            "ingredients": [
+                {
+                    "name": "all-purpose flour",
+                    "quantity": 1.5,
+                    "unit": "cup",
+                    "notes": "sifted",
+                },
+                {"name": "sugar", "quantity": 2, "unit": "tbsp", "notes": ""},
+            ],
+        }
+
+    monkeypatch.setattr("opennourish.recipes.routes._parse_recipe_with_llm", mock_parse)
 
 
 def test_import_recipe_from_simple_text(auth_client):
-    """Tests importing a recipe from a simple YAML/text format."""
+    """Tests importing a recipe from a simple YAML/text format with the new structure."""
     yaml_content = """
 name: "LLM-Generated Pancakes"
 servings: 4
@@ -12,9 +37,14 @@ instructions: |
   2. Add egg and milk.
   3. Cook on griddle.
 ingredients:
-  - "1 1/2 cups all-purpose flour"
-  - "2 tbsp sugar"
-  - "1 large egg"
+  - name: "all-purpose flour"
+    quantity: 1.5
+    unit: "cup"
+    notes: "sifted"
+  - name: "sugar"
+    quantity: 2
+    unit: "tbsp"
+    notes: ""
 """
     response = auth_client.post(
         url_for("recipes.import_recipes"),
@@ -31,30 +61,63 @@ ingredients:
         assert recipe is not None
         assert recipe.servings == 4
         assert "Cook on griddle" in recipe.instructions
-        assert len(recipe.ingredients) == 3
+        assert len(recipe.ingredients) == 2
 
-        # Verify that placeholder MyFood items were created
-        for ingredient in recipe.ingredients:
-            assert ingredient.my_food is not None
-            assert ingredient.my_food.is_placeholder is True
-            assert ingredient.my_food.description in [
-                "1 1/2 cups all-purpose flour",
-                "2 tbsp sugar",
-                "1 large egg",
-            ]
+        # Verify that placeholder MyFood and UnifiedPortion items were created
+        ingredient1 = recipe.ingredients[0]
+        assert ingredient1.my_food is not None
+        assert ingredient1.my_food.is_placeholder is True
+        assert ingredient1.my_food.description == "all-purpose flour"
+        assert (
+            ingredient1.amount_grams == 1.5
+        )  # quantity * placeholder gram_weight (1.0)
+
+        placeholder_portion1 = db.session.get(UnifiedPortion, ingredient1.portion_id_fk)
+        assert placeholder_portion1 is not None
+        assert placeholder_portion1.my_food_id == ingredient1.my_food_id
+        assert placeholder_portion1.amount == 1.5
+        assert placeholder_portion1.measure_unit_description == "cup"
+        assert placeholder_portion1.modifier == "sifted"
+        assert placeholder_portion1.gram_weight == 1.0
+
+        ingredient2 = recipe.ingredients[1]
+        assert ingredient2.my_food is not None
+        assert ingredient2.my_food.is_placeholder is True
+        assert ingredient2.my_food.description == "sugar"
+        assert (
+            ingredient2.amount_grams == 2.0
+        )  # quantity * placeholder gram_weight (1.0)
+
+        placeholder_portion2 = db.session.get(UnifiedPortion, ingredient2.portion_id_fk)
+        assert placeholder_portion2 is not None
+        assert placeholder_portion2.my_food_id == ingredient2.my_food_id
+        assert placeholder_portion2.amount == 2.0
+        assert placeholder_portion2.measure_unit_description == "tbsp"
+        assert placeholder_portion2.modifier == ""
+        assert placeholder_portion2.gram_weight == 1.0
 
 
 def test_rematch_ingredient_flow(auth_client):
-    """Tests the full workflow of rematching a placeholder ingredient."""
+    """Tests the full workflow of rematching a placeholder ingredient, verifying amount_grams update."""
     # 1. Setup: Create a recipe with a placeholder ingredient and a real food to match
     with auth_client.application.app_context():
         user = User.query.filter_by(username="testuser").first()
 
-        # The placeholder
+        # The placeholder food
         placeholder_food = MyFood(
-            user_id=user.id, description="1 cup flour", is_placeholder=True
+            user_id=user.id, description="flour", is_placeholder=True
         )
         db.session.add(placeholder_food)
+        db.session.flush()
+
+        # The placeholder portion, representing the original user input
+        placeholder_portion = UnifiedPortion(
+            my_food_id=placeholder_food.id,
+            amount=1.5,  # User originally entered "1.5 cups"
+            measure_unit_description="cup",
+            gram_weight=1.0,  # Placeholder weight
+        )
+        db.session.add(placeholder_portion)
         db.session.flush()
 
         # The recipe using the placeholder
@@ -63,7 +126,10 @@ def test_rematch_ingredient_flow(auth_client):
         db.session.flush()
 
         ingredient_to_rematch = RecipeIngredient(
-            recipe_id=recipe.id, my_food_id=placeholder_food.id, amount_grams=100
+            recipe_id=recipe.id,
+            my_food_id=placeholder_food.id,
+            portion_id_fk=placeholder_portion.id,
+            amount_grams=1.5,  # Initially 1.5 * 1.0
         )
         db.session.add(ingredient_to_rematch)
         db.session.flush()
@@ -73,12 +139,12 @@ def test_rematch_ingredient_flow(auth_client):
             user_id=user.id, description="Real All-Purpose Flour", calories_per_100g=364
         )
         db.session.add(real_food)
-        db.session.flush()  # Flush to get real_food.id
+        db.session.flush()
 
-        # Add a portion to the real food
+        # Add a real portion to the real food
         real_food_portion = UnifiedPortion(
             my_food_id=real_food.id,
-            gram_weight=120,
+            gram_weight=120,  # 1 cup of this flour is 120g
             measure_unit_description="cup",
             amount=1,
         )
@@ -88,19 +154,20 @@ def test_rematch_ingredient_flow(auth_client):
         recipe_id = recipe.id
         ingredient_id_to_replace = ingredient_to_rematch.id
         placeholder_food_id = placeholder_food.id
+        placeholder_portion_id = placeholder_portion.id
         real_food_id = real_food.id
         real_food_portion_id = real_food_portion.id
 
-    # 2. Verify the Edit Page UI shows the 'Match Food' button
+    # 2. Verify the Edit Page UI shows the 'Match Food' button with the clean name
     response = auth_client.get(url_for("recipes.edit_recipe", recipe_id=recipe_id))
     assert response.status_code == 200
-    assert b"1 cup flour" in response.data
+    assert b"flour" in response.data  # Clean name
     rematch_url = url_for(
         "search.search",
         target="rematch_ingredient",
         ingredient_id_to_replace=ingredient_id_to_replace,
         recipe_id=recipe_id,
-        search_term="1 cup flour",
+        search_term="flour",  # Search term is now the clean name
     )
     assert bytes(rematch_url.replace("&", "&amp;"), "utf-8") in response.data
     assert b"Match Food" in response.data
@@ -111,7 +178,7 @@ def test_rematch_ingredient_flow(auth_client):
         "ingredient_id_to_replace": ingredient_id_to_replace,
         "food_id": real_food_id,
         "food_type": "my_food",
-        "amount": 1,
+        "amount": 1,  # This amount is ignored in the new logic
         "portion_id": real_food_portion_id,
     }
     response = auth_client.post(
@@ -126,12 +193,19 @@ def test_rematch_ingredient_flow(auth_client):
         updated_ingredient = db.session.get(RecipeIngredient, ingredient_id_to_replace)
         assert updated_ingredient is not None
         assert updated_ingredient.my_food_id == real_food_id
-        assert updated_ingredient.fdc_id is None
-        assert updated_ingredient.recipe_id_link is None
+        assert updated_ingredient.portion_id_fk == real_food_portion_id
 
-        # Verify the placeholder food was deleted
-        deleted_placeholder = db.session.get(MyFood, placeholder_food_id)
-        assert deleted_placeholder is None
+        # Verify amount_grams was correctly recalculated
+        # original quantity (1.5) * new portion's gram_weight (120)
+        assert updated_ingredient.amount_grams == 180.0
+
+        # Verify the placeholder food and portion were deleted
+        deleted_placeholder_food = db.session.get(MyFood, placeholder_food_id)
+        assert deleted_placeholder_food is None
+        deleted_placeholder_portion = db.session.get(
+            UnifiedPortion, placeholder_portion_id
+        )
+        assert deleted_placeholder_portion is None
 
         # Verify recipe nutrition was updated
         recipe = db.session.get(Recipe, recipe_id)
