@@ -27,6 +27,7 @@ from datetime import date
 from opennourish.time_utils import get_user_today
 from opennourish.utils import ensure_portion_sequence, update_recipe_nutrition
 from sqlalchemy import or_, func, and_
+from sqlalchemy.orm import joinedload
 import math
 
 
@@ -128,6 +129,19 @@ def search():
     if not log_date:
         log_date = get_user_today(current_user.timezone).isoformat()
     meal_name = request.values.get("meal_name")
+
+    ingredient_to_rematch = None
+    if target == "rematch_ingredient":
+        ingredient_id = request.values.get("ingredient_id_to_replace", type=int)
+        if ingredient_id:
+            ingredient_to_rematch = RecipeIngredient.query.options(
+                joinedload(RecipeIngredient.my_food).selectinload(MyFood.portions)
+            ).get(ingredient_id)
+            if ingredient_to_rematch and ingredient_to_rematch.portion_id_fk:
+                # Attach the specific portion to the ingredient object for easy access
+                ingredient_to_rematch.portion = db.session.get(
+                    UnifiedPortion, ingredient_to_rematch.portion_id_fk
+                )
 
     return_url = None
     if target == "diary":
@@ -279,7 +293,9 @@ def search():
                 food.portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
 
         if search_my_foods:
-            my_foods_query = MyFood.query.filter(MyFood.user_id.in_(user_ids_to_search))
+            my_foods_query = MyFood.query.filter(
+                MyFood.user_id.in_(user_ids_to_search), MyFood.is_placeholder.is_(False)
+            )
             if search_term != "*":
                 if search_term.isdigit() and len(search_term) > 5:
                     my_foods_query = my_foods_query.filter(
@@ -380,6 +396,7 @@ def search():
                     frequent_my_foods_subquery,
                     MyFood.id == frequent_my_foods_subquery.c.my_food_id,
                 )
+                .filter(MyFood.is_placeholder.is_(False))
                 .order_by(frequent_my_foods_subquery.c.count.desc())
                 .paginate(page=my_foods_page, per_page=per_page, error_out=False)
             )
@@ -537,6 +554,7 @@ def search():
         food_categories=food_categories,
         selected_category_id=selected_category_id,
         return_url=return_url,
+        ingredient_to_rematch=ingredient_to_rematch,
     )
 
 

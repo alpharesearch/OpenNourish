@@ -38,6 +38,7 @@
           <form id="addItemForm" action="{{ url_for('search.add_item') }}" method="post">
             <div class="modal-body">
               <p>Adding: <strong id="modalFoodName"></strong></p>
+              <div id="rematch-info" class="alert alert-info" style="display: none;"></div>
               <input type="hidden" name="food_id" id="modalFoodId">
               <input type="hidden" name="food_type" id="modalFoodType">
               <input type="hidden" name="target" id="modalTarget">
@@ -204,6 +205,8 @@
                         const mealName = this.dataset.mealName || '';
                         const returnUrl = this.dataset.returnUrl || '';
                         const ingredientIdToReplace = this.dataset.ingredientIdToReplace || '';
+                        const originalIngredientName = this.dataset.originalIngredientName || '';
+                        const originalIngredientPortion = this.dataset.originalIngredientPortion || '';
                         const apiFoodType = foodType === 'usda_food' ? 'usda' : foodType;
 
                         // --- 2. POPULATE HIDDEN MODAL FIELDS ---
@@ -223,6 +226,14 @@
                         diaryFields.style.display = isDiaryTarget ? 'block' : 'none';
                         modalLogDate.required = isDiaryTarget;
                         modalMealName.required = isDiaryTarget;
+
+                        const rematchInfo = document.getElementById('rematch-info');
+                        if (target === 'rematch_ingredient' && originalIngredientName) {
+                            rematchInfo.style.display = 'block';
+                            rematchInfo.innerHTML = `Matching for: <strong>${originalIngredientName}</strong> (${originalIngredientPortion})`;
+                        } else {
+                            rematchInfo.style.display = 'none';
+                        }
 
                         const isPortionless = apiFoodType === 'diary_meal';
 

@@ -245,6 +245,7 @@ def _process_recipe_yaml_import(yaml_stream):
                     name=name,
                     servings=recipe_data.get("servings", 1),
                     instructions=recipe_data.get("instructions"),
+                    final_weight_grams=recipe_data.get("final_weight_grams"),
                     is_public=False,  # Always import as private
                     food_category=category,
                 )
@@ -266,7 +267,7 @@ def _process_recipe_yaml_import(yaml_stream):
                 existing_recipe_names.add(name.lower())
                 new_recipes_count += 1
 
-            # --- Pass 3: Link Ingredients ---
+                # --- Pass 3: Link Ingredients ---
             for recipe_data in recipes_to_import:
                 recipe_name = recipe_data.get("name")
                 if not recipe_name or recipe_name.lower() not in recipes_map:
@@ -277,6 +278,7 @@ def _process_recipe_yaml_import(yaml_stream):
                     ing_type = ing_data.get("type")
                     identifier = ing_data.get("identifier")
                     amount_grams = ing_data.get("amount_grams")
+                    portion_data = ing_data.get("portion")
 
                     # Initialize ingredient data
                     ingredient_data = {
@@ -284,8 +286,15 @@ def _process_recipe_yaml_import(yaml_stream):
                         "amount_grams": amount_grams,
                     }
 
+                    # This will hold the query filter for finding the portion
+                    portion_filter = {}
+                    # This will hold the attributes for creating a new portion
+                    new_portion_attrs = {}
+
                     if ing_type == "usda":
                         ingredient_data["fdc_id"] = identifier
+                        portion_filter["fdc_id"] = identifier
+                        new_portion_attrs["fdc_id"] = identifier
                     elif ing_type == "my_food":
                         food_obj = MyFood.query.filter(
                             func.lower(MyFood.description) == identifier.lower(),
@@ -293,21 +302,65 @@ def _process_recipe_yaml_import(yaml_stream):
                         ).first()
                         if food_obj:
                             ingredient_data["my_food_id"] = food_obj.id
-                            if food_obj.portions:
-                                ingredient_data["portion_id_fk"] = food_obj.portions[
-                                    0
-                                ].id
+                            portion_filter["my_food_id"] = food_obj.id
+                            new_portion_attrs["my_food_id"] = food_obj.id
                     elif ing_type == "recipe":
-                        nested_recipe_obj = Recipe.query.filter(
+                        food_obj = Recipe.query.filter(
                             func.lower(Recipe.name) == identifier.lower(),
                             Recipe.user_id == current_user.id,
                         ).first()
-                        if nested_recipe_obj:
-                            ingredient_data["recipe_id_link"] = nested_recipe_obj.id
+                        if food_obj:
+                            ingredient_data["recipe_id_link"] = food_obj.id
+                            portion_filter["recipe_id"] = food_obj.id
+                            new_portion_attrs["recipe_id"] = food_obj.id
 
-                    # Check if an identical ingredient already exists
+                    # If we have portion data from the YAML, find or create the portion
+                    if portion_data:
+                        # Add portion details to the filter
+                        portion_filter["amount"] = portion_data.get("amount")
+                        portion_filter["measure_unit_description"] = portion_data.get(
+                            "measure_unit_description"
+                        )
+                        portion_filter["portion_description"] = portion_data.get(
+                            "portion_description"
+                        )
+                        portion_filter["modifier"] = portion_data.get("modifier")
+                        portion_filter["gram_weight"] = portion_data.get("gram_weight")
+
+                        # Try to find an existing portion that matches exactly
+                        existing_portion = UnifiedPortion.query.filter_by(
+                            **portion_filter
+                        ).first()
+
+                        if existing_portion:
+                            ingredient_data["portion_id_fk"] = existing_portion.id
+                        else:
+                            # Create a new portion
+                            new_portion_attrs.update(
+                                {
+                                    "amount": portion_data.get("amount"),
+                                    "measure_unit_description": portion_data.get(
+                                        "measure_unit_description"
+                                    ),
+                                    "portion_description": portion_data.get(
+                                        "portion_description"
+                                    ),
+                                    "modifier": portion_data.get("modifier"),
+                                    "gram_weight": portion_data.get("gram_weight"),
+                                }
+                            )
+                            new_portion = UnifiedPortion(**new_portion_attrs)
+                            db.session.add(new_portion)
+                            db.session.flush()
+                            ingredient_data["portion_id_fk"] = new_portion.id
+
+                    # Check if an identical ingredient already exists to avoid duplicates
+                    # This check is crucial for re-imports.
+                    query_params = ingredient_data.copy()
+                    # The FK for the portion might be different on re-import, so we don't check it.
+                    query_params.pop("portion_id_fk", None)
                     existing_ingredient = RecipeIngredient.query.filter_by(
-                        **ingredient_data
+                        **query_params
                     ).first()
                     if existing_ingredient:
                         continue
@@ -397,6 +450,9 @@ def export_recipes():
                 ing_info["portion"] = {
                     "amount": portion.amount,
                     "measure_unit_description": portion.measure_unit_description,
+                    "portion_description": portion.portion_description,
+                    "modifier": portion.modifier,
+                    "gram_weight": portion.gram_weight,
                 }
 
             if ing.fdc_id:
@@ -432,6 +488,7 @@ def export_recipes():
             "name": recipe.name,
             "servings": recipe.servings,
             "instructions": recipe.instructions,
+            "final_weight_grams": recipe.final_weight_grams,
             "category": recipe.food_category.description
             if recipe.food_category
             else "",

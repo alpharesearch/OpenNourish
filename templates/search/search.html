@@ -38,6 +38,14 @@
 {% endmacro %}
 
 {% block content %}
+    {% if ingredient_to_rematch and ingredient_to_rematch.my_food %}
+    <div class="alert alert-warning">
+        <strong>Rematching Ingredient:</strong> {{ ingredient_to_rematch.my_food.description }}
+        {% if ingredient_to_rematch.portion %}
+        <em>({{ ingredient_to_rematch.portion.full_description_str_1 }})</em>
+        {% endif %}
+    </div>
+    {% endif %}
     <a id="prev-page-link" href="{{ url_for('recipes.recipes') }}" style="display: none;"></a>
     <a id="next-page-link" href="{{ url_for('exercise.log_exercise') }}" style="display: none;"></a>
     <h1>Unified Search</h1>
@@ -206,6 +214,8 @@
                                     data-meal-name="{{ meal_name or '' }}"
                                     data-recipe-id="{{ recipe_id or '' }}"
                                     data-ingredient-id-to-replace="{{ request.args.get('ingredient_id_to_replace', '') }}"
+                                    data-original-ingredient-name="{{ ingredient_to_rematch.my_food.description if ingredient_to_rematch and ingredient_to_rematch.my_food else '' }}"
+                                    data-original-ingredient-portion="{{ ingredient_to_rematch.portion.full_description_str_1 if ingredient_to_rematch and ingredient_to_rematch.portion else '' }}"
                                     data-return-url="{{ return_url or '' }}">
                                 <i class="bi bi-plus-circle"></i> Add
                             </button>
@@ -248,6 +258,8 @@
                                     data-meal-name="{{ meal_name or '' }}"
                                     data-recipe-id="{{ recipe_id or '' }}"
                                     data-ingredient-id-to-replace="{{ request.args.get('ingredient_id_to_replace', '') }}"
+                                    data-original-ingredient-name="{{ ingredient_to_rematch.my_food.description if ingredient_to_rematch and ingredient_to_rematch.my_food else '' }}"
+                                    data-original-ingredient-portion="{{ ingredient_to_rematch.portion.full_description_str_1 if ingredient_to_rematch and ingredient_to_rematch.portion else '' }}"
                                     data-return-url="{{ return_url or '' }}">
                                 <i class="bi bi-plus-circle"></i> Add
                             </button>
@@ -293,6 +305,8 @@
                                     data-meal-name="{{ meal_name or '' }}"
                                     data-recipe-id="{{ recipe_id or '' }}"
                                     data-ingredient-id-to-replace="{{ request.args.get('ingredient_id_to_replace', '') }}"
+                                    data-original-ingredient-name="{{ ingredient_to_rematch.my_food.description if ingredient_to_rematch and ingredient_to_rematch.my_food else '' }}"
+                                    data-original-ingredient-portion="{{ ingredient_to_rematch.portion.full_description_str_1 if ingredient_to_rematch and ingredient_to_rematch.portion else '' }}"
                                     data-return-url="{{ return_url or '' }}">
                                 <i class="bi bi-plus-circle"></i> Add
                             </button>
@@ -339,6 +353,8 @@
                                 data-meal-name="{{ meal_name or '' }}"
                                 data-recipe-id="{{ recipe_id or '' }}"
                                 data-ingredient-id-to-replace="{{ request.args.get('ingredient_id_to_replace', '') }}"
+                                data-original-ingredient-name="{{ ingredient_to_rematch.my_food.description if ingredient_to_rematch and ingredient_to_rematch.my_food else '' }}"
+                                data-original-ingredient-portion="{{ ingredient_to_rematch.portion.full_description_str_1 if ingredient_to_rematch and ingredient_to_rematch.portion else '' }}"
                                 data-return-url="{{ return_url or '' }}">
                             <i class="bi bi-plus-circle"></i> Add
                         </button>
