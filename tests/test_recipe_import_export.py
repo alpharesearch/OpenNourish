@@ -1,6 +1,6 @@
 import yaml
 from flask import url_for
-from models import db, Recipe, MyFood, RecipeIngredient, User
+from models import db, Recipe, MyFood, RecipeIngredient, User, UnifiedPortion
 from sqlalchemy import func
 
 
@@ -290,3 +290,92 @@ recipes:
         # Verify the cake links to the frosting
         assert len(cake.ingredients) == 1
         assert cake.ingredients[0].recipe_id_link == frosting.id
+
+
+def test_placeholder_export_import_cycle(auth_client):
+    """Tests that a placeholder food is correctly exported and re-imported."""
+    # 1. Import a simple recipe to create a placeholder
+    simple_yaml = """
+name: "Placeholder Test Recipe"
+servings: 1
+ingredients:
+  - name: "unmatched ingredient"
+    quantity: 1
+    unit: "item"
+    notes: ""
+"""
+    auth_client.post(
+        url_for("recipes.import_recipes"),
+        data={"yaml_text": simple_yaml},
+        follow_redirects=True,
+    )
+
+    # 2. Export all recipes
+    export_response = auth_client.get(url_for("recipes.export_recipes"))
+    assert export_response.status_code == 200
+    exported_yaml_data = yaml.safe_load(export_response.data)
+
+    # 3. Verify the placeholder is in the export with the correct flag
+    dependent_foods = exported_yaml_data.get("dependent_my_foods", [])
+    assert len(dependent_foods) == 1
+    placeholder_food_export = dependent_foods[0]
+    assert placeholder_food_export["description"] == "unmatched ingredient"
+    assert placeholder_food_export["is_placeholder"] is True
+
+    # 4. Delete the original recipe and food to ensure a clean import
+    with auth_client.application.app_context():
+        Recipe.query.delete()
+        MyFood.query.delete()
+        UnifiedPortion.query.delete()
+        db.session.commit()
+
+    # 5. Re-import the exported data
+    import_response = auth_client.post(
+        url_for("recipes.import_recipes"),
+        data={"yaml_text": yaml.dump(exported_yaml_data)},
+        follow_redirects=True,
+    )
+    assert import_response.status_code == 200
+    assert b"Import successful!" in import_response.data
+
+    # 6. Verify the re-imported recipe and placeholder food
+    with auth_client.application.app_context():
+        recipe = Recipe.query.filter_by(name="Placeholder Test Recipe").first()
+        assert recipe is not None
+        assert len(recipe.ingredients) == 1
+
+        ingredient = recipe.ingredients[0]
+        assert ingredient.my_food is not None
+        assert ingredient.my_food.is_placeholder is True
+        assert ingredient.my_food.description == "unmatched ingredient"
+        assert ingredient.portion_id_fk is not None
+
+
+def test_import_complex_with_placeholder(auth_client):
+    yaml_content = """
+format_version: 1.0
+dependent_my_foods:
+  - description: "unmatched ingredient"
+    is_placeholder: true
+    portions:
+      - amount: 1
+        measure_unit_description: "item"
+        gram_weight: 1.0
+recipes:
+  - name: "Placeholder Test Recipe"
+    ingredients:
+      - type: "my_food"
+        identifier: "unmatched ingredient"
+        amount_grams: 1.0
+"""
+    # Action
+    response = auth_client.post(
+        url_for("recipes.import_recipes"), data={"yaml_text": yaml_content}
+    )
+    assert response.status_code == 302
+
+    # Verification
+    with auth_client.application.app_context():
+        recipe = Recipe.query.filter_by(name="Placeholder Test Recipe").first()
+        assert recipe is not None
+        assert len(recipe.ingredients) == 1

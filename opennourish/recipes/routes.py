@@ -200,6 +200,7 @@ def _process_recipe_yaml_import(yaml_stream):
                     food_category=category,
                     ingredients=food_item.get("ingredients"),
                     upc=food_item.get("upc"),
+                    is_placeholder=food_item.get("is_placeholder", False),
                     calories_per_100g=nutrition_facts.get("calories", 0) * factor,
                     protein_per_100g=nutrition_facts.get("protein_grams", 0) * factor,
                     carbs_per_100g=nutrition_facts.get("carbohydrates_grams", 0)
@@ -277,28 +278,41 @@ def _process_recipe_yaml_import(yaml_stream):
                     identifier = ing_data.get("identifier")
                     amount_grams = ing_data.get("amount_grams")
 
-                    ingredient = RecipeIngredient(
-                        recipe_id=recipe_obj.id, amount_grams=amount_grams
-                    )
+                    # Initialize ingredient data
+                    ingredient_data = {
+                        "recipe_id": recipe_obj.id,
+                        "amount_grams": amount_grams,
+                    }
 
                     if ing_type == "usda":
-                        ingredient.fdc_id = identifier
+                        ingredient_data["fdc_id"] = identifier
                     elif ing_type == "my_food":
                         food_obj = MyFood.query.filter(
                             func.lower(MyFood.description) == identifier.lower(),
                             MyFood.user_id == current_user.id,
                         ).first()
                         if food_obj:
-                            ingredient.my_food_id = food_obj.id
+                            ingredient_data["my_food_id"] = food_obj.id
+                            if food_obj.portions:
+                                ingredient_data["portion_id_fk"] = food_obj.portions[
+                                    0
+                                ].id
                     elif ing_type == "recipe":
-                        # Check both existing and newly imported recipes
                         nested_recipe_obj = Recipe.query.filter(
                             func.lower(Recipe.name) == identifier.lower(),
                             Recipe.user_id == current_user.id,
                         ).first()
                         if nested_recipe_obj:
-                            ingredient.recipe_id_link = nested_recipe_obj.id
+                            ingredient_data["recipe_id_link"] = nested_recipe_obj.id
 
+                    # Check if an identical ingredient already exists
+                    existing_ingredient = RecipeIngredient.query.filter_by(
+                        **ingredient_data
+                    ).first()
+                    if existing_ingredient:
+                        continue
+
+                    ingredient = RecipeIngredient(**ingredient_data)
                     db.session.add(ingredient)
 
                 update_recipe_nutrition(recipe_obj)
@@ -449,18 +463,17 @@ def export_recipes():
                 "fat_grams": (food.fat_per_100g or 0) * scaling_factor,
             }
 
-        my_foods_export_data.append(
-            {
-                "description": food.description,
-                "category": food.food_category.description
-                if food.food_category
-                else "",
-                "ingredients": food.ingredients or "",
-                "upc": food.upc or "",
-                "portions": food_portions_data,
-                "nutrition_facts": nutrition_facts,
-            }
-        )
+        food_data_to_export = {
+            "description": food.description,
+            "category": food.food_category.description if food.food_category else "",
+            "ingredients": food.ingredients or "",
+            "upc": food.upc or "",
+            "portions": food_portions_data,
+            "nutrition_facts": nutrition_facts,
+        }
+        if food.is_placeholder:
+            food_data_to_export["is_placeholder"] = True
+        my_foods_export_data.append(food_data_to_export)
 
     # Final YAML structure
     export_payload = {
