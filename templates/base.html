@@ -46,6 +46,7 @@
               <input type="hidden" name="meal_id" id="modalMealId">
               <input type="hidden" name="return_url" id="modalReturnUrl">
               <input type="hidden" name="friend_username" id="modalFriendUsername">
+              <input type="hidden" name="ingredient_id_to_replace" id="modalIngredientIdToReplace">
 
               <div id="diaryFields">
                 <div class="mb-3">
@@ -110,6 +111,7 @@
                 const modalMealId = document.getElementById('modalMealId');
                 const modalReturnUrl = document.getElementById('modalReturnUrl');
                 const modalFriendUsername = document.getElementById('modalFriendUsername');
+                const modalIngredientIdToReplace = document.getElementById('modalIngredientIdToReplace');
                 const diaryFields = document.getElementById('diaryFields');
                 const modalLogDate = document.getElementById('modalLogDate');
                 const modalMealName = document.getElementById('modalMealName');
@@ -201,6 +203,7 @@
                         const logDate = this.dataset.logDate || '';
                         const mealName = this.dataset.mealName || '';
                         const returnUrl = this.dataset.returnUrl || '';
+                        const ingredientIdToReplace = this.dataset.ingredientIdToReplace || '';
                         const apiFoodType = foodType === 'usda_food' ? 'usda' : foodType;
 
                         // --- 2. POPULATE HIDDEN MODAL FIELDS ---
@@ -213,6 +216,7 @@
                         modalMealId.value = mealId;
                         modalReturnUrl.value = returnUrl;
                         modalFriendUsername.value = friendUsername;
+                        modalIngredientIdToReplace.value = ingredientIdToReplace;
 
                         // --- 3. HANDLE UI VISIBILITY AND REQUIRED FIELDS ---
                         const isDiaryTarget = target === 'diary';

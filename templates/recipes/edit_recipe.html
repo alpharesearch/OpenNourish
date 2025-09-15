@@ -257,6 +257,11 @@
                         </div>
                         <!-- Ingredient Form -->
                         <div class="col-md-6">
+                            {% if ingredient.my_food and ingredient.my_food.is_placeholder %}
+                                <div class="d-flex justify-content-end align-items-center h-100">
+                                    <a href="{{ url_for('search.search', target='rematch_ingredient', ingredient_id_to_replace=ingredient.id, recipe_id=recipe.id, search_term=ingredient.my_food.description) }}" class="btn btn-outline-warning">Match Food</a>
+                                </div>
+                            {% else %}
                             <div class="d-sm-flex justify-content-end align-items-center gap-2">
                                 {% if ingredient.selected_portion and ingredient.selected_portion.measure_unit_description != 'g' %}
                                 <small class="text-muted">
@@ -286,6 +291,7 @@
                                     </form>
                                 </div>
                             </div>
+                            {% endif %}
                         </div>
                     </div>
                 </li>

@@ -47,6 +47,7 @@
         <input type="hidden" name="log_date" value="{{ log_date or '' }}">
         <input type="hidden" name="meal_name" value="{{ meal_name or '' }}">
         <input type="hidden" name="recipe_id" value="{{ recipe_id or '' }}">
+        <input type="hidden" name="ingredient_id_to_replace" value="{{ request.args.get('ingredient_id_to_replace', '') }}">
         <input type="hidden" name="return_url" value="{{ return_url or '' }}">
         <input type="hidden" name="per_page" value="{{ request.args.get('per_page', 10) }}">
         <input type="hidden" name="section" value="{{ request.args.get('section', '') }}">
@@ -204,6 +205,7 @@
                                     data-log-date="{{ log_date or '' }}"
                                     data-meal-name="{{ meal_name or '' }}"
                                     data-recipe-id="{{ recipe_id or '' }}"
+                                    data-ingredient-id-to-replace="{{ request.args.get('ingredient_id_to_replace', '') }}"
                                     data-return-url="{{ return_url or '' }}">
                                 <i class="bi bi-plus-circle"></i> Add
                             </button>
@@ -245,6 +247,7 @@
                                     data-log-date="{{ log_date or '' }}"
                                     data-meal-name="{{ meal_name or '' }}"
                                     data-recipe-id="{{ recipe_id or '' }}"
+                                    data-ingredient-id-to-replace="{{ request.args.get('ingredient_id_to_replace', '') }}"
                                     data-return-url="{{ return_url or '' }}">
                                 <i class="bi bi-plus-circle"></i> Add
                             </button>
@@ -289,6 +292,7 @@
                                     data-log-date="{{ log_date or '' }}"
                                     data-meal-name="{{ meal_name or '' }}"
                                     data-recipe-id="{{ recipe_id or '' }}"
+                                    data-ingredient-id-to-replace="{{ request.args.get('ingredient_id_to_replace', '') }}"
                                     data-return-url="{{ return_url or '' }}">
                                 <i class="bi bi-plus-circle"></i> Add
                             </button>
@@ -334,6 +338,7 @@
                                 data-log-date="{{ log_date or '' }}"
                                 data-meal-name="{{ meal_name or '' }}"
                                 data-recipe-id="{{ recipe_id or '' }}"
+                                data-ingredient-id-to-replace="{{ request.args.get('ingredient_id_to_replace', '') }}"
                                 data-return-url="{{ return_url or '' }}">
                             <i class="bi bi-plus-circle"></i> Add
                         </button>

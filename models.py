@@ -278,6 +278,7 @@ class MyFood(db.Model):
     calcium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     iron_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
     potassium_mg_per_100g = db.Column(db.Float, nullable=False, default=0.0)
+    is_placeholder = db.Column(db.Boolean, nullable=False, default=False)
     portions = db.relationship(
         "UnifiedPortion",
         foreign_keys=[UnifiedPortion.my_food_id],

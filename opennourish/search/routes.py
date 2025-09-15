@@ -556,29 +556,7 @@ def add_item():
     return_url = request.form.get("return_url")
     friend_username = request.form.get("friend_username")
 
-    # Ensure a 1-gram portion exists for USDA foods when they are added.
-    # This is crucial for consistency across the application.
-    if food_type == "usda":
-        food_id_int = int(food_id)
-        one_gram_portion = UnifiedPortion.query.filter_by(
-            fdc_id=food_id_int, gram_weight=1.0
-        ).first()
-        if not one_gram_portion:
-            one_gram_portion = UnifiedPortion(
-                fdc_id=food_id_int,
-                amount=1.0,
-                measure_unit_description="g",
-                portion_description="",
-                modifier="",
-                gram_weight=1.0,
-                was_imported=True,  # Mark as an imported-equivalent portion
-            )
-            db.session.add(one_gram_portion)
-            db.session.commit()
-            current_app.logger.debug(
-                f"Created 1-gram portion for USDA food FDC_ID: {food_id_int} during add_item."
-            )
-
+    # Handle special cases first
     if food_type == "my_meal":
         my_meal = db.session.get(MyMeal, food_id)
         if not my_meal:
@@ -726,6 +704,52 @@ def add_item():
         if return_url:
             return redirect(return_url)
         return redirect(url_for(DIARY_ROUTE_NAME, log_date_str=log_date_str))
+
+    portion = None
+    if portion_id_str:
+        try:
+            portion_id_int = int(portion_id_str)
+            if portion_id_int == -1:  # Handle virtual portion for rematch
+                # Create a temporary portion object. For rematch, we only need gram_weight.
+                # The real portion of the new food will be used eventually.
+                portion = UnifiedPortion(gram_weight=1.0)
+            else:
+                portion = db.session.get(UnifiedPortion, portion_id_int)
+        except (ValueError, TypeError):
+            flash("Invalid portion ID.", "danger")
+            return redirect(request.referrer)
+
+    # Ensure a 1-gram portion exists for USDA foods when they are added.
+    if food_type == "usda":
+        food_id_int = int(food_id)
+        one_gram_portion = UnifiedPortion.query.filter_by(
+            fdc_id=food_id_int, gram_weight=1.0
+        ).first()
+        if not one_gram_portion:
+            one_gram_portion = UnifiedPortion(
+                fdc_id=food_id_int,
+                amount=1.0,
+                measure_unit_description="g",
+                portion_description="",
+                modifier="",
+                gram_weight=1.0,
+                was_imported=True,  # Mark as an imported-equivalent portion
+            )
+            db.session.add(one_gram_portion)
+            db.session.commit()
+        if not portion:  # If no portion was selected, default to the 1g portion
+            portion = one_gram_portion
+
+    if not portion:
+        # For MyFood, we need to find a default portion if none is provided
+        if food_type == "my_food":
+            food = db.session.get(MyFood, food_id)
+            if food and food.portions:
+                portion = food.portions[0]
+
+    if not portion:
+        flash("A valid portion is required.", "danger")
+        return redirect(request.referrer or url_for("main.index"))
 
     portion = None
     if portion_id_str:
@@ -976,6 +1000,92 @@ def add_item():
                 return redirect(return_url)
             return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=target_recipe.id))
 
+        elif target == "rematch_ingredient":
+            ingredient_id_to_replace = request.form.get(
+                "ingredient_id_to_replace", type=int
+            )
+            original_ingredient = db.session.get(
+                RecipeIngredient, ingredient_id_to_replace
+            )
+
+            if (
+                not original_ingredient
+                or original_ingredient.recipe.user_id != current_user.id
+            ):
+                flash(
+                    "Original ingredient not found or you are not authorized to edit it.",
+                    "danger",
+                )
+                return redirect(url_for("recipes.recipes"))
+
+            # Validation check first
+            if food_type == "my_food":
+                matched_food = db.session.get(MyFood, food_id)
+                if matched_food and matched_food.is_placeholder:
+                    flash(
+                        "Cannot match an ingredient to another placeholder.", "danger"
+                    )
+                    return redirect(
+                        url_for(
+                            EDIT_RECIPE_ROUTE, recipe_id=original_ingredient.recipe_id
+                        )
+                    )
+
+            # Store the ID of the placeholder MyFood to potentially delete it later
+            placeholder_my_food_id = original_ingredient.my_food_id
+
+            # Portion handling for rematch
+            portion = None
+            if portion_id_str:
+                try:
+                    portion_id_int = int(portion_id_str)
+                    portion = db.session.get(UnifiedPortion, portion_id_int)
+                except (ValueError, TypeError):
+                    flash("Invalid portion ID.", "danger")
+                    return redirect(request.referrer)
+
+            if not portion:
+                flash("A valid portion is required for rematching.", "danger")
+                return redirect(
+                    url_for(EDIT_RECIPE_ROUTE, recipe_id=original_ingredient.recipe_id)
+                )
+
+            # Update the ingredient to point to the new food
+            original_ingredient.my_food_id = None
+            original_ingredient.fdc_id = None
+            original_ingredient.recipe_id_link = None
+
+            if food_type == "usda":
+                original_ingredient.fdc_id = food_id
+            elif food_type == "my_food":
+                original_ingredient.my_food_id = food_id
+            elif food_type == "recipe":
+                original_ingredient.recipe_id_link = food_id
+
+            original_ingredient.portion_id_fk = portion.id
+            original_ingredient.amount_grams = amount * portion.gram_weight
+
+            # Check if the old placeholder is still used by any other ingredient
+            if placeholder_my_food_id:
+                other_uses = RecipeIngredient.query.filter(
+                    RecipeIngredient.my_food_id == placeholder_my_food_id,
+                    RecipeIngredient.id != ingredient_id_to_replace,
+                ).count()
+                if other_uses == 0:
+                    placeholder_to_delete = db.session.get(
+                        MyFood, placeholder_my_food_id
+                    )
+                    if placeholder_to_delete:
+                        db.session.delete(placeholder_to_delete)
+
+            update_recipe_nutrition(original_ingredient.recipe)
+            db.session.commit()
+
+            flash("Ingredient matched successfully.", "success")
+            return redirect(
+                url_for(EDIT_RECIPE_ROUTE, recipe_id=original_ingredient.recipe_id)
+            )
+
         elif target == "meal":
             my_meal_id = recipe_id
             if not my_meal_id:
@@ -1083,6 +1193,66 @@ def add_item():
             if return_url:
                 return redirect(return_url)
             return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=my_meal_id))
+
+        elif target == "rematch_ingredient":
+            ingredient_id_to_replace = request.form.get(
+                "ingredient_id_to_replace", type=int
+            )
+            original_ingredient = db.session.get(
+                RecipeIngredient, ingredient_id_to_replace
+            )
+
+            if (
+                not original_ingredient
+                or original_ingredient.recipe.user_id != current_user.id
+            ):
+                flash(
+                    "Original ingredient not found or you are not authorized to edit it.",
+                    "danger",
+                )
+                return redirect(url_for("recipes.recipes"))
+
+            # Store the ID of the placeholder MyFood to potentially delete it later
+            placeholder_my_food_id = original_ingredient.my_food_id
+
+            # Update the ingredient to point to the new food
+            original_ingredient.my_food_id = None
+            original_ingredient.fdc_id = None
+            original_ingredient.recipe_id_link = None
+
+            if food_type == "usda":
+                original_ingredient.fdc_id = food_id
+            elif food_type == "my_food":
+                original_ingredient.my_food_id = food_id
+            elif food_type == "recipe":
+                original_ingredient.recipe_id_link = food_id
+
+            original_ingredient.portion_id_fk = portion.id
+            original_ingredient.amount_grams = amount * portion.gram_weight
+
+            # Check if the old placeholder is still used by any other ingredient
+            if placeholder_my_food_id:
+                is_placeholder_used = (
+                    RecipeIngredient.query.filter(
+                        RecipeIngredient.my_food_id == placeholder_my_food_id
+                    ).count()
+                    > 0
+                )
+
+                if not is_placeholder_used:
+                    placeholder_to_delete = db.session.get(
+                        MyFood, placeholder_my_food_id
+                    )
+                    if placeholder_to_delete:
+                        db.session.delete(placeholder_to_delete)
+
+            update_recipe_nutrition(original_ingredient.recipe)
+            db.session.commit()
+
+            flash("Ingredient matched successfully.", "success")
+            return redirect(
+                url_for(EDIT_RECIPE_ROUTE, recipe_id=original_ingredient.recipe_id)
+            )
 
         elif target == "my_foods":
             if food_type == "usda":

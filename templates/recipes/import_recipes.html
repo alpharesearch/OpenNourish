@@ -45,5 +45,51 @@
             </form>
         </div>
     </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">How to Import a Recipe from a Website or Text</h2>
+        </div>
+        <div class="card-body">
+            <p>You can use any AI assistant (like ChatGPT, Gemini, etc.) to quickly format a recipe from a website or a block of text into a format this tool can understand.</p>
+            <ol>
+                <li>Copy the complete prompt from the text box below.</li>
+                <li>Paste it into your AI assistant.</li>
+                <li>Copy the recipe text from your source (website, document, etc.) and paste it directly below the prompt in the AI's input box.</li>
+                <li>The AI will generate a small block of YAML.</li>
+                <li>Review the generated YAML for accuracy, then paste it into the "Paste YAML Content" box above and click "Import from Text".</li>
+            </ol>
+            <div class="card bg-light">
+                <div class="card-body">
+                    <pre id="prompt-text" style="white-space: pre-wrap; word-wrap: break-word;">
+You are a data extraction assistant. Your task is to extract recipe details from the text provided by the user and format it as a single YAML document.
+
+**Instructions:**
+1.  Adhere strictly to the YAML structure provided in the template below.
+2.  The `name` should be the recipe's title.
+3.  The `servings` should be a single number representing the total yield.
+4.  The `instructions` should be a multi-line string preserving the steps.
+5.  The `ingredients` field must be a simple list of strings, with each string being one full ingredient line from the recipe.
+
+**YAML Template Example:**
+```yaml
+name: "Simple Pancakes"
+servings: 4
+instructions: |
+  1. Mix dry ingredients.
+  2. Add wet ingredients and whisk until smooth.
+  3. Cook on a hot griddle.
+ingredients:
+  - "1 1/2 cups all-purpose flour"
+  - "2 tablespoons sugar"
+  - "1 large egg"
+  - "1 cup milk"
+```
+
+Now, please process the following text and generate the YAML document, following all of the rules above:</pre>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
