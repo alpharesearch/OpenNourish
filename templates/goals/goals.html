@@ -20,10 +20,96 @@
             <small class="d-block">Calculated using the <strong id="bmr-formula">{{ formula_name if formula_name else '' }}</strong> formula.</small>
         </div>
 
-        <!-- CARD 1: Body Composition Goals -->
+        <div class="alert alert-info mb-4" id="bmi-display" {% if not bmi %}style="display: none;"{% endif %} role="alert">
+            Your estimated Body Mass Index (BMI) is: <strong id="bmi-value">{{ "%.1f"|format(bmi) if bmi else '' }}</strong>.
+        </div>
+
+        <!-- CARD: Help & Guidelines -->
         <div class="card mb-4">
             <div class="card-header">
-                <h2 class="h5 mb-0">Body Composition Goals</h2>
+                <h2 class="h5 mb-0">
+                    <a href="#guidelines-collapse" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="guidelines-collapse" class="text-decoration-none">
+                        <i class="bi bi-info-circle"></i> Help & Guidelines
+                    </a>
+                </h2>
+            </div>
+            <div class="collapse" id="guidelines-collapse">
+                <div class="card-body">
+                    <!-- BMI Section -->
+                    <h4>Body Weight Guidelines: Body Mass Index (BMI)</h4>
+                    <p>The most common starting point for assessing healthy weight is the Body Mass Index (BMI), which is a measure of body fat based on height and weight.</p>
+                    <h5>BMI Categories for Adults:</h5>
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr><th>Category</th><th>BMI Range</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Underweight</td><td>Below 18.5</td></tr>
+                            <tr><td>Healthy Weight</td><td>18.5 to 24.9</td></tr>
+                            <tr><td>Overweight</td><td>25.0 to 29.9</td></tr>
+                            <tr><td>Obesity</td><td>30.0 and above</td></tr>
+                        </tbody>
+                    </table>
+                    <p><small>It's important to note that BMI is a screening tool and doesn't account for factors like muscle mass, so it may not be a perfect indicator for everyone, such as athletes.</small></p>
+                    <hr>
+
+                    <!-- Body Fat % Section -->
+                    <h4>Body Fat Percentage Guidelines</h4>
+                    <p>For a more nuanced understanding of body composition, body fat percentage is a key metric. The American Council on Exercise (ACE) provides widely accepted ranges, which differ for men and women and can be further broken down by fitness level.</p>
+                    <h5>General Body Fat Percentage Categories:</h5>
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr><th>Description</th><th>Women</th><th>Men</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Essential Fat</td><td>10-13%</td><td>2-5%</td></tr>
+                            <tr><td>Athletes</td><td>14-20%</td><td>6-13%</td></tr>
+                            <tr><td>Fitness</td><td>21-24%</td><td>14-17%</td></tr>
+                            <tr><td>Average/Acceptable</td><td>25-31%</td><td>18-24%</td></tr>
+                            <tr><td>Obese</td><td>32%+</td><td>25%+</td></tr>
+                        </tbody>
+                    </table>
+                    <br>
+                    <h5>Healthy Body Fat Percentage by Age:</h5>
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr><th>Age</th><th>Women</th><th>Men</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>20-39</td><td>21-32%</td><td>8-19%</td></tr>
+                            <tr><td>40-59</td><td>23-33%</td><td>11-21%</td></tr>
+                            <tr><td>60-79</td><td>24-35%</td><td>13-24%</td></tr>
+                        </tbody>
+                    </table>
+                    <hr>
+
+                    <!-- Waist Circumference Section -->
+                    <h4>Waist Circumference</h4>
+                    <p>Waist circumference is another important indicator of health risk, particularly for conditions like type 2 diabetes and heart disease.</p>
+                    
+                    {% if current_user.gender == 'Male' %}
+                    <p>A waist circumference above <strong>102 cm (40 inches)</strong> for men is associated with an increased health risk.
+                    {% elif current_user.gender == 'Female' %}
+                    <p>A waist circumference above <strong>88 cm (35 inches)</strong> for women is associated with an increased health risk.
+                    {% endif %}
+                    
+                    {% if latest_waist_cm is not none %}
+                        Your most recent measurement is <strong>{{ latest_waist_cm | round(1) }} cm</strong>.
+                    {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 1: Body Composition Goals -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">Body Composition Goals
+                <span class="h6 text-muted" id="target-bmi-header-display">
+                    {% if target_bmi %}
+                        (Target BMI: {{ "%.1f"|format(target_bmi) }})
+                    {% endif %}
+                </span></h2>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -42,17 +128,15 @@
                         <label class="form-label" for="body_fat_percentage_goal">{{ form.body_fat_percentage_goal.label.text }} {% if form.body_fat_percentage_goal.data is not none %}<small class="text-muted">(current: {{ form.body_fat_percentage_goal.data | round(2) }}%)</small>{% endif %}</label>
                         {{ form.body_fat_percentage_goal(class="form-control", placeholder="New goal", value='') }}
                     </div>
-                    {% if current_user.measurement_system == 'us' %}
                     <div class="col-lg-4 mb-3">
+                    {% if current_user.measurement_system == 'us' %}
                         <label class="form-label" for="waist_in_goal">{{ form.waist_in_goal.label.text }} {% if form.waist_in_goal.data is not none %}<small class="text-muted">(current: {{ form.waist_in_goal.data | round(2) }})</small>{% endif %}</label>
                         {{ form.waist_in_goal(class="form-control", placeholder="New goal", value='') }}
-                    </div>
                     {% else %}
-                    <div class="col-lg-4 mb-3">
                         <label class="form-label" for="waist_cm_goal">{{ form.waist_cm_goal.label.text }} {% if form.waist_cm_goal.data is not none %}<small class="text-muted">(current: {{ form.waist_cm_goal.data | round(2) }})</small>{% endif %}</label>
                         {{ form.waist_cm_goal(class="form-control", placeholder="New goal", value='') }}
-                    </div>
                     {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -137,6 +221,50 @@
 
 {% block scripts %}
 {{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const weightGoalKgInput = document.getElementById('weight_goal_kg');
+    const weightGoalLbsInput = document.getElementById('weight_goal_lbs');
+    const targetBmiDisplay = document.getElementById('target-bmi-header-display');
+    const userHeightCm = {{ current_user.height_cm|default('null') }};
+
+    function updateTargetBmi() {
+        if (!userHeightCm) return;
+
+        let weightKg;
+        if (weightGoalKgInput && weightGoalKgInput.value) {
+            weightKg = parseFloat(weightGoalKgInput.value);
+        } else if (weightGoalLbsInput && weightGoalLbsInput.value) {
+            const weightLbs = parseFloat(weightGoalLbsInput.value);
+            weightKg = weightLbs / 2.20462; // lbs to kg conversion
+        } else {
+            // If input is empty, revert to server-rendered value if it exists
+            const initialTargetBmi = "{{ '%.1f'|format(target_bmi) if target_bmi else '' }}";
+            if (initialTargetBmi) {
+                targetBmiDisplay.innerHTML = `(Target BMI: ${initialTargetBmi})`;
+            } else {
+                targetBmiDisplay.innerHTML = '';
+            }
+            return;
+        }
+
+        if (!isNaN(weightKg) && weightKg > 0) {
+            const heightM = userHeightCm / 100;
+            const bmi = weightKg / (heightM * heightM);
+            targetBmiDisplay.innerHTML = `(Target BMI: ${bmi.toFixed(1)})`;
+        } else {
+            targetBmiDisplay.innerHTML = '';
+        }
+    }
+
+    if (weightGoalKgInput) {
+        weightGoalKgInput.addEventListener('input', updateTargetBmi);
+    }
+    if (weightGoalLbsInput) {
+        weightGoalLbsInput.addEventListener('input', updateTargetBmi);
+    }
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const goalModifierSelect = document.getElementById('goal_modifier');

@@ -5,6 +5,7 @@ from .forms import GoalForm
 from models import db, UserGoal, CheckIn
 from opennourish.utils import (
     calculate_bmr,
+    calculate_bmi,
     lbs_to_kg,
     kg_to_lbs,
     cm_to_in,
@@ -50,7 +51,9 @@ def goals():
 
         # Update Exercise Goals
         if form.calories_burned_goal_weekly.data is not None:
-            user_goal.calories_burned_goal_weekly = form.calories_burned_goal_weekly.data
+            user_goal.calories_burned_goal_weekly = (
+                form.calories_burned_goal_weekly.data
+            )
         if form.exercises_per_week_goal.data is not None:
             user_goal.exercises_per_week_goal = form.exercises_per_week_goal.data
         if form.minutes_per_exercise_goal.data is not None:
@@ -112,12 +115,27 @@ def goals():
             else None,
         )
 
+    # Calculate BMI for display
+    bmi = None
+    if latest_checkin and latest_checkin.weight_kg and current_user.height_cm:
+        bmi = calculate_bmi(latest_checkin.weight_kg, current_user.height_cm)
+
+    # Calculate Target BMI
+    target_bmi = None
+    if user_goal and user_goal.weight_goal_kg and current_user.height_cm:
+        target_bmi = calculate_bmi(user_goal.weight_goal_kg, current_user.height_cm)
+
+    latest_waist_cm = latest_checkin.waist_cm if latest_checkin else None
+
     return render_template(
         "goals/goals.html",
         form=form,
         bmr=bmr,
+        bmi=bmi,
+        target_bmi=target_bmi,
         formula_name=formula_name,
         diet_presets=Config.DIET_PRESETS,
+        latest_waist_cm=latest_waist_cm,
     )
 
 

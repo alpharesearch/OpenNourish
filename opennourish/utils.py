@@ -954,3 +954,15 @@ def prepare_undo_and_delete(
         Markup(f"{success_message} <a href='{undo_url}' class='alert-link'>Undo</a>"),
         "success",
     )
+
+
+def calculate_bmi(weight_kg, height_cm):
+    """
+    Calculates Body Mass Index (BMI).
+    Formula: weight (kg) / (height (m))^2
+    """
+    if not weight_kg or not height_cm or height_cm == 0:
+        return None
+    height_m = height_cm / 100
+    bmi = weight_kg / (height_m**2)
+    return bmi
