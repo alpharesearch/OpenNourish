@@ -141,7 +141,7 @@
                         <input type="hidden" name="friend_username" value="{{ username }}">
                         <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
                         <input type="hidden" name="meal_name" value="{{ meal_name }}">
-                        <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-clipboard"></i> Basic Copy</button>
+                        <button type="submit" class="btn btn-outline-success btn-sm" title="Copies the meal to the same date in your diary."><i class="bi bi-clipboard"></i> Direct Copy</button>
                     </form>
                 </div>
                 {% elif not is_read_only %}
@@ -455,15 +455,33 @@
                 copyEntryModal.addEventListener('show.bs.modal', function (event) {
                     var button = event.relatedTarget;
                     var logId = button.getAttribute('data-log-id');
-                    var logDate = button.getAttribute('data-log-date');
                     var friendUsername = button.getAttribute('data-friend-username');
 
                     var modalLogIdInput = copyEntryModal.querySelector('#copy-modalLogId');
                     var modalLogDateInput = copyEntryModal.querySelector('#copy-modalLogDate');
+                    var modalMealNameSelect = copyEntryModal.querySelector('#copy-modalMealName');
                     var copyForm = copyEntryModal.querySelector('#copyEntryForm');
 
                     modalLogIdInput.value = logId;
-                    modalLogDateInput.value = logDate;
+                    // Set date to today for copying
+                    modalLogDateInput.value = '{{ user_today_str }}';
+
+                    // Pre-select meal based on time of day
+                    const userTimezone = '{{ user_timezone|default('UTC') }}';
+                    const hourFormatter = new Intl.DateTimeFormat('en-US', {
+                        timeZone: userTimezone,
+                        hour: 'numeric',
+                        hour12: false
+                    });
+                    const currentHour = parseInt(hourFormatter.format(new Date()), 10);
+                    
+                    let defaultMeal = 'Lunch';
+                    if (currentHour < 11) {
+                        defaultMeal = 'Breakfast';
+                    } else if (currentHour >= 16) {
+                        defaultMeal = 'Dinner';
+                    }
+                    modalMealNameSelect.value = defaultMeal;
 
                     if (friendUsername) {
                         copyForm.action = "/user/" + friendUsername + "/copy_log";

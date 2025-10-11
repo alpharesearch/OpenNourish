@@ -157,9 +157,9 @@ def create_app(config_class=Config):
     # Enable the Jinja2 'do' extension
     app.jinja_env.add_extension("jinja2.ext.do")
 
-    from opennourish.context_processors import utility_processor
+    from opennourish.context_processors import inject_global_vars
 
-    app.context_processor(utility_processor)
+    app.context_processor(inject_global_vars)
 
     from opennourish.auth import auth_bp
 
@@ -232,26 +232,6 @@ def create_app(config_class=Config):
     from opennourish.undo import undo_bp
 
     app.register_blueprint(undo_bp)
-
-    @app.context_processor
-    def inject_user_settings():
-        from flask_login import current_user
-
-        if hasattr(current_user, "is_authenticated") and current_user.is_authenticated:
-            # Get the user's meal setting, default to 6 if not set
-            user_meals_per_day = current_user.meals_per_day or 6
-            # Get the corresponding meal names, fall back to default if the key is invalid
-            standard_meal_names = MEAL_CONFIG.get(
-                user_meals_per_day, DEFAULT_MEAL_NAMES
-            )
-            return {
-                "meals_per_day": user_meals_per_day,
-                "standard_meal_names": standard_meal_names,
-            }
-        return {
-            "meals_per_day": 6,  # Default for anonymous users
-            "standard_meal_names": DEFAULT_MEAL_NAMES,
-        }
 
     @login_manager.user_loader
     def load_user(user_id):

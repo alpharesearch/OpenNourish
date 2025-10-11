@@ -239,37 +239,38 @@
 
                         // --- 4. POPULATE DIARY-SPECIFIC FIELDS (DATE & MEAL) ---
                         if (isDiaryTarget) {
-                            // Set date: Use the button's specific logDate if provided, otherwise default to today.
-                            modalLogDate.value = logDate || '{{ current_log_date_str }}';
+                            // Set date to today for all copy actions.
+                            modalLogDate.value = '{{ user_today_str }}';
 
                             // Populate meal dropdown
                             modalMealName.innerHTML = '';
                             const globalStandardMealNames = {{ standard_meal_names|tojson }};
 
-                            if (apiFoodType === 'diary_meal') {
-                                // Special Case: Copying a meal. The backend will validate if the source and target are the same.
-                                const sourceMealName = this.dataset.foodId;
-                                for (const meal of globalStandardMealNames) {
-                                    if (meal !== 'Water') {
-                                        const option = document.createElement('option');
-                                        option.value = meal;
-                                        option.textContent = meal;
-                                        modalMealName.appendChild(option);
-                                    }
-                                }
-                            } else {
-                                // Standard Case: Adding any other item.
-                                for (const meal of globalStandardMealNames) {
-                                    const option = document.createElement('option');
-                                    option.value = meal;
-                                    option.textContent = meal;
-                                    modalMealName.appendChild(option);
-                                }
-                                // If a mealName was passed from the button, pre-select it.
-                                if (mealName) {
-                                    modalMealName.value = mealName;
-                                }
+                            for (const meal of globalStandardMealNames) {
+                                const option = document.createElement('option');
+                                option.value = meal;
+                                option.textContent = meal;
+                                modalMealName.appendChild(option);
                             }
+
+                            // Pre-select meal based on time of day for convenience
+                            const userTimezone = '{{ user_timezone|default('UTC') }}';
+                            const hourFormatter = new Intl.DateTimeFormat('en-US', {
+                                timeZone: userTimezone,
+                                hour: 'numeric',
+                                hour12: false
+                            });
+                            const currentHour = parseInt(hourFormatter.format(new Date()), 10);
+
+                            let defaultMeal = 'Lunch';
+                            if (currentHour < 11) {
+                                defaultMeal = 'Breakfast';
+                            } else if (currentHour >= 16) {
+                                defaultMeal = 'Dinner';
+                            }
+                            
+                            // If a mealName was passed from the button (e.g., clicking "Add to Lunch"), use it. Otherwise, use the time-based default.
+                            modalMealName.value = mealName || defaultMeal;
                         }
 
                         // --- 5. FETCH PORTIONS (IF APPLICABLE) ---
