@@ -1,0 +1,22 @@
+<!-- Date Picker Modal -->
+<div class="modal fade" id="datePickerModal" tabindex="-1" aria-labelledby="datePickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="datePickerModalLabel">Select a Date</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="date" id="datePickerInput" class="form-control mb-3">
+                <div class="d-grid gap-2">
+                    <button id="jumpToTodayBtn" class="btn btn-outline-secondary">Today</button>
+                    <button id="jumpToYesterdayBtn" class="btn btn-outline-secondary">Yesterday</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="datePickerGoBtn" class="btn btn-outline-primary">Go</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -21,9 +21,13 @@ def inject_global_vars():
             standard_meal_names=standard_meal_names,
             user_today_str=user_today_str,
             user_timezone=current_user.timezone,
+            is_read_only=False,
+            username=current_user.username,
         )
     return dict(
         standard_meal_names=["Breakfast", "Lunch", "Dinner"],
         user_today_str=None,
         user_timezone="UTC",
+        is_read_only=False,
+        username=None,
     )

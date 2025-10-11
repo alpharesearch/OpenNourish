@@ -14,7 +14,7 @@
         </div>
 
         <!-- Title: On small screens, ordered first and full-width. On large, ordered second. -->
-        <div class="col-12 col-md-auto text-center order-1 order-md-2 mb-2 mb-md-0">
+        <div class="col-12 col-md-auto text-center order-1 order-md-2 mb-2 mb-md-0" id="date-picker-trigger" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#datePickerModal">
             <h1 class="mb-0">{% if is_read_only %}{{ username }}'s {% endif %}Food Diary</h1>
             <h2 class="mb-0 h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
         </div>
@@ -530,6 +530,38 @@
             }
         });
     </script>
-    {% endblock %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const datePickerModal = document.getElementById('datePickerModal');
+            const datePickerInput = document.getElementById('datePickerInput');
+            const datePickerGoBtn = document.getElementById('datePickerGoBtn');
+            const jumpToTodayBtn = document.getElementById('jumpToTodayBtn');
+            const jumpToYesterdayBtn = document.getElementById('jumpToYesterdayBtn');
+
+            const isReadOnly = {{ is_read_only|tojson }};
+            const username = {{ username|tojson }};
+            const baseUrl = isReadOnly ? "/profile/" + username + "/diary/" : "/diary/";
+
+            datePickerGoBtn.addEventListener('click', function () {
+                const selectedDate = datePickerInput.value;
+                if (selectedDate) {
+                    window.location.href = baseUrl + selectedDate;
+                }
+            });
+
+            jumpToTodayBtn.addEventListener('click', function () {
+                const today = new Date().toISOString().split('T')[0];
+                window.location.href = baseUrl + today;
+            });
+
+            jumpToYesterdayBtn.addEventListener('click', function () {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                window.location.href = baseUrl + yesterday.toISOString().split('T')[0];
+            });
+        });
+    </script>
+    {{ super() }}
+{% endblock %}
 
     {% endblock %}

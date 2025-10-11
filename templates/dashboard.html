@@ -21,7 +21,7 @@
         </div>
 
         <!-- Title: On small screens, ordered first and full-width. On large, ordered second. -->
-        <div class="col-12 col-md-auto text-center order-1 order-md-2 mb-2 mb-md-0">
+        <div class="col-12 col-md-auto text-center order-1 order-md-2 mb-2 mb-md-0" id="date-picker-trigger" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#datePickerModal">
             <h1 class="mb-0">{% if is_read_only %}{{ username }}'s {% endif %}Dashboard</h1>
             <h2 class="mb-0 h4">{{ date.strftime('%A, %B %d, %Y') }}</h2>
         </div>
@@ -802,19 +802,19 @@
             const ctx = document.getElementById('projectionChart');
             if (!ctx) return;
 
-            const measurementSystem = {{ current_user_measurement_system| tojson }};
+            const measurementSystem = {{ current_user_measurement_system|tojson }};
             const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
             const conversionFactor = measurementSystem === 'us' ? 2.20462 : 1;
 
-            let projectedWeights = {{ projected_weights| tojson }}.map(w => w * conversionFactor);
-            let goalWeight = {{ goals.weight_goal_kg| tojson }} * conversionFactor;
+            let projectedWeights = {{ projected_weights|tojson }}.map(w => w * conversionFactor);
+            let goalWeight = {{ goals.weight_goal_kg|tojson }} * conversionFactor;
 
             const goalData = Array(projectedWeights.length).fill(goalWeight);
 
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: {{ projected_dates| tojson }},
+                    labels: {{ projected_dates|tojson }},
                     datasets: [{
                         label: `Projected Weight (${weightUnit})`,
                         data: projectedWeights,
@@ -908,5 +908,37 @@
             }
         });
     </script>
-    {% endblock %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const datePickerModal = document.getElementById('datePickerModal');
+            const datePickerInput = document.getElementById('datePickerInput');
+            const datePickerGoBtn = document.getElementById('datePickerGoBtn');
+            const jumpToTodayBtn = document.getElementById('jumpToTodayBtn');
+            const jumpToYesterdayBtn = document.getElementById('jumpToYesterdayBtn');
+
+            const isReadOnly = {{ is_read_only|tojson }};
+            const username = {{ username|tojson }};
+            const baseUrl = isReadOnly ? "/profile/" + username + "/dashboard/" : "/dashboard/";
+
+            datePickerGoBtn.addEventListener('click', function () {
+                const selectedDate = datePickerInput.value;
+                if (selectedDate) {
+                    window.location.href = baseUrl + selectedDate;
+                }
+            });
+
+            jumpToTodayBtn.addEventListener('click', function () {
+                const today = new Date().toISOString().split('T')[0];
+                window.location.href = baseUrl + today;
+            });
+
+            jumpToYesterdayBtn.addEventListener('click', function () {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                window.location.href = baseUrl + yesterday.toISOString().split('T')[0];
+            });
+        });
+    </script>
+    {{ super() }}
+{% endblock %}
     {% endblock %}
