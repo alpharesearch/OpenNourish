@@ -48,21 +48,27 @@
 
     <div class="card mt-4">
         <div class="card-header">
-            <h2 class="h5 mb-0">How to Import a Recipe from a Website or Text</h2>
+            <h2 class="h5 mb-0">How to Import a Recipe from a Website, Photo, or Text</h2>
         </div>
         <div class="card-body">
-            <p>You can use any AI assistant (like ChatGPT, Gemini, etc.) to quickly format a recipe from a website or a block of text into a format this tool can understand.</p>
+            <p>You can use any AI assistant with vision capabilities (like the Gemini App, ChatGPT-4, etc.) to quickly format a recipe from a website, photo, or text into a format this tool can understand.</p>
             <ol>
+                <li>Take a clear photo or screenshot of the recipe.</li>
                 <li>Copy the complete prompt from the text box below.</li>
-                <li>Paste it into your AI assistant.</li>
-                <li>Copy the recipe text from your source (website, document, etc.) and paste it directly below the prompt in the AI's input box.</li>
+                <li>Paste the prompt into your AI assistant.</li>
+                <li>Upload your photo/screenshot or paste the text directly below the prompt in the AI's input box.</li>
                 <li>The AI will generate a small block of YAML.</li>
                 <li>Review the generated YAML for accuracy, then paste it into the "Paste YAML Content" box above and click "Import from Text".</li>
             </ol>
+            <div class="d-flex justify-content-end mb-2">
+                <button id="copy-prompt-btn" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-clipboard"></i> Copy Prompt
+                </button>
+            </div>
             <div class="card bg-light">
                 <div class="card-body">
                     <pre id="prompt-text" style="white-space: pre-wrap; word-wrap: break-word;">
-You are a data extraction assistant. Your task is to extract recipe details from the text provided by the user and format it as a single YAML document.
+You are a data extraction assistant. Your task is to extract recipe details from the image or text provided by the user and format it as a single YAML document.
 
 **Instructions:**
 1.  Adhere strictly to the YAML structure provided in the template below.
@@ -74,6 +80,7 @@ You are a data extraction assistant. Your task is to extract recipe details from
     - `quantity`: A number representing the amount.
     - `unit`: The unit of measurement (e.g., "cup", "tablespoon").
     - `notes`: Any extra information, like "sifted" or "melted". If none, use an empty string.
+6.  Your response must be only the raw YAML content, without any introductory text, code block formatting (like ```yaml), or explanations.
 
 **YAML Template Example:**
 ```yaml
@@ -98,10 +105,40 @@ ingredients:
     notes: ""
 ```
 
-Now, please process the following text and generate the YAML document, following all of the rules above:</pre>
+Now, please process the following image or text and generate the YAML document, following all of the rules above:</pre>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Logic for the copy prompt button
+    document.getElementById('copy-prompt-btn').addEventListener('click', function() {
+        var promptText = document.getElementById('prompt-text').innerText;
+        navigator.clipboard.writeText(promptText).then(function() {
+            var btn = document.getElementById('copy-prompt-btn');
+            var originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-outline-success');
+            setTimeout(function() {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-outline-secondary');
+            }, 2000);
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+    });
+
+    // Logic for auto-expanding textarea
+    var textarea = document.getElementById('yaml_text');
+    textarea.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+});
+</script>
 {% endblock %}

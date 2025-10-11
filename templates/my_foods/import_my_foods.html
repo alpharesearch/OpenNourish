@@ -56,24 +56,31 @@
             <h2 class="h5 mb-0">How to Use an AI Assistant to Create Your Import File</h2>
         </div>
         <div class="card-body">
-            <p>You can use any AI assistant (like ChatGPT, Gemini, etc.) to help you create a YAML import file from unstructured text, like a PDF or a website. Just follow these steps:</p>
+            <p>You can use any AI assistant with vision capabilities (like the Gemini App, ChatGPT-4, etc.) to create a YAML import file from a photo, screenshot, or text. Just follow these steps:</p>
             <ol>
+                <li>Take a clear photo or screenshot of the nutrition label.</li>
                 <li>Copy the complete prompt from the text box below.</li>
-                <li>Paste it into your AI assistant.</li>
-                <li>Copy the nutritional information from your source (PDF, website, etc.) and paste it directly below the prompt in the AI's input box.</li>
+                <li>Paste the prompt into your AI assistant.</li>
+                <li>Upload your photo/screenshot or paste the text directly below the prompt in the AI's input box.</li>
                 <li>The AI will generate the YAML content for you.</li>
                 <li>Review the generated YAML for accuracy, save it as a <code>.yaml</code> file, and upload it here.</li>
             </ol>
+            <div class="d-flex justify-content-end mb-2">
+                <button id="copy-prompt-btn" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-clipboard"></i> Copy Prompt
+                </button>
+            </div>
             <div class="card bg-light">
                 <div class="card-body">
                     <pre id="prompt-text" style="white-space: pre-wrap; word-wrap: break-word;">
-You are a data extraction assistant. Your task is to extract nutrition information for one or more food items from the text provided by the user and format it as a YAML list.
+You are a data extraction assistant. Your task is to extract nutrition information for one or more food items from the image or text provided by the user and format it as a YAML list.
 
 **Instructions:**
 1.  Adhere strictly to the YAML structure provided in the template below for each food item.
 2.  The `nutrition_facts` block must contain the nutritional values for the serving size listed in the `serving` block.
 3.  Ensure that all numerical fields (like `gram_weight` and all fields under `nutrition_facts`) are numbers only.
 4.  The `serving` field must be the main serving including a gram_weight, if gram weight is unknown guess or use 0. There is a algorithm in the backend to clean up 0 values automatically up on import.
+5.  Your response must be only the raw YAML content, without any introductory text, code block formatting (like ```yaml), or explanations.
 
 **--- CATEGORY RULES (VERY IMPORTANT) ---**
 1.  **PRIORITIZE EXISTING CATEGORIES:** First, review the list of "Your Available Categories" provided below. If a suitable category from this list fits the food item, use its exact name.
@@ -111,10 +118,40 @@ You are a data extraction assistant. Your task is to extract nutrition informati
     iron_milligrams: 0
     potassium_milligrams: 0
 ```
-Now, please process the following text and generate the YAML list, following all of the rules above:</pre>
+Now, please process the following image or text and generate the YAML list, following all of the rules above:</pre>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Logic for the copy prompt button
+    document.getElementById('copy-prompt-btn').addEventListener('click', function() {
+        var promptText = document.getElementById('prompt-text').innerText;
+        navigator.clipboard.writeText(promptText).then(function() {
+            var btn = document.getElementById('copy-prompt-btn');
+            var originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-outline-success');
+            setTimeout(function() {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-outline-secondary');
+            }, 2000);
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
+    });
+
+    // Logic for auto-expanding textarea
+    var textarea = document.getElementById('yaml_text');
+    textarea.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+});
+</script>
 {% endblock %}
