@@ -39,7 +39,8 @@ class GoalForm(FlaskForm):
         "Adjust Nutritional Goals",
         choices=[
             ("manual", "Manual Entry"),
-            ("max_loss", "Max Loss"),
+            ("vlcd", "Very Low-Calorie Diet"),
+            ("lcd", "Low-Calorie Diet"),
             ("safe_max_loss", "Safe Max Loss"),
             ("moderate_loss", "Moderate Loss"),
             ("maintain", "Maintain"),

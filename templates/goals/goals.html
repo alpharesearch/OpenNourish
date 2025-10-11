@@ -29,28 +29,28 @@
                 <div class="row">
                     {% if current_user.measurement_system == 'us' %}
                     <div class="col-lg-4 mb-3">
-                        {{ form.weight_goal_lbs.label(class="form-label") }}
-                        {{ form.weight_goal_lbs(class="form-control", value=(form.weight_goal_lbs.data | round(2)) if form.weight_goal_lbs.data else '') }}
+                        <label class="form-label" for="weight_goal_lbs">{{ form.weight_goal_lbs.label.text }} {% if form.weight_goal_lbs.data is not none %}<small class="text-muted">(current: {{ form.weight_goal_lbs.data | round(2) }})</small>{% endif %}</label>
+                        {{ form.weight_goal_lbs(class="form-control", placeholder="New goal", value='') }}
                     </div>
                     {% else %}
                     <div class="col-lg-4 mb-3">
-                        {{ form.weight_goal_kg.label(class="form-label") }}
-                        {{ form.weight_goal_kg(class="form-control", value=(form.weight_goal_kg.data | round(2)) if form.weight_goal_kg.data else '') }}
+                        <label class="form-label" for="weight_goal_kg">{{ form.weight_goal_kg.label.text }} {% if form.weight_goal_kg.data is not none %}<small class="text-muted">(current: {{ form.weight_goal_kg.data | round(2) }})</small>{% endif %}</label>
+                        {{ form.weight_goal_kg(class="form-control", placeholder="New goal", value='') }}
                     </div>
                     {% endif %}
                     <div class="col-lg-4 mb-3">
-                        {{ form.body_fat_percentage_goal.label(class="form-label") }}
-                        {{ form.body_fat_percentage_goal(class="form-control", value=(form.body_fat_percentage_goal.data | round(2)) if form.body_fat_percentage_goal.data else '') }}
+                        <label class="form-label" for="body_fat_percentage_goal">{{ form.body_fat_percentage_goal.label.text }} {% if form.body_fat_percentage_goal.data is not none %}<small class="text-muted">(current: {{ form.body_fat_percentage_goal.data | round(2) }}%)</small>{% endif %}</label>
+                        {{ form.body_fat_percentage_goal(class="form-control", placeholder="New goal", value='') }}
                     </div>
                     {% if current_user.measurement_system == 'us' %}
                     <div class="col-lg-4 mb-3">
-                        {{ form.waist_in_goal.label(class="form-label") }}
-                        {{ form.waist_in_goal(class="form-control", value=(form.waist_in_goal.data | round(2)) if form.waist_in_goal.data else '') }}
+                        <label class="form-label" for="waist_in_goal">{{ form.waist_in_goal.label.text }} {% if form.waist_in_goal.data is not none %}<small class="text-muted">(current: {{ form.waist_in_goal.data | round(2) }})</small>{% endif %}</label>
+                        {{ form.waist_in_goal(class="form-control", placeholder="New goal", value='') }}
                     </div>
                     {% else %}
                     <div class="col-lg-4 mb-3">
-                        {{ form.waist_cm_goal.label(class="form-label") }}
-                        {{ form.waist_cm_goal(class="form-control", value=(form.waist_cm_goal.data | round(2)) if form.waist_cm_goal.data else '') }}
+                        <label class="form-label" for="waist_cm_goal">{{ form.waist_cm_goal.label.text }} {% if form.waist_cm_goal.data is not none %}<small class="text-muted">(current: {{ form.waist_cm_goal.data | round(2) }})</small>{% endif %}</label>
+                        {{ form.waist_cm_goal(class="form-control", placeholder="New goal", value='') }}
                     </div>
                     {% endif %}
                 </div>
@@ -75,20 +75,20 @@
                 </div>
                 <div class="row">
                     <div class="col-lg-3 mb-3">
-                        {{ form.calories.label(class="form-label") }}
-                        {{ form.calories(class="form-control") }}
+                        <label class="form-label" for="calories">{{ form.calories.label.text }} {% if form.calories.data is not none %}<small class="text-muted">(current: {{ form.calories.data | round | int }})</small>{% endif %}</label>
+                        {{ form.calories(class="form-control", placeholder="New goal", value='') }}
                     </div>
                     <div class="col-lg-3 mb-3">
-                        {{ form.protein.label(class="form-label") }}
-                        {{ form.protein(class="form-control") }}
+                        <label class="form-label" for="protein">{{ form.protein.label.text }} {% if form.protein.data is not none %}<small class="text-muted">(current: {{ form.protein.data | round | int }}g)</small>{% endif %}</label>
+                        {{ form.protein(class="form-control", placeholder="New goal", value='') }}
                     </div>
                     <div class="col-lg-3 mb-3">
-                        {{ form.carbs.label(class="form-label") }}
-                        {{ form.carbs(class="form-control") }}
+                        <label class="form-label" for="carbs">{{ form.carbs.label.text }} {% if form.carbs.data is not none %}<small class="text-muted">(current: {{ form.carbs.data | round | int }}g)</small>{% endif %}</label>
+                        {{ form.carbs(class="form-control", placeholder="New goal", value='') }}
                     </div>
                     <div class="col-lg-3 mb-3">
-                        {{ form.fat.label(class="form-label") }}
-                        {{ form.fat(class="form-control") }}
+                        <label class="form-label" for="fat">{{ form.fat.label.text }} {% if form.fat.data is not none %}<small class="text-muted">(current: {{ form.fat.data | round | int }}g)</small>{% endif %}</label>
+                        {{ form.fat(class="form-control", placeholder="New goal", value='') }}
                     </div>
                 </div>
             </div>
@@ -102,16 +102,16 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-lg-4 mb-3">
-                        {{ form.calories_burned_goal_weekly.label(class="form-label") }}
-                        {{ form.calories_burned_goal_weekly(class="form-control") }}
+                        <label class="form-label" for="calories_burned_goal_weekly">{{ form.calories_burned_goal_weekly.label.text }} {% if form.calories_burned_goal_weekly.data is not none %}<small class="text-muted">(current: {{ form.calories_burned_goal_weekly.data | round | int }})</small>{% endif %}</label>
+                        {{ form.calories_burned_goal_weekly(class="form-control", placeholder="New goal", value='') }}
                     </div>
                     <div class="col-lg-4 mb-3">
-                        {{ form.exercises_per_week_goal.label(class="form-label") }}
-                        {{ form.exercises_per_week_goal(class="form-control") }}
+                        <label class="form-label" for="exercises_per_week_goal">{{ form.exercises_per_week_goal.label.text }} {% if form.exercises_per_week_goal.data is not none %}<small class="text-muted">(current: {{ form.exercises_per_week_goal.data | round | int }})</small>{% endif %}</label>
+                        {{ form.exercises_per_week_goal(class="form-control", placeholder="New goal", value='') }}
                     </div>
                     <div class="col-lg-4 mb-3">
-                        {{ form.minutes_per_exercise_goal.label(class="form-label") }}
-                        {{ form.minutes_per_exercise_goal(class="form-control") }}
+                        <label class="form-label" for="minutes_per_exercise_goal">{{ form.minutes_per_exercise_goal.label.text }} {% if form.minutes_per_exercise_goal.data is not none %}<small class="text-muted">(current: {{ form.minutes_per_exercise_goal.data | round | int }})</small>{% endif %}</label>
+                        {{ form.minutes_per_exercise_goal(class="form-control", placeholder="New goal", value='') }}
                     </div>
                 </div>
             </div>
@@ -125,8 +125,8 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-lg-4 mb-3">
-                        {{ form.default_fasting_hours.label(class="form-label") }}
-                        {{ form.default_fasting_hours(class="form-control") }}
+                        <label class="form-label" for="default_fasting_hours">{{ form.default_fasting_hours.label.text }} {% if form.default_fasting_hours.data is not none %}<small class="text-muted">(current: {{ form.default_fasting_hours.data | round(1) }})</small>{% endif %}</label>
+                        {{ form.default_fasting_hours(class="form-control", placeholder="New goal", value='') }}
                     </div>
                 </div>
             </div>
@@ -153,18 +153,38 @@ document.addEventListener('DOMContentLoaded', function() {
         nutrientFields.forEach(field => field.disabled = disabled);
     }
 
-    function calculateAndPopulateGoals() {
+    function applyPresetToMacros() {
+        const dietPreset = dietPresetSelect.value;
+        const calories = parseFloat(caloriesField.value);
+        if (dietPreset !== 'manual' && !isNaN(calories) && calories > 0) {
+            const dietPresets = {{ diet_presets|tojson }};
+            const preset = dietPresets[dietPreset];
+            if (preset) {
+                proteinField.value = Math.round((calories * preset.protein) / 4);
+                carbsField.value = Math.round((calories * preset.carbs) / 4);
+                fatField.value = Math.round((calories * preset.fat) / 9);
+            }
+        }
+    }
+
+    function updateNutrientGoals() {
         const goalModifier = goalModifierSelect.value;
         const dietPreset = dietPresetSelect.value;
 
-        if (goalModifier === 'manual' || dietPreset === 'manual') {
+        if (goalModifier === 'manual') {
+            setNutrientFieldsDisabled(false);
+            applyPresetToMacros(); // Apply preset based on current calories
+            return;
+        }
+
+        if (dietPreset === 'manual') {
             setNutrientFieldsDisabled(false);
             return;
         }
 
+        // BMR-based calculation
         const bmrText = bmrValueElement.textContent;
         if (!bmrText) return;
-
         const bmr = parseFloat(bmrText);
         if (isNaN(bmr)) return;
 
@@ -172,7 +192,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let adjustedCalories;
         switch (goalModifier) {
-            case 'max_loss':
+            case 'vlcd':
+                adjustedCalories = 800;
+                break;
+            case 'lcd':
                 adjustedCalories = 1200;
                 break;
             case 'safe_max_loss':
@@ -200,16 +223,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const dietPresets = {{ diet_presets|tojson }};
         if (dietPresets[dietPreset]) {
-            const preset = dietPresets[dietPreset];
             caloriesField.value = Math.round(adjustedCalories);
-            proteinField.value = Math.round((adjustedCalories * preset.protein) / 4);
-            carbsField.value = Math.round((adjustedCalories * preset.carbs) / 4);
-            fatField.value = Math.round((adjustedCalories * preset.fat) / 9);
+            // After setting calories, we can re-use the macro calculation logic
+            applyPresetToMacros();
         }
     }
 
-    goalModifierSelect.addEventListener('change', calculateAndPopulateGoals);
-    dietPresetSelect.addEventListener('change', calculateAndPopulateGoals);
+    goalModifierSelect.addEventListener('change', updateNutrientGoals);
+    dietPresetSelect.addEventListener('change', updateNutrientGoals);
+    caloriesField.addEventListener('input', () => {
+        if (goalModifierSelect.value === 'manual') {
+            applyPresetToMacros();
+        }
+    });
 
     if (form) {
         form.addEventListener('submit', function() {
@@ -218,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initial calculation on page load
-    calculateAndPopulateGoals();
+    updateNutrientGoals();
 });
 </script>
 <script>

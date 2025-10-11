@@ -39,25 +39,38 @@ def goals():
         user_goal.diet_preset = form.diet_preset.data
 
         # Directly save the nutritional values from the form
-        user_goal.calories = form.calories.data
-        user_goal.protein = form.protein.data
-        user_goal.carbs = form.carbs.data
-        user_goal.fat = form.fat.data
+        if form.calories.data is not None:
+            user_goal.calories = form.calories.data
+        if form.protein.data is not None:
+            user_goal.protein = form.protein.data
+        if form.carbs.data is not None:
+            user_goal.carbs = form.carbs.data
+        if form.fat.data is not None:
+            user_goal.fat = form.fat.data
 
         # Update Exercise Goals
-        user_goal.calories_burned_goal_weekly = form.calories_burned_goal_weekly.data
-        user_goal.exercises_per_week_goal = form.exercises_per_week_goal.data
-        user_goal.minutes_per_exercise_goal = form.minutes_per_exercise_goal.data
+        if form.calories_burned_goal_weekly.data is not None:
+            user_goal.calories_burned_goal_weekly = form.calories_burned_goal_weekly.data
+        if form.exercises_per_week_goal.data is not None:
+            user_goal.exercises_per_week_goal = form.exercises_per_week_goal.data
+        if form.minutes_per_exercise_goal.data is not None:
+            user_goal.minutes_per_exercise_goal = form.minutes_per_exercise_goal.data
 
         # Update Body Composition Goals
         if current_user.measurement_system == "us":
-            user_goal.weight_goal_kg = lbs_to_kg(form.weight_goal_lbs.data)
-            user_goal.waist_cm_goal = in_to_cm(form.waist_in_goal.data)
+            if form.weight_goal_lbs.data is not None:
+                user_goal.weight_goal_kg = lbs_to_kg(form.weight_goal_lbs.data)
+            if form.waist_in_goal.data is not None:
+                user_goal.waist_cm_goal = in_to_cm(form.waist_in_goal.data)
         else:
-            user_goal.weight_goal_kg = form.weight_goal_kg.data
-            user_goal.waist_cm_goal = form.waist_cm_goal.data
-        user_goal.body_fat_percentage_goal = form.body_fat_percentage_goal.data
-        user_goal.default_fasting_hours = form.default_fasting_hours.data
+            if form.weight_goal_kg.data is not None:
+                user_goal.weight_goal_kg = form.weight_goal_kg.data
+            if form.waist_cm_goal.data is not None:
+                user_goal.waist_cm_goal = form.waist_cm_goal.data
+        if form.body_fat_percentage_goal.data is not None:
+            user_goal.body_fat_percentage_goal = form.body_fat_percentage_goal.data
+        if form.default_fasting_hours.data is not None:
+            user_goal.default_fasting_hours = form.default_fasting_hours.data
 
         db.session.commit()
         flash("Goals updated!", "success")
@@ -67,6 +80,14 @@ def goals():
     if request.method == "GET" and user_goal:
         form.goal_modifier.data = user_goal.goal_modifier
         form.diet_preset.data = user_goal.diet_preset
+        form.calories.data = user_goal.calories
+        form.protein.data = user_goal.protein
+        form.carbs.data = user_goal.carbs
+        form.fat.data = user_goal.fat
+        form.calories_burned_goal_weekly.data = user_goal.calories_burned_goal_weekly
+        form.exercises_per_week_goal.data = user_goal.exercises_per_week_goal
+        form.minutes_per_exercise_goal.data = user_goal.minutes_per_exercise_goal
+        form.default_fasting_hours.data = user_goal.default_fasting_hours
         if current_user.measurement_system == "us":
             form.weight_goal_lbs.data = kg_to_lbs(user_goal.weight_goal_kg)
             form.waist_in_goal.data = cm_to_in(user_goal.waist_cm_goal)
