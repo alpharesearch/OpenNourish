@@ -535,8 +535,11 @@ def calculate_nutrition_for_items(items, processed_recipes=None):
                 processed_recipes.remove(nested_recipe.id)
 
                 # Determine the scaling factor for the nested recipe
-                total_nested_recipe_grams = sum(
-                    ing.amount_grams for ing in nested_recipe.ingredients
+                total_nested_recipe_grams = (
+                    nested_recipe.final_weight_grams
+                    if nested_recipe.final_weight_grams
+                    and nested_recipe.final_weight_grams > 0
+                    else sum(ing.amount_grams for ing in nested_recipe.ingredients)
                 )
 
                 if total_nested_recipe_grams > 0:
