@@ -239,8 +239,13 @@
 
                         // --- 4. POPULATE DIARY-SPECIFIC FIELDS (DATE & MEAL) ---
                         if (isDiaryTarget) {
-                            // Set date to today for all copy actions.
-                            modalLogDate.value = '{{ user_today_str }}';
+                            // If a logDate is provided by the button (i.e., from search), use it.
+                            // Otherwise (i.e., for copy actions), default to today.
+                            if (logDate) {
+                                modalLogDate.value = logDate;
+                            } else {
+                                modalLogDate.value = '{{ user_today_str }}';
+                            }
 
                             // Populate meal dropdown
                             modalMealName.innerHTML = '';
