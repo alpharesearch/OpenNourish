@@ -444,131 +444,10 @@
                                     <span class="text-muted">({{ "%.0f"|format((nutrition.fat / goals.fat) * 100) }}%)</span>
                                 {% endif %}
                             </li>
-                            <li>Saturated Fat: {{ "%.1f"|format(nutrition.saturated_fat) }}g
-                                {% if scaled_daily_values.saturated_fat > 0 %}
-                                    <span class="text-muted">({{ "%.0f"|format((nutrition.saturated_fat / scaled_daily_values.saturated_fat) * 100) }}%)</span>
-                                {% endif %}
-                            </li>
-                            <li>Trans Fat: {{ "%.1f"|format(nutrition.trans_fat) }}g</li>
-                            <li>Cholesterol: {{ "%.0f"|format(nutrition.cholesterol) }}mg
-                                {% if scaled_daily_values.cholesterol > 0 %}
-                                    <span class="text-muted">({{ "%.0f"|format((nutrition.cholesterol / scaled_daily_values.cholesterol) * 100) }}%)</span>
-                                {% endif %}
-                            </li>
-                            <li>Sodium: {{ "%.0f"|format(nutrition.sodium) }}mg
-                                {% if scaled_daily_values.sodium > 0 %}
-                                    <span class="text-muted">({{ "%.0f"|format((nutrition.sodium / scaled_daily_values.sodium) * 100) }}%)</span>
-                                {% endif %}
-                            </li>
-                            <li>Fiber: {{ "%.1f"|format(nutrition.fiber) }}g
-                                {% if scaled_daily_values.fiber > 0 %}
-                                    <span class="text-muted">({{ "%.0f"|format((nutrition.fiber / scaled_daily_values.fiber) * 100) }}%)</span>
-                                {% endif %}
-                            </li>
-                            <li>Sugars: {{ "%.1f"|format(nutrition.sugars) }}g
-                                {% if scaled_daily_values.sugars > 0 %}
-                                    <span class="text-muted">({{ "%.0f"|format((nutrition.sugars / scaled_daily_values.sugars) * 100) }}%)</span>
-                                {% endif %}
-                            </li>
-                            <li>Added Sugars: {{ "%.1f"|format(nutrition.added_sugars) }}g
-                                {% if scaled_daily_values.added_sugars > 0 %}
-                                    <span class="text-muted">({{ "%.0f"|format((nutrition.added_sugars / scaled_daily_values.added_sugars) * 100) }}%)</span>
-                                {% endif %}
-                            </li>
-                            <li>Vitamin D: {{ "%.0f"|format(nutrition.vitamin_d) }}mcg
-                                {% if scaled_daily_values.vitamin_d > 0 %}
-                                    <span class="text-muted">({{ "%.0f"|format((nutrition.vitamin_d / scaled_daily_values.vitamin_d) * 100) }}%)</span>
-                                {% endif %}
-                            </li>
-                            <li>Calcium: {{ "%.0f"|format(nutrition.calcium) }}mg
-                                {% if scaled_daily_values.calcium > 0 %}
-                                    <span class="text-muted">({{ "%.0f"|format((nutrition.calcium / scaled_daily_values.calcium) * 100) }}%)</span>
-                                {% endif %}
-                            </li>
-                            <li>Iron: {{ "%.1f"|format(nutrition.iron) }}mg
-                                {% if scaled_daily_values.iron > 0 %}
-                                    <span class="text-muted">({{ "%.0f"|format((nutrition.iron / scaled_daily_values.iron) * 100) }}%)</span>
-                                {% endif %}
-                            </li>
-                            <li>Potassium: {{ "%.0f"|format(nutrition.potassium) }}mg
-                                {% if scaled_daily_values.potassium > 0 %}
-                                    <span class="text-muted">({{ "%.0f"|format((nutrition.potassium / scaled_daily_values.potassium) * 100) }}%)</span>
-                                {% endif %}
-                            </li>
                         </ul>
                     {% else %}
                         <p>No meal data available.</p>
                     {% endfor %}
-                    <hr>
-                    <h5 class="mt-3">Total for the Day</h5>
-                    <ul class="ps-3">
-                        <li>Calories: {{ "%.0f"|format(totals.calories) }}
-                            {% if goals.calories > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.calories / goals.calories) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Protein: {{ "%.1f"|format(totals.protein) }}g
-                            {% if goals.protein > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.protein / goals.protein) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Carbs: {{ "%.1f"|format(totals.carbs) }}g (Net: {{ "%.1f"|format(totals.net_carbs) }}g)
-                            {% if goals.carbs > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.carbs / goals.carbs) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Fat: {{ "%.1f"|format(totals.fat) }}g
-                            {% if goals.fat > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.fat / goals.fat) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Saturated Fat: {{ "%.1f"|format(totals.saturated_fat) }}g
-                            {% if scaled_daily_values.saturated_fat > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.saturated_fat / scaled_daily_values.saturated_fat) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Trans Fat: {{ "%.1f"|format(totals.trans_fat) }}g</li>
-                        <li>Cholesterol: {{ "%.0f"|format(totals.cholesterol) }}mg
-                            {% if scaled_daily_values.cholesterol > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.cholesterol / scaled_daily_values.cholesterol) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Sodium: {{ "%.0f"|format(totals.sodium) }}mg
-                            {% if scaled_daily_values.sodium > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.sodium / scaled_daily_values.sodium) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Fiber: {{ "%.1f"|format(totals.fiber) }}g
-                            {% if scaled_daily_values.fiber > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.fiber / scaled_daily_values.fiber) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Sugars: {{ "%.1f"|format(totals.sugars) }}g
-                            {% if scaled_daily_values.sugars > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.sugars / scaled_daily_values.sugars) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Vitamin D: {{ "%.0f"|format(totals.vitamin_d) }}mcg
-                            {% if scaled_daily_values.vitamin_d > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.vitamin_d / scaled_daily_values.vitamin_d) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Calcium: {{ "%.0f"|format(totals.calcium) }}mg
-                            {% if scaled_daily_values.calcium > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.calcium / scaled_daily_values.calcium) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Iron: {{ "%.1f"|format(totals.iron) }}mg
-                            {% if scaled_daily_values.iron > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.iron / scaled_daily_values.iron) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                        <li>Potassium: {{ "%.0f"|format(totals.potassium) }}mg
-                            {% if scaled_daily_values.potassium > 0 %}
-                                <span class="text-muted">({{ "%.0f"|format((totals.potassium / scaled_daily_values.potassium) * 100) }}%)</span>
-                            {% endif %}
-                        </li>
-                    </ul>
                 </div>
 
                 <!-- Right Column: Contains the other two cards -->
@@ -577,20 +456,10 @@
                         <!-- Nutrient Density -->
                         <div class="col-12 mb-4">
                             <h5 class="mb-3">Nutrient Density</h5>
-                            <p><small class="text-muted">This section shows the energy density (calories per gram) of your food.</small></p>
                             <p><strong>Overall:</strong> {{ "%.2f"|format(nutrient_density.overall) }} kcal/g</p>
                             <p><strong>Protein:</strong> {{ "%.2f"|format(nutrient_density.protein) }} kcal/g</p>
                             <p><strong>Carbs:</strong> {{ "%.2f"|format(nutrient_density.carbs) }} kcal/g</p>
                             <p><strong>Fat:</strong> {{ "%.2f"|format(nutrient_density.fat) }} kcal/g</p>
-                            <small class="text-muted">Lower values generally indicate more nutrient-dense foods (e.g., vegetables), while higher values indicate more energy-dense foods (e.g., fats).</small>
-                            <hr>
-                            <small class="text-muted">
-                                <strong>Reference Values for Energy Density (kcal/g):</strong><br>
-                                Pure Protein: ~4<br>
-                                Pure Carbohydrates: ~4<br>
-                                Pure Fat: ~9<br>
-                                <em>Comparing your values to these references helps you understand the energy density of your diet.</em>
-                            </small>
                         </div>
 
                         <!-- Deviation Metrics -->
@@ -633,8 +502,120 @@
         </div>
     </div>
 
+    <!-- Daily Nutrition Trends Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Daily Nutrition Trends (Last 30 Days)</h2>
+        </div>
+        <div class="card-body">
+            {% if daily_nutrition %}
+            <div style="height: 400px;">
+                <canvas id="dailyNutritionChart"></canvas>
+            </div>
+            {% else %}
+            <p>No nutrition data available. Start logging your meals to see trends!</p>
+            {% endif %}
+        </div>
+    </div>
 
+    <!-- Macro Distribution by Meal Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Macro Distribution by Meal (Last 7 Days)</h2>
+        </div>
+        <div class="card-body">
+            {% if macro_distribution %}
+            <div style="height: 400px;">
+                <canvas id="macroDistributionChart"></canvas>
+            </div>
+            {% else %}
+            <p>No meal data available. Log some meals to see your macro distribution!</p>
+            {% endif %}
+        </div>
+    </div>
 
+    <!-- Weekly Trends Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Weekly Nutrition Trends (Last Year)</h2>
+        </div>
+        <div class="card-body">
+            {% if weekly_trends %}
+            <div style="height: 400px;">
+                <canvas id="weeklyTrendsChart"></canvas>
+            </div>
+            {% else %}
+            <p>No weekly data available. Keep tracking for longer to see trends!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Food Category Breakdown Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Food Category Breakdown (Last 30 Days)</h2>
+        </div>
+        <div class="card-body">
+            {% if category_breakdown %}
+            <div style="height: 400px;">
+                <canvas id="categoryBreakdownChart"></canvas>
+            </div>
+
+            <div class="mt-4">
+                <h5>Detailed Breakdown</h5>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Calories</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in category_breakdown %}
+                        <tr>
+                            <td>{{ item.category }}</td>
+                            <td>{{ "%.0f"|format(item.calories) }} kcal</td>
+                            <td>{{ "%.1f"|format(item.percentage) }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No category data available. Log meals with categorized foods to see breakdown!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Exercise vs Diet Balance Card -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Exercise vs Diet Balance (Last 30 Days)</h2>
+        </div>
+        <div class="card-body">
+            {% if exercise_balance %}
+            <div style="height: 400px;">
+                <canvas id="exerciseBalanceChart"></canvas>
+            </div>
+
+            <div class="mt-4 text-center">
+                <h5>Summary</h5>
+                <p>
+                    Average daily balance:
+                    {{ "%.1f"|format(exercise_balance|sum(attribute='net')/exercise_balance|length) }} kcal
+                    {% if exercise_balance|sum(attribute='net') >= 0 %}
+                    (surplus)
+                    {% else %}
+                    (deficit)
+                    {% endif %}
+                </p>
+            </div>
+            {% else %}
+            <p>No balance data available. Log both meals and exercises to see your balance!</p>
+            {% endif %}
+        </div>
+    </div>
 
     <div class="card mb-4">
         <div class="card-header">
@@ -655,6 +636,508 @@
     {% if chart_labels and (weight_data or body_fat_data or waist_data) %}
     <script>
         const ctx = document.getElementById('weightChart');
+        const labels = {{ chart_labels| tojson }};
+        let weightData = {{ weight_data| tojson }};
+        const bodyFatData = {{ body_fat_data| tojson }};
+        let waistData = {{ waist_data| tojson }};
+        const measurementSystem = {{ current_user_measurement_system| tojson }};
+
+        // Convert data to US units if necessary
+        if (measurementSystem === 'us') {
+            weightData = weightData.map(kg => kg * 2.20462); // kg to lbs
+            waistData = waistData.map(cm => cm * 0.393701); // cm to inches
+        }
+
+        // Goal data - create arrays of the same length as labels
+        let weightGoal = {{ goals.weight_goal_kg| tojson }};
+        let waistGoal = {{ goals.waist_cm_goal| tojson }};
+
+        if (measurementSystem === 'us') {
+            weightGoal = weightGoal * 2.20462; // kg to lbs
+            waistGoal = waistGoal * 0.393701; // cm to inches
+        }
+
+        const weightGoalData = Array(labels.length).fill(weightGoal);
+        const bodyFatGoalData = Array(labels.length).fill({{ goals.body_fat_percentage_goal | tojson }});
+        const waistGoalData = Array(labels.length).fill(waistGoal);
+
+        const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
+        const waistUnit = measurementSystem === 'us' ? 'in' : 'cm';
+        const weightLabel = `Weight (${weightUnit})`;
+        const waistLabel = `Waist (${waistUnit})`;
+        const y1Title = `Body Fat (%) / Waist (${waistUnit})`;
+
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: weightLabel,
+                        data: weightData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        yAxisID: 'y',
+                        fill: false
+                    },
+                    {
+                        label: `Weight Goal (${weightUnit})`,
+                        data: weightGoalData,
+                        borderColor: 'rgb(150, 192, 192)',
+                        borderDash: [5, 5],
+                        yAxisID: 'y',
+                        fill: false
+                    },
+                    {
+                        label: 'Body Fat (%)',
+                        data: bodyFatData,
+                        borderColor: 'rgb(255, 99, 132)',
+                        yAxisID: 'y1',
+                        fill: false
+                    },
+                    {
+                        label: 'Body Fat Goal (%)',
+                        data: bodyFatGoalData,
+                        borderColor: 'rgb(180, 160, 170)',
+                        borderDash: [5, 5],
+                        yAxisID: 'y1',
+                        fill: false
+                    },
+                    {
+                        label: waistLabel,
+                        data: waistData,
+                        borderColor: 'rgb(54, 162, 235)',
+                        yAxisID: 'y1',
+                        fill: false
+                    },
+                    {
+                        label: `Waist Goal (${waistUnit})`,
+                        data: waistGoalData,
+                        borderColor: 'rgb(120, 142, 158)',
+                        borderDash: [5, 5],
+                        yAxisID: 'y1',
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Progress (Last 30 entries)'
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        ticks: {
+                            beginAtZero: false,
+                            stepSize: 1
+                        },
+                        title: {
+                            display: true,
+                            text: weightLabel
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        ticks: {
+                            beginAtZero: false,
+                            stepSize: 0.5
+                        },
+                        grid: {
+                            drawOnChartArea: false, // only want the grid lines for one axis to show up
+                        },
+                        title: {
+                            display: true,
+                            text: y1Title
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    {% endif %}
+    {% block scripts %}
+    <script>
+        // Scroll to the chart if time_range parameter is present
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('time_range')) {
+                const chartElement = document.getElementById('bodyCompositionChart');
+                if (chartElement) {
+                    chartElement.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });
+    </script>
+    {% if projected_dates %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('projectionChart');
+            if (!ctx) return;
+
+            const measurementSystem = {{ current_user_measurement_system|tojson }};
+            const weightUnit = measurementSystem === 'us' ? 'lbs' : 'kg';
+            const conversionFactor = measurementSystem === 'us' ? 2.20462 : 1;
+
+            let projectedWeights = {{ projected_weights|tojson }}.map(w => w * conversionFactor);
+            let goalWeight = {{ goals.weight_goal_kg|tojson }} * conversionFactor;
+
+            const goalData = Array(projectedWeights.length).fill(goalWeight);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {{ projected_dates|tojson }},
+                    datasets: [{
+                        label: `Projected Weight (${weightUnit})`,
+                        data: projectedWeights,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        fill: false
+                    }, {
+                        label: `Goal Weight (${weightUnit})`,
+                        data: goalData,
+                        borderColor: 'rgb(255, 99, 132)',
+                        borderDash: [5, 5],
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Weight Projection'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toFixed(1) + ' ' + weightUnit;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: `Weight (${weightUnit})`
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Daily Nutrition Chart
+            {% if daily_nutrition %}
+            const dailyCtx = document.getElementById('dailyNutritionChart');
+            new Chart(dailyCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ daily_nutrition|map(attribute='date')|list|tojson }},
+                    datasets: [
+                        {
+                            label: 'Calories',
+                            data: {{ daily_nutrition|map(attribute='calories')|list|tojson }},
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Protein (g)',
+                            data: {{ daily_nutrition|map(attribute='protein')|list|tojson }},
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            tension: 0.1,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Carbs (g)',
+                            data: {{ daily_nutrition|map(attribute='carbs')|list|tojson }},
+                            borderColor: 'rgb(54, 162, 235)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                            tension: 0.1,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Fat (g)',
+                            data: {{ daily_nutrition|map(attribute='fat')|list|tojson }},
+                            borderColor: 'rgb(255, 206, 86)',
+                            backgroundColor: 'rgba(255, 206, 86, 0.1)',
+                            tension: 0.1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Calories'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Grams'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+            {% endif %}
+
+            // Macro Distribution by Meal Chart
+            {% if macro_distribution %}
+            const macroCtx = document.getElementById('macroDistributionChart');
+            const mealNames = Object.keys({{ macro_distribution|tojson }});
+
+            new Chart(macroCtx, {
+                type: 'bar',
+                data: {
+                    labels: mealNames,
+                    datasets: [
+                        {
+                            label: 'Protein %',
+                            data: mealNames.map(name => {{ macro_distribution|tojson }}[name].protein),
+                            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                            borderColor: 'rgb(75, 192, 192)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Carbs %',
+                            data: mealNames.map(name => {{ macro_distribution|tojson }}[name].carbs),
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            borderColor: 'rgb(54, 162, 235)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Fat %',
+                            data: mealNames.map(name => {{ macro_distribution|tojson }}[name].fat),
+                            backgroundColor: 'rgba(255, 206, 86, 0.7)',
+                            borderColor: 'rgb(255, 206, 86)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            title: {
+                                display: true,
+                                text: 'Meal'
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Percentage of Calories'
+                            }
+                        }
+                    }
+                }
+            });
+            {% endif %}
+
+            // Weekly Trends Chart
+            {% if weekly_trends %}
+            const weeklyCtx = document.getElementById('weeklyTrendsChart');
+            new Chart(weeklyCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ weekly_trends|map(attribute='week_start')|list|tojson }},
+                    datasets: [
+                        {
+                            label: 'Calories',
+                            data: {{ weekly_trends|map(attribute='calories')|list|tojson }},
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            tension: 0.1,
+                            fill: false
+                        },
+                        {
+                            label: 'Protein (g)',
+                            data: {{ weekly_trends|map(attribute='protein')|list|tojson }},
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            tension: 0.1,
+                            fill: false
+                        },
+                        {
+                            label: 'Carbs (g)',
+                            data: {{ weekly_trends|map(attribute='carbs')|list|tojson }},
+                            borderColor: 'rgb(54, 162, 235)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                            tension: 0.1,
+                            fill: false
+                        },
+                        {
+                            label: 'Fat (g)',
+                            data: {{ weekly_trends|map(attribute='fat')|list|tojson }},
+                            borderColor: 'rgb(255, 206, 86)',
+                            backgroundColor: 'rgba(255, 206, 86, 0.1)',
+                            tension: 0.1,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Week'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Average Daily Intake'
+                            }
+                        }
+                    }
+                }
+            });
+            {% endif %}
+
+            // Category Breakdown Chart
+            {% if category_breakdown %}
+            const categoryCtx = document.getElementById('categoryBreakdownChart');
+            new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ category_breakdown|map(attribute='category')|list|tojson }},
+                    datasets: [{
+                        data: {{ category_breakdown|map(attribute='percentage')|list|tojson }},
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(153, 102, 255, 0.7)',
+                            'rgba(255, 159, 64, 0.7)'
+                        ],
+                        borderColor: 'white',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+            {% endif %}
+
+            // Exercise Balance Chart
+            {% if exercise_balance %}
+            const balanceCtx = document.getElementById('exerciseBalanceChart');
+            new Chart(balanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ exercise_balance|map(attribute='date')|list|tojson }},
+                    datasets: [
+                        {
+                            label: 'Calories In',
+                            data: {{ exercise_balance|map(attribute='calories_in')|list|tojson }},
+                            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                            borderColor: 'rgb(75, 192, 192)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Calories Out',
+                            data: {{ exercise_balance|map(attribute='calories_out')|list|tojson }},
+                            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                            borderColor: 'rgb(255, 99, 132)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Net Balance',
+                            data: {{ exercise_balance|map(attribute='net')|list|tojson }},
+                            backgroundColor: 'rgba(255, 206, 86, 0.7)',
+                            borderColor: 'rgb(255, 206, 86)',
+                            borderWidth: 1,
+                            type: 'line',
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            stacked: false,
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Calories'
+                            }
+                        }
+                    }
+                }
+            });
+            {% endif %}
+        });
+    </script>
+    {% endif %}        const ctx = document.getElementById('weightChart');
         const labels = {{ chart_labels| tojson }};
         let weightData = {{ weight_data| tojson }};
         const bodyFatData = {{ body_fat_data| tojson }};

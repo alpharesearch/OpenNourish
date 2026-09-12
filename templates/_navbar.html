@@ -119,13 +119,12 @@
                 <li class="nav-item">
                     <a class="nav-link px-2 {% if request.endpoint == 'exercise.log_exercise' %}active{% endif %}" href="{{ url_for('exercise.log_exercise') }}">Exercise Log</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'tracking.progress' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Check-in & Progress</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link px-2 {% if request.endpoint == 'fasting' %}active{% endif %}" href="{{ url_for('fasting.index') }}">Fasting</a>
-                </li>
-
+                    <li class="nav-item">
+                        <a class="nav-link px-2 {% if request.endpoint == 'tracking.progress' %}active{% endif %}" href="{{ url_for('tracking.progress') }}">Check-in & Progress</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-2 {% if request.endpoint == 'fasting' %}active{% endif %}" href="{{ url_for('fasting.index') }}">Fasting</a>
+                    </li>
             {% endif %}
 
             {# --- Admin Sub-Menu --- #}

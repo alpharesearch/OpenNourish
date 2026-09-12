@@ -2,6 +2,15 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from . import tracking_bp
 from .forms import CheckInForm
+from .analytics import (
+    get_daily_nutrition_data,
+    get_macro_distribution_by_meal,
+    get_weekly_trends,
+    get_food_category_breakdown,
+    get_exercise_vs_diet_balance,
+    get_nutrient_intake_vs_goals,
+    get_body_composition_trends,
+)
 from models import db, CheckIn, UserGoal
 from opennourish.utils import (
     lbs_to_kg,
@@ -157,3 +166,41 @@ def delete_check_in(check_in_id):
     )
 
     return redirect(url_for(TRACKING_PROGRESS_ENDPOINT, page=page))
+
+
+@tracking_bp.route("/analytics", methods=["GET"])
+@login_required
+def analytics():
+    """Advanced analytics dashboard showing various visualizations"""
+    # Get daily nutrition data for the last 30 days
+    daily_nutrition = get_daily_nutrition_data(current_user.id, days=30)
+
+    # Get macro distribution by meal (last 7 days)
+    macro_distribution = get_macro_distribution_by_meal(current_user.id, days=7)
+
+    # Get weekly trends (last year)
+    weekly_trends = get_weekly_trends(current_user.id)
+
+    # Get food category breakdown
+    category_breakdown = get_food_category_breakdown(current_user.id, days=30)
+
+    # Get exercise vs diet balance
+    exercise_balance = get_exercise_vs_diet_balance(current_user.id, days=30)
+
+    # Get nutrient intake vs goals
+    nutrient_goals = get_nutrient_intake_vs_goals(current_user.id)
+
+    # Get body composition trends
+    body_composition = get_body_composition_trends(current_user.id)
+
+    return render_template(
+        "tracking/analytics.html",
+        title="Analytics Dashboard",
+        daily_nutrition=daily_nutrition,
+        macro_distribution=macro_distribution,
+        weekly_trends=weekly_trends,
+        category_breakdown=category_breakdown,
+        exercise_balance=exercise_balance,
+        nutrient_goals=nutrient_goals,
+        body_composition=body_composition,
+    )

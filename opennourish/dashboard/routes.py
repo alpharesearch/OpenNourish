@@ -19,6 +19,15 @@ from opennourish.utils import (
     get_meal_based_nutrition,
     calculate_intake_vs_goal_deviation,
 )
+from opennourish.tracking.analytics import (
+    get_daily_nutrition_data,
+    get_macro_distribution_by_meal,
+    get_weekly_trends,
+    get_food_category_breakdown,
+    get_exercise_vs_diet_balance,
+    get_nutrient_intake_vs_goals,
+    get_body_composition_trends,
+)
 from opennourish.time_utils import get_user_today, get_start_of_week
 from opennourish.decorators import onboarding_required
 
@@ -155,11 +164,38 @@ def index(log_date_str=None):
     # Calculate nutrient density for the day
     nutrient_density = calculate_nutrient_density(daily_logs)
 
-    # Get meal-based nutrition breakdown
+    # Get meal-based nutrition breakdown (for the current day)
     meal_nutrition = get_meal_based_nutrition(daily_logs)
 
     # Calculate intake vs goal deviation
     deviation_metrics = calculate_intake_vs_goal_deviation(user_goal, daily_logs)
+
+    # --- Historical / Advanced Analytics Data ---
+    # Get daily nutrition data for the last 30 days
+    daily_nutrition = get_daily_nutrition_data(current_user.id, days=30)
+
+    # Get macro distribution by meal (last 7 days)
+    # Note: Variable name collision with 'meal_nutrition' above which is for *today*.
+    # analytics.py's function returns data for pie charts. Let's call it macro_distribution_7d.
+    macro_distribution_7d = get_macro_distribution_by_meal(current_user.id, days=7)
+
+    # Get weekly trends (last year)
+    weekly_trends = get_weekly_trends(current_user.id)
+
+    # Get food category breakdown
+    category_breakdown = get_food_category_breakdown(current_user.id, days=30)
+
+    # Get exercise vs diet balance
+    exercise_balance = get_exercise_vs_diet_balance(current_user.id, days=30)
+
+    # Get nutrient intake vs goals (redundant with daily data but structure used for cards)
+    nutrient_goals_status = get_nutrient_intake_vs_goals(current_user.id)
+
+    # Get body composition trends (redundant with check_ins but used for specific chart in analytics)
+    # The dashboard already has 'weight_data', 'body_fat_data', 'waist_data' lists.
+    # The analytics function returns a list of dicts. We might not need this if we use the dashboard's existing chart.
+    body_composition_trends = get_body_composition_trends(current_user.id)
+
 
     # --- Scaled Daily Values ---
     # FDA standard DVs based on a 2,000 calorie diet
@@ -227,4 +263,12 @@ def index(log_date_str=None):
         meal_nutrition=meal_nutrition,
         deviation_metrics=deviation_metrics,
         scaled_daily_values=scaled_daily_values,
+        # Added analytics data
+        daily_nutrition=daily_nutrition,
+        macro_distribution=macro_distribution_7d,
+        weekly_trends=weekly_trends,
+        category_breakdown=category_breakdown,
+        exercise_balance=exercise_balance,
+        nutrient_goals=nutrient_goals_status,
+        body_composition=body_composition_trends
     )
