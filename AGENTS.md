@@ -96,6 +96,9 @@ Root owns the repository-wide contract and the top-level files that have no fold
 
 - Run everything under the conda env `opennourish`: `/home/markus/miniconda3/envs/opennourish/bin/python`. Conda `base` has no Flask and will fail at import.
 - Stack is pinned in `requirements.txt`: Flask 3.1.1, SQLAlchemy 2.0.41 + Flask-SQLAlchemy 3.1.1, Alembic/Flask-Migrate, Flask-Login, Flask-WTF, Flask-Mailing, waitress. Bootstrap CSS, Bootstrap Icons, Chart.js, and fonts are vendored in `static/`; there is no npm/bundler step.
+- `djlint==1.36.4` lints Jinja templates: `$P -m djlint templates --profile jinja --extension html --use-gitignore`. djlint ignores `.gitignore` unless `--use-gitignore` is passed, so an unscoped `djlint .` sweeps the 209 generated `htmlcov/*.html`. Nothing new belongs in `.gitignore`: djlint writes no cache or backup files, and its `.djlintrc` config is meant to be committed.
+- djlint is pinned at 1.36.4 on purpose: it is the last release supporting Python 3.9, which both the conda env and the `python:3.9` Docker base run. djlint 1.37+ declares `requires_python >=3.10` and would break `pip install -r requirements.txt` in the image. Its transitive deps (`cssbeautifier`, `jsbeautifier`, `EditorConfig`, `json5`, `pathspec`, `regex`, `tqdm`, `colorama`) ship in the image too, because the Dockerfile installs this same file.
+- djlint is advisory, not a gate: one pass over the 43 templates reports ~230 findings, mostly style — 57 T003 (bare `{% endblock %}`, which is house style), 81 H029 (`method="POST"`), ~72 H021 (inline styles). Its structural rules are worth reading: T-tag mismatch and H025 orphan tags. `--reformat` rewrites 42 of 43 files in a single pass, so reformat file-by-file, never tree-wide.
 - Nutrition-label PDF/SVG generation shells out to the `typst` binary (`opennourish/typst_utils.py`); the Dockerfile downloads it. Without `typst` on PATH, label routes fail while the rest of the app works.
 
 ### Persistence and secrets
@@ -161,6 +164,8 @@ $P -m pytest -m "not integration" -q     # full non-integration suite
 $P -m ruff check .                        # lint gate
 $P -m ruff format --check .               # formatting gate
 ```
+
+Template linting (`$P -m djlint templates --profile jinja --extension html --use-gitignore`) is advisory, not one of the gates above — see Toolchain for why it is not clean yet.
 
 Coverage and the single `integration` test (needs `persistent/usda_data/*.csv`) are covered in `tests/AGENTS.md`.
 

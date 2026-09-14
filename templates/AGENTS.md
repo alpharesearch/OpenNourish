@@ -23,6 +23,8 @@ Server-rendered Jinja markup for all 18 blueprints: one layout, 38 pages, 4 part
     "from jinja2 import Environment, FileSystemLoader as F; Environment(loader=F('templates')).get_template('dashboard.html')"
   ```
 
+- A bare `Environment` cannot compile the whole tree: `fasting/fasting.html` fails it with `No filter named 'user_time'`, because `user_time` and `nl2br` are registered by the app factory. To compile every template, go through the app env (`app.jinja_env.get_template(name)` over `templates/**/*.html`, e.g. from the `app_with_db` fixture).
+- Every `<div>` opened inside `{% block content %}` must also close inside it. `base.html:15` opens and closes its own `container-md` wrapper, so a page-level container left open swallows the modal markup `base.html` renders after the content block. djlint reports this as H025.
 - Chart data crosses from Flask to JS only as inline `<script>` with `|tojson`. Chart.js v4.5.0 is already loaded globally by `base.html:11`; do not re-`<script src>` it.
 - CSRF: only Flask-WTF `FlaskForm` + `{{ form.hidden_tag() }}` is protected (29 occurrences in 20 templates). `CSRFProtect` is **not** registered globally, so the ~69 raw `<form method="post">` tags carry no token. Converting a raw form to a `FlaskForm`, or registering `CSRFProtect`, is the sanctioned way to close that gap — do not hand-roll a token field.
 - URLs: `url_for` in markup; the only hardcoded paths are the two `fetch()` targets in `base.html` (`/api/get-remaining-calories/…`, `/search/api/get-portions/…`).
@@ -44,6 +46,7 @@ Server-rendered Jinja markup for all 18 blueprints: one layout, 38 pages, 4 part
 P=/home/markus/miniconda3/envs/opennourish/bin/python
 $P -c "from jinja2 import Environment, FileSystemLoader as F; e=Environment(loader=F('templates')); [e.get_template(t) for t in ['dashboard.html','diary/diary.html','tracking/analytics.html','base.html']]"
 $P -m pytest -m "not integration" -q tests/test_dashboard.py tests/test_diary.py tests/test_analytics.py
+$P -m djlint templates --profile jinja --extension html --use-gitignore   # advisory lint, not clean yet (root AGENTS.md > Toolchain)
 ```
 
 `tests/test_main_routes.py` and the profile tests also render these templates, so template breakage shows up as unrelated red tests — check the traceback line number, it points at the template.
