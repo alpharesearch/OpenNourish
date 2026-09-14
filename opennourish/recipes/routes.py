@@ -7,6 +7,7 @@ from flask import (
     flash,
     current_app,
     Response,
+    abort,
 )
 from datetime import datetime, timezone
 import yaml
@@ -445,7 +446,11 @@ def export_recipes():
             ing_info = {
                 "amount_grams": ing.amount_grams,
             }
-            portion = db.session.get(UnifiedPortion, ing.portion_id_fk)
+            portion = (
+                db.session.get(UnifiedPortion, ing.portion_id_fk)
+                if ing.portion_id_fk
+                else None
+            )
             if portion:
                 ing_info["portion"] = {
                     "amount": portion.amount,
@@ -685,6 +690,12 @@ def edit_recipe(recipe_id):
         selectinload(Recipe.portions),
     ).get_or_404(recipe_id)
 
+    # Authorise before anything is written: this handler backfills ingredient and
+    # portion seq_nums (with commits) further down, so the owner check must run first.
+    if recipe.user_id != current_user.id:
+        flash("You are not authorized to edit this recipe.", "danger")
+        return redirect(url_for(RECIPES_LIST_ROUTE))
+
     # Ensure all ingredients have a seq_num
     if any(ing.seq_num is None for ing in recipe.ingredients):
         ingredients_to_update = sorted(
@@ -760,10 +771,6 @@ def edit_recipe(recipe_id):
                 "total_gram_weight": ing.amount_grams,
             }
         )
-
-    if recipe.user_id != current_user.id:
-        flash("You are not authorized to edit this recipe.", "danger")
-        return redirect(url_for(RECIPES_LIST_ROUTE))
 
     # Ensure all portions have a seq_num
     if any(p.seq_num is None for p in recipe.portions):
@@ -949,6 +956,21 @@ def update_ingredient(ingredient_id):
     portion_obj = db.session.get(UnifiedPortion, portion_id)
     if not portion_obj:
         flash("Selected portion not found.", "danger")
+        return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id))
+
+    # A portion is only usable here when it belongs to the ingredient's own food
+    # item, or to this recipe. Anything else would let an arbitrary (possibly
+    # another user's) portion drive this ingredient's gram conversion.
+    portion_owns_ingredient = (
+        (portion_obj.my_food_id == ingredient.my_food_id and portion_obj.my_food_id)
+        or (portion_obj.fdc_id == ingredient.fdc_id and portion_obj.fdc_id)
+        or (
+            portion_obj.recipe_id
+            and portion_obj.recipe_id in (ingredient.recipe_id_link, recipe.id)
+        )
+    )
+    if not portion_owns_ingredient:
+        flash("Selected portion does not belong to this ingredient.", "danger")
         return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe.id))
 
     ingredient.amount_grams = amount * portion_obj.gram_weight
@@ -1240,7 +1262,7 @@ def add_recipe_portion(recipe_id):
 @login_required
 def update_recipe_portion(portion_id):
     portion = db.session.get(UnifiedPortion, portion_id)
-    if not portion or portion.recipe.user_id != current_user.id:
+    if not portion or not portion.recipe or portion.recipe.user_id != current_user.id:
         flash("Portion not found or you do not have permission to edit it.", "danger")
         return redirect(url_for(RECIPES_LIST_ROUTE))
 
@@ -1293,6 +1315,9 @@ def generate_label_pdf(recipe_id):
 @recipes_bp.route("/<int:recipe_id>/nutrition-label.svg")
 @login_required
 def nutrition_label_svg(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if not recipe.is_public and recipe.user_id != current_user.id:
+        abort(403)
     return generate_recipe_label_svg(recipe_id)
 
 
@@ -1371,7 +1396,11 @@ def copy_recipe(recipe_id):
 @login_required
 def move_recipe_portion_up(portion_id):
     portion_to_move = db.session.get(UnifiedPortion, portion_id)
-    if not portion_to_move or portion_to_move.recipe.user_id != current_user.id:
+    if (
+        not portion_to_move
+        or not portion_to_move.recipe
+        or portion_to_move.recipe.user_id != current_user.id
+    ):
         flash("Portion not found or unauthorized.", "danger")
         return redirect(url_for(RECIPES_LIST_ROUTE))
 
@@ -1419,7 +1448,11 @@ def move_recipe_portion_up(portion_id):
 @login_required
 def move_recipe_portion_down(portion_id):
     portion_to_move = db.session.get(UnifiedPortion, portion_id)
-    if not portion_to_move or portion_to_move.recipe.user_id != current_user.id:
+    if (
+        not portion_to_move
+        or not portion_to_move.recipe
+        or portion_to_move.recipe.user_id != current_user.id
+    ):
         flash("Portion not found or unauthorized.", "danger")
         return redirect(url_for(RECIPES_LIST_ROUTE))
 

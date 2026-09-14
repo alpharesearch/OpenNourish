@@ -196,7 +196,6 @@ def index(log_date_str=None):
     # The analytics function returns a list of dicts. We might not need this if we use the dashboard's existing chart.
     body_composition_trends = get_body_composition_trends(current_user.id)
 
-
     # --- Scaled Daily Values ---
     # FDA standard DVs based on a 2,000 calorie diet
     fda_standard_dvs = {
@@ -270,5 +269,5 @@ def index(log_date_str=None):
         category_breakdown=category_breakdown,
         exercise_balance=exercise_balance,
         nutrient_goals=nutrient_goals_status,
-        body_composition=body_composition_trends
+        body_composition=body_composition_trends,
     )

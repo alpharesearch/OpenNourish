@@ -7,7 +7,7 @@ The pytest suite is the only automated quality gate in this repository. It cover
 ## Ownership
 
 - `conftest.py` — the single app-factory fixture and the login helpers every test reuses.
-- 57 test files, 443 non-integration tests + 1 integration test (444 collected).
+- 72 test files, 972 non-integration tests + 1 integration test (973 collected). 16 of them are the `test_*_coverage.py` files raised for the 99% TOTAL pass; each mirrors a feature module and is named for it.
 - `pytest.ini` (repo root) — declares the `integration` marker only; no `addopts`, no `testpaths`.
 - `.coveragerc` (repo root) — `exclude_also` patterns only.
 - Not owned here: what each feature must do (feature AGENTS.md files), the CI question (no CI exists; see Work Guidance).
@@ -27,11 +27,13 @@ The pytest suite is the only automated quality gate in this repository. It cover
 - Coverage runs line coverage only (`.coveragerc` has no `[run]` section, so no `source`, no `branch`, no `omit`). `test_config.py` imports generated temp modules, so `"/tmp/*"` must be in the omit list or TOTAL is polluted.
 - An assertion on `status_code == 200` with `follow_redirects=True` also passes when `@onboarding_required` bounces the request. Assert on rendered content, not just the status.
 - Do not add English month or weekday names to HTML assertions unless the format string itself is the contract (current exception: `test_dashboard.py:199`).
+- Patch session/`db` methods on the **class**, not the instance: `monkeypatch.setattr(db.session, "commit", …)` restores on undo by writing the old bound method back as an **instance** attribute, which then permanently shadows any later `scoped_session.commit` (class-level) patch in a test that shares the app. Use `monkeypatch.setattr("sqlalchemy.orm.scoping.scoped_session.commit", …)` (see `test_search.py::test_add_item_exception`).
+- `app_with_db` yields **inside** an `app_context`, so Flask-Login's cached `g._login_user` survives across requests within one test; switching identity via `session_transaction()` alone silently keeps the first user. Pop `g._login_user` (or use a fresh client) to truly switch mid-test.
 
 ## Work Guidance
 
 - New route → new or extended test file named after the feature area; keep the existing grouping (search, recipes, my_foods, diary, meals, goals, tracking/analytics, exercise, fasting, friends, profile, admin, usda_admin, undo, settings, auth, cli, config, models, utils, time_utils).
-- Reuse the `conftest.py` fixtures. Hand-rolled `session_transaction` login is currently duplicated in 24 files and raw `POST /auth/login` in 12 more; when touching one of those files, move it onto a fixture instead of adding a seventh copy.
+- Reuse the `conftest.py` fixtures. Hand-rolled `session_transaction` `_user_id` login is duplicated in 25 files and `POST /auth/login` in 11 (a few of those — `test_auth*.py` — are testing the login route itself and stay); when touching one of the others, move it onto a fixture instead of adding a copy.
 - Cross-user authorisation must be tested both ways (owner succeeds, non-owner is rejected) using `auth_client_two_users` or `auth_client_with_friendship`.
 - Format with `python -m ruff format .` and lint with `python -m ruff check .`; both are local-only checks, nothing enforces them.
 - There is no CI, no pre-commit config, and no active git hooks. Green means you ran the commands below yourself.
@@ -44,10 +46,10 @@ $P -m pytest -m "not integration" -q                    # expect 0 failures
 $P -m ruff check .                                      # expect "All checks passed!"
 $P -m ruff format --check .                             # expect no files listed
 $P -m coverage run -m pytest -m "not integration" && \
-  $P -m coverage report --skip-covered --omit="test*","/tmp/*"   # TOTAL was 87%
+  $P -m coverage report --skip-covered --omit="test*","/tmp/*"   # TOTAL is 99%
 ```
 
-Lowest-covered real modules, i.e. where new tests are worth the most: `opennourish/typst_utils.py` 74%, `opennourish/search/routes.py` 76%, `opennourish/onboarding/routes.py` 77%, `opennourish/profile/routes.py` 78%, `opennourish/diary/routes.py` 81%, `opennourish/recipes/routes.py` 82%.
+Coverage TOTAL is **99%** (6100 statements, 43 misses); 53 modules are at 100%. The only files with any misses are: `exercise/routes.py` 85%, `goals/routes.py` 98%, `my_foods/routes.py` 99%, `recipes/routes.py` 99%, `search/routes.py` 97%, `utils.py` 99%. The `search`/`my_foods`/`recipes`/`utils` remainders are documented as dead or unreachable (duplicate-int guards, an unreachable `continue`, `PortionForm`-prevented validators, identity-map branches); `exercise` is the only lane where new tests would still move TOTAL.
 
 ## Child DOX Index
 

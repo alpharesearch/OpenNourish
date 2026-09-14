@@ -27,7 +27,7 @@ Blueprint registry — prefixes are applied at registration in `__init__.py:164-
 | settings | `settings_bp` | `/settings` | prefix declared in `__init__.py` |
 | tracking | `tracking_bp` | `/tracking` | |
 | exercise | `exercise_bp` | `/exercise` | `__init__.py` also registers `flask exercise seed-activities` |
-| main | `main_bp` | (none) | `routes.py` assigns `main_bp` twice (L23 and L25) — harmless, delete one |
+| main | `main_bp` | (none) | `routes.py` |
 | search | `search_bp` | `/search` | |
 | friends | `friends_bp` | `/friends` | |
 | profile | `profile_bp` | `/user` | prefix declared in `__init__.py` |
@@ -52,22 +52,18 @@ Blueprint registry — prefixes are applied at registration in `__init__.py:164-
 
 Inherited defects in the code you are working around — fix them where you touch them, never imitate them:
 
-- **Endpoint literals that do not exist.** `diary/routes.py:50 DASHBOARD_ROUTE = "dashboard.dashboard"` (real: `dashboard.index`) is used at `:829,:834,:852`, and `undo/routes.py:52,:105` defaults to `"diary.index"` (real: `diary.diary`). Both raise `BuildError` on their early-return paths.
-- **`db.session.get(UserGoal, <user_id>)` is a wrong-PK lookup** — `UserGoal.id` is a surrogate, `user_id` is the FK. Present at `diary/routes.py:70,:897` and `profile/routes.py:254`, which can return another account's goal row. Query by `user_id` instead.
-- **The ownership test in `search/routes.py` is `obj.user_id != current_user.id and not obj.user`** (`:586,:838,:863,:936,:975,:1160,:1184,:1207`) — it only rejects rows whose owner has been deleted, so any living user's private `MyFood`/`Recipe` passes. Use the real idiom from `Local Contracts`.
-- **`portion_id` is never validated against the item's parent** (`diary/routes.py:375,:805`, `recipes/routes.py:949`, `search/routes.py:735,:776`), so any portion id can be attached to any row.
-- **GET requests write to the database.** `ensure_portion_sequence` commits and is called from GET handlers (`main/routes.py:52`, `search/routes.py:527-531`, `recipes/routes.py:731,:1088`, `my_foods/routes.py:438`); `diary.routes` inserts the Water food and its portions while rendering (`diary/routes.py:248,:265`); `search.search` commits per generated portion (`:286,:505`); `onboarding.finish_onboarding` and `undo.undo_last_action` are mutating GETs with no CSRF.
-- **`ensure_portion_sequence` destroys curated order**: if any portion of an item has NULL `seq_num` it renumbers *all* of them by `gram_weight` (`utils.py:839-847`), silently overwriting the order a key user built with the USDA move routes. Assign `seq_num` at creation instead of relying on the backfill.
-- **`undo` re-inserts with a session-supplied primary key and `user_id` and never checks they are `current_user`** (`undo/routes.py:74,:90`).
-- **Meal names outside `constants.ALL_MEAL_TYPES` crash the diary page.** `AddToLogForm` offers a bare `"Snack"` (`diary/forms.py:37-46`), while `diary/routes.py:198` sorts with `ALL_MEAL_TYPES.index(...)` and `:156-158` extends the meal list without the matching totals key → `ValueError`/`KeyError`. `profile/routes.py:317-318` patches only half of this.
-- **`settings/routes.py:31-37` stores any timezone string**, then `fasting/routes.py:109,:139` calls `ZoneInfo(...)` unguarded → 500. `time_utils` falls back to UTC; use it.
+- **`portion_id` is still unvalidated against the item's parent in the diary paths.** `recipes/routes.py` (`portion_owns_ingredient`) and `search/routes.py` (`add_item` portion-ownership guard) now verify the portion belongs to the item being written, but the diary add/edit paths read a form-supplied `portion_id` (`diary/routes.py:411`, `:560`) and attach it to a `DailyLog` row with no parent check. Validate parentage (and ownership) before assigning `portion_id_fk`.
+- **`search/routes.py` `add_item` redirects to an unvalidated `return_url`/`request.referrer`** at ~9 exit points — an open redirect. Validate it resolves same-host before `redirect()`; callers depend on the value for scroll position and meal anchor, so fix the validation, do not drop the redirect.
+- **GET requests write to the database.** `ensure_portion_sequence` commits and is called from GET handlers (`main/routes.py:52`, `search/routes.py` result assembly, `recipes/routes.py`, `my_foods/routes.py:438`); `diary.routes` inserts the Water food and its portions while rendering; `search.search` commits per generated portion; `onboarding.finish_onboarding` and `undo` are mutating GETs with no CSRF. Do not add further writes to GET handlers.
+- **`ensure_portion_sequence` destroys curated order**: if any portion of an item has NULL `seq_num` it renumbers *all* of them by `gram_weight` (`utils.py`), silently overwriting the order a key user built with the USDA move routes. Assign `seq_num` at creation instead of relying on the backfill.
+- **`calculate_nutrition_for_items` conflates `item.recipe_id` (`utils.py:517`).** On `DailyLog`/`MyMealItem` that column *is* the referenced recipe, but on `RecipeIngredient` it is the non-null parent FK — the linked recipe lives in `recipe_id_link`. Since the function is called with both model kinds (rollups pass ingredients, diary passes logs), every nested-recipe ingredient hits the circular-dependency guard and contributes 0 to recipe nutrition and label per-ingredient numbers (visible as "Circular recipe dependency detected" warnings); diary-logged recipes meanwhile roll up live. Dispatch on model type (use `recipe_id_link` for `RecipeIngredient`), and update the tests that currently pin the zero-contribution and double-count symptoms.
 - Two divergent default exercise-activity seed lists exist: `exercise/__init__.py:8-41` (15 activities) and `opennourish/__init__.py:257-276` (6, different MET values). Pick one before seeding anywhere else.
 
 Structural work:
-- `search/routes.py` `add_item` is 861 lines (L563) handling diary add, recipe ingredient, meal item, copy-meal, friend copy, rematch, and portion creation. Split along those seams before adding behaviour to it; do not extend it further.
+- `search/routes.py` `add_item` is ~850 lines (L596) handling diary add, recipe ingredient, meal item, copy-meal, friend copy, rematch, and portion creation. Split along those seams before adding behaviour to it; do not extend it further.
 - Batch work: `calculate_nutrition_for_items` already groups USDA lookups into one query. Fetching `Food`, `FoodNutrient`, `UnifiedPortion`, or `MyFood` with `db.session.get` inside a per-log loop turns a 30-day page into hundreds of queries — hoist the ids and query once.
 - Keep the timezone, meal, portion, and nutrient invariants above intact when refactoring; they are the reason route handlers are long.
-- Longest handlers today, in order to shorten first: `search/routes.py:563 add_item` (861L), `recipes/routes.py:78 _process_recipe_yaml_import` (313L), `diary/routes.py:56 diary` (231L), `recipes/routes.py:677 edit_recipe` (221L), `dashboard/routes.py:39 index` (236L).
+- Longest handlers today, in order to shorten first: `search/routes.py:596 add_item` (~850L), `recipes/routes.py:79 _process_recipe_yaml_import` (~313L), `recipes/routes.py:682 edit_recipe` (~221L), `dashboard/routes.py:39 index` (~236L), `diary/routes.py:88 diary` (~231L).
 - CLI commands belong nested in `create_app` only until the next extraction; `exercise` shows the alternative (`exercise_bp.cli.command`).
 
 ## Verification

@@ -293,18 +293,12 @@ def test_get_body_composition_trends(app_with_db):
         assert trends[1]["weight_kg"] == 79.0
 
 
-def test_analytics_features_on_dashboard(client, app_with_db):
-    """Test that the analytics page renders data points correctly."""
+def test_analytics_features_on_dashboard(auth_client_onboarded, app_with_db):
+    """Test that the dashboard analytics cards render data points correctly."""
     with app_with_db.app_context():
-        user = User(username="renderuser", email="render@example.com")
-        user.set_password("password")
-        db.session.add(user)
-        db.session.commit()
-        user_id = user.id
-
-        # Setup goals
-        goal = UserGoal(user_id=user_id, calories=2000, protein=100, carbs=200, fat=60)
-        db.session.add(goal)
+        # The auth_client_onboarded fixture already created an onboarded user
+        # with a UserGoal; the dashboard is behind @onboarding_required.
+        user = User.query.filter_by(username="onboardeduser").one()
 
         # Setup categorized food
         cat = FoodCategory(description="Superfoods")
@@ -350,15 +344,13 @@ def test_analytics_features_on_dashboard(client, app_with_db):
         )
         db.session.commit()
 
-    # Log in
-    with client.session_transaction() as sess:
-        sess["_user_id"] = user_id
-        sess["_fresh"] = True
-
     # Use explicit date to avoid timezone mismatches between test environment and app logic
-    response = client.get(f'/{today.isoformat()}', follow_redirects=True)
+    today = date.today()
+    response = auth_client_onboarded.get(
+        f"/dashboard/{today.isoformat()}", follow_redirects=True
+    )
     assert response.status_code == 200
-    
+
     # Check for specific rendered content
     assert b"Superfoods" in response.data  # Category breakdown table/chart
     assert b"Breakfast" in response.data  # Macro distribution
@@ -372,9 +364,9 @@ def test_analytics_features_on_dashboard(client, app_with_db):
     assert b"bodyCompositionChart" in response.data
 
 
-def test_dashboard_analytics_empty(client, auth_client):
-    """Test that the analytics page renders correctly with no data."""
-    response = auth_client.get("/", follow_redirects=True)
+def test_dashboard_analytics_empty(auth_client_onboarded):
+    """Test that the dashboard analytics cards render correctly with no data."""
+    response = auth_client_onboarded.get("/", follow_redirects=True)
     assert response.status_code == 200
     # Dashboard has default content, but check for empty state messages for analytics
     assert b"No nutrition data available" in response.data

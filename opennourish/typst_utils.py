@@ -203,8 +203,9 @@ def _generate_typst_content(
     elif food.upc and len(food.upc) == 13:
         upc_str = food.upc[:12]
     elif food.upc:
-        # Pad or truncate to 12 digits if it's some other length
-        upc_str = food.upc.ljust(12, "0")[:12]
+        # Pad or truncate to 12 digits if it's some other length. Short codes
+        # are LEFT-padded (zfill): right-padding would shift the number's value.
+        upc_str = food.upc.zfill(12)[:12]
 
     typst_content_data = f"""
 #import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
@@ -493,9 +494,10 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
             f"Full EAN-13 detected. Using first 12 digits: {upc_str}"
         )
 
-    # Fallback for other lengths
+    # Fallback for other lengths. LEFT-pad (zfill): right-padding would shift
+    # the number's value, corrupting the barcode. Matches the USDA path above.
     elif my_food.upc:
-        upc_str = my_food.upc.ljust(12, "0")[:12]
+        upc_str = my_food.upc.zfill(12)[:12]
         current_app.logger.debug(f"Fallback sizing applied: {upc_str}")
 
     portions_str = ""
@@ -644,7 +646,7 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
 
             timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
             safe_description = (
-                re.sub(r"[^\\w\\s-]", "", my_food.description).strip().replace(" ", "_")
+                re.sub(r"[^\w\s-]", "", my_food.description).strip().replace(" ", "_")
             )
             download_name = f"{safe_description}_{file_suffix}_{timestamp}.pdf"
             response = send_file(
@@ -808,9 +810,10 @@ def _generate_typst_content_recipe(
             f"Full EAN-13 detected. Using first 12 digits: {upc_str}"
         )
 
-    # Fallback for other lengths
+    # Fallback for other lengths. LEFT-pad (zfill): right-padding shifts the
+    # number's value, corrupting the barcode. Matches the USDA path.
     elif recipe.upc:
-        upc_str = recipe.upc.ljust(12, "0")[:12]
+        upc_str = recipe.upc.zfill(12)[:12]
         current_app.logger.debug(f"Fallback sizing applied: {upc_str}")
 
     portions_str = ""

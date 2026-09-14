@@ -23,10 +23,8 @@ User recipes: nested ingredients (foods, other recipes, meals), per-recipe nutri
 
 ## Work Guidance
 
-- **`nutrition_label_svg` (L1295-1296) has no access check at all**, while its siblings `generate_label_pdf` (L1285) and `generate_pdf_details` (L1301) both check `is_public or user_id == current_user.id`. Any logged-in user can pull any recipe's label by id; `typst_utils._get_nutrition_label_data_recipe` is a bare `db.session.get`. Mirror the sibling guard.
-- **`edit_recipe` writes before it authorises**: it backfills ingredient `seq_num`s and commits (L689-696), and `ensure_portion_sequence` (L731) can commit again, all before the owner check at L764-766. Move the ownership check to the top of the handler.
-- `copy_recipe` (L1311) preserves the source row's `portion_id_fk`, `my_food_id`, and `recipe_id_link` while copying portions fresh (L1353-1363), so a copied recipe can point at another user's rows. Re-point them at the copies.
-- The ingredient display path re-resolves portions per ingredient (`recipes/routes.py:448` triggers `SAWarning: fully NULL primary key identity cannot load any object` when `portion_id_fk` is NULL); guard on NULL before `db.session.get`.
+- **`copy_recipe` (L1327) preserves the source row's `portion_id_fk`, `my_food_id`, and `recipe_id_link`** on the copied ingredients while copying portions fresh, so a copied recipe can point at another user's rows. Re-point them at the copies (or at the copies' new portion ids).
+- The two historical authorisation defects are **fixed and test-locked**: `nutrition_label_svg` now mirrors the sibling guard (`is_public or owner`, 403 otherwise) and `edit_recipe` runs the ownership check **before** the `seq_num` backfills/`ensure_portion_sequence` that commit. Keep the check first; the ingredient-display path already guards `portion_id_fk` before `db.session.get`.
 - Keep `_get_or_create_food_category` behaviour identical to the `my_foods` copy, or extract one shared helper in `utils.py` — the two copies must not diverge silently.
 - Import/export changes must be validated by a round-trip test (export then import then compare), not by unit-testing one direction.
 
@@ -34,10 +32,10 @@ User recipes: nested ingredients (foods, other recipes, meals), per-recipe nutri
 
 ```bash
 P=/home/markus/miniconda3/envs/opennourish/bin/python
-$P -m pytest -m "not integration" -q tests/test_recipes.py tests/test_recipes_routes.py tests/test_recipe_import.py tests/test_recipe_import_export.py tests/test_recipe_final_weight.py tests/test_update_recipe_nutrition.py tests/test_recipe_label.py
+$P -m pytest -m "not integration" -q tests/test_recipes.py tests/test_recipes_routes.py tests/test_recipe_import.py tests/test_recipe_import_export.py tests/test_recipe_final_weight.py tests/test_update_recipe_nutrition.py tests/test_recipe_label.py tests/test_recipes_coverage.py
 ```
 
-60 tests; `recipes/routes.py` is at 82% coverage.
+124 tests; `recipes/routes.py` is at 99% (`tests/test_recipes_coverage.py`). The single remaining miss (L441 `continue` in `export_recipes`) is unreachable — the identity map guarantees one object per recipe id, so the processed-set branch never fires.
 
 ## Child DOX Index
 

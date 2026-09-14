@@ -41,6 +41,18 @@ MANAGE_CATEGORIES_ROUTE = "my_foods.manage_categories"
 PORTIONS_TABLE_FRAGMENT = "#portions-table"
 
 
+def _owned_portion_or_none(portion_id):
+    """Return the portion only when it belongs to one of the current user's foods.
+
+    ``UnifiedPortion`` rows also cover recipe and USDA portions, whose
+    ``my_food`` is ``None``, so the parent must be checked before its owner.
+    """
+    portion = db.session.get(UnifiedPortion, portion_id)
+    if not portion or not portion.my_food or portion.my_food.user_id != current_user.id:
+        return None
+    return portion
+
+
 def _get_or_create_food_category(category_name, user_id, food_description):
     if not category_name or category_name.lower() == food_description.lower():
         return None
@@ -588,8 +600,8 @@ def add_my_food_portion(food_id):
 @my_foods_bp.route("/portion/<int:portion_id>/update", methods=["POST"])
 @login_required
 def update_my_food_portion(portion_id):
-    portion = db.session.get(UnifiedPortion, portion_id)
-    if not portion or portion.my_food.user_id != current_user.id:
+    portion = _owned_portion_or_none(portion_id)
+    if not portion:
         flash("Portion not found or you do not have permission to edit it.", "danger")
         return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
@@ -787,8 +799,8 @@ def generate_pdf_details(food_id):
 @my_foods_bp.route("/portion/<int:portion_id>/move_up", methods=["POST"])
 @login_required
 def move_my_food_portion_up(portion_id):
-    portion_to_move = db.session.get(UnifiedPortion, portion_id)
-    if not portion_to_move or portion_to_move.my_food.user_id != current_user.id:
+    portion_to_move = _owned_portion_or_none(portion_id)
+    if not portion_to_move:
         flash("Portion not found or unauthorized.", "danger")
         return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
@@ -822,8 +834,8 @@ def move_my_food_portion_up(portion_id):
 @my_foods_bp.route("/portion/<int:portion_id>/move_down", methods=["POST"])
 @login_required
 def move_my_food_portion_down(portion_id):
-    portion_to_move = db.session.get(UnifiedPortion, portion_id)
-    if not portion_to_move or portion_to_move.my_food.user_id != current_user.id:
+    portion_to_move = _owned_portion_or_none(portion_id)
+    if not portion_to_move:
         flash("Portion not found or unauthorized.", "danger")
         return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
@@ -922,10 +934,25 @@ def delete_category(category_id):
         flash("You are not authorized to delete this category.", "danger")
         return redirect(url_for(MANAGE_CATEGORIES_ROUTE))
 
-    # Set food_category_id to None for all foods using this category
-    MyFood.query.filter_by(food_category_id=category_id).update(
-        {"food_category_id": None}
-    )
+    # Set food_category_id to None for the owner's foods using this category.
+    # The filter must stay scoped to current_user: an unscoped bulk update
+    # writes rows that belong to other accounts.
+    MyFood.query.filter_by(
+        food_category_id=category_id, user_id=current_user.id
+    ).update({"food_category_id": None})
+
+    # Another account's row should never point at this id, but if one does, the
+    # FoodCategory -> MyFood delete dependency in models.py nulls it out when
+    # the category row goes. That is still a write to somebody else's row, so
+    # remember them and hand the value back after the delete.
+    foreign_food_ids = [
+        food.id
+        for food in MyFood.query.filter(
+            MyFood.food_category_id == category_id,
+            MyFood.user_id.is_not(None),
+            MyFood.user_id != current_user.id,
+        ).all()
+    ]
 
     redirect_info = {"endpoint": MANAGE_CATEGORIES_ROUTE}
     prepare_undo_and_delete(
@@ -934,6 +961,12 @@ def delete_category(category_id):
         redirect_info,
         success_message="Category deleted successfully!",
     )
+
+    if foreign_food_ids:
+        MyFood.query.filter(MyFood.id.in_(foreign_food_ids)).update(
+            {"food_category_id": category_id}, synchronize_session=False
+        )
+        db.session.commit()
 
     return redirect(url_for(MANAGE_CATEGORIES_ROUTE))
 

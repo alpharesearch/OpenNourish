@@ -6,13 +6,37 @@ from flask import current_app
 # --- Pure, Testable Functions ---
 
 
+def is_valid_timezone(user_timezone_str=None):
+    """Return True when user_timezone_str names a zone this system can load.
+
+    Missing and unusable values return False instead of raising: the column can
+    hold None, and a browser's `Intl` API can report names such as
+    ``Etc/Unknown`` or a relative-path-looking string that ``ZoneInfo`` rejects
+    with something other than ``ZoneInfoNotFoundError``.
+    """
+    if not isinstance(user_timezone_str, str) or not user_timezone_str:
+        return False
+    try:
+        ZoneInfo(user_timezone_str)
+    except (ZoneInfoNotFoundError, ValueError, TypeError, OSError):
+        return False
+    return True
+
+
+def resolve_timezone(user_timezone_str="UTC"):
+    """Return a ZoneInfo for a user timezone string, falling back to UTC.
+
+    Never raises, so request handlers can pass whatever is stored on the user
+    row. ZoneInfo caches its instances, so calling this per request is cheap.
+    """
+    if is_valid_timezone(user_timezone_str):
+        return ZoneInfo(user_timezone_str)
+    return ZoneInfo("UTC")
+
+
 def get_user_today(user_timezone_str="UTC"):
     """Returns the current date for a given timezone string."""
-    try:
-        user_tz = ZoneInfo(user_timezone_str)
-    except ZoneInfoNotFoundError:
-        user_tz = ZoneInfo("UTC")
-    return datetime.now(user_tz).date()
+    return datetime.now(resolve_timezone(user_timezone_str)).date()
 
 
 def to_user_timezone(utc_dt, user_timezone_str="UTC"):
@@ -20,10 +44,7 @@ def to_user_timezone(utc_dt, user_timezone_str="UTC"):
     if not utc_dt:
         return None
 
-    try:
-        user_tz = ZoneInfo(user_timezone_str)
-    except ZoneInfoNotFoundError:
-        user_tz = ZoneInfo("UTC")
+    user_tz = resolve_timezone(user_timezone_str)
 
     if utc_dt.tzinfo is None:
         utc_dt = utc_dt.replace(tzinfo=ZoneInfo("UTC"))
@@ -36,10 +57,7 @@ def to_utc(naive_dt, user_timezone_str="UTC"):
     if not naive_dt:
         return None
 
-    try:
-        local_tz = ZoneInfo(user_timezone_str)
-    except ZoneInfoNotFoundError:
-        local_tz = ZoneInfo("UTC")
+    local_tz = resolve_timezone(user_timezone_str)
 
     local_dt = naive_dt.replace(tzinfo=local_tz)
     return local_dt.astimezone(ZoneInfo("UTC"))
@@ -74,9 +92,7 @@ def _get_user_timezone_for_filter():
     ):
         user_tz_str = current_user.timezone
 
-    try:
-        ZoneInfo(user_tz_str)
-    except ZoneInfoNotFoundError:
+    if not is_valid_timezone(user_tz_str):
         current_app.logger.warning(
             f"Invalid timezone '{user_tz_str}' for user {getattr(current_user, 'id', 'anonymous')}. "
             "Falling back to UTC for formatting."

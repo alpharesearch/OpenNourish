@@ -68,7 +68,10 @@ def get_setting_from_db(app, key, default=None, decrypt=False):
 
 class Config:
     SECRET_KEY = get_or_create_secret_key(persistent_dir)
-    if not SECRET_KEY:
+    # Startup guard: triggering it would overwrite the real
+    # persistent/secret_key.txt; the same logic is covered via generated
+    # modules in tests/test_config.py.
+    if not SECRET_KEY:  # pragma: no cover
         raise ValueError(
             "No SECRET_KEY set for Flask application. Please set it in your .env file or environment variables."
         )

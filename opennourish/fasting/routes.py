@@ -6,6 +6,7 @@ from .forms import EditFastForm
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from opennourish.utils import prepare_undo_and_delete
+from opennourish.time_utils import resolve_timezone
 
 FASTING_INDEX_ROUTE = "fasting.index"
 
@@ -106,7 +107,7 @@ def edit_start_time():
     form = EditFastForm()
     if form.validate_on_submit():
         # Convert naive datetime from form to user's timezone, then to UTC
-        user_tz = ZoneInfo(current_user.timezone)
+        user_tz = resolve_timezone(current_user.timezone)
         local_start_time = form.start_time.data.replace(tzinfo=user_tz)
         utc_start_time = local_start_time.astimezone(ZoneInfo("UTC"))
 
@@ -136,7 +137,7 @@ def update_fast(fast_id):
 
     form = EditFastForm()
     if form.validate_on_submit():
-        user_tz = ZoneInfo(current_user.timezone)
+        user_tz = resolve_timezone(current_user.timezone)
 
         # Handle start time
         local_start_time = form.start_time.data.replace(tzinfo=user_tz)

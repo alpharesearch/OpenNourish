@@ -169,7 +169,7 @@ def step3():
         )
         if bmr:
             # Default to a balanced preset if no other is chosen
-            initial_goals = calculate_goals_from_preset(bmr, "balanced")
+            initial_goals = calculate_goals_from_preset(bmr, "Balanced")
 
     if form.validate_on_submit():
         user_goal = UserGoal.query.filter_by(user_id=current_user.id).first()

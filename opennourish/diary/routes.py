@@ -35,7 +35,7 @@ from opennourish.utils import (
 )
 from .forms import MealForm
 from sqlalchemy.orm import joinedload, selectinload
-from constants import ALL_MEAL_TYPES
+from constants import ALL_MEAL_TYPES, DASHBOARD_INDEX_ROUTE
 from sqlalchemy import func
 
 # Import the update_recipe_nutrition function from recipes module
@@ -47,7 +47,39 @@ from types import SimpleNamespace
 DIARY_ROUTE = "diary.diary"
 EDIT_MEAL_ROUTE = "diary.edit_meal"
 MY_MEALS_ROUTE = "diary.my_meals"
-DASHBOARD_ROUTE = "dashboard.dashboard"
+# The dashboard blueprint's index view is ``dashboard.index`` (see
+# ``constants.DASHBOARD_INDEX_ROUTE``). The literal that used to live here,
+# ``"dashboard.dashboard"``, is not a registered endpoint and raised
+# ``BuildError`` on every early-return redirect in ``copy_meal_from_friend``.
+DASHBOARD_ROUTE = DASHBOARD_INDEX_ROUTE
+
+
+def _get_user_goal():
+    """Return the current user's goal row, or ``None``.
+
+    ``UserGoal.id`` is a surrogate primary key, so the goal must be looked up by
+    ``user_id``. The previous ``db.session.get(UserGoal, current_user.id)``
+    treated a user id as a goal id and could hand back another account's goal.
+    """
+    return UserGoal.query.filter_by(user_id=current_user.id).first()
+
+
+def _meal_order_key(meal_name):
+    """Sort key ordering meal blocks by ``constants.ALL_MEAL_TYPES``.
+
+    A stored ``meal_name`` may be missing from ``ALL_MEAL_TYPES`` (the bare
+    ``"Snack"`` offered by ``AddToLogForm``, or a meal left over from a previous
+    ``meals_per_day`` setting). Those degrade to the end of the page instead of
+    raising ``ValueError``.
+    """
+    try:
+        return ALL_MEAL_TYPES.index(meal_name)
+    except ValueError:
+        return len(ALL_MEAL_TYPES)
+
+
+def _empty_meal_totals():
+    return {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0}
 
 
 @diary_bp.route("/diary/")
@@ -67,7 +99,7 @@ def diary(log_date_str=None):
     ).first()
     is_fasting = active_fast is not None
 
-    user_goal = db.session.get(UserGoal, current_user.id)
+    user_goal = _get_user_goal()
     if not user_goal:
         # Create a temporary default goal if none exists
         user_goal = UserGoal(calories=2000, protein=150, carbs=250, fat=60)
@@ -92,10 +124,7 @@ def diary(log_date_str=None):
         "Water": [],
     }
 
-    meal_totals = {
-        meal_name: {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0}
-        for meal_name in meals
-    }
+    meal_totals = {meal_name: _empty_meal_totals() for meal_name in meals}
 
     totals = calculate_nutrition_for_items(daily_logs)
 
@@ -155,7 +184,12 @@ def diary(log_date_str=None):
 
         meal_key = log.meal_name or "Unspecified"
         if meal_key not in meals:
+            # Unknown/ad-hoc meal names (the bare "Snack" from AddToLogForm, or
+            # a name left behind when meals_per_day changed) stay visible as
+            # their own block; they must have a totals bucket or the meal
+            # summary in the template raises KeyError while rendering.
             meals[meal_key] = []
+            meal_totals[meal_key] = _empty_meal_totals()
 
         meal_totals[meal_key]["calories"] += nutrition["calories"]
         meal_totals[meal_key]["protein"] += nutrition["protein"]
@@ -193,9 +227,11 @@ def diary(log_date_str=None):
     # Collect all meal names that actually have items logged for the day
     logged_meal_names = {meal_name for meal_name, items in meals.items() if items}
 
-    # Combine base meals with any other meals that have logged items
+    # Combine base meals with any other meals that have logged items. Names
+    # outside ALL_MEAL_TYPES sort last (alphabetically) rather than crashing.
     meal_names_to_render = sorted(
-        list(set(base_meals_to_show) | logged_meal_names), key=ALL_MEAL_TYPES.index
+        set(base_meals_to_show) | logged_meal_names,
+        key=lambda meal_name: (_meal_order_key(meal_name), meal_name),
     )
 
     # --- Water Quick-Add Setup ---
@@ -894,7 +930,7 @@ def get_remaining_calories(log_date_str):
     except ValueError:
         return jsonify({"error": "Invalid date format"}), 400
 
-    user_goal = db.session.get(UserGoal, current_user.id)
+    user_goal = _get_user_goal()
     if not user_goal or not user_goal.calories:
         return jsonify({"error": "Calorie goal not set"}), 404
 

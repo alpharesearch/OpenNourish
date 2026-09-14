@@ -172,3 +172,20 @@ def test_jinja_filters_invalid_tz_fallback(
         # Check that a warning was logged
         assert "Invalid timezone 'Invalid/Zone'" in caplog.text
         assert "Falling back to UTC" in caplog.text
+
+
+def test_is_valid_timezone_rejects_non_string_and_empty():
+    """The guard must reject None/empty/non-str without raising (settings route relies on it)."""
+    from opennourish.time_utils import is_valid_timezone
+
+    assert is_valid_timezone(None) is False
+    assert is_valid_timezone("") is False
+    assert is_valid_timezone(123) is False
+    assert is_valid_timezone("UTC") is True
+
+
+def test_to_user_timezone_and_to_utc_none_guards():
+    from opennourish.time_utils import to_utc, to_user_timezone
+
+    assert to_user_timezone(None) is None
+    assert to_utc(None) is None

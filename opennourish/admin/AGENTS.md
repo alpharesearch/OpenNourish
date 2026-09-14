@@ -33,10 +33,10 @@ Instance-level controls: system stats, user management (verify, enable, key-user
 
 ```bash
 P=/home/markus/miniconda3/envs/opennourish/bin/python
-$P -m pytest -m "not integration" -q tests/test_admin.py tests/test_admin_users.py tests/test_admin_features.py tests/test_admin_cleanup.py tests/test_user_management.py tests/test_usda_admin.py
+$P -m pytest -m "not integration" -q tests/test_admin.py tests/test_admin_users.py tests/test_admin_features.py tests/test_admin_cleanup.py tests/test_user_management.py tests/test_usda_admin.py tests/test_admin_coverage.py
 ```
 
-`admin/routes.py` sits at 87%; the email-settings encryption round-trip is the part most worth extending.
+62 tests; `admin/routes.py` and `usda_admin/routes.py` are both at 100% (`tests/test_admin_coverage.py` carries the email-settings encryption round-trip and the negative privilege cases).
 
 ## Child DOX Index
 

@@ -13,7 +13,7 @@ Create and edit the user's macro/micronutrient targets, derived body-composition
 ## Local Contracts
 
 - `diet_preset` and `goal_modifier` are stored verbatim (`routes.py:39-40`) and are **cosmetic today**: this route never calls `utils.calculate_goals_from_preset`, so the macro gram fields are whatever the form submitted. Do not describe the saved preset as the source of the gram targets until that wiring exists.
-- `utils.calculate_goals_from_preset` (`utils.py:369`) returns `None` for any name not exactly matching a `constants.DIET_PRESETS` key (keys are capitalised, e.g. `"Balanced"`). Its only caller is `onboarding/routes.py:172`, which passes lowercase `"balanced"` — so the onboarding prefill is currently dead. Fix the casing at the caller, and keep preset lookups exact-match.
+- `utils.calculate_goals_from_preset` (`utils.py:369`) returns `None` for any name not exactly matching a `constants.DIET_PRESETS` key (keys are capitalised, e.g. `"Balanced"`). Its only caller is `onboarding/routes.py:172`; it once passed lowercase `"balanced"`, silently killing the step-3 prefill — fixed to `"Balanced"` and test-locked. Keep lookups exact-match on both sides.
 - `goals/forms.py:9-33` declares age/gender/height/weight fields that this route never writes back to `User`; treat them as display-only until someone wires them.
 - Exercise goals and body-composition goals are stored on the same `UserGoal` row; editing one must not null the other.
 - Height/weight units: the form accepts metric or US depending on `current_user.measurement_system` and stores canonical values (cm / kg). Convert on the boundary, store canonical.

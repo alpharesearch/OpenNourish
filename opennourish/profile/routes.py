@@ -251,7 +251,9 @@ def diary(username, log_date_str=None):
     else:
         log_date = get_user_today(current_user.timezone)
 
-    user_goal = db.session.get(UserGoal, friend_user.id)
+    # UserGoal.id is a surrogate key; the owning user is user_id. Looking the row
+    # up by friend_user.id could return a different account's goal.
+    user_goal = UserGoal.query.filter_by(user_id=friend_user.id).first()
     if not user_goal:
         user_goal = UserGoal(calories=2000, protein=150, carbs=250, fat=60)
 
@@ -315,7 +317,16 @@ def diary(username, log_date_str=None):
         if meal_key not in meals:
             meals[meal_key] = []
         if meal_key not in meal_totals:
-            meal_totals[meal_key] = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}
+            # Must carry the same keys as the pre-seeded dict above, otherwise the
+            # ``fiber`` accumulation below raises KeyError on the first item of a
+            # meal that is not in the literal dict (e.g. "Water").
+            meal_totals[meal_key] = {
+                "calories": 0,
+                "protein": 0,
+                "carbs": 0,
+                "fat": 0,
+                "fiber": 0,
+            }
 
         meal_totals[meal_key]["calories"] += nutrition["calories"]
         meal_totals[meal_key]["protein"] += nutrition["protein"]

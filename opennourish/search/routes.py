@@ -39,6 +39,39 @@ NOT_FOUND_OR_UNAUTHORIZED_ERROR = "Not Found or Unauthorized"
 SEARCH_SEARCH_ROUTE = "search.search"
 USDA_FOOD_NOT_FOUND = "USDA Food not found."
 MY_FOOD_NOT_FOUND = "My Food not found."
+NOT_AUTHORIZED_MSG = "You can only add your own foods, recipes and meals."
+
+
+def _as_optional_int(value):
+    """``int(value)``, or ``None`` when the caller sent something unparseable."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _has_accepted_friendship(other_user_id):
+    """True when ``other_user_id`` shares an accepted ``Friendship`` with the caller."""
+    return other_user_id in {friend.id for friend in current_user.friends}
+
+
+def _portion_matches_item(portion, food_type, food_id):
+    """True when ``portion`` really belongs to the item being added.
+
+    Guards against a form smuggling an unrelated ``portion_id`` onto a
+    different item. A missing portion is left to the existing "no portion"
+    handling, and the unsaved virtual rematch portion has no parent yet.
+    """
+    if portion is None or portion.id is None:
+        return True
+    target_id = _as_optional_int(food_id)
+    if food_type == "usda":
+        return portion.fdc_id == target_id
+    if food_type == "my_food":
+        return portion.my_food_id == target_id
+    if food_type == "recipe":
+        return portion.recipe_id == target_id
+    return True
 
 
 class ManualPagination:
@@ -581,14 +614,16 @@ def add_item():
             flash("My Meal not found.", "danger")
             return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
 
-        # Check if the user is trying to access a meal that is not theirs
-        # and the owner has been deleted.
-        if my_meal.user_id != current_user.id and not my_meal.user:
-            flash("This meal belongs to a deleted user and cannot be added.", "info")
-            return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
-
+        # Only the owner may expand a saved meal; a deleted owner's rows stay
+        # unreachable because their friendships are gone with the account.
         if my_meal.user_id != current_user.id:
-            flash("You are not authorized to add this meal.", "danger")
+            if not my_meal.user:
+                flash(
+                    "This meal belongs to a deleted user and cannot be added.",
+                    "info",
+                )
+            else:
+                flash("You are not authorized to add this meal.", "danger")
             return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
 
         if target == "diary":
@@ -670,11 +705,13 @@ def add_item():
         source_user_id = current_user.id
         if friend_username:
             friend_user = User.query.filter_by(username=friend_username).first()
-            if friend_user:
-                source_user_id = friend_user.id
-            else:
+            if not friend_user:
                 flash(f"Friend '{friend_username}' not found.", "danger")
                 return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
+            if not _has_accepted_friendship(friend_user.id):
+                flash(f"You are not friends with {friend_username}.", "danger")
+                return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
+            source_user_id = friend_user.id
 
         if (
             source_meal_name == target_meal_name
@@ -739,7 +776,11 @@ def add_item():
 
     # Ensure a 1-gram portion exists for USDA foods when they are added.
     if food_type == "usda":
-        food_id_int = int(food_id)
+        try:
+            food_id_int = int(food_id)
+        except (ValueError, TypeError):
+            flash("Invalid food ID.", "danger")
+            return redirect(request.referrer)
         one_gram_portion = UnifiedPortion.query.filter_by(
             fdc_id=food_id_int, gram_weight=1.0
         ).first()
@@ -796,6 +837,24 @@ def add_item():
         flash("Invalid portion selected.", "danger")
         return redirect(request.referrer)
 
+    # Self-nesting is rejected before the portion checks so that the message
+    # stays the contract for the recipe-into-itself case (tests/test_recipes.py).
+    if food_type == "recipe" and target == "recipe":
+        try:
+            if int(food_id) == int(recipe_id):
+                flash("A recipe cannot be an ingredient of itself.", "danger")
+                return redirect(
+                    url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
+                )
+        except (TypeError, ValueError):
+            pass
+
+    # A portion may only be applied to the item it belongs to, whichever of the
+    # resolutions above produced it.
+    if not _portion_matches_item(portion, food_type, food_id):
+        flash("The selected portion does not belong to this item.", "danger")
+        return redirect(request.referrer or url_for("main.index"))
+
     amount_grams = amount * portion.gram_weight
     serving_type = portion.full_description_str
     portion_id_fk_value = portion.id
@@ -835,11 +894,14 @@ def add_item():
             elif food_type == "my_food":
                 food = db.session.get(MyFood, food_id)
                 if food:
-                    if food.user_id != current_user.id and not food.user:
-                        flash(
-                            "This food belongs to a deleted user and cannot be added.",
-                            "info",
-                        )
+                    if food.user_id != current_user.id:
+                        if food.user:
+                            flash(NOT_AUTHORIZED_MSG, "danger")
+                        else:
+                            flash(
+                                "This food belongs to a deleted user and cannot be added.",
+                                "info",
+                            )
                         return redirect(
                             url_for(DIARY_ROUTE_NAME, log_date_str=log_date_str)
                         )
@@ -860,11 +922,14 @@ def add_item():
             elif food_type == "recipe":
                 recipe = db.session.get(Recipe, food_id)
                 if recipe:
-                    if recipe.user_id != current_user.id and not recipe.user:
-                        flash(
-                            "This recipe belongs to a deleted user and cannot be added.",
-                            "info",
-                        )
+                    if recipe.user_id != current_user.id:
+                        if recipe.user:
+                            flash(NOT_AUTHORIZED_MSG, "danger")
+                        else:
+                            flash(
+                                "This recipe belongs to a deleted user and cannot be added.",
+                                "info",
+                            )
                         return redirect(
                             url_for(DIARY_ROUTE_NAME, log_date_str=log_date_str)
                         )
@@ -933,11 +998,14 @@ def add_item():
             elif food_type == "my_food":
                 food = db.session.get(MyFood, food_id)
                 if food:
-                    if food.user_id != current_user.id and not food.user:
-                        flash(
-                            "This food belongs to a deleted user and cannot be added as an ingredient.",
-                            "info",
-                        )
+                    if food.user_id != current_user.id:
+                        if food.user:
+                            flash(NOT_AUTHORIZED_MSG, "danger")
+                        else:
+                            flash(
+                                "This food belongs to a deleted user and cannot be added as an ingredient.",
+                                "info",
+                            )
                         return redirect(url_for(EDIT_RECIPE_ROUTE, recipe_id=recipe_id))
                     # Calculate the next seq_num for the ingredient
                     max_seq_num = (
@@ -972,11 +1040,14 @@ def add_item():
                         url_for(SEARCH_SEARCH_ROUTE, target=target, recipe_id=recipe_id)
                     )
 
-                if sub_recipe.user_id != current_user.id and not sub_recipe.user:
-                    flash(
-                        "This recipe belongs to a deleted user and cannot be added as an ingredient.",
-                        "info",
-                    )
+                if sub_recipe.user_id != current_user.id:
+                    if sub_recipe.user:
+                        flash(NOT_AUTHORIZED_MSG, "danger")
+                    else:
+                        flash(
+                            "This recipe belongs to a deleted user and cannot be added as an ingredient.",
+                            "info",
+                        )
                     return redirect(
                         url_for(EDIT_RECIPE_ROUTE, recipe_id=target_recipe.id)
                     )
@@ -1157,11 +1228,14 @@ def add_item():
             elif food_type == "my_food":
                 food = db.session.get(MyFood, food_id)
                 if food:
-                    if food.user_id != current_user.id and not food.user:
-                        flash(
-                            "This food belongs to a deleted user and cannot be added to a meal.",
-                            "info",
-                        )
+                    if food.user_id != current_user.id:
+                        if food.user:
+                            flash(NOT_AUTHORIZED_MSG, "danger")
+                        else:
+                            flash(
+                                "This food belongs to a deleted user and cannot be added to a meal.",
+                                "info",
+                            )
                         return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=my_meal_id))
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
@@ -1181,11 +1255,14 @@ def add_item():
             elif food_type == "recipe":
                 recipe = db.session.get(Recipe, food_id)
                 if recipe:
-                    if recipe.user_id != current_user.id and not recipe.user:
-                        flash(
-                            "This recipe belongs to a deleted user and cannot be added to a meal.",
-                            "info",
-                        )
+                    if recipe.user_id != current_user.id:
+                        if recipe.user:
+                            flash(NOT_AUTHORIZED_MSG, "danger")
+                        else:
+                            flash(
+                                "This recipe belongs to a deleted user and cannot be added to a meal.",
+                                "info",
+                            )
                         return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=my_meal_id))
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
@@ -1204,11 +1281,14 @@ def add_item():
             elif food_type == "my_meal":
                 sub_my_meal = db.session.get(MyMeal, food_id)
                 if sub_my_meal:
-                    if sub_my_meal.user_id != current_user.id and not sub_my_meal.user:
-                        flash(
-                            "This meal belongs to a deleted user and cannot be added to another meal.",
-                            "info",
-                        )
+                    if sub_my_meal.user_id != current_user.id:
+                        if sub_my_meal.user:
+                            flash(NOT_AUTHORIZED_MSG, "danger")
+                        else:
+                            flash(
+                                "This meal belongs to a deleted user and cannot be added to another meal.",
+                                "info",
+                            )
                         return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=my_meal_id))
                     meal_item = MyMealItem(
                         my_meal_id=target_my_meal.id,
@@ -1228,66 +1308,6 @@ def add_item():
             if return_url:
                 return redirect(return_url)
             return redirect(url_for(EDIT_MEAL_ROUTE, meal_id=my_meal_id))
-
-        elif target == "rematch_ingredient":
-            ingredient_id_to_replace = request.form.get(
-                "ingredient_id_to_replace", type=int
-            )
-            original_ingredient = db.session.get(
-                RecipeIngredient, ingredient_id_to_replace
-            )
-
-            if (
-                not original_ingredient
-                or original_ingredient.recipe.user_id != current_user.id
-            ):
-                flash(
-                    "Original ingredient not found or you are not authorized to edit it.",
-                    "danger",
-                )
-                return redirect(url_for("recipes.recipes"))
-
-            # Store the ID of the placeholder MyFood to potentially delete it later
-            placeholder_my_food_id = original_ingredient.my_food_id
-
-            # Update the ingredient to point to the new food
-            original_ingredient.my_food_id = None
-            original_ingredient.fdc_id = None
-            original_ingredient.recipe_id_link = None
-
-            if food_type == "usda":
-                original_ingredient.fdc_id = food_id
-            elif food_type == "my_food":
-                original_ingredient.my_food_id = food_id
-            elif food_type == "recipe":
-                original_ingredient.recipe_id_link = food_id
-
-            original_ingredient.portion_id_fk = portion.id
-            original_ingredient.amount_grams = amount * portion.gram_weight
-
-            # Check if the old placeholder is still used by any other ingredient
-            if placeholder_my_food_id:
-                is_placeholder_used = (
-                    RecipeIngredient.query.filter(
-                        RecipeIngredient.my_food_id == placeholder_my_food_id
-                    ).count()
-                    > 0
-                )
-
-                if not is_placeholder_used:
-                    placeholder_to_delete = db.session.get(
-                        MyFood, placeholder_my_food_id
-                    )
-                    if placeholder_to_delete:
-                        db.session.delete(placeholder_to_delete)
-
-            update_recipe_nutrition(original_ingredient.recipe)
-            db.session.commit()
-
-            flash("Ingredient matched successfully.", "success")
-            return redirect(
-                url_for(EDIT_RECIPE_ROUTE, recipe_id=original_ingredient.recipe_id)
-            )
 
         elif target == "my_foods":
             if food_type == "usda":

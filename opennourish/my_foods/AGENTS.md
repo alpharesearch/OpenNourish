@@ -21,8 +21,8 @@ The user's own food database: hand-entered foods, copies of USDA foods, categori
 
 ## Work Guidance
 
-- **`delete_category` (`L917`) clears `food_category_id` on every user's foods**: the bulk `MyFood.query.filter_by(food_category_id=...).update(...)` at `:926-928` has no `user_id` filter, so deleting a personal category un-categorises other accounts' foods. Scope it to the owner.
-- `update_my_food_portion` (`:592`) and the two move routes (`:791`, `:826`) dereference `portion.my_food.user_id`, which raises `AttributeError` when the id belongs to a recipe or USDA portion. Check the parent type first.
+- `delete_category` is owner-scoped and preserves other accounts' category links: the bulk `food_category_id` clear filters on `user_id=current_user.id`, and because the `FoodCategory→MyFood` ORM delete dependency (`models.py`) also nulls every referencing row, the route captures foreign rows and re-points them after the delete. Do not remove either step — a plain delete un-categorises other users' foods.
+- Portion mutations resolve the parent before touching ownership. USDA/recipe portions have `my_food=None`, so dereferencing `portion.my_food.user_id` raises `AttributeError`; use the `_owned_portion_or_none()` helper (checks the parent type and owner) on the update and move routes rather than re-introducing the direct dereference.
 - Unlike `usda_admin` and `recipes`, the portion move routes here have no NULL-`seq_num` guard, so a swap silently no-ops on rows that `ensure_portion_sequence` has not repaired yet.
 - `new_my_food` and `edit_my_food` implement two independent per-100 g conversions and each spells out all 15 nutrient fields, with a third copy as string names in `copy_usda_food`. Consolidate on `utils.get_nutrients_for_display` / `convert_display_nutrients_to_100g` before adding a nutrient.
 - Deletion goes through the undo mechanism (`opennourish/undo`): stash the serialised row in the session before deleting.
@@ -32,10 +32,10 @@ The user's own food database: hand-entered foods, copies of USDA foods, categori
 
 ```bash
 P=/home/markus/miniconda3/envs/opennourish/bin/python
-$P -m pytest -m "not integration" -q tests/test_my_foods_features.py tests/test_my_foods_import.py tests/test_my_foods_export.py tests/test_my_foods_categories.py
+$P -m pytest -m "not integration" -q tests/test_my_foods_features.py tests/test_my_foods_import.py tests/test_my_foods_export.py tests/test_my_foods_categories.py tests/test_my_foods_coverage.py
 ```
 
-40 tests.
+70 tests; `my_foods/routes.py` is at 99% (`tests/test_my_foods_coverage.py`). The two remaining misses are the `new_my_food` gram-weight guard that `PortionForm` validators make unreachable over HTTP — behaviour is locked, do not "fix" the branch.
 
 ## Child DOX Index
 

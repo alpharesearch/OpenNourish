@@ -22,6 +22,7 @@ from models import (
 )
 from .forms import SettingsForm, ChangePasswordForm, DeleteAccountConfirmForm
 from opennourish.utils import ft_in_to_cm, cm_to_ft_in
+from opennourish.time_utils import is_valid_timezone
 from . import settings_bp
 
 
@@ -31,6 +32,18 @@ def set_timezone():
     data = request.get_json()
     timezone = data.get("timezone")
     if timezone:
+        # The stored value is later fed to ZoneInfo (fasting, time filters);
+        # reject names this system cannot load instead of poisoning the row.
+        if not is_valid_timezone(timezone):
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Unknown timezone.",
+                    }
+                ),
+                400,
+            )
         user = db.session.get(User, current_user.id)
         user.timezone = timezone
         db.session.commit()

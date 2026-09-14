@@ -1172,10 +1172,14 @@ def test_add_item_exception(auth_client_with_data, monkeypatch):
         db.session.commit()
         portion_id = portion.id
 
-    def mock_commit():
+    def mock_commit(*args, **kwargs):
         raise Exception("DB error")
 
-    monkeypatch.setattr(db.session, "commit", mock_commit)
+    # Patch the scoped_session CLASS, not the db.session instance: when
+    # monkeypatch undoes an INSTANCE-level patch it writes the old bound
+    # method back as an instance attribute, which permanently shadows
+    # class-level commit patches in every later test that shares the app.
+    monkeypatch.setattr("sqlalchemy.orm.scoping.scoped_session.commit", mock_commit)
 
     response = client.post(
         url_for("search.add_item"),

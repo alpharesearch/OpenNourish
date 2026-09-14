@@ -1,0 +1,363 @@
+{# Shared advanced-analytics chart initializers; Chart.js is loaded globally by base.html. #}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Daily Nutrition Chart
+    {% if daily_nutrition %}
+    const dailyCtx = document.getElementById('dailyNutritionChart');
+    new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ daily_nutrition|map(attribute='date')|list|tojson }},
+            datasets: [
+                {
+                    label: 'Calories',
+                    data: {{ daily_nutrition|map(attribute='calories')|list|tojson }},
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Protein (g)',
+                    data: {{ daily_nutrition|map(attribute='protein')|list|tojson }},
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Carbs (g)',
+                    data: {{ daily_nutrition|map(attribute='carbs')|list|tojson }},
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Fat (g)',
+                    data: {{ daily_nutrition|map(attribute='fat')|list|tojson }},
+                    borderColor: 'rgb(255, 206, 86)',
+                    backgroundColor: 'rgba(255, 206, 86, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Calories'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Grams'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Macro Distribution by Meal Chart
+    {% if macro_distribution %}
+    const macroCtx = document.getElementById('macroDistributionChart');
+    const mealNames = Object.keys({{ macro_distribution|tojson }});
+
+    new Chart(macroCtx, {
+        type: 'bar',
+        data: {
+            labels: mealNames,
+            datasets: [
+                {
+                    label: 'Protein %',
+                    data: mealNames.map(name => {{ macro_distribution|tojson }}[name].protein),
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Carbs %',
+                    data: mealNames.map(name => {{ macro_distribution|tojson }}[name].carbs),
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgb(54, 162, 235)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Fat %',
+                    data: mealNames.map(name => {{ macro_distribution|tojson }}[name].fat),
+                    backgroundColor: 'rgba(255, 206, 86, 0.7)',
+                    borderColor: 'rgb(255, 206, 86)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Meal'
+                    }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Percentage of Calories'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Weekly Trends Chart
+    {% if weekly_trends %}
+    const weeklyCtx = document.getElementById('weeklyTrendsChart');
+    new Chart(weeklyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ weekly_trends|map(attribute='week_start')|list|tojson }},
+            datasets: [
+                {
+                    label: 'Calories',
+                    data: {{ weekly_trends|map(attribute='calories')|list|tojson }},
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    tension: 0.1,
+                    fill: false
+                },
+                {
+                    label: 'Protein (g)',
+                    data: {{ weekly_trends|map(attribute='protein')|list|tojson }},
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.1,
+                    fill: false
+                },
+                {
+                    label: 'Carbs (g)',
+                    data: {{ weekly_trends|map(attribute='carbs')|list|tojson }},
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.1,
+                    fill: false
+                },
+                {
+                    label: 'Fat (g)',
+                    data: {{ weekly_trends|map(attribute='fat')|list|tojson }},
+                    borderColor: 'rgb(255, 206, 86)',
+                    backgroundColor: 'rgba(255, 206, 86, 0.1)',
+                    tension: 0.1,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Week'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Average Daily Intake'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Category Breakdown Chart
+    {% if category_breakdown %}
+    const categoryCtx = document.getElementById('categoryBreakdownChart');
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ category_breakdown|map(attribute='category')|list|tojson }},
+            datasets: [{
+                data: {{ category_breakdown|map(attribute='percentage')|list|tojson }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)'
+                ],
+                borderColor: 'white',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Exercise Balance Chart
+    {% if exercise_balance %}
+    const balanceCtx = document.getElementById('exerciseBalanceChart');
+    new Chart(balanceCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ exercise_balance|map(attribute='date')|list|tojson }},
+            datasets: [
+                {
+                    label: 'Calories In',
+                    data: {{ exercise_balance|map(attribute='calories_in')|list|tojson }},
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Calories Out',
+                    data: {{ exercise_balance|map(attribute='calories_out')|list|tojson }},
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Net Balance',
+                    data: {{ exercise_balance|map(attribute='net')|list|tojson }},
+                    backgroundColor: 'rgba(255, 206, 86, 0.7)',
+                    borderColor: 'rgb(255, 206, 86)',
+                    borderWidth: 1,
+                    type: 'line',
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    stacked: false,
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Calories'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Body Composition Chart
+    {% if body_composition %}
+    const bodyCtx = document.getElementById('bodyCompositionChart');
+    new Chart(bodyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ body_composition|map(attribute='date')|list|tojson }},
+            datasets: [
+                {
+                    label: 'Weight (kg)',
+                    data: {{ body_composition|map(attribute='weight_kg')|list|tojson }},
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Waist (cm)',
+                    data: {{ body_composition|map(attribute='waist_cm')|list|tojson }},
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Body Fat (%)',
+                    data: {{ body_composition|map(attribute='body_fat_pct')|list|tojson }},
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Weight & Waist'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Body Fat %'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
