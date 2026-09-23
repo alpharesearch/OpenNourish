@@ -170,6 +170,8 @@ $P gen_licenses.py --check                # licence inventory matches the lock a
 
 `gen_licenses.py --check` reads the installed environment, so it also proves the env matches `requirements.txt`: any pin missing or at a different version, or any file under `static/` replaced, fails it. Regenerate with `$P gen_licenses.py`.
 
+**The suite needs `typst` on PATH.** 17 label tests shell out to it and fail `500 == 200` without it — that is the first thing a bare runner hits. CI downloads the same build the Dockerfile does and installs `fonts-liberation`, because `opennourish/typst_utils.py` pins `Liberation Sans`.
+
 Template linting (`$P -m djlint templates --profile jinja --extension html --use-gitignore`) is advisory, not one of the gates above — see Toolchain for why it is not clean yet.
 
 The two ruff gates are only meaningful together with `ruff.toml`: `select` freezes the rule families this tree is clean under (newer ruff defaults would report ~372 findings) and `exclude = ["*.md"]` keeps ruff ≥0.16 out of Markdown code fences. Treat both keys as part of the gate contract, not as configuration taste.

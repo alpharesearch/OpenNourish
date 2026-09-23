@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The pytest suite is the only automated quality gate in this repository. It covers every registered blueprint plus the shared service layer.
+The pytest suite is the broadest of this repository's four gates and the only one that exercises behaviour. It covers every registered blueprint plus the shared service layer.
 
 ## Ownership
 
@@ -10,7 +10,7 @@ The pytest suite is the only automated quality gate in this repository. It cover
 - 72 test files, 972 non-integration tests + 1 integration test (973 collected). 16 of them are the `test_*_coverage.py` files raised for the 99% TOTAL pass; each mirrors a feature module and is named for it.
 - `pytest.ini` (repo root) — declares the `integration` marker only; no `addopts`, no `testpaths`.
 - `.coveragerc` (repo root) — `exclude_also` patterns only.
-- Not owned here: what each feature must do (feature AGENTS.md files), the CI question (no CI exists; see Work Guidance).
+- Not owned here: what each feature must do (feature AGENTS.md files), and the workflow file itself (`.github/workflows/ci.yml`, root-owned — it runs the commands below on every push and PR).
 
 ## Local Contracts
 
@@ -23,6 +23,7 @@ The pytest suite is the only automated quality gate in this repository. It cover
   - `admin_client` yields `(client, user, app)`, `auth_client_with_user` and `auth_client_two_users` yield tuples, the rest yield a bare client. Match the shape when reusing.
   - `auth_client_with_friendship` is the fixture for cross-user authorisation tests; `sample_usda_food` pins `fdc_id=12345`.
 - Mail is patched globally at `conftest.py:49` (`flask_mailing.Mail.send_message`). Email-behaviour tests patch `opennourish.utils.mail.send_message` instead — pick the patch point that matches the assertion.
+- **17 tests need the `typst` binary on PATH**: `test_utils.py` (6), `test_typst_coverage.py` (6), `test_recipes_coverage.py` (4), `test_recipe_label.py` (1). They shell out to it, and a missing binary surfaces as `500 == 200`, not a skip — so a machine without `typst` reports failures that are not the code's fault. `test_my_foods_coverage.py` mentions typst but patches it. CI installs the Dockerfile's build plus `fonts-liberation`, which the templates need (`opennourish/typst_utils.py` pins Liberation Sans); the font affects the rendered label, not these assertions.
 - The `integration` marker gates exactly one test, `test_database_import.py:40`, which shells out to bare `python import_usda_data.py` and needs `persistent/usda_data/*.csv`. It does not skip when the CSVs are absent, so always run `-m "not integration"` as the default command.
 - Coverage runs line coverage only (`.coveragerc` has no `[run]` section, so no `source`, no `branch`, no `omit`). `test_config.py` imports generated temp modules, so `"/tmp/*"` must be in the omit list or TOTAL is polluted.
 - An assertion on `status_code == 200` with `follow_redirects=True` also passes when `@onboarding_required` bounces the request. Assert on rendered content, not just the status.
@@ -35,8 +36,8 @@ The pytest suite is the only automated quality gate in this repository. It cover
 - New route → new or extended test file named after the feature area; keep the existing grouping (search, recipes, my_foods, diary, meals, goals, tracking/analytics, exercise, fasting, friends, profile, admin, usda_admin, undo, settings, auth, cli, config, models, utils, time_utils).
 - Reuse the `conftest.py` fixtures. Hand-rolled `session_transaction` `_user_id` login is duplicated in 25 files and `POST /auth/login` in 11 (a few of those — `test_auth*.py` — are testing the login route itself and stay); when touching one of the others, move it onto a fixture instead of adding a copy.
 - Cross-user authorisation must be tested both ways (owner succeeds, non-owner is rejected) using `auth_client_two_users` or `auth_client_with_friendship`.
-- Format with `python -m ruff format .` and lint with `python -m ruff check .`; both are local-only checks, nothing enforces them.
-- There is no CI, no pre-commit config, and no active git hooks. Green means you ran the commands below yourself.
+- Format with `python -m ruff format .` and lint with `python -m ruff check .`; both are gates, so CI enforces them on the pushed commit even though nothing runs locally at commit time.
+- CI (`.github/workflows/ci.yml`) runs the commands below, minus coverage, on every push to `main` and every PR. There is still no pre-commit config and no active git hook, so a local commit is unverified until you push. djlint stays out of CI deliberately — see the root AGENTS.md.
 
 ## Verification
 

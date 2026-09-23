@@ -163,6 +163,14 @@ deliberately runs with them empty (`opennourish/__init__.py:148-152`, DB-loaded 
 pristine install matters: it proves the recorded texts and hashes do not depend on this machine's
 conda env or on platform-specific wheel contents.
 
+The first real run then **failed the suite while the other three gates went green**: 17 label tests
+(`test_utils.py` 6, `test_typst_coverage.py` 6, `test_recipes_coverage.py` 4, `test_recipe_label.py` 1)
+returned `500 == 200` because a GitHub runner has no `typst` binary. Nothing in `requirements.txt`
+can express a native binary, so CI now downloads the same `typst` build the Dockerfile does — the URL
+is grepped out of the `Dockerfile` rather than duplicated — and installs `fonts-liberation`, which
+the templates need (`opennourish/typst_utils.py` pins Liberation Sans). Re-verified by replaying
+those commands in a tracked-files-only `git worktree` with `typst` otherwise off PATH: 972 passed.
+
 ## M5 — Follow-up cleanup (tracked, not blocking)
 
 - **`datetime.utcnow()` — 13 call sites.** Deprecated on 3.12, scheduled for removal, and the

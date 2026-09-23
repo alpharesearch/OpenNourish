@@ -46,6 +46,22 @@ jobs:
         run: |
           echo "ENCRYPTION_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" >> "$GITHUB_ENV"
 
+      # 17 label tests shell out to the typst binary, and opennourish/typst_utils.py pins
+      # "Liberation Sans"; without them the suite fails 500 == 200 on every label route. The URL is
+      # read out of the Dockerfile so CI and the shipped image cannot drift to different builds.
+      - name: Install typst and its font
+        run: |
+          set -euo pipefail
+          url=$(grep -oE 'https://[^ ]+typst[^ ]+\.tar\.xz' Dockerfile | head -n1)
+          test -n "$url" || { echo "no typst download in the Dockerfile" >&2; exit 1; }
+          curl -fsSL "$url" -o "$RUNNER_TEMP/typst.tar.xz"
+          mkdir -p "$RUNNER_TEMP/typst-bin"
+          tar -xf "$RUNNER_TEMP/typst.tar.xz" -C "$RUNNER_TEMP/typst-bin" --strip-components=1
+          echo "$RUNNER_TEMP/typst-bin" >> "$GITHUB_PATH"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends fonts-liberation
+          "$RUNNER_TEMP/typst-bin/typst" --version
+
       # Each gate reports independently rather than the run stopping at the first failure, so one
       # push shows everything that is broken. djlint is deliberately absent: it reports 204
       # advisory findings and is not a gate.
