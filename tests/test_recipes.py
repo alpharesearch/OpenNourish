@@ -871,17 +871,17 @@ def test_recipe_edit_ingredient_dropdown_1g_portion_uniqueness(auth_client_with_
         expected_1g_option_html = (
             f'<option value="{re_queried_one_gram_portion.id}" selected> g</option>'
         )
-        assert (
-            expected_1g_option_html in ingredient_form_html
-        ), "' g' portion option not found in dropdown HTML"
+        assert expected_1g_option_html in ingredient_form_html, (
+            "' g' portion option not found in dropdown HTML"
+        )
 
         # Verify the '1 cup' portion is also still there
         expected_1cup_option_html = (
             f'<option value="{re_queried_cup_portion.id}" > cup</option>'
         )
-        assert (
-            expected_1cup_option_html in ingredient_form_html
-        ), "' cup' portion option not found in dropdown HTML"
+        assert expected_1cup_option_html in ingredient_form_html, (
+            "' cup' portion option not found in dropdown HTML"
+        )
 
 
 def test_user_cannot_delete_other_users_recipe_unauthorized(auth_client_user_two):

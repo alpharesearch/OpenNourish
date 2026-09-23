@@ -81,9 +81,9 @@ def test_search_page_buttons_have_correct_log_date(logged_in_client, test_user_i
         pattern, response_data, re.DOTALL
     )  # re.DOTALL to match across newlines
 
-    assert (
-        match is not None
-    ), f"Could not find button with expected attributes. Response: {response_data}"
+    assert match is not None, (
+        f"Could not find button with expected attributes. Response: {response_data}"
+    )
 
     # Optional: Further verification of specific attributes from the matched string
     matched_button_html = match.group(0)

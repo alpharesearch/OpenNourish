@@ -148,7 +148,7 @@ def test_friends_diary_display_3_meals_empty_day(auth_client_with_friendship):
         db.session.commit()
 
         response = client.get(
-            f'/user/{friend_user.username}/diary/{date.today().strftime("%Y-%m-%d")}',
+            f"/user/{friend_user.username}/diary/{date.today().strftime('%Y-%m-%d')}",
             follow_redirects=True,
         )
         assert response.status_code == 200
@@ -172,7 +172,7 @@ def test_friends_diary_display_6_meals_empty_day(auth_client_with_friendship):
         db.session.commit()
 
         response = client.get(
-            f'/user/{friend_user.username}/diary/{date.today().strftime("%Y-%m-%d")}',
+            f"/user/{friend_user.username}/diary/{date.today().strftime('%Y-%m-%d')}",
             follow_redirects=True,
         )
         assert response.status_code == 200
@@ -207,7 +207,7 @@ def test_friends_diary_display_snack_in_3_meal_mode(auth_client_with_friendship)
         db.session.commit()
 
         response = client.get(
-            f'/user/{friend_user.username}/diary/{date.today().strftime("%Y-%m-%d")}',
+            f"/user/{friend_user.username}/diary/{date.today().strftime('%Y-%m-%d')}",
             follow_redirects=True,
         )
         assert response.status_code == 200
@@ -239,7 +239,7 @@ def test_friends_diary_display_unspecified_meal(auth_client_with_friendship):
         db.session.commit()
 
         response = client.get(
-            f'/user/{friend_user.username}/diary/{date.today().strftime("%Y-%m-%d")}',
+            f"/user/{friend_user.username}/diary/{date.today().strftime('%Y-%m-%d')}",
             follow_redirects=True,
         )
         assert response.status_code == 200

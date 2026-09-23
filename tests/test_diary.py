@@ -50,7 +50,7 @@ def test_add_usda_food_to_diary(auth_client):
     assert b"USDA Apple added to your diary." in response.data
 
     # Check total calories on diary page
-    response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = auth_client.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
     # Expected calories: 150 kcal/100g * 200g = 300 kcal
     assert b"Consumed: 300.0 kcal" in response.data
@@ -99,7 +99,7 @@ def test_add_my_food_to_diary(auth_client):
     assert b"My Custom Bread added to your diary." in response.data
 
     # Check total calories on diary page
-    response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = auth_client.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
     # Expected calories: 250 kcal/100g * 150g = 375 kcal
     assert b"Consumed: 375.0 kcal" in response.data
@@ -215,7 +215,7 @@ def test_diary_display_3_meals_empty_day(auth_client):
         user.meals_per_day = 3
         db.session.commit()
 
-    response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = auth_client.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
     assert b"Breakfast\n" in response.data
     assert b"Lunch\n" in response.data
@@ -237,7 +237,7 @@ def test_diary_display_6_meals_empty_day(auth_client):
         user.meals_per_day = 6
         db.session.commit()
 
-    response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = auth_client.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
     assert b"Breakfast" in response.data
     assert b"Snack (morning)" in response.data
@@ -270,7 +270,7 @@ def test_diary_display_snack_in_3_meal_mode(auth_client):
         db.session.add(log_entry)
         db.session.commit()
 
-    response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = auth_client.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
     assert b"Breakfast" in response.data
     assert b"Lunch" in response.data
@@ -300,7 +300,7 @@ def test_diary_display_unspecified_meal(auth_client):
         db.session.add(log_entry)
         db.session.commit()
 
-    response = auth_client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = auth_client.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
     assert b"Unspecified" in response.data
 

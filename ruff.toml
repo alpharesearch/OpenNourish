@@ -1,5 +1,16 @@
 # Ruff configuration file
+
+# ruff >=0.16 also reformats fenced code blocks inside Markdown. The gate covers Python sources;
+# `GEMINI.md`/`QWEN.md` are documentation (and hardlinked to each other), so keep them out.
+exclude = ["*.md"]
+
 [lint]
+# Pinned explicitly. The codebase is clean under exactly these families; newer ruff releases
+# widen the default rule set (0.16.8 reports ~372 findings under its own defaults). Adopt
+# further rule families deliberately, one at a time, rather than inheriting a new default on a
+# version bump. See upgrade-research/PLAN.md M5 for the adoption order.
+select = ["E4", "E7", "E9", "F"]
+
 # Ignore E402 (module level import not at top of file) in __init__.py files
 [lint.per-file-ignores]
 "__init__.py" = ["E402", "F401"]

@@ -125,7 +125,7 @@ def test_soft_delete_preserves_other_users_data_integrity(
         assert retrieved_log.recipe_id == recipe_id
 
     # Assert User B's diary page doesn't crash
-    response = client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = client.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
 
 
@@ -163,7 +163,7 @@ def test_ui_gracefully_displays_orphaned_items(app_with_db, two_users_with_frien
         db.session.commit()
 
     # User B views diary (should see 'Shared Pie')
-    response = client_b.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = client_b.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
     html = response.data.decode("utf-8")
     assert "Shared Pie" in html
@@ -195,7 +195,7 @@ def test_ui_gracefully_displays_orphaned_items(app_with_db, two_users_with_frien
         data={"username_or_email": "user_b_soft_delete", "password": "password_b"},
         follow_redirects=True,
     )
-    response = client_b.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = client_b.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
     html = response.data.decode("utf-8")
     assert "Shared Pie" in html
@@ -262,7 +262,7 @@ def test_ui_gracefully_displays_orphaned_items_single_user(client, single_user):
         db.session.commit()
 
     # Check the diary before deletion
-    response = client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = client.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
     assert b"My Orphaned Food" in response.data
     assert b"(deleted)" not in response.data
@@ -271,7 +271,7 @@ def test_ui_gracefully_displays_orphaned_items_single_user(client, single_user):
     client.post(f"/my_foods/{food_id}/delete", follow_redirects=True)
 
     # Check the diary after deletion
-    response = client.get(f'/diary/{date.today().strftime("%Y-%m-%d")}')
+    response = client.get(f"/diary/{date.today().strftime('%Y-%m-%d')}")
     assert response.status_code == 200
     html = response.data.decode("utf-8")
     assert "My Orphaned Food" in html

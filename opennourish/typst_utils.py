@@ -213,22 +213,22 @@ def _generate_typst_content(
 #let data = (
   servings: "1",
   serving_size: "{serving_size_str}",
-  calories: "{scaled_nutrients['Energy']:{nutrient_info['Energy']['format']}}",
-  total_fat: (value: {scaled_nutrients['Total lipid (fat)']:{nutrient_info['Total lipid (fat)']['format']}}, unit: "{nutrient_info['Total lipid (fat)']['unit']}"),
-  saturated_fat: (value: {scaled_nutrients['Fatty acids, total saturated']:{nutrient_info['Fatty acids, total saturated']['format']}}, unit: "{nutrient_info['Fatty acids, total saturated'] ['unit']}"),
-  trans_fat: (value: {scaled_nutrients['Fatty acids, total trans']:{nutrient_info['Fatty acids, total trans']['format']}}, unit: "{nutrient_info['Fatty acids, total trans']['unit']}"),
-  cholesterol: (value: {scaled_nutrients['Cholesterol']:{nutrient_info['Cholesterol']['format']}}, unit: "{nutrient_info['Cholesterol']['unit']}"),
-  sodium: (value: {scaled_nutrients['Sodium']:{nutrient_info['Sodium']['format']}}, unit: "{nutrient_info['Sodium']['unit']}"),
-  carbohydrate: (value: {scaled_nutrients['Carbohydrate, by difference']:{nutrient_info['Carbohydrate, by difference']['format']}}, unit: "{nutrient_info['Carbohydrate, by difference']['unit']}"),
-  fiber: (value: {scaled_nutrients['Fiber, total dietary']:{nutrient_info['Fiber, total dietary']['format']}}, unit: "{nutrient_info['Fiber, total dietary']['unit']}"),
-  sugars: (value: {scaled_nutrients['Sugars, total including NLEA']:{nutrient_info['Sugars, total including NLEA']['format']}}, unit: "{nutrient_info['Sugars, total including NLEA']['unit']}"),
-  added_sugars: (value: {scaled_nutrients['Sugars, added']:{nutrient_info['Sugars, added']['format']}}, unit: "{nutrient_info['Sugars, added']['unit']}"),
-  protein: (value: {scaled_nutrients['Protein']:{nutrient_info['Protein']['format']}}, unit: "{nutrient_info['Protein']['unit']}"),
+  calories: "{scaled_nutrients["Energy"]:{nutrient_info["Energy"]["format"]}}",
+  total_fat: (value: {scaled_nutrients["Total lipid (fat)"]:{nutrient_info["Total lipid (fat)"]["format"]}}, unit: "{nutrient_info["Total lipid (fat)"]["unit"]}"),
+  saturated_fat: (value: {scaled_nutrients["Fatty acids, total saturated"]:{nutrient_info["Fatty acids, total saturated"]["format"]}}, unit: "{nutrient_info["Fatty acids, total saturated"]["unit"]}"),
+  trans_fat: (value: {scaled_nutrients["Fatty acids, total trans"]:{nutrient_info["Fatty acids, total trans"]["format"]}}, unit: "{nutrient_info["Fatty acids, total trans"]["unit"]}"),
+  cholesterol: (value: {scaled_nutrients["Cholesterol"]:{nutrient_info["Cholesterol"]["format"]}}, unit: "{nutrient_info["Cholesterol"]["unit"]}"),
+  sodium: (value: {scaled_nutrients["Sodium"]:{nutrient_info["Sodium"]["format"]}}, unit: "{nutrient_info["Sodium"]["unit"]}"),
+  carbohydrate: (value: {scaled_nutrients["Carbohydrate, by difference"]:{nutrient_info["Carbohydrate, by difference"]["format"]}}, unit: "{nutrient_info["Carbohydrate, by difference"]["unit"]}"),
+  fiber: (value: {scaled_nutrients["Fiber, total dietary"]:{nutrient_info["Fiber, total dietary"]["format"]}}, unit: "{nutrient_info["Fiber, total dietary"]["unit"]}"),
+  sugars: (value: {scaled_nutrients["Sugars, total including NLEA"]:{nutrient_info["Sugars, total including NLEA"]["format"]}}, unit: "{nutrient_info["Sugars, total including NLEA"]["unit"]}"),
+  added_sugars: (value: {scaled_nutrients["Sugars, added"]:{nutrient_info["Sugars, added"]["format"]}}, unit: "{nutrient_info["Sugars, added"]["unit"]}"),
+  protein: (value: {scaled_nutrients["Protein"]:{nutrient_info["Protein"]["format"]}}, unit: "{nutrient_info["Protein"]["unit"]}"),
   micronutrients: (
-    (name: "Vitamin D", key: "vitamin_d", value: {scaled_nutrients['Vitamin D']:{nutrient_info['Vitamin D']['format']}}, unit: "mcg"),
-    (name: "Calcium", key: "calcium", value: {scaled_nutrients['Calcium']:{nutrient_info['Calcium']['format']}}, unit: "mg"),
-    (name: "Iron", key: "iron", value: {scaled_nutrients['Iron']:{nutrient_info['Iron']['format']}}, unit: "mg"),
-    (name: "Potassium", key: "potassium", value: {scaled_nutrients['Potassium']:{nutrient_info['Potassium']['format']}}, unit: "mg"),
+    (name: "Vitamin D", key: "vitamin_d", value: {scaled_nutrients["Vitamin D"]:{nutrient_info["Vitamin D"]["format"]}}, unit: "mcg"),
+    (name: "Calcium", key: "calcium", value: {scaled_nutrients["Calcium"]:{nutrient_info["Calcium"]["format"]}}, unit: "mg"),
+    (name: "Iron", key: "iron", value: {scaled_nutrients["Iron"]:{nutrient_info["Iron"]["format"]}}, unit: "mg"),
+    (name: "Potassium", key: "potassium", value: {scaled_nutrients["Potassium"]:{nutrient_info["Potassium"]["format"]}}, unit: "mg"),
   ),
 )
 """
@@ -271,7 +271,7 @@ def _generate_typst_content(
 
 #colbreak()
 #nutrition-label-nam(data)
-Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients['Carbohydrate, by difference']) - float(scaled_nutrients['Fiber, total dietary']), 2))}g
+Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2))}g
 
 """
         )
@@ -517,22 +517,22 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 #let data = (
   servings: "1",
   serving_size: "{serving_size_str}",
-  calories: "{scaled_nutrients['Energy']:.0f}",
-  total_fat: (value: {scaled_nutrients['Total lipid (fat)']:.1f}, unit: "g"),
-  saturated_fat: (value: {scaled_nutrients['Fatty acids, total saturated']:.1f}, unit: "g"),
-  trans_fat: (value: {scaled_nutrients['Fatty acids, total trans']:.1f}, unit: "g"),
-  cholesterol: (value: {scaled_nutrients['Cholesterol']:.0f}, unit: "mg"),
-  sodium: (value: {scaled_nutrients['Sodium']:.0f}, unit: "mg"),
-  carbohydrate: (value: {scaled_nutrients['Carbohydrate, by difference']:.1f}, unit: "g"),
-  fiber: (value: {scaled_nutrients['Fiber, total dietary']:.1f}, unit: "g"),
-  sugars: (value: {scaled_nutrients['Sugars, total including NLEA']:.1f}, unit: "g"),
-  added_sugars: (value: {scaled_nutrients['Sugars, added']:.1f}, unit: "g"),
-  protein: (value: {scaled_nutrients['Protein']:.1f}, unit: "g"),
+  calories: "{scaled_nutrients["Energy"]:.0f}",
+  total_fat: (value: {scaled_nutrients["Total lipid (fat)"]:.1f}, unit: "g"),
+  saturated_fat: (value: {scaled_nutrients["Fatty acids, total saturated"]:.1f}, unit: "g"),
+  trans_fat: (value: {scaled_nutrients["Fatty acids, total trans"]:.1f}, unit: "g"),
+  cholesterol: (value: {scaled_nutrients["Cholesterol"]:.0f}, unit: "mg"),
+  sodium: (value: {scaled_nutrients["Sodium"]:.0f}, unit: "mg"),
+  carbohydrate: (value: {scaled_nutrients["Carbohydrate, by difference"]:.1f}, unit: "g"),
+  fiber: (value: {scaled_nutrients["Fiber, total dietary"]:.1f}, unit: "g"),
+  sugars: (value: {scaled_nutrients["Sugars, total including NLEA"]:.1f}, unit: "g"),
+  added_sugars: (value: {scaled_nutrients["Sugars, added"]:.1f}, unit: "g"),
+  protein: (value: {scaled_nutrients["Protein"]:.1f}, unit: "g"),
   micronutrients: (
-    (name: "Vitamin D", key: "vitamin_d", value: {scaled_nutrients['Vitamin D']:.0f}, unit: "mcg"),
-    (name: "Calcium", key: "calcium", value: {scaled_nutrients['Calcium']:.0f}, unit: "mg"),
-    (name: "Iron", key: "iron", value: {scaled_nutrients['Iron']:.1f}, unit: "mg"),
-    (name: "Potassium", key: "potassium", value: {scaled_nutrients['Potassium']:.0f}, unit: "mg"),
+    (name: "Vitamin D", key: "vitamin_d", value: {scaled_nutrients["Vitamin D"]:.0f}, unit: "mcg"),
+    (name: "Calcium", key: "calcium", value: {scaled_nutrients["Calcium"]:.0f}, unit: "mg"),
+    (name: "Iron", key: "iron", value: {scaled_nutrients["Iron"]:.1f}, unit: "mg"),
+    (name: "Potassium", key: "potassium", value: {scaled_nutrients["Potassium"]:.0f}, unit: "mg"),
   ),
 )
 """
@@ -595,7 +595,7 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 #set align(right)
 #nutrition-label-nam(data, scale-percent: 73%, show-footnote: false,)
 #linebreak()
-Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients['Carbohydrate, by difference']) - float(scaled_nutrients['Fiber, total dietary']), 2))}g
+Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2))}g
 """
         )
 
@@ -833,22 +833,22 @@ def _generate_typst_content_recipe(
 #let data = (
   servings: "{servings_str}",
   serving_size: "{serving_size_str}",
-  calories: "{scaled_nutrients['Energy']:.0f}",
-  total_fat: (value: {scaled_nutrients['Total lipid (fat)']:.1f}, unit: "g"),
-  saturated_fat: (value: {scaled_nutrients['Fatty acids, total saturated']:.1f}, unit: "g"),
-  trans_fat: (value: {scaled_nutrients['Fatty acids, total trans']:.1f}, unit: "g"),
-  cholesterol: (value: {scaled_nutrients['Cholesterol']:.0f}, unit: "mg"),
-  sodium: (value: {scaled_nutrients['Sodium']:.0f}, unit: "mg"),
-  carbohydrate: (value: {scaled_nutrients['Carbohydrate, by difference']:.1f}, unit: "g"),
-  fiber: (value: {scaled_nutrients['Fiber, total dietary']:.1f}, unit: "g"),
-  sugars: (value: {scaled_nutrients['Sugars, total including NLEA']:.1f}, unit: "g"),
-  added_sugars: (value: {scaled_nutrients['Sugars, added']:.1f}, unit: "g"),
-  protein: (value: {scaled_nutrients['Protein']:.1f}, unit: "g"),
+  calories: "{scaled_nutrients["Energy"]:.0f}",
+  total_fat: (value: {scaled_nutrients["Total lipid (fat)"]:.1f}, unit: "g"),
+  saturated_fat: (value: {scaled_nutrients["Fatty acids, total saturated"]:.1f}, unit: "g"),
+  trans_fat: (value: {scaled_nutrients["Fatty acids, total trans"]:.1f}, unit: "g"),
+  cholesterol: (value: {scaled_nutrients["Cholesterol"]:.0f}, unit: "mg"),
+  sodium: (value: {scaled_nutrients["Sodium"]:.0f}, unit: "mg"),
+  carbohydrate: (value: {scaled_nutrients["Carbohydrate, by difference"]:.1f}, unit: "g"),
+  fiber: (value: {scaled_nutrients["Fiber, total dietary"]:.1f}, unit: "g"),
+  sugars: (value: {scaled_nutrients["Sugars, total including NLEA"]:.1f}, unit: "g"),
+  added_sugars: (value: {scaled_nutrients["Sugars, added"]:.1f}, unit: "g"),
+  protein: (value: {scaled_nutrients["Protein"]:.1f}, unit: "g"),
   micronutrients: (
-    (name: "Vitamin D", key: "vitamin_d", value: {scaled_nutrients['Vitamin D']:.0f}, unit: "mcg"),
-    (name: "Calcium", key: "calcium", value: {scaled_nutrients['Calcium']:.0f}, unit: "mg"),
-    (name: "Iron", key: "iron", value: {scaled_nutrients['Iron']:.1f}, unit: "mg"),
-    (name: "Potassium", key: "potassium", value: {scaled_nutrients['Potassium']:.0f}, unit: "mg"),
+    (name: "Vitamin D", key: "vitamin_d", value: {scaled_nutrients["Vitamin D"]:.0f}, unit: "mcg"),
+    (name: "Calcium", key: "calcium", value: {scaled_nutrients["Calcium"]:.0f}, unit: "mg"),
+    (name: "Iron", key: "iron", value: {scaled_nutrients["Iron"]:.1f}, unit: "mg"),
+    (name: "Potassium", key: "potassium", value: {scaled_nutrients["Potassium"]:.0f}, unit: "mg"),
   ),
 )
 """
@@ -893,7 +893,7 @@ def _generate_typst_content_recipe(
 #set align(right)
 #nutrition-label-nam(data, scale-percent: 73%, show-footnote: false,)
 #linebreak()
-Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients['Carbohydrate, by difference']) - float(scaled_nutrients['Fiber, total dietary']), 2))}g
+Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2))}g
 """
         )
     else:
@@ -931,7 +931,7 @@ Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients['Carbohydrate, by d
 == Label:
 #nutrition-label-nam(data, scale-percent: 75%)
 #linebreak()
-Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients['Carbohydrate, by difference']) - float(scaled_nutrients['Fiber, total dietary']), 2))}g
+Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2))}g
 """
         )
 
