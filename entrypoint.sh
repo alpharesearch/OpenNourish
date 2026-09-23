@@ -1,6 +1,21 @@
 #!/bin/bash
 set -e
 
+# Print identity before anything that can be slow (a 474 MB USDA download) or fail, so a container
+# that boot-loops still says what it is. TrueNAS surfaces container logs and nothing else, and the
+# :latest tag says nothing, so this banner is the field-usable answer to "which build is running?".
+# Live versions accompany the baked file because they describe the binaries actually executing,
+# which is the claim that matters when a stale tag is in play.
+if [ -f /app/BUILD_INFO ]; then
+    echo "--- OpenNourish build identity ---"
+    sed 's/^/    /' /app/BUILD_INFO
+else
+    echo "--- /app/BUILD_INFO missing: this image was built without provenance ---"
+fi
+TYPST_V=$(typst --version 2>/dev/null | head -n1 || true)
+echo "    live python: $(python -V 2>&1)"
+echo "    live typst:  ${TYPST_V:-not on PATH}"
+
 # Define a single root for all persistent data
 PERSISTENT_DIR="/app/persistent"
 mkdir -p "$PERSISTENT_DIR"

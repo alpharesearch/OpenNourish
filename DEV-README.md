@@ -210,8 +210,10 @@ From your development machine, follow these steps to prepare the images for depl
 
 2.  **Tag the images for your private registry:**
     Replace `YOUR_REGISTRY_URL` with the address of your private registry (e.g., `your-truenas-ip:5000`).
+    Compose prefixes images with the project name, so the local app image is
+    `opennourish-opennourish-app`, not `opennourish-app` — `deploy_truenas.sh` depends on that name.
     ```bash
-    docker tag opennourish-app:latest YOUR_REGISTRY_URL/opennourish-app:latest
+    docker tag opennourish-opennourish-app:latest YOUR_REGISTRY_URL/opennourish-app:latest
     docker tag opennourish-nginx:latest YOUR_REGISTRY_URL/opennourish-nginx:latest
     ```
 
@@ -220,6 +222,19 @@ From your development machine, follow these steps to prepare the images for depl
     docker push YOUR_REGISTRY_URL/opennourish-app:latest
     docker push YOUR_REGISTRY_URL/opennourish-nginx:latest
     ```
+
+4.  **Confirm what a deployment is actually running.** Tags carry no identity here — `IMAGE_VERSION`
+    in `deploy_truenas.sh` is a constant `V1.0.0` and TrueNAS pulls a mutable `:latest` — so read the
+    image instead:
+    ```bash
+    docker exec <app-container> cat /app/BUILD_INFO
+    docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' <app-container>
+    ```
+    The container log pane (TrueNAS → Apps → *OpenNourish* → Logs) prints the same block on every
+    start, before the USDA download begins, so it is visible even when the boot then fails.
+    `requirements_sha256` must equal `sha256sum requirements.txt` at the commit you believe is
+    deployed. A bare `docker compose build` reports `revision=unknown` by design; use
+    `./deploy_truenas.sh`, which stamps the git SHA and refuses to continue if a push fails.
 
 #### Step 2.1 Script
 To build, tag, and push the Docker images to your private TrueNAS registry, and to generate the necessary YAML configuration for TrueNAS Custom Apps, use the `deploy_truenas.sh` script.

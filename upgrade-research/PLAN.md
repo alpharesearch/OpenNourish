@@ -4,7 +4,7 @@ Target interpreter: **Python 3.12** (security-supported to 2028-10-31).
 Evidence behind the numbers: [`README.md`](README.md). Candidate locks live in this folder until the
 milestone that consumes them lands, and are deleted once `requirements.txt` supersedes them.
 
-**Status as of 2026-09-23: M0, M1, M2, M2b and M4's CI step have landed. M3, M4's split and M5 are pending.**
+**Status as of 2026-09-23: M0, M1, M2, M2b, M4's CI step and deployment provenance have landed. M3, M4's split and M5 are pending.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (61 packages, was 72), `ruff.toml` pins its rule families, the image's
 `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and PR, and every gate
@@ -249,6 +249,31 @@ replaying the steps locally, which is what worked here.
 - **Unrelated but adjacent:** `.dockerignore` still lets `htmlcov/` and `.kilocode/` into every
   image, and `deploy_truenas.sh` prints `SECRET_KEY`/`ENCRYPTION_KEY`/`MAIL_PASSWORD` to stdout and
   only works from a directory named `opennourish`. Fix while you are in deployment-land.
+
+## Deployment provenance — LANDED (2026-09-23, outside the milestone sequence)
+
+Added after the first TrueNAS deployment turned out to be unidentifiable. Three layers erased
+identity at once: `deploy_truenas.sh` tagged every build in history as the constant `V1.0.0`, the
+TrueNAS YAML it generates pulls a mutable `:latest`, and the `Dockerfile` had no `ARG` and no `LABEL`,
+so `docker inspect` said nothing and boot printed nothing about itself.
+
+- `VCS_REF`/`BUILD_DATE` build args now reach three places: OCI labels, `/app/BUILD_INFO` (revision,
+  build date, python, typst, `requirements_sha256`, package count), and the banner `entrypoint.sh`
+  prints before the USDA work — so a container that boot-loops still says which build it is, in the
+  one place TrueNAS surfaces: the log pane.
+- `deploy_truenas.sh` stamps both args from git, with a `-dirty` suffix on an unclean tree. A plain
+  `docker compose build` yields `revision=unknown` on purpose: a local build has no published commit,
+  and admitting that beats printing a SHA that may be stale.
+- **Per-commit image tags were weighed and deliberately not adopted.** Tags stay `V1.0.0` + `:latest`,
+  so identity comes from the image, not the tag: `docker exec <app> cat /app/BUILD_INFO`, then compare
+  its `requirements_sha256` with `sha256sum requirements.txt` at the commit you think is deployed. The
+  re-pull caveat therefore stands — a NAS that cached an older `:latest` still serves it, which is why
+  the container's own output is the check, not the tag.
+- Fixed a real bug found on the way: the script's push error check sat after `docker logout` and read
+  *logout's* exit code, so a failed push reported "successfully built, tagged, and pushed" and printed
+  the YAML to redeploy anyway. Each push is checked now and the script aborts.
+- Verified by building: labels and `/app/BUILD_INFO` agree, and the image's `requirements_sha256`
+  (`4196120db1aa…`) equals the committed lock byte for byte.
 
 ## Deferred risk register
 

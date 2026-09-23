@@ -59,6 +59,18 @@ SEED_DEV_DATA_VAR=${SEED_DEV_DATA:-false}
 REGISTRY_URL="$TRUENAS_REGISTRY_URL"
 
 echo -e "\n--- Building Docker images using standard docker-compose.yml ---"
+
+# Stamp provenance before the build so it lands in the image labels, /app/BUILD_INFO and the boot
+# banner. This script otherwise tags every build in history as the same constant V1.0.0 and hands
+# TrueNAS a mutable :latest, which is why a deployed container could not be identified afterwards.
+GIT_SHA=$(git rev-parse --short=12 HEAD 2>/dev/null || echo "unknown")
+if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    GIT_SHA="${GIT_SHA}-dirty"
+fi
+export OPENNOURISH_VCS_REF="$GIT_SHA"
+export OPENNOURISH_BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "Stamping build ${OPENNOURISH_VCS_REF} at ${OPENNOURISH_BUILD_DATE}"
+
 docker compose build
 
 if [ $? -ne 0 ]; then
@@ -76,14 +88,23 @@ docker tag opennourish-nginx:latest opennourish-nginx:${IMAGE_VERSION}
 docker tag opennourish-nginx:${IMAGE_VERSION} ${REGISTRY_URL}/opennourish-nginx:${IMAGE_VERSION}
 
 echo -e "\n--- Pushing images to private registry: ${REGISTRY_URL} ---"
-docker push ${REGISTRY_URL}/opennourish-app:latest
-docker push ${REGISTRY_URL}/opennourish-app:${IMAGE_VERSION}
-docker push ${REGISTRY_URL}/opennourish-nginx:latest
-docker push ${REGISTRY_URL}/opennourish-nginx:${IMAGE_VERSION}
-docker logout ${REGISTRY_URL}
+PUSH_FAILED=0
+for IMAGE in opennourish-app opennourish-nginx; do
+    for TAG in latest "${IMAGE_VERSION}"; do
+        if ! docker push "${REGISTRY_URL}/${IMAGE}:${TAG}"; then
+            echo "Error: push of ${REGISTRY_URL}/${IMAGE}:${TAG} failed." >&2
+            PUSH_FAILED=1
+        fi
+    done
+done
 
-if [ $? -ne 0 ]; then
-    echo -e "\nDocker image push failed. Ensure your registry URL is correct and your Docker daemon trusts the registry."
+docker logout ${REGISTRY_URL} || true
+
+# This check used to sit after `docker logout` and therefore read logout's exit code, so a failed
+# push still printed "successfully built, tagged, and pushed" and emitted the TrueNAS YAML.
+if [ "$PUSH_FAILED" -ne 0 ]; then
+    echo -e "\nDocker image push failed. Ensure your registry URL is correct and your Docker daemon trusts the registry." >&2
+    echo "The registry may still be serving the previous build, so do not redeploy from the YAML below." >&2
     exit 1
 fi
 

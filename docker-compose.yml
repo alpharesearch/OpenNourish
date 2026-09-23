@@ -3,6 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Provenance stamped by deploy_truenas.sh from git. Left unset by a plain
+        # `docker compose build`, which yields "unknown" — a local build genuinely has no
+        # published commit to point at, and saying so beats printing a stale SHA.
+        VCS_REF: ${OPENNOURISH_VCS_REF:-unknown}
+        BUILD_DATE: ${OPENNOURISH_BUILD_DATE:-unknown}
     volumes:
       - ./persistent:/app/persistent
     env_file:

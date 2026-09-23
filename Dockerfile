@@ -17,6 +17,22 @@ RUN pip install --no-cache-dir -r requirements.txt
 # not portable across interpreter versions.
 FROM python:3.12-slim
 
+# Provenance. Nothing else in this image records which checkout it came from, and the tags carried
+# to TrueNAS are not identity (`deploy_truenas.sh` applies a constant V1.0.0 plus :latest), so the
+# git SHA and build date are stamped at build time into three places: these labels, /app/BUILD_INFO
+# below, and the banner entrypoint.sh prints. `docker compose build` supplies them through the args
+# in docker-compose.yml; a bare build leaves them "unknown". No release version is claimed here —
+# `.version` is deliberately absent rather than mirroring the V1.0.0 tag, which is a constant.
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+LABEL org.opencontainers.image.title="OpenNourish" \
+      org.opencontainers.image.description="Self-hosted multi-user food and nutrition tracker built on USDA FoodData Central" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.source="https://github.com/alpharesearch/OpenNourish" \
+      org.opencontainers.image.url="https://github.com/alpharesearch/OpenNourish" \
+      org.opencontainers.image.licenses="MIT"
+
 # Install font dependencies and Typst
 RUN apt-get update && apt-get install -y \
     wget \
@@ -49,6 +65,20 @@ ENV FLASK_APP=app.py
 
 # Add Typst to the PATH
 ENV PATH="/usr/local/bin/typst:$PATH"
+
+# Bake the same provenance into the filesystem, because `docker inspect` is unavailable from inside
+# a TrueNAS custom app or a shell exec, while `cat /app/BUILD_INFO` always works. The requirements
+# hash pins which lock is actually inside the image, and the live versions are re-checked at boot by
+# entrypoint.sh.
+RUN { \
+      echo "revision=${VCS_REF}"; \
+      echo "built=${BUILD_DATE}"; \
+      echo "source=https://github.com/alpharesearch/OpenNourish"; \
+      echo "python=$(python -V 2>&1)"; \
+      echo "typst=$(typst --version | head -n1)"; \
+      echo "requirements_sha256=$(sha256sum requirements.txt | cut -d' ' -f1)"; \
+      echo "packages=$(pip freeze | wc -l)"; \
+    } > /app/BUILD_INFO
 
 # Expose the port Flask will run on
 EXPOSE 8081
