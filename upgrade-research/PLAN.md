@@ -4,12 +4,13 @@ Target interpreter: **Python 3.12** (security-supported to 2028-10-31).
 Evidence behind the numbers: [`README.md`](README.md). Candidate locks live in this folder until the
 milestone that consumes them lands, and are deleted once `requirements.txt` supersedes them.
 
-**Status as of 2026-09-23: M0, M1 and M2 have landed. M3, M4 and M5 are pending.**
+**Status as of 2026-09-23: M0, M1, M2 and M4's CI step have landed. M3, M4's split and M5 are pending.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
-generated `requirements.txt` (61 packages, was 72), `ruff.toml` pins its rule families, and every
-gate is green — 972 tests passed, `ruff check` clean, `ruff format --check` clean, djlint advisory
-at 204 findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py` generates
-it from the installed wheels plus the vendored assets in `static/`, and `--check` fails if it drifts.
+generated `requirements.txt` (61 packages, was 72), `ruff.toml` pins its rule families, `.github/workflows/ci.yml`
+runs the four gates on every push and PR, and every gate is green — 972 tests passed, `ruff check`
+clean, `ruff format --check` clean, djlint advisory at 204 findings. `THIRD-PARTY-LICENSES.md` is no
+longer hand-maintained: `gen_licenses.py` generates it from the installed wheels plus the vendored
+assets in `static/`, and `--check` fails if it drifts.
 
 ## Ground rules
 
@@ -139,18 +140,28 @@ deliberately runs with them empty (`opennourish/__init__.py:148-152`, DB-loaded 
 **Do not skip:** AGENTS.md warns that `ENCRYPTION_KEY` rotation invalidates the stored
 `MAIL_PASSWORD` — after this change, re-enter mail credentials in the admin settings page once.
 
-## M4 — Runtime/dev split, then CI
+## M4 — Runtime/dev split, then CI — CI LANDED (2026-09-23), split pending
 
-1. Split `requirements.in` into runtime and `requirements-dev.in`; Dockerfile installs runtime only.
+1. **`.github/workflows/ci.yml` — landed early, pulled ahead of the split** so M3, the first
+   app-code change in this plan, lands under automated gates rather than manual discipline. It
+   installs the one flat `requirements.txt` on 3.12, runs `pip check`, then all four gates. djlint is
+   absent by design. Each gate step carries `if: ${{ !cancelled() }}` so one push reports everything
+   that is broken, not just the first failure. It needs `SECRET_KEY` plus an `ENCRYPTION_KEY`
+   shaped like a real Fernet key — generated per run into `$GITHUB_ENV`, because `config.py` only
+   fails at import if the value is absent, and a placeholder string would survive import and then
+   fail at the `MAIL_PASSWORD` decrypt call site.
+2. Split `requirements.in` into runtime and `requirements-dev.in`; Dockerfile installs runtime only.
    `Faker` stays runtime (the boot-time `seed-dev-data` uses it). This has a licensing reason, not
    just size: **djlint is GPL-3.0-or-later** and ships in the distributed image today, along with
    its `cssbeautifier`/`jsbeautifier`/`EditorConfig`/`json5`/`pathspec`/`regex` closure.
-2. Add `.github/workflows/ci.yml`: `python-version: "3.12"`, install runtime + dev, run the four
-   gates, `-m "not integration"`. CI must export `SECRET_KEY` and `ENCRYPTION_KEY` — `config.py`
-   raises at import without them, which is exactly what bit the first 3.12 spike.
-3. Do not gate djlint: 204 advisory findings would make CI red on day one.
+3. When the split lands, CI installs runtime + dev instead of the flat lock — the only change the
+   workflow needs.
 
-**Verify:** the workflow goes green on a throwaway branch before it protects `main`.
+**Verify:** the job's steps were replayed here in a clean `python3.12 -m venv` with nothing but
+`requirements.txt` installed — install clean, `pip check` silent, 972 passed, `ruff check` and
+`ruff format --check` clean, `gen_licenses.py --check` current. That the licence gate passes from a
+pristine install matters: it proves the recorded texts and hashes do not depend on this machine's
+conda env or on platform-specific wheel contents.
 
 ## M5 — Follow-up cleanup (tracked, not blocking)
 

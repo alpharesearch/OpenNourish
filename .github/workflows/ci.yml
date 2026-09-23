@@ -1,0 +1,65 @@
+# Runs the four gates from AGENTS.md. This is not a deployment step: the image is still built
+# and booted by hand, and the cold-volume check in upgrade-research/PLAN.md is not automated here.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # config.py raises at import if either is missing, so every gate step needs them. Neither
+      # is a secret here: nothing serves a request and nothing persists. ENCRYPTION_KEY is filled
+      # in by the step below because the DB settings loader decrypts MAIL_PASSWORD with a Fernet
+      # key, so a placeholder string would be tolerated at import and fail later at the call site.
+      SECRET_KEY: ci-not-a-secret
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # matches the Dockerfile and the conda env; see AGENTS.md
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install the lock
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip check # the lock must be internally consistent
+
+      - name: Throwaway Fernet key
+        run: |
+          echo "ENCRYPTION_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" >> "$GITHUB_ENV"
+
+      # Each gate reports independently rather than the run stopping at the first failure, so one
+      # push shows everything that is broken. djlint is deliberately absent: it reports 204
+      # advisory findings and is not a gate.
+      - name: Test suite
+        run: python -m pytest -m "not integration" -q
+
+      - name: Lint
+        if: ${{ !cancelled() }}
+        run: python -m ruff check .
+
+      - name: Formatting
+        if: ${{ !cancelled() }}
+        run: python -m ruff format --check .
+
+      - name: Licence inventory is current
+        if: ${{ !cancelled() }}
+        run: python gen_licenses.py --check
