@@ -8,7 +8,8 @@ milestone that consumes them lands, and are deleted once `requirements.txt` supe
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (61 packages, was 72), `ruff.toml` pins its rule families, and every
 gate is green — 972 tests passed, `ruff check` clean, `ruff format --check` clean, djlint advisory
-at 204 findings.
+at 204 findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py` generates
+it from the installed wheels plus the vendored assets in `static/`, and `--check` fails if it drifts.
 
 ## Ground rules
 
@@ -141,8 +142,10 @@ deliberately runs with them empty (`opennourish/__init__.py:148-152`, DB-loaded 
 ## M4 — Runtime/dev split, then CI
 
 1. Split `requirements.in` into runtime and `requirements-dev.in`; Dockerfile installs runtime only.
-   `Faker` stays runtime (the boot-time `seed-dev-data` uses it).
-2. Add `.github/workflows/ci.yml`: `python-version: "3.12"`, install runtime + dev, run the three
+   `Faker` stays runtime (the boot-time `seed-dev-data` uses it). This has a licensing reason, not
+   just size: **djlint is GPL-3.0-or-later** and ships in the distributed image today, along with
+   its `cssbeautifier`/`jsbeautifier`/`EditorConfig`/`json5`/`pathspec`/`regex` closure.
+2. Add `.github/workflows/ci.yml`: `python-version: "3.12"`, install runtime + dev, run the four
    gates, `-m "not integration"`. CI must export `SECRET_KEY` and `ENCRYPTION_KEY` — `config.py`
    raises at import without them, which is exactly what bit the first 3.12 spike.
 3. Do not gate djlint: 204 advisory findings would make CI red on day one.
@@ -159,8 +162,6 @@ deliberately runs with them empty (`opennourish/__init__.py:148-152`, DB-loaded 
   `RUF059` 65, `BLE001` 13) instead of a 372-finding big bang.
 - **`pytest-flask`** works on pytest 9 but has been unmaintained since 2023-10 (classifiers stop at
   3.9). Replace with plain fixtures when convenient.
-- **`THIRD-PARTY-LICENSES.md`** is already incomplete per AGENTS.md and goes further stale with
-  these version moves — regenerate it in the same pass as M2 if you want it kept at all.
 - **Next interpreter refresh: 3.14** (security to 2030-10-31). `djlint 1.46.2`, `pytest 9.1.1`,
   `SQLAlchemy 2.0.54`, `cryptography 50.0.1`, `greenlet 3.5.6` all declare 3.14/3.15 support.
   Re-run M0/M2 verification rather than assuming it carries over.

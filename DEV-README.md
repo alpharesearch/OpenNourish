@@ -362,9 +362,20 @@ conda run -n opennourish python -m pip install -r requirements.txt
 conda run -n opennourish python -m pip check     # must print "No broken requirements found"
 ```
 
-Then run the three gates in `AGENTS.md` before committing. To drop a dependency, remove it from
+Then run the four gates in `AGENTS.md` before committing. To drop a dependency, remove it from
 `requirements.in` and re-resolve — hand-deleting a line from `requirements.txt` does nothing, the
 resolver puts it back.
+
+`THIRD-PARTY-LICENSES.md` is generated too, from whatever environment has this lock installed, so
+regenerate it in the same pass:
+
+```bash
+conda run -n opennourish python gen_licenses.py          # rewrites THIRD-PARTY-LICENSES.md
+conda run -n opennourish python gen_licenses.py --check  # fails if it no longer matches the lock
+```
+
+It reads each installed wheel's own licence file, so it needs the environment to match
+`requirements.txt` exactly — it warns on any pin it cannot find at that version.
 
 To remove a package and all dependencies, run the following command:
 

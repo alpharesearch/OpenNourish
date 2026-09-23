@@ -88,6 +88,7 @@ Root owns the repository-wide contract and the top-level files that have no fold
 - `app.py`, `serve.py` — WSGI entry points; `Dockerfile`, `docker-compose.yml`, `entrypoint.sh`, `nginx/` — deployment.
 - `import_usda_data.py`, `schema_usda.sql`, `seed_db.sh`, `seed_usda.sh`, `safe_upgrade.sh`, `deploy_truenas.sh`, `proj_snap.sh` — data import and operations scripts.
 - `README.md` (install/usage), `DEV-README.md` (dev procedures), `GEMINI.md` (AI-assistant onboarding doc; `QWEN.md` is an untracked hardlink of it).
+- `gen_licenses.py` → `THIRD-PARTY-LICENSES.md` — the generated licence inventory covering the lock and the vendored files in `static/`.
 - Children own their subtree; anything not listed here and not in a child is root's by default.
 
 ## Local Contracts
@@ -97,8 +98,8 @@ Root owns the repository-wide contract and the top-level files that have no fold
 - Run everything under the conda env `opennourish` (**Python 3.12**): `/home/markus/miniconda3/envs/opennourish/bin/python`. Conda `base` has no Flask and will fail at import. `opennourish-py39-backup` is the pre-move 3.9 clone — keep it until the 3.12 image is deployed, then delete it.
 - **Python 3.12 is a hard floor.** The `Dockerfile` builds on `python:3.12` and `python:3.12-slim`, and ruff's formatter emits PEP 701 nested-quote f-strings inside `opennourish/typst_utils.py`, so 3.11 and below cannot even import that module. Keep both build stages on the same minor: `/opt/venv` is copied between them and is not portable across interpreters.
 - Dependency source of truth is `requirements.in`; `requirements.txt` is **generated** from it (procedure in `DEV-README.md` §5). Never `pip freeze > requirements.txt` — that is how the file accumulated abandoned `aioredis`, an unused `httpx` chain, and an untracked `pytz`. Hand-deleting a line from `requirements.txt` also does nothing: the resolver puts it back.
-- Stack: Flask 3.1.3, SQLAlchemy 2.0.54 + Flask-SQLAlchemy 3.1.1, Alembic/Flask-Migrate, Flask-Login, Flask-WTF 1.3.0, Flask-Mailing 0.2.3 (deliberately held — 3.0.0 needs a `create_app` mail-config fallback, see `upgrade-research/PLAN.md` M3), waitress. `Faker` is a runtime dep, not dev: `entrypoint.sh` seed steps use it. After any lock change, `pip check` must stay silent and the env must actually match the file. Bootstrap CSS, Bootstrap Icons, Chart.js, and fonts are vendored in `static/`; there is no npm/bundler step.
-- `djlint==1.46.2` lints Jinja templates: `$P -m djlint templates --profile jinja --extension html --use-gitignore`. djlint ignores `.gitignore` unless `--use-gitignore` is passed, so an unscoped `djlint .` sweeps the 209 generated `htmlcov/*.html`. Nothing new belongs in `.gitignore`: djlint writes no cache or backup files, and its `.djlintrc` config is meant to be committed. Its transitive deps (`cssbeautifier`, `jsbeautifier`, `EditorConfig`, `json5`, `pathspec`, `regex`) ship in the image, because the Dockerfile installs this same file.
+- Stack: Flask 3.1.3, SQLAlchemy 2.0.54 + Flask-SQLAlchemy 3.1.1, Alembic/Flask-Migrate, Flask-Login, Flask-WTF 1.3.0, Flask-Mailing 0.2.3 (deliberately held — 3.0.0 needs a `create_app` mail-config fallback, see `upgrade-research/PLAN.md` M3), waitress. `Faker` is a runtime dep, not dev: `entrypoint.sh` seed steps use it. After any lock change, `pip check` must stay silent and the env must actually match the file. `static/` holds vendored front-end files and there is **no npm/bundler step**: Bootstrap 5.3.3 (css + bundle), Bootstrap Icons 1.11.3 (css, plus `static/fonts/bootstrap-icons.woff2`, which is the only file in that directory), Chart.js 4.5.0, and html5-qrcode 2.3.8 (Apache-2.0 — its minified file carries no version banner, so its identity is its sha256). `gen_licenses.py` records those versions and hashes.
+- `djlint==1.46.2` lints Jinja templates: `$P -m djlint templates --profile jinja --extension html --use-gitignore`. djlint ignores `.gitignore` unless `--use-gitignore` is passed, so an unscoped `djlint .` sweeps the 209 generated `htmlcov/*.html`. Nothing new belongs in `.gitignore`: djlint writes no cache or backup files, and its `.djlintrc` config is meant to be committed. Its transitive deps (`cssbeautifier`, `jsbeautifier`, `EditorConfig`, `json5`, `pathspec`, `regex`) ship in the image, because the Dockerfile installs this same file — and so does **djlint itself, which is GPL-3.0-or-later**. That is compliant while it ships unmodified with its licence text, which `THIRD-PARTY-LICENSES.md` now carries, but it is copyleft inside a distributed image, and `upgrade-research/PLAN.md` M4's runtime/dev split is what takes it out.
 - djlint is advisory, not a gate: one pass over the 43 templates reports 204 findings — 101 H021 (inline styles), 81 H029 (`method="POST"`), 6 H043, 3 T038, 2 T002, and 6 **H025 orphan tags, which is structural and worth reading**. `--reformat` rewrites 42 of 43 files in a single pass, so reformat file-by-file, never tree-wide.
 - Nutrition-label PDF/SVG generation shells out to the `typst` binary (`opennourish/typst_utils.py`); the Dockerfile downloads it. Without `typst` on PATH, label routes fail while the rest of the app works.
 
@@ -153,7 +154,7 @@ Root owns the repository-wide contract and the top-level files that have no fold
 - Keep user data scoped by `user_id` in every query, and verify ownership for anything addressed by id.
 - Do not commit `persistent/`, `htmlcov/`, `.coverage`, `project_snapshot.txt`, `.kilocode/`, `.vscode/`, or `__pycache__/` — all are ignored today; keep it that way.
 - `DEV-README.md` and `README.md` drift from the code; trust this tree. Known mismatches: `DEV-README.md` `rm user_data.db` and the `typst/` directory requirement, `README.md:11-13` contradicting itself on where `usda_data/` lives, `README.md:113` naming a port compose never publishes, and `README.md:98` omitting that `ENCRYPTION_KEY` is mandatory. Fix the doc in the same change as the behaviour.
-- `THIRD-PARTY-LICENSES.md` is a hand-maintained snapshot and is missing entries for Flask, Flask-Login/Migrate/WTF/SQLAlchemy, cryptography, PyJWT, Jinja2, PyYAML, and every vendored asset in `static/`. Treat it as incomplete, not authoritative.
+- `THIRD-PARTY-LICENSES.md` is generated by `gen_licenses.py`, not hand-maintained — never edit it by hand; change the lock or `static/`, then regenerate. Its `--check` mode is a gate below, so a lock bump that skips regeneration fails loudly instead of drifting silently for months.
 - `DATABASE_URL`, `USDA_DATABASE_URL`, `FLASK_APP` are read but undocumented in `.env.example`; `MAIL_CONFIG_SOURCE` and `FLASK_DEBUG` are documented or deployed as env vars but read by no code (mail source is DB-only). Correct `.env.example` when touching configuration.
 - No CI, no pre-commit config, and no active git hooks exist. Every check below is run manually by whoever makes the change.
 
@@ -164,7 +165,10 @@ P=/home/markus/miniconda3/envs/opennourish/bin/python
 $P -m pytest -m "not integration" -q     # full non-integration suite
 $P -m ruff check .                        # lint gate
 $P -m ruff format --check .               # formatting gate
+$P gen_licenses.py --check                # licence inventory matches the lock and static/
 ```
+
+`gen_licenses.py --check` reads the installed environment, so it also proves the env matches `requirements.txt`: any pin missing or at a different version, or any file under `static/` replaced, fails it. Regenerate with `$P gen_licenses.py`.
 
 Template linting (`$P -m djlint templates --profile jinja --extension html --use-gitignore`) is advisory, not one of the gates above — see Toolchain for why it is not clean yet.
 
