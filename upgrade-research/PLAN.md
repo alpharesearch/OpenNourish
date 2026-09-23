@@ -151,8 +151,12 @@ backslash paths. Registry position was checked too — `nutrition-label-nam` 0.2
 this is currency, not a CVE fix. The one advisory on `typst/packages` is their own
 `pull_request_target` CI bug, not these two packages.
 
-**Verify:** `docker run --rm --entrypoint typst <image> --version` reports `typst 0.15.1`, and the
-label tests pass against the new binary. **Rollback:** put `v0.13.1` back in that one URL.
+**Verify:** `docker run --rm --entrypoint typst <image> --version` reports `typst 0.15.1`, and the 159
+tests of the four typst-dependent files pass with the image's own interpreter and binary. CI exercises
+the same build, because its typst step greps this URL — run 35925075739 is that step installing 0.15.1
+on the runner and passing the suite. The dev host was moved too: `/usr/local/bin/typst` is 0.15.1 with
+sha256 `29273eaa04f6d00e…`, byte-identical to the copy inside the image, so dev, CI and image agree on
+one renderer. **Rollback:** put `v0.13.1` back in that one URL.
 
 ## M3 — Flask-Mailing 3.0.0 (first app-code change)
 
@@ -207,6 +211,11 @@ can express a native binary, so CI now downloads the same `typst` build the Dock
 is grepped out of the `Dockerfile` rather than duplicated — and installs `fonts-liberation`, which
 the templates need (`opennourish/typst_utils.py` pins Liberation Sans). Re-verified by replaying
 those commands in a tracked-files-only `git worktree` with `typst` otherwise off PATH: 972 passed.
+
+**The re-run went green end to end** — run [35925075739](https://github.com/alpharesearch/OpenNourish/actions/runs/35925075739)
+at `40a3940`, all nine steps success in 4m51s: lock install, `pip check`, typst install, test suite,
+lint, formatting, licence inventory. Job logs need repo admin rights, so failures are diagnosed by
+replaying the steps locally, which is what worked here.
 
 ## M5 — Follow-up cleanup (tracked, not blocking)
 
