@@ -1,5 +1,5 @@
 # Stage 1: Build Stage
-FROM python:3.9 AS build
+FROM python:3.12 AS build
 
 WORKDIR /app
 
@@ -13,7 +13,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Final Stage
-FROM python:3.9-slim
+# Must stay on the same Python minor as the build stage: /opt/venv is copied between them and is
+# not portable across interpreter versions.
+FROM python:3.12-slim
 
 # Install font dependencies and Typst
 RUN apt-get update && apt-get install -y \

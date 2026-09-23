@@ -1,0 +1,32 @@
+# Direct dependencies — this is the hand-edited surface.
+# requirements.txt is GENERATED from this file; do not hand-edit it (see DEV-README.md).
+#   uv pip compile requirements.in --python-version 3.12 -o requirements.txt
+# Interpreter: Python 3.12 (Dockerfile base image and the conda env must match).
+
+# runtime
+Flask
+Flask-Login
+Flask-Mailing==0.2.3    # held: 3.0.0 needs a create_app mail-config fallback first — upgrade-research/PLAN.md M3
+Flask-Migrate
+Flask-SQLAlchemy
+Flask-WTF
+SQLAlchemy
+WTForms
+WTForms-SQLAlchemy
+alembic
+cryptography
+email-validator
+PyJWT
+PyYAML
+python-dotenv
+waitress
+Faker                   # runtime, not dev: entrypoint.sh seed-dev-data uses it
+
+# tooling (moves to requirements-dev.in in PLAN.md M4)
+pytest
+pytest-cov
+pytest-flask
+pytest-mock
+coverage
+ruff
+djlint

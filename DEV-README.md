@@ -347,18 +347,30 @@ To ensure your changes are well-tested, you should run a coverage analysis.
     ```
 
 
-## 5. Creating pip requirments.txt for deployment
+## 5. Regenerating requirements.txt
 
-To create a `requirements.txt` file, run the following command in your virtual environment.
+`requirements.txt` is **generated**. The hand-edited surface is `requirements.in` (direct
+dependencies only). Never run `pip freeze > requirements.txt`: it bakes in every transitive
+package, silently re-adds whatever a dependency requires, and is how this file drifted from the
+code before (abandoned `aioredis`, an unused `httpx` chain, and an unpinned `pytz`).
 
 ```bash
-pip freeze > requirements.txt
+# resolve for the interpreter the Dockerfile and conda env run (3.12)
+uv pip compile requirements.in --python-version 3.12 -o requirements.txt
+# or: pip-compile --python-version 3.12 -o requirements.txt requirements.in
+conda run -n opennourish python -m pip install -r requirements.txt
+conda run -n opennourish python -m pip check     # must print "No broken requirements found"
 ```
+
+Then run the three gates in `AGENTS.md` before committing. To drop a dependency, remove it from
+`requirements.in` and re-resolve — hand-deleting a line from `requirements.txt` does nothing, the
+resolver puts it back.
+
 To remove a package and all dependencies, run the following command:
 
 ```bash
 pip install pip3-autoremove
 pip-autoremove <package name> -y
 pip uninstall pip3-autoremove
-```bash
+```
 

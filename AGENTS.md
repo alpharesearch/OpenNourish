@@ -94,11 +94,12 @@ Root owns the repository-wide contract and the top-level files that have no fold
 
 ### Toolchain
 
-- Run everything under the conda env `opennourish`: `/home/markus/miniconda3/envs/opennourish/bin/python`. Conda `base` has no Flask and will fail at import.
-- Stack is pinned in `requirements.txt`: Flask 3.1.1, SQLAlchemy 2.0.41 + Flask-SQLAlchemy 3.1.1, Alembic/Flask-Migrate, Flask-Login, Flask-WTF, Flask-Mailing, waitress. Bootstrap CSS, Bootstrap Icons, Chart.js, and fonts are vendored in `static/`; there is no npm/bundler step.
-- `djlint==1.36.4` lints Jinja templates: `$P -m djlint templates --profile jinja --extension html --use-gitignore`. djlint ignores `.gitignore` unless `--use-gitignore` is passed, so an unscoped `djlint .` sweeps the 209 generated `htmlcov/*.html`. Nothing new belongs in `.gitignore`: djlint writes no cache or backup files, and its `.djlintrc` config is meant to be committed.
-- djlint is pinned at 1.36.4 on purpose: it is the last release supporting Python 3.9, which both the conda env and the `python:3.9` Docker base run. djlint 1.37+ declares `requires_python >=3.10` and would break `pip install -r requirements.txt` in the image. Its transitive deps (`cssbeautifier`, `jsbeautifier`, `EditorConfig`, `json5`, `pathspec`, `regex`, `tqdm`, `colorama`) ship in the image too, because the Dockerfile installs this same file.
-- djlint is advisory, not a gate: one pass over the 43 templates reports ~230 findings, mostly style — 57 T003 (bare `{% endblock %}`, which is house style), 81 H029 (`method="POST"`), ~72 H021 (inline styles). Its structural rules are worth reading: T-tag mismatch and H025 orphan tags. `--reformat` rewrites 42 of 43 files in a single pass, so reformat file-by-file, never tree-wide.
+- Run everything under the conda env `opennourish` (**Python 3.12**): `/home/markus/miniconda3/envs/opennourish/bin/python`. Conda `base` has no Flask and will fail at import. `opennourish-py39-backup` is the pre-move 3.9 clone — keep it until the 3.12 image is deployed, then delete it.
+- **Python 3.12 is a hard floor.** The `Dockerfile` builds on `python:3.12` and `python:3.12-slim`, and ruff's formatter emits PEP 701 nested-quote f-strings inside `opennourish/typst_utils.py`, so 3.11 and below cannot even import that module. Keep both build stages on the same minor: `/opt/venv` is copied between them and is not portable across interpreters.
+- Dependency source of truth is `requirements.in`; `requirements.txt` is **generated** from it (procedure in `DEV-README.md` §5). Never `pip freeze > requirements.txt` — that is how the file accumulated abandoned `aioredis`, an unused `httpx` chain, and an untracked `pytz`. Hand-deleting a line from `requirements.txt` also does nothing: the resolver puts it back.
+- Stack: Flask 3.1.3, SQLAlchemy 2.0.54 + Flask-SQLAlchemy 3.1.1, Alembic/Flask-Migrate, Flask-Login, Flask-WTF 1.3.0, Flask-Mailing 0.2.3 (deliberately held — 3.0.0 needs a `create_app` mail-config fallback, see `upgrade-research/PLAN.md` M3), waitress. `Faker` is a runtime dep, not dev: `entrypoint.sh` seed steps use it. After any lock change, `pip check` must stay silent and the env must actually match the file. Bootstrap CSS, Bootstrap Icons, Chart.js, and fonts are vendored in `static/`; there is no npm/bundler step.
+- `djlint==1.46.2` lints Jinja templates: `$P -m djlint templates --profile jinja --extension html --use-gitignore`. djlint ignores `.gitignore` unless `--use-gitignore` is passed, so an unscoped `djlint .` sweeps the 209 generated `htmlcov/*.html`. Nothing new belongs in `.gitignore`: djlint writes no cache or backup files, and its `.djlintrc` config is meant to be committed. Its transitive deps (`cssbeautifier`, `jsbeautifier`, `EditorConfig`, `json5`, `pathspec`, `regex`) ship in the image, because the Dockerfile installs this same file.
+- djlint is advisory, not a gate: one pass over the 43 templates reports 204 findings — 101 H021 (inline styles), 81 H029 (`method="POST"`), 6 H043, 3 T038, 2 T002, and 6 **H025 orphan tags, which is structural and worth reading**. `--reformat` rewrites 42 of 43 files in a single pass, so reformat file-by-file, never tree-wide.
 - Nutrition-label PDF/SVG generation shells out to the `typst` binary (`opennourish/typst_utils.py`); the Dockerfile downloads it. Without `typst` on PATH, label routes fail while the rest of the app works.
 
 ### Persistence and secrets
@@ -167,6 +168,8 @@ $P -m ruff format --check .               # formatting gate
 
 Template linting (`$P -m djlint templates --profile jinja --extension html --use-gitignore`) is advisory, not one of the gates above — see Toolchain for why it is not clean yet.
 
+The two ruff gates are only meaningful together with `ruff.toml`: `select` freezes the rule families this tree is clean under (newer ruff defaults would report ~372 findings) and `exclude = ["*.md"]` keeps ruff ≥0.16 out of Markdown code fences. Treat both keys as part of the gate contract, not as configuration taste.
+
 Coverage and the single `integration` test (needs `persistent/usda_data/*.csv`) are covered in `tests/AGENTS.md`.
 
 ## User Preferences
@@ -180,5 +183,6 @@ When the user requests a durable behavior change, record it here or in the relev
 - `templates/AGENTS.md` — Jinja inheritance, base blocks, Chart.js conventions, flash/CSRF patterns, the analytics duplication.
 - `tests/AGENTS.md` — pytest fixtures, markers, coverage commands, current gate.
 - `migrations/AGENTS.md` — Alembic history for the default bind, SQLite batch-mode rules, backup-first upgrade.
-- Root keeps direct ownership of `models.py`, `config.py`, `constants.py`, `app.py`, `serve.py`, `import_usda_data.py`, `alembic.ini`, the ops shell scripts, `Dockerfile`, `docker-compose.yml`, `entrypoint.sh`, `nginx/`, `static/`, and `requirements.txt`.
+- Root keeps direct ownership of `models.py`, `config.py`, `constants.py`, `app.py`, `serve.py`, `import_usda_data.py`, `alembic.ini`, the ops shell scripts, `Dockerfile`, `docker-compose.yml`, `entrypoint.sh`, `nginx/`, `static/`, `requirements.in`, and `requirements.txt`.
+- `upgrade-research/` — dependency/interpreter migration material, root-owned. `README.md` is the 2026-09-23 audit (its baseline figures describe the **pre-move** state) and `PLAN.md` is the live sequenced plan with current status. M0–M2 landed 2026-09-23: env and Dockerfile on 3.12, `requirements.txt` generated from `requirements.in` (61 packages), image built and smoke-tested (`create_app` boots, 133 routes, `typst 0.13.1` present). `lock-py312-flaskmailing-3.0.0.txt` is the M3 target and goes when consumed. **Remaining before deploying: one cold start on a real volume** so `entrypoint.sh` runs its seed steps under 3.12.
 - Blueprints without their own doc (onboarding, main, friends, profile, settings, exercise, fasting, undo, usda_admin) are governed by `opennourish/AGENTS.md`, except `usda_admin`, governed by `opennourish/admin/AGENTS.md`.
