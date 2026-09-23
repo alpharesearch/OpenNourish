@@ -66,7 +66,7 @@ can no longer import `typst_utils.py`. Recorded in the root `AGENTS.md` Toolchai
 **Verify:** `$P -m ruff check .` and `$P -m ruff format --check .` both clean.
 **Rollback:** revert `ruff.toml` and the 6 reformatted files together.
 
-## M2 — Prune, regenerate the lock, bump the image to 3.12 — LANDED (cold-volume boot still owed)
+## M2 — Prune, regenerate the lock, bump the image to 3.12 — LANDED (2026-09-23, cold-volume boot verified)
 
 One commit; the interpreter and dependency bumps land together because the prunes and the newest
 releases are what the resolver produced for 3.12.
@@ -98,15 +98,23 @@ releases are what the resolver produced for 3.12.
   findings under djlint 1.46.2 (was ~230 under 1.36.4).
 - ✅ `docker build -t opennourish:m2-312 .` → built (build context is ~81 MB once `persistent/` is
   excluded by `.dockerignore`).
-- ✅ Image smoke test, bypassing the entrypoint: interpreter 3.12.14, `pip check` silent, `typst
-  0.13.1` present, `python -m compileall` parses every module, and `create_app()` boots with 133
+- ✅ Image smoke test, bypassing the entrypoint: interpreter 3.12.14, `pip check` silent, `typst`
+  present (0.13.1 at that point — M2b moved the pin to 0.15.1), `python -m compileall` parses every
+  module, and `create_app()` boots with 133
   routes registered. Run it with `--entrypoint python`, never by appending a command: `ENTRYPOINT`
   is `entrypoint.sh`, which downloads the 474 MB USDA archive before it ever reaches your arguments.
-- ⬜ **Still owed:** one cold start on a real volume, so `entrypoint.sh` runs its seed steps under
-  3.12 (`safe_upgrade.sh`, `seed-usda-portions`, `seed-usda-categories`, `seed-exercise-activities`,
-  `seed-dev-data`), plus a nutrition-label PDF render through the `typst` subprocess. Do this on the
-  TrueNAS host or against a copied volume; the seed code is untouched by this migration, so the
-  residual risk is interpreter behaviour inside those scripts, not the scripts themselves.
+- ✅ **Cold-volume boot verified on a fresh checkout** (2026-09-23, at `1a14ae3` with an empty
+  `persistent/`): `entrypoint.sh` downloaded and unpacked the pinned USDA CSVs (3.0 GB), rebuilt
+  `usda_data.db` (1.74 GB — `foods` 1,768,972, `nutrients` 477, `food_nutrients` 17,615,687,
+  `pragma quick_check` ok), stamped Alembic `4ff671f5bcdc`, then seeded 47,088 `portions`,
+  28 `food_category` rows, 6 `exercise_activities` and the `markus` dev admin, all under 3.12.14. The
+  residual risk this bullet was holding — interpreter behaviour inside the seed scripts — is retired,
+  and the boot-loop row is gone from the risk register.
+- ✅ **Label render through the subprocess:** 159 tests in the four typst-dependent files pass *inside
+  the built image*, against the shipped binary rather than a host one (M2b).
+- Measured while verifying, so nobody re-litigates it: `foods.fdc_id` is `INTEGER PRIMARY KEY`, hence
+  the rowid — a lookup is a B-tree seek (0.1 ms across 1.77 M rows, full scan 55 ms) and
+  `food_nutrients` carries `idx_food_nutrients_unique`. No index work is warranted.
 
 **Incidental finding:** `aioredis` cannot be imported on 3.12 at all — it dies on
 `from distutils.version import StrictVersion`, and `distutils` is gone. Nothing noticed because
@@ -219,10 +227,12 @@ replaying the steps locally, which is what worked here.
 
 ## M5 — Follow-up cleanup (tracked, not blocking)
 
-- **`datetime.utcnow()` — 13 call sites.** Deprecated on 3.12, scheduled for removal, and the
-  source of `DTZ011` noise. Migrate to `datetime.now(timezone.utc)` in line with
-  `opennourish/time_utils.py`; this is the largest remaining behaviour-adjacent edit, so give it its
-  own commit and read the timezone rules in `opennourish/AGENTS.md` first.
+- **`datetime.utcnow()` — 12 call sites, plus `models.py:142`'s bare `default=datetime.utcnow`.**
+  Deprecated on 3.12, scheduled for removal, and the source of `DTZ011` noise. Migrate to
+  `datetime.now(timezone.utc)` in line with `opennourish/time_utils.py`; the column default holds the
+  *callable*, so it needs a lambda rather than a find-and-replace — that is the one spot a mechanical
+  pass gets wrong silently. This is the largest remaining behaviour-adjacent edit, so give it its own
+  commit and read the timezone rules in `opennourish/AGENTS.md` first.
 - **Adopt ruff rules family by family** (`I001` 124, then `DTZ011` 108 with the utcnow work, then
   `RUF059` 65, `BLE001` 13) instead of a 372-finding big bang.
 - **`pytest-flask`** works on pytest 9 but has been unmaintained since 2023-10 (classifiers stop at
@@ -279,7 +289,6 @@ so `docker inspect` said nothing and boot printed nothing about itself.
 
 | risk | milestone | mitigation |
 |---|---|---|
-| Image boots into a loop on a fresh volume | M2 | boot with an empty volume before deploying; `set -e` makes failures loud |
 | Mail silently stops sending | M3 | live SMTP round-trip test; `MAIL_SUPPRESS_SEND` hides failures in CI |
 | Lint gate becomes noise | M1 before M2 | rule set pinned, families adopted one at a time |
 | Dev env irrecoverably broken | M0 | `opennourish-py39-backup` clone |
