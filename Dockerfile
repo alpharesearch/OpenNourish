@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y \
     dos2unix \
     openssl \
     --no-install-recommends && \
-    wget https://github.com/typst/typst/releases/download/v0.13.1/typst-x86_64-unknown-linux-musl.tar.xz && \
+    wget https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz && \
     tar -xf typst-x86_64-unknown-linux-musl.tar.xz && \
     mkdir -p /usr/local/bin/typst && \
     mv typst-x86_64-unknown-linux-musl/* /usr/local/bin/typst/ && \

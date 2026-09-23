@@ -4,13 +4,13 @@ Target interpreter: **Python 3.12** (security-supported to 2028-10-31).
 Evidence behind the numbers: [`README.md`](README.md). Candidate locks live in this folder until the
 milestone that consumes them lands, and are deleted once `requirements.txt` supersedes them.
 
-**Status as of 2026-09-23: M0, M1, M2 and M4's CI step have landed. M3, M4's split and M5 are pending.**
+**Status as of 2026-09-23: M0, M1, M2, M2b and M4's CI step have landed. M3, M4's split and M5 are pending.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
-generated `requirements.txt` (61 packages, was 72), `ruff.toml` pins its rule families, `.github/workflows/ci.yml`
-runs the four gates on every push and PR, and every gate is green — 972 tests passed, `ruff check`
-clean, `ruff format --check` clean, djlint advisory at 204 findings. `THIRD-PARTY-LICENSES.md` is no
-longer hand-maintained: `gen_licenses.py` generates it from the installed wheels plus the vendored
-assets in `static/`, and `--check` fails if it drifts.
+generated `requirements.txt` (61 packages, was 72), `ruff.toml` pins its rule families, the image's
+`typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and PR, and every gate
+is green — 972 tests passed, `ruff check` clean, `ruff format --check` clean, djlint advisory at 204
+findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py` generates it from
+the installed wheels plus the vendored assets in `static/`, and `--check` fails if it drifts.
 
 ## Ground rules
 
@@ -117,6 +117,43 @@ and M3 removes it.
 **Rollback:** revert `requirements.txt`, `requirements.in`, `DEV-README.md`, `Dockerfile`.
 The previous image tag is untouched.
 
+## M2b — typst binary bump (0.13.1 → 0.15.1) — LANDED (2026-09-23)
+
+One URL in the `Dockerfile` runtime stage. `.github/workflows/ci.yml` greps that URL rather than
+duplicating it, so the runner cannot test a different typst build than the one shipped. It rides here
+rather than in M5 because the image still owes its cold-volume boot (M2): one rebuild validates the
+interpreter move and the renderer together.
+
+Two majors is a real gap — 0.14.0 landed 2025-10-24 and 0.15.0 on 2026-06-15, each with breaking
+changes — so the bump was decided on rendered output, not on the changelog. All seven `.typ` sources
+the app generates were compiled with 0.13.1, 0.14.0, 0.14.2, 0.15.0 and 0.15.1, which holds the
+templates constant and leaves the binary as the only variable:
+
+| check | 0.13.1 → 0.15.1 |
+|---|---|
+| PDF raster, all 5 artifacts at 100 dpi | identical |
+| PDF raster, 2 artifacts at 300 dpi (0.24 pt/px) | identical |
+| PDF text layer (`pdftotext -layout`, position-sensitive) | identical for all 5 |
+| SVG raster at 1× | 37 of 1,080,000 pixels differ, RMSE 2.3e-5 |
+| 0.15.0 vs 0.15.1 | byte-identical PDFs, 0 differing pixels |
+| the 159 tests in the 4 typst-dependent files | green under 0.15.1 |
+
+Sizes move without appearance. PDFs grow 33 → 40 KB and SVGs shrink 222 → 181 KB, which is 124 wrapper
+groups collapsing to 48 with path counts (181) and unique glyph paths (165) unchanged. 0.14.2 is the
+worst PDF of the five (43 KB, larger than both neighbours) and buys nothing, which is why 0.14.x was
+skipped rather than stepped through.
+
+None of the documented breakages reach these templates: no math mode, no `link`/`slice`/`str(base:)`/
+`enum.item`/`pdf.embed`, no HTML export, fonts selected by one name rather than a fallback list, no
+backslash paths. Registry position was checked too — `nutrition-label-nam` 0.2.0 and `codetastic`
+0.2.2 are the newest published versions, their `typst.toml` declares no `typst-version` floor, and
+`typst/typst` carries **zero** security advisories (OSV is empty for the crate and for the wheel), so
+this is currency, not a CVE fix. The one advisory on `typst/packages` is their own
+`pull_request_target` CI bug, not these two packages.
+
+**Verify:** `docker run --rm --entrypoint typst <image> --version` reports `typst 0.15.1`, and the
+label tests pass against the new binary. **Rollback:** put `v0.13.1` back in that one URL.
+
 ## M3 — Flask-Mailing 3.0.0 (first app-code change)
 
 `Mail.init_app` in 3.0.0 hard-requires `MAIL_SERVER`, `MAIL_USERNAME`, `MAIL_PASSWORD`; this app
@@ -184,6 +221,22 @@ those commands in a tracked-files-only `git worktree` with `typst` otherwise off
 - **Next interpreter refresh: 3.14** (security to 2030-10-31). `djlint 1.46.2`, `pytest 9.1.1`,
   `SQLAlchemy 2.0.54`, `cryptography 50.0.1`, `greenlet 3.5.6` all declare 3.14/3.15 support.
   Re-run M0/M2 verification rather than assuming it carries over.
+- **User text reaches the Typst templates as markup, not as strings.** `opennourish/typst_utils.py:248`
+  interpolates the food description after a `=` heading and the myfood/recipe builders do the same,
+  while `_sanitize_for_typst` escapes only `\ " *` — so `$`, `#`, `<`, `@` are live syntax. A food
+  named `Yogurt $5 pack` already fails **today**, on typst 0.13.1, with `error: unclosed dollar`, and
+  the label route answers 500. Four constructs render on ≤0.13 and error on ≥0.14 — `#link("")`,
+  `#text(font: ())`, `#pdf.embed`, `image("a\b.png")` — but all need deliberate markup: nine plausible
+  names (`Beef #9`, `Soup #2 - Tomato`, `100% Juice`, `Vitamin A & D`, `1/2 cup oats`, …) behave
+  identically on every version, so no existing data is at risk from M2b. Fix by escaping `$ # < > @`
+  next to `*`, or by passing descriptions as string arguments instead of content, with one regression
+  test per template builder. `= Yogurt \$5 pack` compiles on both ends of the version range.
+- **Labels need outbound internet at render time.** The image caches no `@preview` packages and the
+  `subprocess.run` calls pass no `--root`, so the first label render inside a container downloads
+  `nutrition-label-nam:0.2.0` and `codetastic:0.2.2` from typst.app; with no egress every label route
+  500s. Fetching both during the build into `TYPST_PACKAGE_CACHE_PATH` removes the dependency.
+  Checked on the way: typst's default root confines `#read` to the temp directory, so injected markup
+  cannot read the filesystem — `#read("/etc/hostname")` fails on 0.13.1 and 0.15.1 alike.
 - **Unrelated but adjacent:** `.dockerignore` still lets `htmlcov/` and `.kilocode/` into every
   image, and `deploy_truenas.sh` prints `SECRET_KEY`/`ENCRYPTION_KEY`/`MAIL_PASSWORD` to stdout and
   only works from a directory named `opennourish`. Fix while you are in deployment-land.
