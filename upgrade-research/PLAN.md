@@ -167,7 +167,7 @@ on the runner and passing the suite. The dev host was moved too: `/usr/local/bin
 sha256 `29273eaa04f6d00e…`, byte-identical to the copy inside the image, so dev, CI and image agree on
 one renderer. **Rollback:** put `v0.13.1` back in that one URL.
 
-## M3 — Flask-Mailing 3.0.0 (first app-code change) — LANDED (2026-09-23, live SMTP round-trip owed)
+## M3 — Flask-Mailing 3.0.0 (first app-code change) — LANDED (2026-09-23, live round-trip verified on TrueNAS)
 
 `Mail.init_app` in 3.0.0 raises `ValueError` unless `MAIL_SERVER`, `MAIL_USERNAME` and
 `MAIL_PASSWORD` are all non-empty, and this app deliberately runs with them empty
@@ -212,11 +212,14 @@ inside the image, all four mail shapes behave: no server → not initialised, ap
 credentials → initialised, `USE_CREDENTIALS=False`, placeholder on the wire, `""` in config; server +
 credentials → real values; `MAIL_SUPPRESS_SEND=False` with `TESTING` off → `SUPPRESS_SEND=0`.
 
-**Still owed (deployment side):** the live SMTP round-trip — a signup verification mail and a
-password reset against a real account. Every send point is patched in the suite and CI has no mail
-server, so nothing in this repo proves the wire format. Check which mail mode the deployment is in
-first (`select key from system_settings`; no `MAIL_CONFIG_SOURCE` row means environment mode, so the
-container's `MAIL_*` variables are the live config).
+**Verified on the deployment (2026-09-23):** the image built from these commits is live on TrueNAS, and
+a password-reset email arrived. That is the round-trip no test here can perform — every send point is
+patched in the suite and CI has no mail server — and it is also field evidence for the bridge: had
+`SUPPRESS_SEND` come out non-zero, `connection.py` would have dropped the send silently and nothing
+would have arrived. The deployment runs in **environment mode** (no `MAIL_CONFIG_SOURCE` row in
+`system_settings`; mail has never been saved in the admin UI there), so its container `MAIL_*`
+variables are the live mail config. `send_verification_email` uses the other send site and has not had
+its own live round-trip.
 
 **Rollback:** revert `opennourish/__init__.py`, `requirements.in`, `requirements.txt` and the three
 tests. The pre-bump lock is `requirements.txt` at `1ad7b82`. `AGENTS.md` and `opennourish/AGENTS.md`
@@ -411,7 +414,6 @@ so `docker inspect` said nothing and boot printed nothing about itself.
 
 | risk | milestone | mitigation |
 |---|---|---|
-| Mail sends the wrong wire format | M3 (landed; residual) | the realised risk was its inverse — 3.x renamed the suppression key and would have started real sends, now bridged and tested. The suite patches every send point, so a live SMTP round-trip is still owed |
 | Registering `CSRFProtect` breaks a POST that no test covers | M6 | land the `hidden_tag()`s first (inert until registration), add a CSRF-enabled test, manual pass over the 32 form-bearing templates |
 | Lint gate becomes noise | M1 before M2 | rule set pinned, families adopted one at a time |
 | Dev env irrecoverably broken | M0 | rebuild it from `requirements.txt` — the `opennourish-py39-backup` 3.9 clone was deleted on 2026-09-23 once the 3.12 image was confirmed deployed |
