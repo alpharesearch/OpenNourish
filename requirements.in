@@ -1,6 +1,7 @@
 # Direct dependencies — this is the hand-edited surface.
 # requirements.txt is GENERATED from this file; do not hand-edit it (see DEV-README.md).
-#   uv pip compile requirements.in --python-version 3.12 -o requirements.txt
+#   pip-compile --strip-extras -o requirements.txt requirements.in   (run with the 3.12 interpreter;
+#   --strip-extras is required or gen_licenses.py reads "coverage[toml]" as a package name and fails)
 # Interpreter: Python 3.12 (Dockerfile base image and the conda env must match).
 
 # runtime
@@ -22,7 +23,8 @@ python-dotenv
 waitress
 Faker                   # runtime, not dev: entrypoint.sh seed-dev-data uses it
 
-# tooling (moves to requirements-dev.in in PLAN.md M4)
+# tooling — stays in this file on purpose (PLAN.md M4's runtime/dev split was dropped 2026-09-23),
+# so djlint and its closure ship in the image; that is accepted, not an open item.
 pytest
 pytest-cov
 pytest-flask
