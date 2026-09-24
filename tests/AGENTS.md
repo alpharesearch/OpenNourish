@@ -7,7 +7,7 @@ The pytest suite is the broadest of this repository's four gates and the only on
 ## Ownership
 
 - `conftest.py` — the single app-factory fixture and the login helpers every test reuses.
-- 72 test files, 975 non-integration tests + 1 integration test (976 collected). 16 of them are the `test_*_coverage.py` files raised for the 99% TOTAL pass; each mirrors a feature module and is named for it.
+- 72 test files, 983 non-integration tests + 1 integration test (984 collected). 16 of them are the `test_*_coverage.py` files raised for the 99% TOTAL pass; each mirrors a feature module and is named for it.
 - `pytest.ini` (repo root) — declares the `integration` marker only; no `addopts`, no `testpaths`.
 - `.coveragerc` (repo root) — `exclude_also` patterns only.
 - Not owned here: what each feature must do (feature AGENTS.md files), and the workflow file itself (`.github/workflows/ci.yml`, root-owned — it runs the commands below on every push and PR).
@@ -23,7 +23,7 @@ The pytest suite is the broadest of this repository's four gates and the only on
   - `admin_client` yields `(client, user, app)`, `auth_client_with_user` and `auth_client_two_users` yield tuples, the rest yield a bare client. Match the shape when reusing.
   - `auth_client_with_friendship` is the fixture for cross-user authorisation tests; `sample_usda_food` pins `fdc_id=12345`.
 - Mail is patched globally at `conftest.py:49` (`flask_mailing.Mail.send_message`). Email-behaviour tests patch `opennourish.utils.mail.send_message` instead — pick the patch point that matches the assertion.
-- **17 tests need the `typst` binary on PATH**: `test_utils.py` (6), `test_typst_coverage.py` (6), `test_recipes_coverage.py` (4), `test_recipe_label.py` (1). They shell out to it, and a missing binary surfaces as `500 == 200`, not a skip — so a machine without `typst` reports failures that are not the code's fault. `test_my_foods_coverage.py` mentions typst but patches it. CI installs the Dockerfile's build plus `fonts-liberation`, which the templates need (`opennourish/typst_utils.py` pins Liberation Sans); the font affects the rendered label, not these assertions.
+- **20 tests need the `typst` binary on PATH**: `test_utils.py` (6), `test_typst_coverage.py` (9), `test_recipes_coverage.py` (4), `test_recipe_label.py` (1). They shell out to it, and a missing binary surfaces as `500 == 200`, not a skip — so a machine without `typst` reports failures that are not the code's fault. Three of the `test_typst_coverage.py` ones are the `renders_markup_hazards` regressions, which are the only tests that prove the label escapers produce compilable Typst: the rest assert on the generated source, not on the render. `test_my_foods_coverage.py` mentions typst but patches it. CI installs the Dockerfile's build plus `fonts-liberation`, which the templates need (`opennourish/typst_utils.py` pins Liberation Sans); the font affects the rendered label, not these assertions.
 - The `integration` marker gates exactly one test, `test_database_import.py:40`, which shells out to bare `python import_usda_data.py` and needs `persistent/usda_data/*.csv`. It does not skip when the CSVs are absent, so always run `-m "not integration"` as the default command.
 - Coverage runs line coverage only (`.coveragerc` has no `[run]` section, so no `source`, no `branch`, no `omit`). `test_config.py` imports generated temp modules, so `"/tmp/*"` must be in the omit list or TOTAL is polluted.
 - An assertion on `status_code == 200` with `follow_redirects=True` also passes when `@onboarding_required` bounces the request. Assert on rendered content, not just the status.
@@ -50,7 +50,7 @@ $P -m coverage run -m pytest -m "not integration" && \
   $P -m coverage report --skip-covered --omit="test*","/tmp/*"   # TOTAL is 99%
 ```
 
-Coverage TOTAL is **99%** (6111 statements, 43 misses); 53 modules are at 100%. The only files with any misses are: `exercise/routes.py` 85%, `goals/routes.py` 98%, `my_foods/routes.py` 99%, `recipes/routes.py` 99%, `search/routes.py` 97%, `utils.py` 99%. The `search`/`my_foods`/`recipes`/`utils` remainders are documented as dead or unreachable (duplicate-int guards, an unreachable `continue`, `PortionForm`-prevented validators, identity-map branches); `exercise` is the only lane where new tests would still move TOTAL.
+Coverage TOTAL is **99%** (6113 statements, 43 misses); 53 modules are at 100%. The only files with any misses are: `exercise/routes.py` 85%, `goals/routes.py` 98%, `my_foods/routes.py` 99%, `recipes/routes.py` 99%, `search/routes.py` 97%, `utils.py` 99%. The `search`/`my_foods`/`recipes`/`utils` remainders are documented as dead or unreachable (duplicate-int guards, an unreachable `continue`, `PortionForm`-prevented validators, identity-map branches); `exercise` is the only lane where new tests would still move TOTAL.
 
 ## Child DOX Index
 

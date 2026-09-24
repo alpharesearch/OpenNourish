@@ -31,6 +31,37 @@ SUGARS_TOTAL_INCLUDING_NLEA = "Sugars, total including NLEA"
 SUGARS_ADDED = "Sugars, added"
 VITAMIN_D = "Vitamin D"
 
+# Markup-significant characters, measured on typst 0.15.1. User text that reaches
+# markup unescaped is a 500, not a typo: "$", "#", "@", "<", "`" and "]" each abort
+# compilation ("unclosed delimiter", "unknown variable", "label ... does not exist",
+# "unclosed label", "unclosed raw text", "unexpected closing bracket"), a bare "\"
+# silently swallows the character after it, and "*", "_", "%" and ">" are markup,
+# emphasis or comment syntax. Quotes and dashes are deliberately NOT escaped here:
+# Typst's smart typography on markup text is what every label has always rendered,
+# and escaping them buys nothing outside a string literal.
+TYPST_MARKUP_SPECIALS = "*_$#<>@`[]%"
+
+
+def _escape_typst_markup(text):
+    """Escape user text for insertion into Typst markup (headings, body text)."""
+    if not isinstance(text, str):
+        return text
+    escaped = text.replace("\\", "\\\\")
+    for special in TYPST_MARKUP_SPECIALS:
+        escaped = escaped.replace(special, "\\" + special)
+    return escaped
+
+
+def _escape_typst_string(text):
+    r"""Escape user text for insertion inside a Typst `"..."` string literal.
+
+    Only `\` and `"` are significant there. Escaping the markup specials *inside* a
+    string is a bug rather than a defence: `"a\*b"` renders the backslash.
+    """
+    if not isinstance(text, str):
+        return text
+    return text.replace("\\", "\\\\").replace('"', r"\"")
+
 
 def _get_nutrition_label_data(fdc_id):
     food = db.session.get(Food, fdc_id)
@@ -142,12 +173,6 @@ def _get_nutrition_label_data(fdc_id):
 def _generate_typst_content(
     food, nutrient_info, nutrients_for_label, include_extra_info=False
 ):
-    def _sanitize_for_typst(text):
-        """Sanitizes text to be safely included in Typst markup by escaping the '*' character."""
-        if not isinstance(text, str):
-            return text
-        return text.replace("*", r"\*")
-
     # 1. Determine the default portion and scaling factor
     default_portion = (
         UnifiedPortion.query.filter(UnifiedPortion.fdc_id == food.fdc_id)
@@ -158,11 +183,11 @@ def _generate_typst_content(
 
     if default_portion and default_portion.gram_weight > 0:
         if default_portion.measure_unit_description == "g":
-            serving_size_str = _sanitize_for_typst(
+            serving_size_str = _escape_typst_string(
                 default_portion.full_description_str_1
             )
         else:
-            serving_size_str = _sanitize_for_typst(
+            serving_size_str = _escape_typst_string(
                 default_portion.full_description_str_1
                 + f" ({round(default_portion.gram_weight)}g)"
             )
@@ -179,21 +204,23 @@ def _generate_typst_content(
     }
 
     ingredients_str = food.ingredients if food.ingredients else "N/A"
-    ingredients_str = _sanitize_for_typst(ingredients_str)
+    ingredients_str = _escape_typst_markup(ingredients_str)
 
     portions_str = ""
     food_portions = UnifiedPortion.query.filter_by(fdc_id=food.fdc_id).all()
     if food_portions:
+        # Each portion is escaped on its own: the "\\ " separator is Typst markup
+        # already, and escaping the joined string would double its backslash.
         portions_list = [
-            f"{p.full_description_str_1} ({p.gram_weight}g)" for p in food_portions
+            f"{_escape_typst_markup(p.full_description_str_1)} ({p.gram_weight}g)"
+            for p in food_portions
         ]
         portions_str = "\\ ".join(portions_list)
     else:
         portions_str = "N/A"
-    portions_str = _sanitize_for_typst(portions_str)
 
     # Sanitize food description
-    sanitized_food_description = _sanitize_for_typst(food.description)
+    sanitized_food_description = _escape_typst_markup(food.description)
 
     # Prepare UPC for EAN-13. A 12-digit UPC-A needs a leading 0.
     # The ean13 function takes the first 12 digits and calculates the 13th.
@@ -206,6 +233,11 @@ def _generate_typst_content(
         # Pad or truncate to 12 digits if it's some other length. Short codes
         # are LEFT-padded (zfill): right-padding would shift the number's value.
         upc_str = food.upc.zfill(12)[:12]
+
+    # The UPC lands inside a Typst string literal in the #ean13(...) call. Digits
+    # pass through unchanged; this is what stops a quote in the field from ending
+    # the literal early.
+    upc_str = _escape_typst_string(upc_str)
 
     typst_content_data = f"""
 #import "@preview/nutrition-label-nam:0.2.0": nutrition-label-nam
@@ -271,7 +303,7 @@ def _generate_typst_content(
 
 #colbreak()
 #nutrition-label-nam(data)
-Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2))}g
+Net Carbs: {round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2)}g
 
 """
         )
@@ -429,12 +461,6 @@ def _get_nutrition_label_data_myfood(my_food_id):
 
 
 def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=False):
-    def _sanitize_for_typst(text):
-        """Sanitizes text to be safely included in Typst markup by escaping special characters."""
-        if not isinstance(text, str):
-            return text
-        return text.replace("\\", r"\\").replace('"', r"\"").replace("*", r"\*")
-
     # 1. Determine the default portion and scaling factor
     default_portion = (
         UnifiedPortion.query.filter(UnifiedPortion.my_food_id == my_food.id)
@@ -445,11 +471,11 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 
     if default_portion and default_portion.gram_weight > 0:
         if default_portion.measure_unit_description == "g":
-            serving_size_str = _sanitize_for_typst(
+            serving_size_str = _escape_typst_string(
                 default_portion.full_description_str_1
             )
         else:
-            serving_size_str = _sanitize_for_typst(
+            serving_size_str = _escape_typst_string(
                 default_portion.full_description_str_1
                 + f" ({round(default_portion.gram_weight)}g)"
             )
@@ -466,10 +492,10 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
     }
 
     # Sanitize all user-provided strings
-    sanitized_food_name = _sanitize_for_typst(my_food.description)
+    sanitized_food_name = _escape_typst_markup(my_food.description)
 
     ingredients_str = my_food.ingredients if my_food.ingredients else "N/A"
-    ingredients_str = _sanitize_for_typst(ingredients_str)
+    ingredients_str = _escape_typst_markup(ingredients_str)
 
     # Prepare UPC for EAN-13. The typst ean13 function takes the first 12 digits.
     current_app.logger.debug(f"my_food.upc from DB: {my_food.upc}")
@@ -500,14 +526,17 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
         upc_str = my_food.upc.zfill(12)[:12]
         current_app.logger.debug(f"Fallback sizing applied: {upc_str}")
 
+    # See the USDA path above: the UPC is interpolated into a Typst string literal.
+    upc_str = _escape_typst_string(upc_str)
+
     portions_str = ""
     food_portions = UnifiedPortion.query.filter_by(my_food_id=my_food.id).all()
     if food_portions:
         portions_list = [
-            f"{_sanitize_for_typst(p.full_description_str_1)} ({p.gram_weight}g)"
+            f"{_escape_typst_markup(p.full_description_str_1)} ({p.gram_weight}g)"
             for p in food_portions
         ]
-        portions_str = "\ ".join(portions_list)
+        portions_str = "\\ ".join(portions_list)
     else:
         portions_str = "N/A"
 
@@ -595,7 +624,7 @@ def _generate_typst_content_myfood(my_food, nutrients_for_label, label_only=Fals
 #set align(right)
 #nutrition-label-nam(data, scale-percent: 73%, show-footnote: false,)
 #linebreak()
-Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2))}g
+Net Carbs: {round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2)}g
 """
         )
 
@@ -677,14 +706,10 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
 def _generate_typst_content_recipe(
     recipe, nutrients_for_label, label_only=False, svg_only=False
 ):
-    def _sanitize_for_typst(text):
-        """Sanitizes text to be safely included in Typst markup by escaping special characters."""
-        if not isinstance(text, str):
-            return text
-        return text.replace("\\", r"\\").replace('"', r"\"").replace("*", r"\*")
-
-    # 0. Determine how many servings the recipe has
-    servings_str = _sanitize_for_typst(recipe.servings)
+    # 0. Determine how many servings the recipe has. `Recipe.servings` is a Float
+    # column, so this cannot carry markup and needs no escaping; a NULL one renders
+    # as "None", which is what it has always rendered.
+    servings_str = recipe.servings
 
     # 1. Determine the default portion and scaling factor
     default_portion = (
@@ -696,11 +721,11 @@ def _generate_typst_content_recipe(
 
     if default_portion and default_portion.gram_weight > 0:
         if default_portion.measure_unit_description == "g":
-            serving_size_str = _sanitize_for_typst(
+            serving_size_str = _escape_typst_string(
                 default_portion.full_description_str_1
             )
         else:
-            serving_size_str = _sanitize_for_typst(
+            serving_size_str = _escape_typst_string(
                 default_portion.full_description_str_1
                 + f" ({round(default_portion.gram_weight)}g)"
             )
@@ -717,7 +742,7 @@ def _generate_typst_content_recipe(
     }
 
     # Sanitize all user-provided strings
-    sanitized_recipe_name = _sanitize_for_typst(recipe.name)
+    sanitized_recipe_name = _escape_typst_markup(recipe.name)
 
     # Create a string of ingredients for the recipe
     # Manually fetch USDA food data
@@ -771,7 +796,7 @@ def _generate_typst_content_recipe(
 
             ingredients_str = (
                 ingredients_str
-                + _sanitize_for_typst(
+                + _escape_typst_markup(
                     "{:.2f}".format(ing.quantity)
                     + " "
                     + ing.portion_description
@@ -785,7 +810,7 @@ def _generate_typst_content_recipe(
         ingredients_str = "N/A"
 
     # Sanitize all user-provided strings
-    sanitized_recipe_instructions = _sanitize_for_typst(recipe.instructions)
+    sanitized_recipe_instructions = _escape_typst_markup(recipe.instructions)
 
     # Prepare UPC for EAN-13. The typst ean13 function takes the first 12 digits.
     current_app.logger.debug(f"recipe.upc from DB: {recipe.upc}")
@@ -816,11 +841,14 @@ def _generate_typst_content_recipe(
         upc_str = recipe.upc.zfill(12)[:12]
         current_app.logger.debug(f"Fallback sizing applied: {upc_str}")
 
+    # See the USDA path above: the UPC is interpolated into a Typst string literal.
+    upc_str = _escape_typst_string(upc_str)
+
     portions_str = ""
     food_portions = UnifiedPortion.query.filter_by(recipe_id=recipe.id).all()
     if food_portions:
         portions_list = [
-            f"{_sanitize_for_typst(p.full_description_str_1)} ({p.gram_weight:.2f}g)"
+            f"{_escape_typst_markup(p.full_description_str_1)} ({p.gram_weight:.2f}g)"
             for p in food_portions
         ]
         portions_str = "\\ ".join(portions_list)
@@ -893,7 +921,7 @@ def _generate_typst_content_recipe(
 #set align(right)
 #nutrition-label-nam(data, scale-percent: 73%, show-footnote: false,)
 #linebreak()
-Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2))}g
+Net Carbs: {round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2)}g
 """
         )
     else:
@@ -931,7 +959,7 @@ Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients["Carbohydrate, by d
 == Label:
 #nutrition-label-nam(data, scale-percent: 75%)
 #linebreak()
-Net Carbs: {_sanitize_for_typst(round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2))}g
+Net Carbs: {round(float(scaled_nutrients["Carbohydrate, by difference"]) - float(scaled_nutrients["Fiber, total dietary"]), 2)}g
 """
         )
 

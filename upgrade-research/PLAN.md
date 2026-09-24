@@ -4,11 +4,11 @@ Target interpreter: **Python 3.12** (security-supported to 2028-10-31).
 Evidence behind the numbers: [`README.md`](README.md). Candidate locks live in this folder until the
 milestone that consumes them lands, and are deleted once `requirements.txt` supersedes them.
 
-**Status as of 2026-09-23: M0, M1, M2, M2b, M3 and M4's CI step have landed, and deployment provenance landed with them. The runtime/dev split (M4's second half) is dropped. M5 and M6 (security hardening, added once the upgrade track closed) are pending.**
+**Status as of 2026-09-23: M0, M1, M2, M2b, M3 and M4's CI step have landed, and deployment provenance landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — the Typst escaping item is done, the rest is open. M6 (security hardening, added once the upgrade track closed) is pending.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (54 packages, was 72), Flask-Mailing is at 3.0.0, `ruff.toml` pins its rule
 families, the image's `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and
-PR, and every gate is green — 975 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
+PR, and every gate is green — 983 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
 advisory at 204 findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py`
 generates it from the installed wheels plus the vendored assets in `static/`, and `--check` fails if it
 drifts.
@@ -266,7 +266,7 @@ at `40a3940`, all nine steps success in 4m51s: lock install, `pip check`, typst 
 lint, formatting, licence inventory. Job logs need repo admin rights, so failures are diagnosed by
 replaying the steps locally, which is what worked here.
 
-## M5 — Follow-up cleanup (tracked, not blocking)
+## M5 — Follow-up cleanup (tracked, not blocking) — Typst escaping LANDED (2026-09-23), the rest open
 
 - **`datetime.utcnow()` — 12 call sites, plus `models.py:142`'s bare `default=datetime.utcnow`.**
   Deprecated on 3.12, scheduled for removal, and the source of `DTZ011` noise. Migrate to
@@ -281,16 +281,30 @@ replaying the steps locally, which is what worked here.
 - **Next interpreter refresh: 3.14** (security to 2030-10-31). `djlint 1.46.2`, `pytest 9.1.1`,
   `SQLAlchemy 2.0.54`, `cryptography 50.0.1`, `greenlet 3.5.6` all declare 3.14/3.15 support.
   Re-run M0/M2 verification rather than assuming it carries over.
-- **User text reaches the Typst templates as markup, not as strings.** `opennourish/typst_utils.py:248`
-  interpolates the food description after a `=` heading and the myfood/recipe builders do the same,
-  while `_sanitize_for_typst` escapes only `\ " *` — so `$`, `#`, `<`, `@` are live syntax. A food
-  named `Yogurt $5 pack` already fails **today**, on typst 0.13.1, with `error: unclosed dollar`, and
-  the label route answers 500. Four constructs render on ≤0.13 and error on ≥0.14 — `#link("")`,
-  `#text(font: ())`, `#pdf.embed`, `image("a\b.png")` — but all need deliberate markup: nine plausible
-  names (`Beef #9`, `Soup #2 - Tomato`, `100% Juice`, `Vitamin A & D`, `1/2 cup oats`, …) behave
-  identically on every version, so no existing data is at risk from M2b. Fix by escaping `$ # < > @`
-  next to `*`, or by passing descriptions as string arguments instead of content, with one regression
-  test per template builder. `= Yogurt \$5 pack` compiles on both ends of the version range.
+- **Typst markup injection from user text — DONE (2026-09-23).** Each builder had its own
+  `_sanitize_for_typst`, and the USDA one escaped only `*`, so `Yogurt $5 pack` failed its own label
+  with `error: unclosed dollar` (a 500) on every typst version and a `"` in a UPC ended the `#ean13`
+  string literal. `typst_utils` now has two module-level escapers and every interpolation names one,
+  because the two contexts want opposite things: `_escape_typst_markup` (``\`` first, then
+  `*_$#<>@`[]%`) for the `= <name>` headings and the ingredients / portions / instructions bodies, and
+  `_escape_typst_string` (`\` and `"` only) for the `serving_size` and UPC string literals. Four
+  findings worth keeping:
+  * escaping markup specials *inside a string* is a bug, not a defence — `"a\*b"` renders the
+    backslash — while leaving `$ # @ < ` ]` out of markup aborts the compile ("unclosed delimiter",
+    "unknown variable", "label … does not exist", "unclosed raw text", "unexpected closing bracket")
+    and a bare `\` silently eats the next character;
+  * escaping an already-joined portions string doubles the `"\\ "` separator's backslash, so items are
+    escaped individually;
+  * straight quotes are deliberately **not** escaped in markup: MyFood and recipe labels now render
+    `"name"` with Typst's smart quotes the way USDA labels always did. That is the one visible output
+    change, and the two pinned escaping tests were rewritten to it;
+  * `Recipe.servings` is a Float column, so it never needed escaping (the dead calls around the Net
+    Carbs floats went the same way).
+  Left unfixed on purpose: a line starting with `-`, `+`, `=` or `|` inside a multi-line
+  ingredients/instructions block still renders as a Typst list or heading. It compiles on 0.15.1, so it
+  is cosmetic, and escaping line starts would strip the bullets from hand-written lists. Locked by
+  `MARKUP_HAZARDS` in `tests/test_typst_coverage.py`: one real render per builder plus source-level
+  assertions for both contexts.
 - **Labels need outbound internet at render time.** The image caches no `@preview` packages and the
   `subprocess.run` calls pass no `--root`, so the first label render inside a container downloads
   `nutrition-label-nam:0.2.0` and `codetastic:0.2.2` from typst.app; with no egress every label route
@@ -376,8 +390,8 @@ so treat it as publicly known configuration.
 
 The open redirect on `add_item`'s `return_url`/`request.referrer` (~9 exit points,
 `opennourish/search/routes.py`) and the unvalidated `portion_id` in the diary add/edit paths
-(`opennourish/diary/routes.py:411`, `:560`). Typst markup injection from user text stays in M5 — do
-it once, not in both places.
+(`opennourish/diary/routes.py:411`, `:560`). The Typst markup injection that used to belong here landed
+in M5 on 2026-09-23, so this item is now only these two.
 
 ### M6.6 — Network-facing defaults
 

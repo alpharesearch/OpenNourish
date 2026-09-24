@@ -177,6 +177,44 @@ def body_of(response):
     return response.get_data()
 
 
+# Every Typst markup hazard in one string, measured on typst 0.15.1: "$" opens
+# math ("unclosed delimiter"), "#" enters code ("unknown variable"), "<x>" and
+# "@tag" are a label and a reference, "`" opens raw text, "]" closes a content
+# block, "%" comments out the rest of the line, and "*" / "_" restyle the text.
+# A backslash is in here because a bare one silently swallows the next character.
+# Straight quotes and "--" are deliberately absent: markup text is supposed to go
+# through Typst's smart typography, so escaping those would change what renders.
+MARKUP_HAZARDS = "Hazard $5 <x> @tag 100% _it_ `raw`] #link \\ tail"
+
+# The same text for a Typst *string literal*, where only '"' and '\' are
+# significant — escaping "*" inside a string shows the backslash instead.
+STRING_CONTEXT_HAZARDS = 'Cup "o" *stuff* $5 \\ tail'
+
+
+# ---------------------------------------------------------------------------
+# The escapers themselves — opennourish/AGENTS.md owns this contract
+# ---------------------------------------------------------------------------
+
+
+def test_escapers_are_context_specific_in_both_directions():
+    markup = typst_utils._escape_typst_markup
+    string = typst_utils._escape_typst_string
+
+    # "*" is markup, so only the markup escaper touches it. Escaping it inside a
+    # string is what made labels print a stray backslash.
+    assert markup("a*b") == "a\\*b"
+    assert string("a*b") == "a*b"
+    # A quote is a delimiter only inside a string literal.
+    assert markup('say "hi"') == 'say "hi"'
+    assert string('say "hi"') == 'say \\"hi\\"'
+    # The backslash is escaped first, so it cannot arm the character after it.
+    assert markup("a\\$b") == "a\\\\\\$b"
+    assert string("a\\$b") == "a\\\\$b"
+    # Both are no-ops on the non-string values the numeric fields still produce.
+    assert markup(3.5) == 3.5
+    assert string(None) is None
+
+
 # ---------------------------------------------------------------------------
 # _get_nutrition_label_data (USDA)
 # ---------------------------------------------------------------------------
@@ -405,6 +443,82 @@ def test_generate_nutrition_label_svg_missing_binary(ctx, usda_food, monkeypatch
     assert message == typst_utils.TYPST_NOT_FOUND_ERROR
 
 
+def escape_markup(text):
+    """The escaping contract, restated here so the tests cannot silently agree
+    with an implementation that stopped escaping."""
+    escaped = text.replace("\\", "\\\\")
+    for special in typst_utils.TYPST_MARKUP_SPECIALS:
+        escaped = escaped.replace(special, "\\" + special)
+    return escaped
+
+
+def test_usda_content_escapes_typst_markup(ctx, usda_food):
+    usda_food.description = MARKUP_HAZARDS
+    usda_food.ingredients = MARKUP_HAZARDS
+    db.session.commit()
+
+    food, nutrient_info, nutrients = typst_utils._get_nutrition_label_data(USDA_FDC_ID)
+    content = typst_utils._generate_typst_content(
+        food, nutrient_info, nutrients, include_extra_info=True
+    )
+
+    escaped = escape_markup(MARKUP_HAZARDS)
+    # Heading and ingredients both carry it, and neither keeps raw markup.
+    assert content.count(escaped) == 2
+    assert f"= {MARKUP_HAZARDS}" not in content
+
+
+def test_usda_content_escapes_portions_without_the_separator(ctx, usda_food):
+    make_portion(
+        fdc_id=usda_food.fdc_id,
+        amount=1.0,
+        measure_unit_description="cup",
+        portion_description='A "b" *c* $',
+        gram_weight=137.5,
+    )
+    make_portion(fdc_id=usda_food.fdc_id, seq_num=2, amount=2.0, gram_weight=50.0)
+
+    food, nutrient_info, nutrients = typst_utils._get_nutrition_label_data(USDA_FDC_ID)
+    content = typst_utils._generate_typst_content(
+        food, nutrient_info, nutrients, include_extra_info=True
+    )
+
+    # Markup context: the quote is Typst's business, "*" and "$" are ours.
+    assert 'A "b" \\*c\\* \\$ (137.5g)' in content
+    # Portions are joined with "\\ ", and escaping per item keeps it single.
+    assert ")\\ 2 g (" in content
+    assert ")\\\\ 2 g (" not in content
+
+
+def test_usda_serving_size_escapes_only_string_delimiters(ctx, usda_food):
+    make_portion(
+        fdc_id=usda_food.fdc_id,
+        amount=1.0,
+        measure_unit_description="cup",
+        portion_description=STRING_CONTEXT_HAZARDS,
+        gram_weight=137.5,
+    )
+
+    food, nutrient_info, nutrients = typst_utils._get_nutrition_label_data(USDA_FDC_ID)
+    content = typst_utils._generate_typst_content(food, nutrient_info, nutrients)
+
+    assert 'serving_size: "1 cup Cup \\"o\\" *stuff* $5 \\\\ tail (138g)"' in content
+    # "\*" inside a string literal would print the backslash.
+    assert "\\*" not in content
+
+
+def test_generate_nutrition_label_pdf_renders_markup_hazards(ctx, usda_food):
+    """The bug this locks: a "$" in a food name made every label a 500."""
+    usda_food.description = MARKUP_HAZARDS
+    usda_food.ingredients = MARKUP_HAZARDS
+    db.session.commit()
+
+    response = typst_utils.generate_nutrition_label_pdf(USDA_FDC_ID)
+
+    assert response.status_code == 200
+    assert body_of(response)[:5] == b"%PDF-"
+
+
 # ---------------------------------------------------------------------------
 # MyFood labels
 # ---------------------------------------------------------------------------
@@ -614,8 +728,21 @@ def test_myfood_content_escapes_typst_markup(ctx, label_user):
 
     content = typst_utils._generate_typst_content_myfood(my_food, nutrients)
 
-    assert 'Weird \\"name\\" \\\\ \\*star\\*' in content
-    assert 'Soy \\"sauce\\" \\*plus\\* \\\\ stuff' in content
+    # Quotes stay raw in markup: Typst renders them as smart quotes, which is what
+    # the USDA path has always done. Backslash and "*" are the ones we escape.
+    assert 'Weird "name" \\\\ \\*star\\*' in content
+    assert 'Soy "sauce" \\*plus\\* \\\\ stuff' in content
+
+
+def test_generate_myfood_label_pdf_renders_markup_hazards(ctx, label_user):
+    my_food = make_my_food(
+        label_user.id, description=MARKUP_HAZARDS, **MYFOOD_NUTRIENTS
+    )
+
+    response = typst_utils.generate_myfood_label_pdf(my_food.id)
+
+    assert response.status_code == 200
+    assert body_of(response)[:5] == b"%PDF-"
 
 
 def test_generate_myfood_label_pdf_full_and_label_only(ctx, label_user):
@@ -855,8 +982,31 @@ def test_recipe_content_escapes_typst_markup(ctx, label_user):
 
     content = typst_utils._generate_typst_content_recipe(recipe, label_nutrients())
 
-    assert 'Odd \\"name\\" \\\\ \\*star\\*' in content
-    assert 'Say \\"hi\\" \\*now\\*' in content
+    # As in the MyFood path, quotes belong to Typst's smart typography.
+    assert 'Odd "name" \\\\ \\*star\\*' in content
+    assert 'Say "hi" \\*now\\*' in content
+
+
+def test_recipe_servings_is_numeric_and_needs_no_escaping(ctx, label_user):
+    """`Recipe.servings` is a Float column, which is why it is interpolated raw."""
+    recipe = make_recipe(label_user.id, name="Stew", servings=4.0)
+
+    content = typst_utils._generate_typst_content_recipe(recipe, label_nutrients())
+
+    assert 'servings: "4.0"' in content
+
+
+def test_generate_recipe_label_pdf_renders_markup_hazards(ctx, label_user):
+    recipe = make_recipe(
+        label_user.id,
+        name=MARKUP_HAZARDS,
+        instructions=MARKUP_HAZARDS,
+    )
+
+    response = typst_utils.generate_recipe_label_pdf(recipe.id)
+
+    assert response.status_code == 200
+    assert body_of(response)[:5] == b"%PDF-"
 
 
 @pytest.mark.parametrize(
