@@ -382,8 +382,10 @@ no app port today) — replace unconditional trust with an explicit trusted-prox
 `nginx/nginx.conf` sets no `client_max_body_size`, so the YAML food/recipe importers are capped at
 1 MiB: a functional bug as much as a hardening item.
 
-**Ordering:** finish M3 and M4 first. M6.1 rewrites templates and djlint's `--reformat` rewrites 42 of
-43 files; those two churns must not meet inside one commit.
+**Ordering:** nothing upstream of M6 is outstanding — M3 landed and M4's split is dropped, which removes
+the earlier constraint against meeting M4's file churn. The one live conflict is internal: M6.1 rewrites
+templates and djlint's `--reformat` rewrites 42 of 43 files, so those two churns must not meet inside one
+commit.
 **Verify:** full suite, plus the new CSRF-enabled test, plus a manual pass over the 32 form-bearing
 templates (register, login, onboarding, diary add, recipe save, admin settings, YAML import), plus
 `curl -i` on an untokenised POST against a running container expecting 400.
