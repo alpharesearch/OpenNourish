@@ -185,6 +185,9 @@ Coverage and the single `integration` test (needs `persistent/usda_data/*.csv`) 
 
 When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md
 
+- **Keep the Python toolchain to miniconda + pip; uv is overkill here** (owner decision 2026-09-23). The resolver is `pip-compile`, chosen over plain `pip --report` only because the lock's `# via` annotations earn the one extra dev package. Do not add tooling that only re-does what pip does, and do not re-open the runtime/dev dependency split — both were considered and declined the same day.
+- The owner does not weight licence tidiness highly (their words). Copyleft djlint in the distributed image is therefore accepted, and licensing arguments alone will not justify a structural change. State a behaviour, size, or legal-risk consequence or drop the proposal.
+
 ## Child DOX Index
 
 - `opennourish/AGENTS.md` — Flask app factory, blueprint registry, shared services, cross-cutting authorization/timezone/nutrition rules.

@@ -440,6 +440,13 @@ now dropped in favour of `pip-compile`, so the toolchain is miniconda + pip + on
   a worse one here since these are pure build tools. `gen_licenses.py` iterates the lock's pins, so
   extra installed packages are invisible to `--check`; `pip check` stays silent with pip-tools
   installed, verified.
+- **Plain pip can do this too, and was rejected on purpose.** `pip install --dry-run --ignore-installed
+  --report -` on the same interpreter reproduces the lock exactly — 54 distributions, no additions, no
+  removals, no version differences — and would leave the toolchain at miniconda + pip with nothing
+  extra, at the cost of a bespoke generator script in the repo and a lock with no `# via` annotations.
+  The annotations won: they are what made M3's dead `httpx`/`anyio`/`httpcore` chain visible at a
+  glance. Do not re-open this; the extra packages are `pip-tools` plus `build`, `setuptools`, `wheel`
+  and `pyproject_hooks`, all outside the lock and therefore outside the image.
 - Nothing else used uv: the `Dockerfile` and CI both run `pip install -r requirements.txt`. uv is
   left installed on the host for other projects; this repo simply no longer asks for it.
 
