@@ -346,19 +346,23 @@ settings in the UI. Check which mode a deployment is in with
 
 - `SECRET_KEY` never needs pasting: `config.py:27` already falls back to `persistent/secret_key.txt`
   on the volume.
-- `ENCRYPTION_KEY` is the one irreducible pasted secret (`config.py:79`, env only). A symmetric
-  `persistent/encryption_key.txt` fallback would make the generated YAML secret-free, at the cost of
-  two key files on the dataset instead of one — a decision, not a free win.
+- `ENCRYPTION_KEY` is the one irreducible pasted secret (`config.py:79`, env only) and stays that way.
+  The symmetric `persistent/encryption_key.txt` fallback exists only to make the generated YAML
+  secret-free, which is no longer a goal (see the last bullet), and it would cost a second key file on
+  the dataset.
 - `FLASK_DEBUG` is emitted into the YAML and read by no code. Delete it.
 - Fix `deploy_truenas.sh:20`: the unquoted `export $(cat .env | xargs)` word-splits any value
   containing a space — including a `SECRET_KEY` — and exports every unrelated key in the file. Use
   `set -a; . ./.env; set +a`.
 - Add `name: opennourish` to `docker-compose.yml` so image names stop depending on the checkout
   directory's name; a clone in `~/opennourish-test` currently tags images that do not exist.
-- **Keep printing the YAML.** TrueNAS's custom-app editor takes neither `env_file` nor `${VAR}` from a
-  host file, and whatever is pasted is stored in TrueNAS's own app config anyway, so the paste is not
-  the exposure — scrollback, terminal history and CI logs are. Write the YAML to a `0600` file and
-  print the path plus only the non-secret parts.
+- **Keep printing the YAML, in its current shape — owner decision, 2026-09-23.** TrueNAS's custom-app
+  editor takes neither `env_file` nor `${VAR}` from a host file, and whatever is pasted is stored in
+  TrueNAS's own app config anyway, so the paste is not the exposure — scrollback, terminal history and CI
+  logs are. The redirect-to-`0600`-and-print-only-non-secret-parts proposal is **declined**: the printed
+  block is the deploy interface, and redacting its secrets breaks the install it exists to produce. Do not
+  re-open it. The remaining items above (no unread `FLASK_DEBUG`, the quoted `.env` load, `name:
+  opennourish`) stand on their own merits and do not touch the output.
 
 ### M6.4 — Seed-admin default
 
