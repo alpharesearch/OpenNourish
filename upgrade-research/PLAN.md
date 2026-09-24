@@ -256,9 +256,12 @@ replaying the steps locally, which is what worked here.
   500s. Fetching both during the build into `TYPST_PACKAGE_CACHE_PATH` removes the dependency.
   Checked on the way: typst's default root confines `#read` to the temp directory, so injected markup
   cannot read the filesystem — `#read("/etc/hostname")` fails on 0.13.1 and 0.15.1 alike.
-- **Unrelated but adjacent:** `.dockerignore` still lets `htmlcov/` and `.kilocode/` into every
-  image, and `deploy_truenas.sh` prints `SECRET_KEY`/`ENCRYPTION_KEY`/`MAIL_PASSWORD` to stdout and
-  only works from a directory named `opennourish`. Fix while you are in deployment-land.
+- **Unrelated but adjacent:** `.dockerignore` still lets `htmlcov/` (9.8 MB) and `.kilocode/` (58 MB)
+  into every image — measured rather than estimated, because the same commit built to 418 MB from this
+  checkout and 351 MB from a clean clone, so ~68 MB of editor state and coverage HTML ships on every
+  deploy and makes up most of the build context. Exclude both. The other deployment-script items live
+  in M6.3 now that the YAML block is understood to be the artifact itself; the unquoted `.env` export
+  is worth fixing regardless of which mail mode a deployment uses.
 
 ## M6 — Security hardening (added 2026-09-23, after the upgrade track closed)
 
