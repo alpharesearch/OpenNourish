@@ -4,7 +4,7 @@ Target interpreter: **Python 3.12** (security-supported to 2028-10-31).
 Evidence behind the numbers: [`README.md`](README.md). Candidate locks live in this folder until the
 milestone that consumes them lands, and are deleted once `requirements.txt` supersedes them.
 
-**Status as of 2026-09-23: M0, M1, M2, M2b, M4's CI step and deployment provenance have landed. M3, M4's split and M5 are pending.**
+**Status as of 2026-09-23: M0, M1, M2, M2b, M4's CI step and deployment provenance have landed. M3, M4's split, M5 and M6 (security hardening, added once the upgrade track closed) are pending.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (61 packages, was 72), `ruff.toml` pins its rule families, the image's
 `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and PR, and every gate
@@ -260,6 +260,92 @@ replaying the steps locally, which is what worked here.
   image, and `deploy_truenas.sh` prints `SECRET_KEY`/`ENCRYPTION_KEY`/`MAIL_PASSWORD` to stdout and
   only works from a directory named `opennourish`. Fix while you are in deployment-land.
 
+## M6 — Security hardening (added 2026-09-23, after the upgrade track closed)
+
+These hazards are recorded in `AGENTS.md` but owned by no milestone, so they were knowledge rather
+than work. The upgrade track is finished and the app is deployed, so each item below is independently
+shippable, ordered by exposure. Numbers were re-measured today, not carried over from the audit.
+
+### M6.1 — Close the CSRF gap
+
+Measured: **98 `<form>` tags, 29 `hidden_tag()` calls, 20 of 32 form-bearing templates**; `CSRFProtect`
+is registered nowhere in app code. The trap is that `tests/conftest.py:26` and
+`test_app_factory_coverage.py:28` both set `WTF_CSRF_ENABLED = False`, so **the suite is blind to this
+before and after** — a green run proves nothing here.
+
+1. Add `hidden_tag()` to every POST form. Mechanical, and the 6 structural H025 findings djlint
+   reports live in the same files — fix them while in there.
+2. Audit JS-initiated posts (portions API, Chart.js refresh, html5-qrcode upload, anything using
+   `fetch`/XHR). Those need an `X-CSRFToken` header or step 3 breaks them silently in production.
+3. Register `CSRFProtect(app)` in `create_app`, **and** add a test that builds the app with CSRF
+   *enabled* and asserts an untokenised POST is rejected while a tokenised one is not. Without that
+   test the gate stays blind forever.
+4. Never hand-roll tokens, and do not exempt routes to make step 3 pass quietly (`AGENTS.md` rule).
+
+### M6.2 — Mutating GETs, which no CSRF token can cover
+
+`/undo` is `methods=["GET"]` (`opennourish/undo/routes.py:254`), `onboarding.finish_onboarding`
+commits, and `ensure_portion_sequence` writes from GET handlers in `main`, `search`, `recipes` and
+`my_foods`. These stay exploitable after M6.1, because CSRF protection guards non-GET methods only.
+Convert to POST, then M6.1 covers them.
+
+### M6.3 — Deployment secrets, keeping the copy-paste deploy working
+
+The YAML block is load-bearing, and the reason is more specific than "TrueNAS needs env vars".
+`system_settings` is empty on a fresh volume, and `MAIL_CONFIG_SOURCE` — read from the **database**
+at `opennourish/__init__.py:76-79`, written only when an admin saves email settings at
+`opennourish/admin/routes.py:111-118` — **defaults to `"environment"`**. So today the container's
+`MAIL_*` values are the live mail configuration, and they only go inert after someone saves mail
+settings in the UI. Check which mode a deployment is in with
+`docker exec <app> python -c "import sqlite3;print([r[0] for r in sqlite3.connect('/app/persistent/user_data.db').execute('select key from system_settings')])"`
+— presence of a `MAIL_CONFIG_SOURCE` row means database mode.
+
+- `SECRET_KEY` never needs pasting: `config.py:27` already falls back to `persistent/secret_key.txt`
+  on the volume.
+- `ENCRYPTION_KEY` is the one irreducible pasted secret (`config.py:79`, env only). A symmetric
+  `persistent/encryption_key.txt` fallback would make the generated YAML secret-free, at the cost of
+  two key files on the dataset instead of one — a decision, not a free win.
+- `FLASK_DEBUG` is emitted into the YAML and read by no code. Delete it.
+- Fix `deploy_truenas.sh:20`: the unquoted `export $(cat .env | xargs)` word-splits any value
+  containing a space — including a `SECRET_KEY` — and exports every unrelated key in the file. Use
+  `set -a; . ./.env; set +a`.
+- Add `name: opennourish` to `docker-compose.yml` so image names stop depending on the checkout
+  directory's name; a clone in `~/opennourish-test` currently tags images that do not exist.
+- **Keep printing the YAML.** TrueNAS's custom-app editor takes neither `env_file` nor `${VAR}` from a
+  host file, and whatever is pasted is stored in TrueNAS's own app config anyway, so the paste is not
+  the exposure — scrollback, terminal history and CI logs are. Write the YAML to a `0600` file and
+  print the path plus only the non-secret parts.
+
+### M6.4 — Seed-admin default
+
+`.env.example` ships `SEED_DEV_DATA=true` and `opennourish/__init__.py:298-301` creates administrator
+`markus` with password `1`; registration is open and the first registrant becomes admin when
+`INITIAL_ADMIN_USERNAME` is unset. Flip the example default to `false`, and have the seeder generate a
+random password printed once instead of `1`. This combination is already described in a public repo,
+so treat it as publicly known configuration.
+
+### M6.5 — Input-handling defects already recorded as inherited
+
+The open redirect on `add_item`'s `return_url`/`request.referrer` (~9 exit points,
+`opennourish/search/routes.py`) and the unvalidated `portion_id` in the diary add/edit paths
+(`opennourish/diary/routes.py:411`, `:560`). Typst markup injection from user text stays in M5 — do
+it once, not in both places.
+
+### M6.6 — Network-facing defaults
+
+`serve.py` trusts `X-Forwarded-*` from any peer that reaches :8081 (latent, because compose publishes
+no app port today) — replace unconditional trust with an explicit trusted-proxy setting. And
+`nginx/nginx.conf` sets no `client_max_body_size`, so the YAML food/recipe importers are capped at
+1 MiB: a functional bug as much as a hardening item.
+
+**Ordering:** finish M3 and M4 first. M6.1 rewrites templates and djlint's `--reformat` rewrites 42 of
+43 files; those two churns must not meet inside one commit.
+**Verify:** full suite, plus the new CSRF-enabled test, plus a manual pass over the 32 form-bearing
+templates (register, login, onboarding, diary add, recipe save, admin settings, YAML import), plus
+`curl -i` on an untokenised POST against a running container expecting 400.
+**Rollback:** the `CSRFProtect` registration is one call, and `hidden_tag()` is inert without it, so
+steps 1–2 are safe to land well ahead of step 3.
+
 ## Deployment provenance — LANDED (2026-09-23, outside the milestone sequence)
 
 Added after the first TrueNAS deployment turned out to be unidentifiable. Three layers erased
@@ -290,6 +376,7 @@ so `docker inspect` said nothing and boot printed nothing about itself.
 | risk | milestone | mitigation |
 |---|---|---|
 | Mail silently stops sending | M3 | live SMTP round-trip test; `MAIL_SUPPRESS_SEND` hides failures in CI |
+| Registering `CSRFProtect` breaks a POST that no test covers | M6 | land the `hidden_tag()`s first (inert until registration), add a CSRF-enabled test, manual pass over the 32 form-bearing templates |
 | Lint gate becomes noise | M1 before M2 | rule set pinned, families adopted one at a time |
 | Dev env irrecoverably broken | M0 | `opennourish-py39-backup` clone |
 | `pip freeze` reintroduces drift | M2 | resolver command documented in `DEV-README.md` |
