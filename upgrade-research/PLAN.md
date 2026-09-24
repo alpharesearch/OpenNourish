@@ -4,13 +4,14 @@ Target interpreter: **Python 3.12** (security-supported to 2028-10-31).
 Evidence behind the numbers: [`README.md`](README.md). Candidate locks live in this folder until the
 milestone that consumes them lands, and are deleted once `requirements.txt` supersedes them.
 
-**Status as of 2026-09-23: M0, M1, M2, M2b, M4's CI step and deployment provenance have landed. M3, M4's split, M5 and M6 (security hardening, added once the upgrade track closed) are pending.**
+**Status as of 2026-09-23: M0, M1, M2, M2b, M3, M4's CI step and deployment provenance have landed. M4's split, M5 and M6 (security hardening, added once the upgrade track closed) are pending.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
-generated `requirements.txt` (61 packages, was 72), `ruff.toml` pins its rule families, the image's
-`typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and PR, and every gate
-is green — 972 tests passed, `ruff check` clean, `ruff format --check` clean, djlint advisory at 204
-findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py` generates it from
-the installed wheels plus the vendored assets in `static/`, and `--check` fails if it drifts.
+generated `requirements.txt` (54 packages, was 72), Flask-Mailing is at 3.0.0, `ruff.toml` pins its rule
+families, the image's `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and
+PR, and every gate is green — 975 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
+advisory at 204 findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py`
+generates it from the installed wheels plus the vendored assets in `static/`, and `--check` fails if it
+drifts.
 
 ## Ground rules
 
@@ -166,28 +167,60 @@ on the runner and passing the suite. The dev host was moved too: `/usr/local/bin
 sha256 `29273eaa04f6d00e…`, byte-identical to the copy inside the image, so dev, CI and image agree on
 one renderer. **Rollback:** put `v0.13.1` back in that one URL.
 
-## M3 — Flask-Mailing 3.0.0 (first app-code change)
+## M3 — Flask-Mailing 3.0.0 (first app-code change) — LANDED (2026-09-23, live SMTP round-trip owed)
 
-`Mail.init_app` in 3.0.0 hard-requires `MAIL_SERVER`, `MAIL_USERNAME`, `MAIL_PASSWORD`; this app
-deliberately runs with them empty (`opennourish/__init__.py:148-152`, DB-loaded with `default=""`).
+`Mail.init_app` in 3.0.0 raises `ValueError` unless `MAIL_SERVER`, `MAIL_USERNAME` and
+`MAIL_PASSWORD` are all non-empty, and this app deliberately runs with them empty
+(`opennourish/__init__.py`, DB-loaded with `default=""`). Measured before changing anything: with
+3.0.0 installed and the old one-line init, `tests/test_app_factory_coverage.py` alone went 2 failed
++ 15 errored on `ValueError: Missing required configuration: MAIL_USERNAME, MAIL_PASSWORD`. The
+application could not boot at all, which is the whole of M3's risk.
 
-1. Give the three keys non-empty fallbacks in `create_app` before `mail.init_app(app)`, or skip
-   mail init when no server is configured — the latter keeps `USE_CREDENTIALS = False` honest and is
-   the preferred shape.
-2. Keep the two send sites (`opennourish/utils.py:68,86`) — `Message(subject=…, recipients=[…], html=…)`
-   and `asyncio.run(mail.send_message(msg))` are unchanged in 3.0.0 (verified against installed
-   signatures).
-3. Adopt [`lock-py312-flaskmailing-3.0.0.txt`](lock-py312-flaskmailing-3.0.0.txt) (54 packages).
-   This is the milestone that finally drops the mail chain — `aioredis` (abandoned 2021), `httpx`,
-   `httpcore`, `h11`, `anyio`, `certifi`, `async-timeout` — which is also what removes the
-   **CRITICAL** `anyio` CVE-2026-63374 from the image entirely.
-4. Send a real verification email against a live SMTP account before merging to the deployment
-   branch: the suite covers `MAIL_SUPPRESS_SEND`, not the wire format.
+What shipped:
 
-**Verify:** full suite green (972); manual signup + password-reset mail round-trip; `pip check`.
-**Rollback:** revert the `create_app` guard and `requirements.in`/`requirements.txt`.
-**Do not skip:** AGENTS.md warns that `ENCRYPTION_KEY` rotation invalidates the stored
-`MAIL_PASSWORD` — after this change, re-enter mail credentials in the admin settings page once.
+1. **Init is conditional** — `mail.init_app(app)` runs only when `MAIL_SERVER` is non-empty: the
+   preferred shape from step 1 of the original list, so `USE_CREDENTIALS = False` stays honest.
+   Readiness probe is `"mailing" in app.extensions`.
+2. **A second break the plan did not know about.** 3.x reads suppression as **`SUPPRESS_SEND`**
+   (a `ConnectionConfig` field; `connection.py` checks `settings.get("SUPPRESS_SEND")`), while the
+   environment, the `system_settings` rows and the `app.testing` override all speak
+   `MAIL_SUPPRESS_SEND`. Unbridged, suppression silently stops working — the suite patches
+   `Mail.send_message` at `conftest.py:49`, so no test could notice, and a deployment running with
+   `MAIL_SUPPRESS_SEND=true` would start dialing SMTP. The factory now bridges both names.
+3. **Unauthenticated relays still work.** Whichever credential is empty is set to
+   `NO_MAIL_CREDENTIAL` for the duration of `init_app` and restored to `""` immediately after, so
+   `ConnectionConfig` receives a non-empty string while nothing else in the app reads a fake value.
+   The obvious reading of step 1 — skip init when there are no credentials — would have broken a
+   legitimate configuration instead.
+4. Step 2's claim is now genuinely verified, which it could not be at 0.2.3: `send_message` is
+   still `async def` and `Message` still takes `subject` / `recipients` / `html` (as pydantic
+   fields; `__init__` is now `**data`), so both send sites in `opennourish/utils.py` are untouched.
+5. The lock was **regenerated from `requirements.in`**, not adopted from
+   `lock-py312-flaskmailing-3.0.0.txt` — it produced the same 54 pins, so the candidate file is
+   deleted here as M2's was. Dropped: `aioredis`, `anyio`, `async-timeout`, `certifi`, `h11`,
+   `httpcore`, `httpx`. That is the entire mail chain, and with it **CRITICAL** anyio
+   CVE-2026-63374 leaves the image. `aiosmtplib` and `pydantic` were already in the lock (0.2.3 used
+   both), which is why installing 3.0.0 swapped exactly one package.
+6. Three tests in `tests/test_app_factory_coverage.py` cover both new branches and the bridge: boots
+   with no server, `MAIL_SUPPRESS_SEND` → `SUPPRESS_SEND`, and relay-without-credentials (the
+   placeholder reaches `ConnectionConfig` and the config keys come back empty).
+
+**Verified:** 975 passed (`-m "not integration"`), ruff lint and format clean, `pip check` silent,
+`gen_licenses.py --check` current at 54 packages. Image rebuilt: `BUILD_INFO` reports
+`packages=54` and a `requirements_sha256` equal to `sha256sum requirements.txt` on the host. Probed
+inside the image, all four mail shapes behave: no server → not initialised, app boots; relay with no
+credentials → initialised, `USE_CREDENTIALS=False`, placeholder on the wire, `""` in config; server +
+credentials → real values; `MAIL_SUPPRESS_SEND=False` with `TESTING` off → `SUPPRESS_SEND=0`.
+
+**Still owed (deployment side):** the live SMTP round-trip — a signup verification mail and a
+password reset against a real account. Every send point is patched in the suite and CI has no mail
+server, so nothing in this repo proves the wire format. Check which mail mode the deployment is in
+first (`select key from system_settings`; no `MAIL_CONFIG_SOURCE` row means environment mode, so the
+container's `MAIL_*` variables are the live config).
+
+**Rollback:** revert `opennourish/__init__.py`, `requirements.in`, `requirements.txt` and the three
+tests. The pre-bump lock is `requirements.txt` at `1ad7b82`. `AGENTS.md` and `opennourish/AGENTS.md`
+carry the new init contract and must be reverted with the code.
 
 ## M4 — Runtime/dev split, then CI — CI LANDED (2026-09-23), split pending
 
@@ -378,8 +411,8 @@ so `docker inspect` said nothing and boot printed nothing about itself.
 
 | risk | milestone | mitigation |
 |---|---|---|
-| Mail silently stops sending | M3 | live SMTP round-trip test; `MAIL_SUPPRESS_SEND` hides failures in CI |
+| Mail sends the wrong wire format | M3 (landed; residual) | the realised risk was its inverse — 3.x renamed the suppression key and would have started real sends, now bridged and tested. The suite patches every send point, so a live SMTP round-trip is still owed |
 | Registering `CSRFProtect` breaks a POST that no test covers | M6 | land the `hidden_tag()`s first (inert until registration), add a CSRF-enabled test, manual pass over the 32 form-bearing templates |
 | Lint gate becomes noise | M1 before M2 | rule set pinned, families adopted one at a time |
-| Dev env irrecoverably broken | M0 | `opennourish-py39-backup` clone |
+| Dev env irrecoverably broken | M0 | rebuild it from `requirements.txt` — the `opennourish-py39-backup` 3.9 clone was deleted on 2026-09-23 once the 3.12 image was confirmed deployed |
 | `pip freeze` reintroduces drift | M2 | resolver command documented in `DEV-README.md` |

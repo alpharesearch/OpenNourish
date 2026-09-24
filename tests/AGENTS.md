@@ -7,7 +7,7 @@ The pytest suite is the broadest of this repository's four gates and the only on
 ## Ownership
 
 - `conftest.py` — the single app-factory fixture and the login helpers every test reuses.
-- 72 test files, 972 non-integration tests + 1 integration test (973 collected). 16 of them are the `test_*_coverage.py` files raised for the 99% TOTAL pass; each mirrors a feature module and is named for it.
+- 72 test files, 975 non-integration tests + 1 integration test (976 collected). 16 of them are the `test_*_coverage.py` files raised for the 99% TOTAL pass; each mirrors a feature module and is named for it.
 - `pytest.ini` (repo root) — declares the `integration` marker only; no `addopts`, no `testpaths`.
 - `.coveragerc` (repo root) — `exclude_also` patterns only.
 - Not owned here: what each feature must do (feature AGENTS.md files), and the workflow file itself (`.github/workflows/ci.yml`, root-owned — it runs the commands below on every push and PR).
@@ -50,7 +50,7 @@ $P -m coverage run -m pytest -m "not integration" && \
   $P -m coverage report --skip-covered --omit="test*","/tmp/*"   # TOTAL is 99%
 ```
 
-Coverage TOTAL is **99%** (6100 statements, 43 misses); 53 modules are at 100%. The only files with any misses are: `exercise/routes.py` 85%, `goals/routes.py` 98%, `my_foods/routes.py` 99%, `recipes/routes.py` 99%, `search/routes.py` 97%, `utils.py` 99%. The `search`/`my_foods`/`recipes`/`utils` remainders are documented as dead or unreachable (duplicate-int guards, an unreachable `continue`, `PortionForm`-prevented validators, identity-map branches); `exercise` is the only lane where new tests would still move TOTAL.
+Coverage TOTAL is **99%** (6111 statements, 43 misses); 53 modules are at 100%. The only files with any misses are: `exercise/routes.py` 85%, `goals/routes.py` 98%, `my_foods/routes.py` 99%, `recipes/routes.py` 99%, `search/routes.py` 97%, `utils.py` 99%. The `search`/`my_foods`/`recipes`/`utils` remainders are documented as dead or unreachable (duplicate-int guards, an unreachable `continue`, `PortionForm`-prevented validators, identity-map branches); `exercise` is the only lane where new tests would still move TOTAL.
 
 ## Child DOX Index
 

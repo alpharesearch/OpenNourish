@@ -362,7 +362,7 @@ To ensure your changes are well-tested, you should run a coverage analysis.
     ```
 
 
-## 5. Regenerating requirements.txt
+## 6. Regenerating requirements.txt
 
 `requirements.txt` is **generated**. The hand-edited surface is `requirements.in` (direct
 dependencies only). Never run `pip freeze > requirements.txt`: it bakes in every transitive
@@ -372,10 +372,19 @@ code before (abandoned `aioredis`, an unused `httpx` chain, and an unpinned `pyt
 ```bash
 # resolve for the interpreter the Dockerfile and conda env run (3.12)
 uv pip compile requirements.in --python-version 3.12 -o requirements.txt
-# or: pip-compile --python-version 3.12 -o requirements.txt requirements.in
 conda run -n opennourish python -m pip install -r requirements.txt
 conda run -n opennourish python -m pip check     # must print "No broken requirements found"
 ```
+
+`uv` (already installed at `~/.local/bin/uv`) is the resolver in practice. `pip-compile` produces an
+equivalent lock but **pip-tools is not in this environment or the lock**, so installing it is a
+prerequisite, not an alternative that is simply there.
+
+Two things the resolver does that look like damage and are not. It rewrites the file's own two-line
+header, so provenance notes, verification counts and anything else written by hand do not survive
+regeneration — keep that prose in this file, not in a generated one. And it normalises every pin to
+PEP 503 lowercase (`typing_extensions` becomes `typing-extensions`), which `pip` and `uv` both
+accept; expect ~18 renamed lines the first time you regenerate after a hand-touched file.
 
 Then run the four gates in `AGENTS.md` before committing. To drop a dependency, remove it from
 `requirements.in` and re-resolve — hand-deleting a line from `requirements.txt` does nothing, the
