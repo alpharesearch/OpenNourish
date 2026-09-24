@@ -37,6 +37,12 @@ from constants import MEAL_CONFIG, DEFAULT_MEAL_NAMES
 
 DEFAULT_MAIL_FROM = "no-reply@example.com"
 
+# Flask-Mailing 3.x refuses to initialise with an empty MAIL_USERNAME or MAIL_PASSWORD, so a
+# server configured without credentials (an unauthenticated relay) gets this placeholder.
+# USE_CREDENTIALS = False keeps it off the wire, and the config keys are restored to "" as
+# soon as init_app has copied them, so nothing reading MAIL_USERNAME sees a fake address.
+NO_MAIL_CREDENTIAL = "opennourish-smtp-placeholder"
+
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 mail = Mail()
@@ -151,8 +157,37 @@ def create_app(config_class=Config):
         else:
             app.config["USE_CREDENTIALS"] = False
 
-        # Initialize Flask-Mailing here, after config is loaded
-        mail.init_app(app)
+        # Flask-Mailing 3.x renamed the suppression key to SUPPRESS_SEND and reads that name
+        # only. Every layer above (env, database, the app.testing override) speaks
+        # MAIL_SUPPRESS_SEND, so the value must be bridged or suppression silently stops
+        # working and suppressed contexts start opening real SMTP connections.
+        app.config["SUPPRESS_SEND"] = int(
+            bool(app.config.get("MAIL_SUPPRESS_SEND", False))
+        )
+
+        # Initialize Flask-Mailing here, after config is loaded. 3.x raises ValueError when
+        # MAIL_SERVER, MAIL_USERNAME or MAIL_PASSWORD are empty, and this app has always
+        # tolerated mail being unconfigured, so the whole application must not fail to boot
+        # over it. Init therefore happens only when there is a server to talk to; probe
+        # readiness with "mailing" in app.extensions.
+        if app.config.get("MAIL_SERVER"):
+            absent = [
+                key
+                for key in ("MAIL_USERNAME", "MAIL_PASSWORD")
+                if not app.config.get(key)
+            ]
+            for key in absent:
+                app.config[key] = NO_MAIL_CREDENTIAL
+            try:
+                mail.init_app(app)
+            finally:
+                for key in absent:
+                    app.config[key] = ""
+        else:
+            app.logger.info(
+                "Flask-Mailing not initialised: MAIL_SERVER is empty, so password-reset "
+                "and verification emails will fail at send time."
+            )
 
     # Enable the Jinja2 'do' extension
     app.jinja_env.add_extension("jinja2.ext.do")

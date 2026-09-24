@@ -6,7 +6,7 @@
 # runtime
 Flask
 Flask-Login
-Flask-Mailing==0.2.3    # held: 3.0.0 needs a create_app mail-config fallback first — upgrade-research/PLAN.md M3
+Flask-Mailing==3.0.0    # 3.x needs a server before init_app and renamed SUPPRESS_SEND — see opennourish/__init__.py and PLAN.md M3
 Flask-Migrate
 Flask-SQLAlchemy
 Flask-WTF

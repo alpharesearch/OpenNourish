@@ -17,7 +17,7 @@ from models import (
     UnifiedPortion,
     User,
 )
-from opennourish import DEFAULT_MAIL_FROM, create_app
+from opennourish import DEFAULT_MAIL_FROM, NO_MAIL_CREDENTIAL, create_app
 
 TEST_APP_CONFIG = {
     "TESTING": True,
@@ -129,6 +129,71 @@ def test_create_app_uses_credentials_from_environment(monkeypatch):
     assert app.config["MAIL_CONFIG_SOURCE"] == "environment"
     assert app.config["MAIL_USERNAME"] == "env-user"
     assert app.config["USE_CREDENTIALS"] is True
+
+
+def _clear_mail_env(monkeypatch):
+    """Mail settings default to coming from the environment, so any test that asserts a
+    specific mail state has to start from a known-empty set rather than the ambient one."""
+    for key in (
+        "MAIL_SERVER",
+        "MAIL_PORT",
+        "MAIL_USERNAME",
+        "MAIL_PASSWORD",
+        "MAIL_FROM",
+        "MAIL_USE_TLS",
+        "MAIL_USE_SSL",
+        "MAIL_SUPPRESS_SEND",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+
+def test_create_app_boots_and_skips_mail_init_without_a_server(monkeypatch):
+    """Flask-Mailing 3.x raises ValueError on an empty MAIL_SERVER, MAIL_USERNAME or
+    MAIL_PASSWORD. This app has always run with mail unconfigured, so the factory must
+    skip the extension rather than let a missing SMTP server take the site down."""
+    _clear_mail_env(monkeypatch)
+
+    app = create_app(dict(TEST_APP_CONFIG))
+
+    assert "mailing" not in app.extensions
+    assert app.config["USE_CREDENTIALS"] is False
+    assert app.config["MAIL_SUPPRESS_SEND"] is True
+
+
+def test_create_app_bridges_suppress_send_to_the_flask_mailing_3_key(monkeypatch):
+    """3.x reads SUPPRESS_SEND and no longer looks at MAIL_SUPPRESS_SEND, so the bridge
+    in the factory is the only thing keeping suppression alive."""
+    _clear_mail_env(monkeypatch)
+    monkeypatch.setenv("MAIL_SUPPRESS_SEND", "False")
+
+    # TESTING is off deliberately: the factory forces MAIL_SUPPRESS_SEND back on for a
+    # testing app, which would mask the very value under test.
+    config = dict(TEST_APP_CONFIG)
+    config["TESTING"] = False
+
+    app = create_app(config)
+
+    assert app.config["MAIL_SUPPRESS_SEND"] is False
+    assert app.config["SUPPRESS_SEND"] == 0
+
+
+def test_create_app_initialises_mail_for_an_unauthenticated_relay(monkeypatch):
+    """A server configured without credentials still has to work: 3.x demands non-empty
+    username and password, so the placeholder reaches the extension while the config keys
+    are restored to empty for every other reader in the app."""
+    _clear_mail_env(monkeypatch)
+    monkeypatch.setenv("MAIL_SERVER", "relay.internal.example")
+
+    app = create_app(dict(TEST_APP_CONFIG))
+
+    assert "mailing" in app.extensions
+    assert app.config["USE_CREDENTIALS"] is False
+    assert app.config["MAIL_USERNAME"] == ""
+    assert app.config["MAIL_PASSWORD"] == ""
+    connection = app.extensions["mailing"].config
+    assert connection.MAIL_USERNAME == NO_MAIL_CREDENTIAL
+    assert connection.MAIL_SERVER == "relay.internal.example"
+    assert connection.SUPPRESS_SEND == 1
 
 
 def test_nl2br_template_filter(app_with_db):
