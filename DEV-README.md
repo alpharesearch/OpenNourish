@@ -369,22 +369,33 @@ dependencies only). Never run `pip freeze > requirements.txt`: it bakes in every
 package, silently re-adds whatever a dependency requires, and is how this file drifted from the
 code before (abandoned `aioredis`, an unused `httpx` chain, and an unpinned `pytz`).
 
+The resolver is pip-tools. It lives in the conda env, deliberately **not** in `requirements.in`:
+
 ```bash
-# resolve for the interpreter the Dockerfile and conda env run (3.12)
-uv pip compile requirements.in --python-version 3.12 -o requirements.txt
+conda run -n opennourish python -m pip install pip-tools   # once per machine
+# resolve with the 3.12 interpreter, since pip-compile resolves for the interpreter it runs under
+conda run -n opennourish python -m piptools compile --strip-extras -o requirements.txt requirements.in
 conda run -n opennourish python -m pip install -r requirements.txt
 conda run -n opennourish python -m pip check     # must print "No broken requirements found"
 ```
 
-`uv` (already installed at `~/.local/bin/uv`) is the resolver in practice. `pip-compile` produces an
-equivalent lock but **pip-tools is not in this environment or the lock**, so installing it is a
-prerequisite, not an alternative that is simply there.
+`pip-tools` pulls `build`, `setuptools`, `wheel` and `pyproject_hooks` into the env with it. Keep it
+out of `requirements.in`, because the Dockerfile installs that lock and these are pure build tools —
+they would ship in the runtime image for no reason. `gen_licenses.py` iterates the lock's pins, so
+packages installed on top of the lock are invisible to `--check`, and `pip check` stays silent.
 
-Two things the resolver does that look like damage and are not. It rewrites the file's own two-line
-header, so provenance notes, verification counts and anything else written by hand do not survive
-regeneration — keep that prose in this file, not in a generated one. And it normalises every pin to
-PEP 503 lowercase (`typing_extensions` becomes `typing-extensions`), which `pip` and `uv` both
-accept; expect ~18 renamed lines the first time you regenerate after a hand-touched file.
+**`--strip-extras` is required, not stylistic.** Without it pip-compile writes
+`coverage[toml]==7.16.1`, and `gen_licenses.py` parses lock names by splitting on `==` — the licence
+gate then reports `coverage[toml]` as pinned-but-not-installed and fails.
+
+Three things the resolver does that look like damage and are not. It rewrites the file's header, so
+provenance notes, verification counts and anything else written by hand do not survive regeneration —
+keep that prose in this file, not in a generated one. **Do not read that header as evidence of what
+was run**: pip-compile records `--no-index` on every pass regardless of the flags, because its
+header builder skips an option only when `option.default == value` and this flag's default is
+`Sentinel.UNSET` against a `False` value. Resolution is genuinely online (a `six` requirement
+compiles to the current release on an interpreter where `six` is absent). And it normalises pins to
+PEP 503 lowercase (`typing_extensions` becomes `typing-extensions`), which pip accepts.
 
 Then run the four gates in `AGENTS.md` before committing. To drop a dependency, remove it from
 `requirements.in` and re-resolve — hand-deleting a line from `requirements.txt` does nothing, the

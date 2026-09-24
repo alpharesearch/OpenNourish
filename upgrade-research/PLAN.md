@@ -4,7 +4,7 @@ Target interpreter: **Python 3.12** (security-supported to 2028-10-31).
 Evidence behind the numbers: [`README.md`](README.md). Candidate locks live in this folder until the
 milestone that consumes them lands, and are deleted once `requirements.txt` supersedes them.
 
-**Status as of 2026-09-23: M0, M1, M2, M2b, M3, M4's CI step and deployment provenance have landed. M4's split, M5 and M6 (security hardening, added once the upgrade track closed) are pending.**
+**Status as of 2026-09-23: M0, M1, M2, M2b, M3 and M4's CI step have landed, and deployment provenance landed with them. The runtime/dev split (M4's second half) is dropped. M5 and M6 (security hardening, added once the upgrade track closed) are pending.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (54 packages, was 72), Flask-Mailing is at 3.0.0, `ruff.toml` pins its rule
 families, the image's `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and
@@ -81,13 +81,14 @@ releases are what the resolver produced for 3.12.
 2. **Add `requirements.in`** at the repo root as the hand-edited surface (drafted in this folder),
    with `Flask-Mailing==0.2.3` pinned and a comment naming 3.0.0 as the M3 target.
 3. **Regenerate `requirements.txt`** from it: 61 packages, down from 72, every advisory clear. The
-   adopted lock file in this folder was deleted once `requirements.txt` carried it;
-   `Flask-Mailing==0.2.3` stays pinned **in `requirements.in`**, with the reason inline. Keep dev
-   tooling in the same file until M4 splits it.
-4. **Fix the regeneration recipe in `DEV-README.md:352-355`.** `pip freeze > requirements.txt` is
-   how the file drifted; replace with a resolver command:
-   `uv pip compile requirements.in --python-version 3.12 -o requirements.txt --generate-hashes`
-   (or `pip-compile`), and record that `pip check` must stay silent.
+   adopted lock file in this folder was deleted once `requirements.txt` carried it. Dev tooling lives
+   in the same file as runtime — the split was later dropped, see M4.
+4. **Fix the regeneration recipe in `DEV-README.md`.** `pip freeze > requirements.txt` is how the
+   file drifted; it is replaced by a real resolver command — today
+   `pip-compile --strip-extras -o requirements.txt requirements.in`, run with the 3.12 interpreter —
+   and by the record that `pip check` must stay silent. (`--generate-hashes` was weighed here and not
+   adopted: nothing in this repo verifies hashes, and `pip install` would then need `--require-hashes`
+   everywhere, including in the Dockerfile.)
 5. **`Dockerfile`:** `python:3.9` → `python:3.12` (build stage), `python:3.9-slim` →
    `python:3.12-slim` (runtime stage). Both stages must stay on the same minor: the venv is copied
    between them and is not portable across interpreter versions.
@@ -225,7 +226,7 @@ its own live round-trip.
 tests. The pre-bump lock is `requirements.txt` at `1ad7b82`. `AGENTS.md` and `opennourish/AGENTS.md`
 carry the new init contract and must be reverted with the code.
 
-## M4 — Runtime/dev split, then CI — CI LANDED (2026-09-23), split pending
+## M4 — Runtime/dev split, then CI — CI LANDED (2026-09-23); the split is DROPPED (2026-09-23)
 
 1. **`.github/workflows/ci.yml` — landed early, pulled ahead of the split** so M3, the first
    app-code change in this plan, lands under automated gates rather than manual discipline. It
@@ -235,12 +236,16 @@ carry the new init contract and must be reverted with the code.
    shaped like a real Fernet key — generated per run into `$GITHUB_ENV`, because `config.py` only
    fails at import if the value is absent, and a placeholder string would survive import and then
    fail at the `MAIL_PASSWORD` decrypt call site.
-2. Split `requirements.in` into runtime and `requirements-dev.in`; Dockerfile installs runtime only.
-   `Faker` stays runtime (the boot-time `seed-dev-data` uses it). This has a licensing reason, not
-   just size: **djlint is GPL-3.0-or-later** and ships in the distributed image today, along with
-   its `cssbeautifier`/`jsbeautifier`/`EditorConfig`/`json5`/`pathspec`/`regex` closure.
-3. When the split lands, CI installs runtime + dev instead of the flat lock — the only change the
-   workflow needs.
+2. **Split `requirements.in` into runtime and `requirements-dev.in` — DROPPED.** The reason to do it
+   was licensing tidiness, not behaviour: **djlint is GPL-3.0-or-later** and ships in the distributed
+   image together with its `cssbeautifier`/`jsbeautifier`/`EditorConfig`/`json5`/`pathspec`/`regex`
+   closure. That state is compliant — djlint ships unmodified with its licence text, which
+   `THIRD-PARTY-LICENSES.md` carries — and the owner declined to spend a file split on it
+   (2026-09-23). Treat the copyleft-in-image fact as accepted, not as an open item; what it does rule
+   out is *modifying* djlint or distributing a derivative of it. `Faker` stays a runtime dependency
+   either way, because the boot-time `seed-dev-data` uses it.
+3. CI's follow-up step — install runtime + dev instead of the flat lock — goes with the split. The
+   workflow stays exactly as landed: one flat `requirements.txt`.
 
 **Verify:** the job's steps were replayed here in a clean `python3.12 -m venv` with nothing but
 `requirements.txt` installed — install clean, `pip check` silent, 972 passed, `ruff check` and
@@ -409,6 +414,34 @@ so `docker inspect` said nothing and boot printed nothing about itself.
   the YAML to redeploy anyway. Each push is checked now and the script aborts.
 - Verified by building: labels and `/app/BUILD_INFO` agree, and the image's `requirements_sha256`
   (`4196120db1aa…`) equals the committed lock byte for byte.
+
+## Lock resolver — pip-compile, not uv (2026-09-23, outside the milestone sequence)
+
+uv was the resolver from M2 onward because it was already on the machine and pip-tools was not. It is
+now dropped in favour of `pip-compile`, so the toolchain is miniconda + pip + one pip-based tool.
+
+- **The lock is unchanged where it matters.** `pip-compile --strip-extras -o requirements.txt
+  requirements.in` on the same interpreter reproduces all 54 pins exactly, case-insensitively — same
+  versions, same resolution. Only the header and the sort order of the `# via` notes differ.
+- **`--strip-extras` is not cosmetic.** Without it pip-compile writes `coverage[toml]==7.16.1`, and
+  `gen_licenses.py`'s `read_lock` splits on `==` without parsing extras, so the name becomes
+  `coverage[toml]`, the lookup against installed distributions fails, and the licence gate reports a
+  package that is installed as missing. uv normalises extras away, which is why uv never showed this.
+- **The header pip-compile writes is wrong on one point and must not be trusted as proof.** It always
+  records `--no-index`, even when the flag was never passed: `get_compile_command` skips an option
+  when `option.default == value`, and `--no-index`'s click default is `Sentinel.UNSET` while its value
+  is `False`, so the comparison never matches and the flag is always emitted. Resolution is genuinely
+  online — verified by compiling a `six` requirement on an interpreter where `six` is not installed,
+  which resolved to the current 1.17.0 from PyPI.
+- **pip-tools lives in the conda env, not in `requirements.in`.** Its arrival there is `build`,
+  `setuptools`, `wheel` and `pyproject_hooks` (4 extra distributions); `click` and `pip` were already
+  present. It must stay out of the lock, because the Dockerfile installs the lock and that would ship
+  build tooling in the runtime image — the same objection M4's dropped split accepted for djlint, and
+  a worse one here since these are pure build tools. `gen_licenses.py` iterates the lock's pins, so
+  extra installed packages are invisible to `--check`; `pip check` stays silent with pip-tools
+  installed, verified.
+- Nothing else used uv: the `Dockerfile` and CI both run `pip install -r requirements.txt`. uv is
+  left installed on the host for other projects; this repo simply no longer asks for it.
 
 ## Deferred risk register
 
