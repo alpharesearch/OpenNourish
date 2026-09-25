@@ -354,6 +354,15 @@ one manual edit of those two lines is required — the flag can never appear for
 Verify what actually came up with `cat /app/BUILD_INFO` in the container, per Step 2 item 4; the digest
 is not a revision, and `:latest` never is.
 
+Expect *update available* after **every** deploy, including one with no source change: `BUILD_DATE`
+comes from `date -u` and is baked into `/app/BUILD_INFO` and the `org.opencontainers.image.created`
+label, so the layer and the config both move and the pushed manifest gets a new digest. Read the badge
+as "a build you have not taken yet", never as "the code changed" — the real diff is the container's
+`BUILD_INFO` against the registry's manifest labels (`/v2/library/opennourish-app/manifests/latest` →
+`.config.digest` → that blob's `.config.Labels`). Everything else in the build is byte-reproducible, so
+a no-change deploy adds only the stamp layer, the config blob and a manifest; `opennourish-nginx`
+rebuilds to the same image ID and its push never moves a digest, so it never raises a badge alone.
+
 ### 4. Running Tests and Measuring Coverage
 
 The project uses the `pytest` framework for testing and the `coverage` package to measure how much of the code is exercised by the tests.
