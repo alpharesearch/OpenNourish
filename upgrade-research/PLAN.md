@@ -4,10 +4,11 @@ Target interpreter: **Python 3.12** (security-supported to 2028-10-31).
 Evidence behind the numbers: [`README.md`](README.md). Candidate locks live in this folder until the
 milestone that consumes them lands, and are deleted once `requirements.txt` supersedes them.
 
-**Status as of 2026-09-24: M0, M1, M2, M2b, M3 and M4's CI step have landed, and deployment provenance
+**Status as of 2026-09-25: M0, M1, M2, M2b, M3 and M4's CI step have landed, and deployment provenance
 landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — Typst
-escaping (2026-09-23) and the image diet (2026-09-24) are done; the `datetime.utcnow()`/`DTZ` work, the
-ruff families, `pytest-flask`, the `@preview` vendoring and the 3.14 refresh are open. In M6, 6.3 and
+escaping (2026-09-23), the image diet (2026-09-24) and the `datetime.utcnow()` migration with a `DTZ003`
+gate (2026-09-25) are done; the rest of `DTZ`, the other ruff families, `pytest-flask`, the `@preview`
+vendoring and the 3.14 refresh are open. In M6, 6.3 and
 the nginx body cap of 6.6 landed on 2026-09-24; 6.1, 6.2, 6.4, 6.5 and the trusted-proxy setting are
 open.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
@@ -271,16 +272,33 @@ at `40a3940`, all nine steps success in 4m51s: lock install, `pip check`, typst 
 lint, formatting, licence inventory. Job logs need repo admin rights, so failures are diagnosed by
 replaying the steps locally, which is what worked here.
 
-## M5 — Follow-up cleanup (tracked, not blocking) — Typst escaping (2026-09-23) and the image diet (2026-09-24) LANDED, the rest open
+## M5 — Follow-up cleanup (tracked, not blocking) — Typst escaping (2026-09-23), the image diet (2026-09-24) and `datetime.utcnow()` (2026-09-25) LANDED, the rest open
 
-- **`datetime.utcnow()` — 12 call sites, plus `models.py:142`'s bare `default=datetime.utcnow`.**
-  Deprecated on 3.12, scheduled for removal, and the source of `DTZ011` noise. Migrate to
-  `datetime.now(timezone.utc)` in line with `opennourish/time_utils.py`; the column default holds the
-  *callable*, so it needs a lambda rather than a find-and-replace — that is the one spot a mechanical
-  pass gets wrong silently. This is the largest remaining behaviour-adjacent edit, so give it its own
-  commit and read the timezone rules in `opennourish/AGENTS.md` first.
-- **Adopt ruff rules family by family** (`I001` 124, then `DTZ011` 108 with the utcnow work, then
-  `RUF059` 65, `BLE001` 13) instead of a 372-finding big bang.
+- **`datetime.utcnow()` — DONE (2026-09-25).** 12 call sites (4 production: `fasting/routes.py` ×3,
+  `dashboard/routes.py` ×1; 8 in `test_fasting_coverage.py`) plus the bare `default=datetime.utcnow` on
+  `FastingSession.start_time` are gone, and `DTZ003` is pinned in `ruff.toml` so none can come back. Three
+  things this plan had wrong, all measured while doing the work:
+  * the migration is **not** to `datetime.now(timezone.utc)`. Naive UTC is the storage currency of this app,
+    and SQLite drops `tzinfo` silently on write — measured on SQLAlchemy 2.0.54, where even a
+    `DateTime(timezone=True)` column reads back naive. `fasting/fasting.html:45` and `dashboard.html:379`
+    compute `(now - active_fast.start_time).total_seconds()`, so an aware `now` is
+    `TypeError: can't subtract offset-naive and offset-aware datetimes` — a 500 on both pages. The new
+    `opennourish.time_utils.utcnow_naive()` is `datetime.now(timezone.utc).replace(tzinfo=None)`; aware
+    values stay only where both sides are aware (`fasting/routes.py:114`).
+  * the column default needs **no lambda**. SQLAlchemy inspects the callable's arity, so
+    `default=_utcnow_naive` (0 args) behaves exactly like the old `default=datetime.utcnow`.
+    `tests/test_models.py` now inserts a `FastingSession` with no `start_time` and asserts the generated
+    value is naive and current, which is the silent-failure spot this plan was warning about.
+  * `models.py` cannot import the canonical helper: `opennourish/__init__.py:4` imports `models` at module
+    level, so the import dies with `cannot import name 'db' from 'models'` (measured). Hence a documented
+    private twin in `models.py`, with tests pinning both bodies return naive UTC.
+- **Adopt ruff rules family by family** (`I001` 124, then `RUF059` 65, `BLE001` 13) instead of a 372-finding
+  big bang. `DTZ003` landed as a *single rule* on 2026-09-25 — the only DTZ rule this tree is clean under.
+  What is left of DTZ is semantics, not mechanics: `DTZ011` (`date.today()`) 108, `DTZ001` 10, `DTZ005` 8,
+  `DTZ007` 2. Most `DTZ011` findings sit in tests and CLI seeders where the app's rule allows it, but
+  `tracking/analytics.py` has 6 on request paths and `friends/routes.py:14` computes "today" as
+  `datetime.now().date()` (server-local) — both are real bugs per `opennourish/AGENTS.md`, and they belong
+  with this family, not with the utcnow work.
 - **`pytest-flask`** works on pytest 9 but has been unmaintained since 2023-10 (classifiers stop at
   3.9). Replace with plain fixtures when convenient.
 - **Next interpreter refresh: 3.14** (security to 2030-10-31). `djlint 1.46.2`, `pytest 9.1.1`,

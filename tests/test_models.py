@@ -1,5 +1,7 @@
 import pytest
-from models import db, Food, Nutrient, FoodNutrient
+from datetime import datetime, timedelta, timezone
+
+from models import db, Food, Nutrient, FoodNutrient, FastingSession
 
 
 def test_food_creation(client):
@@ -77,3 +79,26 @@ def test_food_upc_uniqueness(client):
         with pytest.raises(Exception):  # Expect an IntegrityError or similar
             db.session.add(food2)
             db.session.commit()
+
+
+def test_fasting_session_start_time_default_is_naive_utc(client):
+    """`FastingSession.start_time`'s column default must fire and stay naive UTC.
+
+    This is the one `utcnow` site a find-and-replace gets wrong silently: the column
+    holds the callable, not a call. It also proves the 0-argument callable needs no
+    lambda wrapper (SQLAlchemy adapts to its arity), and that the value written is
+    comparable with what SQLite reads back — see `opennourish.time_utils.utcnow_naive`.
+    """
+    with client.application.app_context():
+        fast = FastingSession(user_id=1, planned_duration_hours=16, status="active")
+        db.session.add(fast)
+        db.session.commit()
+        fast_id = fast.id
+        db.session.expire_all()
+
+        stored = db.session.get(FastingSession, fast_id).start_time
+        assert stored is not None
+        assert stored.tzinfo is None
+        assert abs(
+            datetime.now(timezone.utc).replace(tzinfo=None) - stored
+        ) < timedelta(minutes=1)

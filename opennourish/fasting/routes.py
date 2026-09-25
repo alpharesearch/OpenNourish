@@ -6,7 +6,7 @@ from .forms import EditFastForm
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from opennourish.utils import prepare_undo_and_delete
-from opennourish.time_utils import resolve_timezone
+from opennourish.time_utils import resolve_timezone, utcnow_naive
 
 FASTING_INDEX_ROUTE = "fasting.index"
 
@@ -41,7 +41,7 @@ def index():
         "fasting/fasting.html",
         active_fast=active_fast,
         completed_fasts=completed_fasts_pagination,
-        now=datetime.utcnow(),
+        now=utcnow_naive(),
         form=edit_form,
         forms=forms,
     )
@@ -68,7 +68,7 @@ def start_fast():
 
     new_fast = FastingSession(
         user_id=current_user.id,
-        start_time=datetime.utcnow(),
+        start_time=utcnow_naive(),
         planned_duration_hours=duration_hours,
     )
     db.session.add(new_fast)
@@ -87,7 +87,7 @@ def end_fast():
         flash("No active fast to end.", "warning")
         return redirect(url_for(FASTING_INDEX_ROUTE))
 
-    active_fast.end_time = datetime.utcnow()
+    active_fast.end_time = utcnow_naive()
     active_fast.status = "completed"
     db.session.commit()
     flash("Fasting period completed!", "success")

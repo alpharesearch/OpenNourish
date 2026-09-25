@@ -1,9 +1,32 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask_login import current_user
 from flask import current_app
 
 # --- Pure, Testable Functions ---
+
+
+def utcnow_naive():
+    """Return the current UTC time as a *naive* datetime.
+
+    Naive UTC is the currency of every ``db.DateTime`` column in this app: the
+    values are written naive (``fasting/routes.py`` calls it "Store as naive
+    UTC") and read back naive, and pages compare them against a server-supplied
+    ``now`` — ``fasting/fasting.html`` and ``dashboard.html`` both do
+    ``(now - active_fast.start_time).total_seconds()``. Handing those templates
+    an *aware* ``now`` raises ``TypeError: can't subtract offset-naive and
+    offset-aware datetimes``, which surfaces as a 500 on both pages. Writing an
+    aware value does not fix that either: SQLite drops ``tzinfo`` silently on
+    the way in (measured on SQLAlchemy 2.0.54 — even a ``DateTime(timezone=True)``
+    column reads back naive), so an aware value only *looks* stored.
+
+    ``datetime.utcnow()`` said this same thing and is deprecated on 3.12, so
+    ruff's ``DTZ003`` bans it outright. Reach for this instead of
+    ``datetime.now(timezone.utc)`` whenever the value is stored or compared with
+    something stored; use ``datetime.now(timezone.utc)`` only for an aware-only
+    comparison like ``fasting/routes.py:114``.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def is_valid_timezone(user_timezone_str=None):

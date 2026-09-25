@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timedelta, timezone
 from flask_login import login_user
 
 from opennourish.time_utils import (
@@ -7,12 +7,47 @@ from opennourish.time_utils import (
     to_user_timezone,
     to_utc,
     get_start_of_week,
+    utcnow_naive,
 )
-from models import User, db
+from models import User, db, FastingSession
 
 # ---
 # Tests for Pure Functions
 # ---
+
+
+def test_utcnow_naive_is_naive_on_the_utc_clock():
+    """Naive tzinfo, UTC wall time. `datetime.utcnow()` is the banned spelling."""
+    value = utcnow_naive()
+    assert value.tzinfo is None
+    assert abs(datetime.now(timezone.utc).replace(tzinfo=None) - value) < timedelta(
+        seconds=5
+    )
+
+
+def test_utcnow_naive_subtracts_a_round_tripped_start_time(app_with_db):
+    """The contract the helper exists for.
+
+    `fasting/fasting.html` and `dashboard.html` both compute
+    `(now - active_fast.start_time).total_seconds()`, and SQLite hands back a naive
+    datetime whatever was written. An aware `now` raises `TypeError: can't subtract
+    offset-naive and offset-aware datetimes` there, which is a 500 on both pages.
+    """
+    with app_with_db.app_context():
+        fast = FastingSession(
+            user_id=1,
+            start_time=utcnow_naive(),
+            planned_duration_hours=16,
+            status="active",
+        )
+        db.session.add(fast)
+        db.session.commit()
+        fast_id = fast.id
+        db.session.expire_all()
+
+        stored = db.session.get(FastingSession, fast_id).start_time
+        assert stored.tzinfo is None
+        assert (utcnow_naive() - stored).total_seconds() >= 0
 
 
 def test_get_start_of_week():

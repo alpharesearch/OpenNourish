@@ -11,7 +11,7 @@ from models import (
     ExerciseLog,
     FastingSession,
 )
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from opennourish.utils import (
     calculate_nutrition_for_items,
     calculate_weight_projection,
@@ -28,7 +28,7 @@ from opennourish.tracking.analytics import (
     get_nutrient_intake_vs_goals,
     get_body_composition_trends,
 )
-from opennourish.time_utils import get_user_today, get_start_of_week
+from opennourish.time_utils import get_user_today, get_start_of_week, utcnow_naive
 from opennourish.decorators import onboarding_required
 
 
@@ -256,7 +256,7 @@ def index(log_date_str=None):
         at_goal_and_maintaining=at_goal_and_maintaining,
         active_fast=active_fast,
         last_completed_fast=last_completed_fast,
-        now=datetime.utcnow(),
+        now=utcnow_naive(),
         latest_checkin=latest_checkin,
         nutrient_density=nutrient_density,
         meal_nutrition=meal_nutrition,

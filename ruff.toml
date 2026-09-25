@@ -9,7 +9,14 @@ exclude = ["*.md"]
 # widen the default rule set (0.16.8 reports ~372 findings under its own defaults). Adopt
 # further rule families deliberately, one at a time, rather than inheriting a new default on a
 # version bump. See upgrade-research/PLAN.md M5 for the adoption order.
-select = ["E4", "E7", "E9", "F"]
+#
+# DTZ003 is one rule, not the DTZ family, and is pinned deliberately: `datetime.utcnow()` is
+# deprecated on 3.12 and returns a naive datetime under a name that claims otherwise. The rest
+# of DTZ is still open (0.16.8 counts: DTZ011 `date.today()` 108, DTZ001 10, DTZ005 8,
+# DTZ007 2) — those are semantics decisions about user-local days, not a mechanical pass, and
+# enabling them here would fail the gate. Naive UTC is the app's storage currency: use
+# `opennourish.time_utils.utcnow_naive()`, see `opennourish/AGENTS.md`.
+select = ["E4", "E7", "E9", "F", "DTZ003"]
 
 # Ignore E402 (module level import not at top of file) in __init__.py files
 [lint.per-file-ignores]

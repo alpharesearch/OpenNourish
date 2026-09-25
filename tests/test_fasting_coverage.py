@@ -7,6 +7,8 @@ store arbitrary strings); they fall back to UTC via resolve_timezone.
 
 from datetime import datetime, timedelta
 
+from opennourish.time_utils import utcnow_naive
+
 from models import db, FastingSession, User
 
 
@@ -22,7 +24,7 @@ def _active_fast(app, username, hours_ago=3, planned=16):
         user = User.query.filter_by(username=username).one()
         fast = FastingSession(
             user_id=user.id,
-            start_time=datetime.utcnow() - timedelta(hours=hours_ago),
+            start_time=utcnow_naive() - timedelta(hours=hours_ago),
             planned_duration_hours=planned,
             status="active",
         )
@@ -40,8 +42,8 @@ def test_index_empty_and_with_history(auth_client, app_with_db):
         db.session.add(
             FastingSession(
                 user_id=user.id,
-                start_time=datetime.utcnow() - timedelta(hours=20),
-                end_time=datetime.utcnow() - timedelta(hours=2),
+                start_time=utcnow_naive() - timedelta(hours=20),
+                end_time=utcnow_naive() - timedelta(hours=2),
                 planned_duration_hours=18,
                 status="completed",
             )
@@ -97,7 +99,7 @@ def test_edit_start_time_rejects_future_and_invalid(auth_client, app_with_db):
     with app_with_db.app_context():
         fast = db.session.get(FastingSession, fast_id)
         # Rejected: still ~3 hours ago, not tomorrow.
-        assert fast.start_time > datetime.utcnow() - timedelta(hours=4)
+        assert fast.start_time > utcnow_naive() - timedelta(hours=4)
 
     response = auth_client.post(
         "/fasting/edit_start_time", data={"start_time": ""}, follow_redirects=True
@@ -132,7 +134,7 @@ def test_update_fast_validation_and_edges(auth_client, app_with_db):
         user = User.query.filter_by(username="testuser").one()
         fast = FastingSession(
             user_id=user.id,
-            start_time=datetime.utcnow() - timedelta(hours=5),
+            start_time=utcnow_naive() - timedelta(hours=5),
             planned_duration_hours=16,
             status="completed",
         )
@@ -181,7 +183,7 @@ def test_update_fast_survives_garbage_timezone(auth_client, app_with_db):
         user = User.query.filter_by(username="testuser").one()
         fast = FastingSession(
             user_id=user.id,
-            start_time=datetime.utcnow() - timedelta(hours=5),
+            start_time=utcnow_naive() - timedelta(hours=5),
             planned_duration_hours=16,
             status="active",
         )
@@ -206,13 +208,13 @@ def test_delete_fast_owner_and_stranger(auth_client_two_users, app_with_db):
         db.session.commit()
         foreign_fast = FastingSession(
             user_id=stranger.id,
-            start_time=datetime.utcnow() - timedelta(hours=2),
+            start_time=utcnow_naive() - timedelta(hours=2),
             planned_duration_hours=16,
             status="active",
         )
         own_fast = FastingSession(
             user_id=user_one.id,
-            start_time=datetime.utcnow() - timedelta(hours=2),
+            start_time=utcnow_naive() - timedelta(hours=2),
             planned_duration_hours=16,
             status="active",
         )

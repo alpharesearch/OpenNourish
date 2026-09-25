@@ -14,6 +14,21 @@ MY_FOOD_ID = "my_foods.id"
 RECIPES_ID = "recipes.id"
 
 
+def _utcnow_naive():
+    """Current UTC time as a naive datetime — what every ``DateTime`` column here stores.
+
+    Twin of the public ``opennourish.time_utils.utcnow_naive()``, which request-path
+    code uses. This module cannot import that one: ``opennourish/__init__.py:4``
+    imports ``models`` at module level, so the dependency runs the other way and the
+    import fails with ``cannot import name 'db' from 'models'`` (measured). Keep the
+    two bodies in step; ``tests/test_time_utils.py`` and ``tests/test_models.py``
+    pin that both return naive UTC. Never substitute ``datetime.now(timezone.utc)``:
+    SQLite drops its ``tzinfo`` on write and comparisons with the naive value that
+    comes back raise ``TypeError``.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class SystemSetting(db.Model):
     __tablename__ = "system_settings"
     id = db.Column(db.Integer, primary_key=True)
@@ -139,7 +154,7 @@ class FastingSession(db.Model):
     __tablename__ = "fasting_sessions"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(USERS_ID), nullable=False)
-    start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    start_time = db.Column(db.DateTime, nullable=False, default=_utcnow_naive)
     end_time = db.Column(db.DateTime, nullable=True)
     planned_duration_hours = db.Column(db.Integer, nullable=False)
     status = db.Column(
