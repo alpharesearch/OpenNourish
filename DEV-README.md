@@ -208,20 +208,22 @@ From your development machine, follow these steps to prepare the images for depl
     docker compose build
     ```
 
-2.  **Tag the images for your private registry:**
+2.  **Tag the images under a namespace inside your private registry:**
     Replace `YOUR_REGISTRY_URL` with the address of your private registry (e.g., `your-truenas-ip:5000`).
     `docker-compose.yml` pins `name: opennourish`, so the local app image is always
     `opennourish-opennourish-app`, not `opennourish-app` and regardless of what the checkout directory
     is called — `deploy_truenas.sh` depends on that name.
+    The `library/` path component is **load-bearing**, not decoration: see Step 2.2 for why dropping
+    it silently costs you the Apps "update available" badge.
     ```bash
-    docker tag opennourish-opennourish-app:latest YOUR_REGISTRY_URL/opennourish-app:latest
-    docker tag opennourish-nginx:latest YOUR_REGISTRY_URL/opennourish-nginx:latest
+    docker tag opennourish-opennourish-app:latest YOUR_REGISTRY_URL/library/opennourish-app:latest
+    docker tag opennourish-nginx:latest YOUR_REGISTRY_URL/library/opennourish-nginx:latest
     ```
 
 3.  **Push the images to your registry:**
     ```bash
-    docker push YOUR_REGISTRY_URL/opennourish-app:latest
-    docker push YOUR_REGISTRY_URL/opennourish-nginx:latest
+    docker push YOUR_REGISTRY_URL/library/opennourish-app:latest
+    docker push YOUR_REGISTRY_URL/library/opennourish-nginx:latest
     ```
 
 4.  **Confirm what a deployment is actually running.** Tags carry no identity here — `IMAGE_VERSION`
@@ -246,6 +248,7 @@ To build, tag, and push the Docker images to your private TrueNAS registry, and 
 - `REAL_CERT_PATH` (optional): The path to your real SSL certificate on TrueNAS (e.g., `/etc/certificates/LEProduction.crt`).
 - `REAL_KEY_PATH` (optional): The path to your real SSL key on TrueNAS (e.g., `/etc/certificates/LEProduction.key`).
 - `TRUENAS_APP_PATH` (REQUIRED): The base path on your TrueNAS server where application data will be stored (e.g., `/mnt/data-pool/opennourish`).
+- `TRUENAS_REGISTRY_NAMESPACE` (optional, default `library`): the single repository path component the images are pushed under. Omit it unless your registry insists on a particular namespace.
 
 ```bash
 ./deploy_truenas.sh
@@ -253,9 +256,48 @@ To build, tag, and push the Docker images to your private TrueNAS registry, and 
 
 This script will:
 1.  Build the Docker images using the standard `docker-compose.yml`.
-2.  Tag the images with your specified registry URL.
+2.  Tag the images under `<registry>/<namespace>/<name>` (default namespace `library`).
 3.  Push the tagged images to your private TrueNAS registry.
 4.  Print the TrueNAS Custom App YAML configuration to your console. You will need to copy this output and paste it into the TrueNAS UI.
+
+#### Step 2.2 How TrueNAS decides an update is available
+
+TrueNAS 25.10 never compares versions for a custom app — `IMAGE_VERSION` and `:latest` are irrelevant
+to the badge. The badge is `app.query`'s `upgrade_available`, which for a custom app is set purely from
+`image_updates_available`: middlewared's periodic sweep (`app.image.op.check_update`, on Docker service
+start and every 86400 s, gated by `docker.config.enable_image_updates`) fetches
+`https://<registry>/v2/<image>/manifests/<tag>` **anonymously** and compares the digest with the local
+image's `RepoDigests`. Three consequences, all measured on the production NAS at 25.10.6:
+
+- **The repository name must contain a slash.** `normalize_reference` prepends `library/` to any
+  single-component repo name before building that URL — private registries included — while Distribution
+  stores the repository exactly as pushed. Pushed `opennourish-app`, probed `library/opennourish-app`:
+  200 versus 404, the 404 becomes a `CallError` that the sweep logs and swallows per image, and the badge
+  never appears. Hence the namespace in `deploy_truenas.sh`.
+- **The registry must allow anonymous manifest reads.** On 25.10 the update probe never sends the
+  credentials stored under Apps → Registries (those are pull-only), so an htpasswd-protected registry is
+  a hard 401 no path naming can fix.
+- **The probe always speaks HTTPS with normal certificate validation.** The URL is hardcoded, so an
+  HTTP-only or untrusted-cert registry is never detected; `insecure_registry_mirrors` configures the
+  daemon, not this code path.
+
+When the badge does appear, **Update** = `app.pull_images` + redeploy against the same tag — no manual
+image deletion. It refuses while the app is stopped. To diagnose a missing badge on the NAS itself
+(bash, root; do not put `# comments` on the same line as an assignment in zsh — zsh then treats the
+assignment as that nonexistent command's environment and the variable stays empty):
+
+```bash
+curl -sk https://YOUR_REGISTRY/v2/_catalog                       # what names the registry stores
+curl -s -o /dev/null -w '%{http_code}\n' -H 'Accept: application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.index.v1+json' https://YOUR_REGISTRY/v2/<name>/manifests/latest
+midclt call app.image.query | jq -r '.[]|select((.repo_tags|join(" "))|test("opennourish"))|"tags=\(.repo_tags) digests=\(.repo_digests)"'
+midclt call docker.config | jq .enable_image_updates
+midclt call app.image.op.get_update_cache | jq 'with_entries(select(.key|test("opennourish")))'
+```
+
+`digests=[]` or a `404`/`401` there is the reason; a tag absent from the cache means the probe never
+finished for it (on 25.10 a non-`CallError` transport failure aborts the whole sweep — fixed upstream by
+a bare `except Exception`). A `false` left in the cache after an Update is not a verdict: pulling clears
+the flag unconditionally.
 
 ### Step 3: Deploy the Application on TrueNAS
 
@@ -267,7 +309,7 @@ The following YAML configuration should be used when creating a "Custom App" in 
     ```yaml
     services:
       opennourish-app:
-        image: TRUENAS_REGISTRY_URL/opennourish-app:latest
+        image: TRUENAS_REGISTRY_URL/library/opennourish-app:latest
         restart: unless-stopped
         environment:
           - SECRET_KEY=YourSuperStrongSecretKeyGoesHere
@@ -276,7 +318,7 @@ The following YAML configuration should be used when creating a "Custom App" in 
           - /mnt/data-pool/opennourish:/app/persistent
 
       nginx:
-        image: TRUENAS_REGISTRY_URL/opennourish-nginx:latest
+        image: TRUENAS_REGISTRY_URL/library/opennourish-nginx:latest
         restart: unless-stopped
         ports:
           - "18080:80"
@@ -296,11 +338,21 @@ The following YAML configuration should be used when creating a "Custom App" in 
           - opennourish-app
     ```
 3.  **Important:** Before deploying, you must update the following values in the YAML you just pasted:
-    *   Replace `saturn.ms4f.net:30095` with the address of your private registry for both `image` definitions.
+    *   Replace `TRUENAS_REGISTRY_URL` with the address of your private registry for both `image` definitions. Keep the `/library` component — see Step 2.2.
     *   Set a strong, unique `SECRET_KEY` in the `environment` section of the `opennourish-app` service.
     *   Adjust the `volumes` paths (e.g., `/mnt/data-pool/opennourish`) to match the desired storage locations on your TrueNAS server.
     *   **Certificate Paths for Nginx:** If you are using real SSL certificates managed by TrueNAS (e.g., from Let's Encrypt), you will need to update the `REAL_CERT_PATH` and `REAL_KEY_PATH` environment variables under the `nginx` service in the YAML. These paths should point to where TrueNAS stores your certificates. You can typically find these paths by navigating to **System Settings > Certificates** in the TrueNAS UI, selecting your certificate, and inspecting its details or by checking the `/etc/certificates` directory on your TrueNAS server via SSH. You can copy these values from your local `.env` file.
 4.  Deploy the application.
+
+### Step 4: Deploying an Update
+
+`./deploy_truenas.sh` pushes only — it does not touch a running deployment. After the push, TrueNAS
+flags the app with *update available* on its own once the digest sweep has run (within 24 h, or at the
+next Docker service start; see Step 2.2), and **Apps → OpenNourish → Update** pulls the new digest and
+redeploys. If the app was installed from a YAML whose `image:` lines lacked the `/library` namespace,
+one manual edit of those two lines is required — the flag can never appear for an unnamespaced name.
+Verify what actually came up with `cat /app/BUILD_INFO` in the container, per Step 2 item 4; the digest
+is not a revision, and `:latest` never is.
 
 ### 4. Running Tests and Measuring Coverage
 

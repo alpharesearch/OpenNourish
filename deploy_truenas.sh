@@ -11,6 +11,9 @@
 #    - TRUENAS_REGISTRY_URL (REQUIRED: e.g., your-truenas-ip:5000)
 #    - SECRET_KEY (REQUIRED: your Flask application secret key)
 #    - TRUENAS_APP_PATH (REQUIRED: The base path on your TrueNAS server for app data, e.g., /mnt/data-pool/opennourish)
+#    - TRUENAS_REGISTRY_NAMESPACE (OPTIONAL: single repository path component the images are pushed
+#      under, defaults to "library". Optional in name only — TrueNAS cannot detect an update for an
+#      unnamespaced image at all, so only set this if your registry demands a specific namespace.)
 #    - SEED_DEV_DATA (OPTIONAL: true/false, defaults to false if not set)
 #    - TRUENAS_REAL_CERT_PATH (OPTIONAL: for Nginx SSL, e.g., /etc/certificates/LEProduction.crt)
 #    - TRUENAS_REAL_KEY_PATH (OPTIONAL: for Nginx SSL, e.g., /etc/certificates/LEProduction.key)
@@ -64,6 +67,26 @@ SEED_DEV_DATA_VAR=${SEED_DEV_DATA:-false}
 
 REGISTRY_URL="$TRUENAS_REGISTRY_URL"
 
+# Images must live under an explicit namespace, because the TrueNAS update probe rewrites a bare
+# repository name. middlewared's normalize_reference (plugins/apps_images/utils.py) prepends
+# `library/` whenever the part after the registry host has no slash, and it does that for private
+# registries too — so an image pushed as ${REGISTRY_URL}/opennourish-app is probed at
+# /v2/library/opennourish-app/manifests/latest. Stock Distribution stores the repository exactly as
+# it was pushed, so that probe 404s; the 404 becomes a CallError that check_update logs and swallows
+# per image, the update flag is never set, and the Apps "update available" badge never appears —
+# measured on 25.10.6 against a registry that answers 200 anonymously for the pushed name and 404
+# for the probed one. Pushing under a namespace makes the pushed name and the probed name identical.
+# Any single path component works; `library` is the default because it is literally what TrueNAS
+# asks for, so it needs no matching setting on the NAS side.
+REGISTRY_NAMESPACE="${TRUENAS_REGISTRY_NAMESPACE-library}"
+if [[ ! "$REGISTRY_NAMESPACE" =~ ^[A-Za-z0-9]+([._-]+[A-Za-z0-9]+)*$ ]]; then
+    echo "Error: TRUENAS_REGISTRY_NAMESPACE must be one Docker repository path component (letters,"
+    echo "digits, and . _ - between them). Got '${REGISTRY_NAMESPACE}'. Leaving the variable unset"
+    echo "selects 'library'; a slash nests the repository deeper than the TrueNAS probe looks."
+    exit 1
+fi
+REGISTRY_PREFIX="${REGISTRY_URL}/${REGISTRY_NAMESPACE}"
+
 echo -e "\n--- Building Docker images using standard docker-compose.yml ---"
 
 # Stamp provenance before the build so it lands in the image labels, /app/BUILD_INFO and the boot
@@ -85,20 +108,20 @@ if [ $? -ne 0 ]; then
 fi
 
 IMAGE_VERSION="V1.0.0"
-echo -e "\n--- Tagging ${IMAGE_VERSION} images for private registry: ${REGISTRY_URL} ---"
-docker tag opennourish-opennourish-app:latest ${REGISTRY_URL}/opennourish-app:latest
+echo -e "\n--- Tagging ${IMAGE_VERSION} images for private registry: ${REGISTRY_PREFIX} ---"
+docker tag opennourish-opennourish-app:latest "${REGISTRY_PREFIX}/opennourish-app:latest"
 docker tag opennourish-opennourish-app:latest opennourish-opennourish-app:${IMAGE_VERSION}
-docker tag opennourish-opennourish-app:${IMAGE_VERSION} ${REGISTRY_URL}/opennourish-app:${IMAGE_VERSION}
-docker tag opennourish-nginx:latest ${REGISTRY_URL}/opennourish-nginx:latest
+docker tag opennourish-opennourish-app:${IMAGE_VERSION} "${REGISTRY_PREFIX}/opennourish-app:${IMAGE_VERSION}"
+docker tag opennourish-nginx:latest "${REGISTRY_PREFIX}/opennourish-nginx:latest"
 docker tag opennourish-nginx:latest opennourish-nginx:${IMAGE_VERSION}
-docker tag opennourish-nginx:${IMAGE_VERSION} ${REGISTRY_URL}/opennourish-nginx:${IMAGE_VERSION}
+docker tag opennourish-nginx:${IMAGE_VERSION} "${REGISTRY_PREFIX}/opennourish-nginx:${IMAGE_VERSION}"
 
 echo -e "\n--- Pushing images to private registry: ${REGISTRY_URL} ---"
 PUSH_FAILED=0
 for IMAGE in opennourish-app opennourish-nginx; do
     for TAG in latest "${IMAGE_VERSION}"; do
-        if ! docker push "${REGISTRY_URL}/${IMAGE}:${TAG}"; then
-            echo "Error: push of ${REGISTRY_URL}/${IMAGE}:${TAG} failed." >&2
+        if ! docker push "${REGISTRY_PREFIX}/${IMAGE}:${TAG}"; then
+            echo "Error: push of ${REGISTRY_PREFIX}/${IMAGE}:${TAG} failed." >&2
             PUSH_FAILED=1
         fi
     done
@@ -158,14 +181,14 @@ echo -e "\n--- TrueNAS Custom App YAML Configuration (Copy and Paste into TrueNA
 cat <<EOF
 services:
   opennourish-app:
-    image: ${REGISTRY_URL}/opennourish-app:latest
+    image: ${REGISTRY_PREFIX}/opennourish-app:latest
     restart: unless-stopped
     environment:
 ${APP_ENV_BLOCK}    volumes:
       - ${TRUENAS_APP_PATH_VAR}:/app/persistent
 
   nginx:
-    image: ${REGISTRY_URL}/opennourish-nginx:latest
+    image: ${REGISTRY_PREFIX}/opennourish-nginx:latest
     restart: unless-stopped
     ports:
       - "18080:80"
@@ -179,3 +202,7 @@ ${NGINX_ENV_BLOCK}
 EOF
 
 echo -e "\n--- IMPORTANT: Remember to adjust volume paths in the YAML to match your TrueNAS storage. ---"
+echo -e "--- IMPORTANT: An app installed from an earlier YAML names these images without the"
+echo -e "    ${REGISTRY_NAMESPACE}/ namespace, and TrueNAS can never see an update for those names. Edit the"
+echo -e "    custom app once, give both image lines the names printed above, and Save to pull and"
+echo -e "    redeploy. The old repositories keep serving their last pushed digest, unused. ---"
