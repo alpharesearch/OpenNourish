@@ -15,9 +15,15 @@
 #    - TRUENAS_REAL_CERT_PATH (OPTIONAL: for Nginx SSL, e.g., /etc/certificates/LEProduction.crt)
 #    - TRUENAS_REAL_KEY_PATH (OPTIONAL: for Nginx SSL, e.g., /etc/certificates/LEProduction.key)
 
-# Load environment variables from .env file if it exists
+# Load environment variables from .env file if it exists.
+# This sources the file rather than `export $(cat .env | xargs)`, which split every value at its
+# first space and exported the remainder as a separate bogus key — any TRUENAS_* path or passphrase
+# containing a space arrived truncated. Sourcing honours the file's own quotes, so it does *execute*
+# .env: keep it to KEY=value lines, quote anything with a space, put no shell metacharacters in it.
 if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 # Validate required environment variables
@@ -130,7 +136,9 @@ add_env_var() {
 
 add_env_var "SECRET_KEY" "$SECRET_KEY"
 add_env_var "ENCRYPTION_KEY" "$ENCRYPTION_KEY"
-add_env_var "FLASK_DEBUG" "$FLASK_DEBUG"
+# No FLASK_DEBUG here on purpose: no code reads it. The image runs `python serve.py` (waitress), and
+# the only debug mode in the tree is app.py's hardcoded app.run(debug=True), which is dev-only and
+# never used by the image. If it is still set in your .env it is simply ignored.
 add_env_var "SEED_DEV_DATA" "$SEED_DEV_DATA_VAR"
 add_env_var "ENABLE_PASSWORD_RESET" "$ENABLE_PASSWORD_RESET"
 add_env_var "ENABLE_EMAIL_VERIFICATION" "$ENABLE_EMAIL_VERIFICATION"

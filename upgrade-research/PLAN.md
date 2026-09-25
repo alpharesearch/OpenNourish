@@ -354,7 +354,7 @@ commits, and `ensure_portion_sequence` writes from GET handlers in `main`, `sear
 `my_foods`. These stay exploitable after M6.1, because CSRF protection guards non-GET methods only.
 Convert to POST, then M6.1 covers them.
 
-### M6.3 — Deployment secrets, keeping the copy-paste deploy working
+### M6.3 — Deployment secrets, keeping the copy-paste deploy working — LANDED (2026-09-24)
 
 The YAML block is load-bearing, and the reason is more specific than "TrueNAS needs env vars".
 `system_settings` is empty on a fresh volume, and `MAIL_CONFIG_SOURCE` — read from the **database**
@@ -371,19 +371,26 @@ settings in the UI. Check which mode a deployment is in with
   The symmetric `persistent/encryption_key.txt` fallback exists only to make the generated YAML
   secret-free, which is no longer a goal (see the last bullet), and it would cost a second key file on
   the dataset.
-- `FLASK_DEBUG` is emitted into the YAML and read by no code. Delete it.
-- Fix `deploy_truenas.sh:20`: the unquoted `export $(cat .env | xargs)` word-splits any value
-  containing a space — including a `SECRET_KEY` — and exports every unrelated key in the file. Use
-  `set -a; . ./.env; set +a`.
-- Add `name: opennourish` to `docker-compose.yml` so image names stop depending on the checkout
-  directory's name; a clone in `~/opennourish-test` currently tags images that do not exist.
+- `FLASK_DEBUG` — **deleted 2026-09-24.** It was emitted into the YAML and read by no code (`app.py:6`
+  hardcodes `debug=True`; the image runs waitress). Setting it in a deployment does nothing.
+- `deploy_truenas.sh:20` — **fixed 2026-09-24** to `set -a; . ./.env; set +a`. The measured old
+  behaviour was worse than word-splitting: for a value quoted with embedded spaces
+  (`SECRET_KEY='a b #c'`, `TRUENAS_APP_PATH=/mnt/data pool/x`) bash's `export` aborted on the
+  non-identifier words and set **nothing**, so the script fell through to its hard-coded
+  `/mnt/data-pool/opennourish` default and pasted *that* path into the YAML, while `SECRET_KEY` alone
+  failed loudly. An unquoted value with spaces is now a loud `.env: line 1: b: command not found`
+  instead of a silently truncated `SECRET_KEY=a`. Sourcing means `.env` is executed: it stays a plain
+  `KEY=value` file with anything containing a space quoted.
+- `name: opennourish` — **added to `docker-compose.yml` 2026-09-24.** `docker compose config --images`
+  returns the same `opennourish-opennourish-app` / `opennourish-nginx` as before (Compose lowercased
+  the directory name), so nothing about this checkout changes; a clone in `~/opennourish-test` now
+  builds what `deploy_truenas.sh` tags and pushes instead of images that build never touched.
 - **Keep printing the YAML, in its current shape — owner decision, 2026-09-23.** TrueNAS's custom-app
   editor takes neither `env_file` nor `${VAR}` from a host file, and whatever is pasted is stored in
   TrueNAS's own app config anyway, so the paste is not the exposure — scrollback, terminal history and CI
   logs are. The redirect-to-`0600`-and-print-only-non-secret-parts proposal is **declined**: the printed
   block is the deploy interface, and redacting its secrets breaks the install it exists to produce. Do not
-  re-open it. The remaining items above (no unread `FLASK_DEBUG`, the quoted `.env` load, `name:
-  opennourish`) stand on their own merits and do not touch the output.
+  re-open it. The three items above landed without touching that output.
 
 ### M6.4 — Seed-admin default
 

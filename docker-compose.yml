@@ -1,3 +1,9 @@
+# Pinned project name. Without it the project name is derived from the checkout directory, so a clone
+# in ~/opennourish-test tags opennourish-test-opennourish-app while deploy_truenas.sh goes on tagging
+# and pushing opennourish-opennourish-app — an image that build never touched. Compose lowercases the
+# directory name, so `opennourish` is exactly what this checkout already produced.
+name: opennourish
+
 services:
   opennourish-app:
     build:
