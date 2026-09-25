@@ -210,8 +210,9 @@ From your development machine, follow these steps to prepare the images for depl
 
 2.  **Tag the images for your private registry:**
     Replace `YOUR_REGISTRY_URL` with the address of your private registry (e.g., `your-truenas-ip:5000`).
-    Compose prefixes images with the project name, so the local app image is
-    `opennourish-opennourish-app`, not `opennourish-app` — `deploy_truenas.sh` depends on that name.
+    `docker-compose.yml` pins `name: opennourish`, so the local app image is always
+    `opennourish-opennourish-app`, not `opennourish-app` and regardless of what the checkout directory
+    is called — `deploy_truenas.sh` depends on that name.
     ```bash
     docker tag opennourish-opennourish-app:latest YOUR_REGISTRY_URL/opennourish-app:latest
     docker tag opennourish-nginx:latest YOUR_REGISTRY_URL/opennourish-nginx:latest
