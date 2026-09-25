@@ -4,7 +4,12 @@ Target interpreter: **Python 3.12** (security-supported to 2028-10-31).
 Evidence behind the numbers: [`README.md`](README.md). Candidate locks live in this folder until the
 milestone that consumes them lands, and are deleted once `requirements.txt` supersedes them.
 
-**Status as of 2026-09-23: M0, M1, M2, M2b, M3 and M4's CI step have landed, and deployment provenance landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — the Typst escaping item is done, the rest is open. M6 (security hardening, added once the upgrade track closed) is pending.**
+**Status as of 2026-09-24: M0, M1, M2, M2b, M3 and M4's CI step have landed, and deployment provenance
+landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — Typst
+escaping (2026-09-23) and the image diet (2026-09-24) are done; the `datetime.utcnow()`/`DTZ` work, the
+ruff families, `pytest-flask`, the `@preview` vendoring and the 3.14 refresh are open. In M6, 6.3 and
+the nginx body cap of 6.6 landed on 2026-09-24; 6.1, 6.2, 6.4, 6.5 and the trusted-proxy setting are
+open.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (54 packages, was 72), Flask-Mailing is at 3.0.0, `ruff.toml` pins its rule
 families, the image's `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and
@@ -266,7 +271,7 @@ at `40a3940`, all nine steps success in 4m51s: lock install, `pip check`, typst 
 lint, formatting, licence inventory. Job logs need repo admin rights, so failures are diagnosed by
 replaying the steps locally, which is what worked here.
 
-## M5 — Follow-up cleanup (tracked, not blocking) — Typst escaping LANDED (2026-09-23), the rest open
+## M5 — Follow-up cleanup (tracked, not blocking) — Typst escaping (2026-09-23) and the image diet (2026-09-24) LANDED, the rest open
 
 - **`datetime.utcnow()` — 12 call sites, plus `models.py:142`'s bare `default=datetime.utcnow`.**
   Deprecated on 3.12, scheduled for removal, and the source of `DTZ011` noise. Migrate to
@@ -329,7 +334,9 @@ replaying the steps locally, which is what worked here.
 
 These hazards are recorded in `AGENTS.md` but owned by no milestone, so they were knowledge rather
 than work. The upgrade track is finished and the app is deployed, so each item below is independently
-shippable, ordered by exposure. Numbers were re-measured today, not carried over from the audit.
+shippable, ordered by exposure. The counts were re-measured on 2026-09-23, not carried over from the
+audit. 6.3 and the nginx body cap of 6.6 have since landed (2026-09-24); what is left is 6.1, 6.2,
+6.4, 6.5 and the trusted-proxy setting.
 
 ### M6.1 — Close the CSRF gap
 
@@ -407,12 +414,18 @@ The open redirect on `add_item`'s `return_url`/`request.referrer` (~9 exit point
 (`opennourish/diary/routes.py:411`, `:560`). The Typst markup injection that used to belong here landed
 in M5 on 2026-09-23, so this item is now only these two.
 
-### M6.6 — Network-facing defaults
+### M6.6 — Network-facing defaults — body cap LANDED (2026-09-24), trusted proxy open
 
-`serve.py` trusts `X-Forwarded-*` from any peer that reaches :8081 (latent, because compose publishes
-no app port today) — replace unconditional trust with an explicit trusted-proxy setting. And
-`nginx/nginx.conf` sets no `client_max_body_size`, so the YAML food/recipe importers are capped at
-1 MiB: a functional bug as much as a hardening item.
+- **`client_max_body_size` — landed 2026-09-24.** `nginx/nginx.conf` set nothing, so nginx's 1 MiB
+  default answered the YAML food and recipe importers with 413 before the request reached Flask — the
+  app sets no `MAX_CONTENT_LENGTH`, so nginx was the only body cap in the stack. Now `10m` at `http`
+  level, so both server blocks inherit it. Measured through the shipped nginx 1.29 binary rather than
+  read off the docs: a 2 MiB body → 413 under the default and → 502 (body accepted, upstream refused
+  as the probe intends) under `10m`, and a 20 MiB body → 413 under `10m` — the boundary moved exactly
+  where the directive says. `nginx -t` passes on the real file.
+- **Still open:** `serve.py` trusts `X-Forwarded-*` from any peer that reaches :8081 (latent, because
+  compose publishes no app port today) — replace unconditional trust with an explicit trusted-proxy
+  setting.
 
 **Ordering:** nothing upstream of M6 is outstanding — M3 landed and M4's split is dropped, which removes
 the earlier constraint against meeting M4's file churn. The one live conflict is internal: M6.1 rewrites
