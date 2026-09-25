@@ -311,10 +311,17 @@ replaying the steps locally, which is what worked here.
   500s. Fetching both during the build into `TYPST_PACKAGE_CACHE_PATH` removes the dependency.
   Checked on the way: typst's default root confines `#read` to the temp directory, so injected markup
   cannot read the filesystem — `#read("/etc/hostname")` fails on 0.13.1 and 0.15.1 alike.
-- **Unrelated but adjacent:** `.dockerignore` still lets `htmlcov/` (9.8 MB) and `.kilocode/` (58 MB)
-  into every image — measured rather than estimated, because the same commit built to 418 MB from this
-  checkout and 351 MB from a clean clone, so ~68 MB of editor state and coverage HTML ships on every
-  deploy and makes up most of the build context. Exclude both. The other deployment-script items live
+- **`.dockerignore` was leaking most of the image — DONE (2026-09-24).** `.kilocode/` (49 MB here, 58 MB
+  when measured for the plan), `.kilo/` (editor worktrees, 5.3 MB) and `htmlcov/` (9.4 MB) were all
+  reaching `COPY . .`; the same commit built to 418 MB from a dirty checkout and 351 MB from a clean
+  clone. Inspecting the shipped image rather than the file found three more classes of leak: `.dockerignore`
+  patterns are **anchored at the context root**, so `__pycache__/` and `*.pyc` never matched the nested
+  ones (22 `__pycache__` dirs and 275 stale `.pyc`, including cpython-39 and -313 bytecode), and one
+  pattern had a trailing ` # comment`, which is part of the pattern rather than a comment and matched
+  nothing. `QWEN.md`, `.coverage`, `.ruff_cache/` and `project_snapshot.txt` were also shipping. After:
+  `/app` is 6.0 MB (was 87 MB) and the image 347 MB (was 420 MB), with every runtime file re-checked
+  present — including `THIRD-PARTY-LICENSES.md`, which must stay for copyleft djlint.
+- **Unrelated but adjacent:** the deployment-script items live
   in M6.3 now that the YAML block is understood to be the artifact itself; the unquoted `.env` export
   is worth fixing regardless of which mail mode a deployment uses.
 

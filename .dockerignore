@@ -1,29 +1,50 @@
+# Two syntax traps govern this file, and both silently made patterns no-ops before:
+#  1. A pattern's whole line is the pattern — a trailing " # comment" becomes part of the pattern and
+#     matches nothing. Comments belong on their own line.
+#  2. Patterns are anchored at the context root. `__pycache__/` matches ./__pycache__ only, so the
+#     nested ones need `**/`. Verified in the shipped image: 22 nested __pycache__ dirs, 275 .pyc
+#     files (including cpython-39 and -313 bytecode) and 9.8 MB of htmlcov reached /app.
+# Keep both rules in mind when adding a line; measure with `docker build` rather than trusting it.
+
 # Ignore Git
 .git
 .gitignore
 .vscode
 
-# Ignore Python artifacts
+# Ignore IDE and editor state. .kilocode/ and .kilo/ (editor worktrees) are 49 MB and 5.3 MB here;
+# neither exists in a clean clone, and both were reaching every image.
+.idea/
+*.iml
+.kilocode/
+.kilo/
+
+# Ignore Python artifacts (recursive — see trap 2)
 __pycache__/
+**/__pycache__/
 *.pyc
+**/*.pyc
 *.pyo
+**/*.pyo
 *.pyd
+**/*.pyd
 .pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ruff_cache/
 .venv/
 venv/
 
-# Ignore database files
-*.db
-*.db-journal
-usda_data/ # The raw USDA data and generated DB should not be in the image
+# Ignore database files and the raw USDA drop
+usda_data/
 typst/
+persistent/
+*.db
+**/*.db
+*.db-journal
 
 # Ignore environment variables
 .env
-
-# Ignore IDE files
-.idea/
-*.iml
 
 # Ignore build artifacts
 dist/
@@ -32,13 +53,12 @@ build/
 
 # Ignore logs
 *.log
+**/*.log
 
-# Ignore project-specific files not needed in the image
+# Ignore project-specific files not needed at runtime
 GEMINI.md
+QWEN.md
 proj_snap.sh
 seed_db.sh
 seed_usda.py
-
-
-# Ignore test data
-persistent/
+project_snapshot.txt
