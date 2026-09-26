@@ -3,10 +3,12 @@ from constants import DIET_PRESETS, CORE_NUTRIENT_IDS, MEAL_CONFIG, DEFAULT_MEAL
 from flask import (
     current_app,
     render_template,
+    request,
     session,
     flash,
     url_for,
 )
+from urllib.parse import urlsplit
 from markupsafe import Markup
 from flask_wtf.csrf import generate_csrf
 from types import SimpleNamespace
@@ -54,6 +56,76 @@ def encrypt_value(value, key):
 def decrypt_value(encrypted_value, key):
     f = Fernet(key)
     return f.decrypt(encrypted_value.encode()).decode()
+
+
+def same_host_redirect_url(target):
+    """Return ``target`` unchanged if it resolves on this site, otherwise ``None``.
+
+    ``return_url`` (a hidden form field) and ``request.referrer`` (a header the client
+    picks) are both attacker-supplied, and passing either straight to ``redirect()`` is
+    an open redirect — the app then vouches for somebody else's host with the user's
+    session cookie in tow. Every call site already has an in-app fallback, so ``None``
+    is a complete answer here: the caller keeps its ``url_for(...)`` default and the only
+    thing lost is the scroll position or meal anchor the field existed to preserve.
+
+    Relative paths are what ``url_for`` produces and what the templates emit, so they are
+    the common case and they are accepted. Accepted forms:
+
+    * ``/diary/2026-09-26#lunch`` — path plus the fragment callers depend on.
+    * ``https://this-host/...`` — an absolute URL whose authority is ``request.host``,
+      which is what a real referrer from this deployment looks like behind nginx.
+
+    Rejected: any scheme other than http/https (so ``javascript:`` and ``data:`` die
+    here), any foreign authority, the protocol-relative ``//host`` form, and the
+    ``/\\host`` form — which starts with a slash and so would otherwise pass the path
+    check while every browser normalises the backslash into an authority separator.
+    """
+    if not target:
+        return None
+
+    parts = urlsplit(target)
+    if parts.scheme and parts.scheme.lower() not in ("http", "https"):
+        return None
+    if parts.netloc:
+        return target if parts.netloc.lower() == request.host.lower() else None
+    # No authority: it is a path on this host, unless it is `//host` (parsed as an
+    # authority above) or the backslash trick, which is not.
+    if target.startswith(("//", "/\\")):
+        return None
+    return target
+
+
+def same_host_referrer():
+    """``request.referrer`` only when it points back at this site, else ``None``."""
+    return same_host_redirect_url(request.referrer)
+
+
+def portion_matches_item(portion, item):
+    """True when ``portion`` belongs to the item ``item`` refers to.
+
+    ``DailyLog``, ``MyMealItem`` and ``RecipeIngredient`` each carry exactly one of
+    ``fdc_id``, ``my_food_id`` and ``recipe_id``, and ``UnifiedPortion`` carries exactly
+    one of the same three — so a row's own source column is the whole test, and a portion
+    that passes it cannot belong to a different item, including a different user's
+    (there is no path where a portion of somebody else's food shares its id).
+
+    The form field is the problem: ``portion_id`` arrives from the browser, so without
+    this check the client chooses which portion's ``gram_weight`` the row is multiplied
+    by, and the row then displays and counts a value the user never picked. Root's
+    contract is that ``amount_grams``, ``serving_type`` and ``portion_id_fk`` all come
+    from one portion, which only holds if that portion is the item's.
+
+    A ``None`` or unsaved portion returns True rather than False: which message an absent
+    portion gets is the caller's existing decision, and the rematch path in
+    ``search/routes.py`` builds a throwaway 1 g portion with no id on purpose.
+    """
+    if portion is None or portion.id is None:
+        return True
+    for attr in ("fdc_id", "my_food_id", "recipe_id"):
+        item_id = getattr(item, attr, None)
+        if item_id is not None:
+            return getattr(portion, attr, None) == item_id
+    return True
 
 
 def send_password_reset_email(user, token):

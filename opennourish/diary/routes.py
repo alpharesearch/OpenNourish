@@ -28,9 +28,11 @@ from models import (
 from datetime import date, timedelta, datetime
 from opennourish.time_utils import get_user_today
 from opennourish.utils import (
+    same_host_referrer,
     calculate_nutrition_for_items,
     get_available_portions,
     get_standard_meal_names_for_user,
+    portion_matches_item,
     prepare_undo_and_delete,
 )
 from .forms import MealForm
@@ -375,7 +377,7 @@ def copy_meal(meal_id):
         friend_ids = [friend.id for friend in current_user.friends]
         if original_meal.user_id not in friend_ids:
             flash("You can only copy meals from your friends.", "danger")
-            return redirect(request.referrer or url_for(MY_MEALS_ROUTE))
+            return redirect(same_host_referrer() or url_for(MY_MEALS_ROUTE))
 
     new_meal = MyMeal(user_id=current_user.id, name=f"{original_meal.name} (Copy)")
     db.session.add(new_meal)
@@ -409,7 +411,12 @@ def update_entry(log_id):
 
     if amount and portion_id:
         portion = db.session.get(UnifiedPortion, portion_id)
-        if portion:
+        if portion and not portion_matches_item(portion, log_entry):
+            # The portion arrived from the form, so the client picked it: without this
+            # the row would be re-weighted by some other item's portion — including one
+            # belonging to another user — and read back as if the user had chosen it.
+            flash("The selected portion does not belong to this item.", "danger")
+        elif portion:
             log_entry.amount_grams = amount * portion.gram_weight
             log_entry.serving_type = portion.full_description_str
             log_entry.portion_id_fk = portion.id
@@ -444,7 +451,7 @@ def move_entry():
         flash(
             "Diary entry not found or you do not have permission to move it.", "danger"
         )
-        return redirect(request.referrer or url_for(DIARY_ROUTE))
+        return redirect(same_host_referrer() or url_for(DIARY_ROUTE))
 
     try:
         target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
@@ -478,7 +485,7 @@ def copy_entry():
         flash(
             "Diary entry not found or you do not have permission to copy it.", "danger"
         )
-        return redirect(request.referrer or url_for(DIARY_ROUTE))
+        return redirect(same_host_referrer() or url_for(DIARY_ROUTE))
 
     try:
         target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
@@ -832,14 +839,18 @@ def update_meal_item(item_id):
     item = db.session.get(MyMealItem, item_id)
     if not item or item.meal.user_id != current_user.id:
         flash("Item not found or you do not have permission to edit it.", "danger")
-        return redirect(request.referrer or url_for(MY_MEALS_ROUTE))
+        return redirect(same_host_referrer() or url_for(MY_MEALS_ROUTE))
 
     quantity = request.form.get("quantity", type=float)
     portion_id = request.form.get("portion_id", type=int)
 
     if quantity is not None and portion_id is not None:
         portion = db.session.get(UnifiedPortion, portion_id)
-        if portion:
+        if portion and not portion_matches_item(portion, item):
+            # Same rule as `update_entry`: the posted portion has to be one of this
+            # item's own, or the saved weight describes a different food.
+            flash("The selected portion does not belong to this item.", "danger")
+        elif portion:
             item.amount_grams = quantity * portion.gram_weight
             item.serving_type = portion.full_description_str
             item.portion_id_fk = portion.id

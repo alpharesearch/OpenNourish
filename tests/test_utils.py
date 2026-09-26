@@ -12,6 +12,8 @@ from models import (
     DailyLog,
     UserGoal,
 )
+from types import SimpleNamespace
+
 from opennourish import utils
 from datetime import date
 
@@ -450,3 +452,95 @@ def test_calculate_intake_vs_goal_deviation_zero_goal(analytics_data):
         deviation = utils.calculate_intake_vs_goal_deviation(user_goal, daily_logs)
         assert deviation["fat"] == pytest.approx(0.0)  # Should not divide by zero
         assert deviation["calories"] == pytest.approx(-69.62)
+
+
+# --- Same-host redirect validation (PLAN.md M6.5) ---
+
+REDIRECT_TARGETS = [
+    # What the app actually emits, and what must survive untouched. The fragment is the
+    # meal anchor and the query the scroll position; a validator that mangles them
+    # "fixes" the open redirect by breaking the feature.
+    ("/diary/2026-09-26#lunch", True),
+    ("/search/?q=apple&page=2", True),
+    ("http://localhost.localdomain:5000/diary/", True),
+    ("https://localhost.localdomain:5000/diary/", True),
+    # A bare relative path cannot leave the site — the browser resolves it against the
+    # current path — so it is accepted rather than special-cased.
+    ("search/?q=apple", True),
+    # Off-site, in every shape that fools a substring check.
+    ("https://evil.example/phish", False),
+    ("http://evil.example:5000/phish", False),
+    ("//evil.example/phish", False),
+    ("/\\evil.example/phish", False),
+    # Not a redirect target at all; `redirect()` would hand these to the browser as-is.
+    ("javascript:alert(document.cookie)", False),
+    ("data:text/html,<script>alert(1)</script>", False),
+    # Nothing to redirect to: the caller must fall back, not 500 on a None Location.
+    ("", False),
+    (None, False),
+]
+
+
+@pytest.mark.parametrize("target, accepted", REDIRECT_TARGETS)
+def test_same_host_redirect_url_keeps_only_our_own_targets(
+    app_with_db, target, accepted
+):
+    """`return_url` and `request.referrer` are client-chosen, so both are validated
+    against `request.host` before anything calls `redirect()` with them."""
+    with app_with_db.test_request_context("/"):
+        result = utils.same_host_redirect_url(target)
+    if accepted:
+        assert result == target
+    else:
+        assert result is None
+
+
+def test_same_host_redirect_url_matches_the_host_case_insensitively(app_with_db):
+    """The Host header is what is compared, and `Location:` consumers lowercase the
+    authority anyway — so the comparison has to, or `HTTPS://LOCAL...` is a bypass."""
+    host = "localhost.localdomain:5000"
+    with app_with_db.test_request_context("/"):
+        assert utils.same_host_redirect_url(f"HTTP://{host.upper()}/diary/") == (
+            f"HTTP://{host.upper()}/diary/"
+        )
+
+
+def test_same_host_referrer_uses_the_request_header(app_with_db):
+    with app_with_db.test_request_context(
+        "/", headers={"Referer": "https://evil.example/from-referrer"}
+    ):
+        assert utils.same_host_referrer() is None
+
+
+# --- Portion parentage (PLAN.md M6.5) ---
+
+
+def _portion(**columns):
+    """An unpersisted ``UnifiedPortion`` — enough to exercise the parent comparison."""
+    return SimpleNamespace(id=columns.pop("id", 7), **columns)
+
+
+def _row(**columns):
+    return SimpleNamespace(**columns)
+
+
+@pytest.mark.parametrize(
+    "portion, row, expected",
+    [
+        # Each source column is the whole test, because a row carries exactly one.
+        (_portion(fdc_id=5), _row(fdc_id=5, my_food_id=None, recipe_id=None), True),
+        (_portion(fdc_id=6), _row(fdc_id=5, my_food_id=None, recipe_id=None), False),
+        (_portion(my_food_id=2), _row(my_food_id=9, recipe_id=None), False),
+        (_portion(recipe_id=9), _row(recipe_id=9), True),
+        (_portion(my_food_id=9), _row(recipe_id=9), False),
+        # Nothing to compare against: the row references no item, so the check abstains
+        # rather than inventing a rejection the caller did not ask for.
+        (_portion(my_food_id=1), _row(), True),
+        # Absent and unsaved portions belong to the caller's own "no portion" handling —
+        # the rematch path builds a throwaway 1 g portion with no id on purpose.
+        (None, _row(my_food_id=1), True),
+        (_portion(id=None, my_food_id=1), _row(my_food_id=1), True),
+    ],
+)
+def test_portion_matches_item_compares_the_rows_own_source(portion, row, expected):
+    assert utils.portion_matches_item(portion, row) is expected

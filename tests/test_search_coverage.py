@@ -88,12 +88,18 @@ def _url(app, endpoint, **values):
         return url_for(endpoint, **values)
 
 
-def _add_item(client, **data):
-    """POST /search/add_item with a referrer so referrer redirects are testable."""
+def _add_item(client, *, referer=None, **data):
+    """POST /search/add_item with a referrer so referrer redirects are testable.
+
+    The referrer carries the app's own authority, because that is what a real one does:
+    `add_item` refuses a redirect target from another host, so an off-site referer here
+    would silently be testing the fallback instead of the referrer. Pass `referer=` to
+    test that refusal — see `test_add_item_refuses_an_off_site_return_url`.
+    """
     data.setdefault("amount", 1)
-    return client.post(
-        "/search/add_item", data=data, headers={"Referer": "http://localhost/search/"}
-    )
+    if referer is None:
+        referer = f"http://{client.application.config['SERVER_NAME']}/search/"
+    return client.post("/search/add_item", data=data, headers={"Referer": referer})
 
 
 @pytest.fixture
@@ -846,6 +852,75 @@ def test_add_my_food_to_diary_honours_return_url(env):
         return_url="/search/",
     )
     assert _path(response) == "/search/"
+
+
+def test_add_item_keeps_the_return_url_fragment_and_query(env):
+    """The field exists to land the user back on their scroll position and meal anchor,
+    so the validator has to pass the fragment through, not just the path."""
+    response = _add_item(
+        env.client,
+        food_id=env.my_food,
+        food_type="my_food",
+        target="diary",
+        log_date=LOG_DATE_STR,
+        meal_name="Breakfast",
+        portion_id=env.my_food_portion,
+        return_url=f"/diary/{LOG_DATE_STR}?page=2#lunch",
+    )
+    assert response.location.endswith(f"/diary/{LOG_DATE_STR}?page=2#lunch")
+
+
+OFF_SITE_TARGETS = [
+    "https://evil.example/phish",
+    "http://localhost.localdomain:5000.evil.example/phish",
+    "//evil.example/phish",
+    "/\\evil.example/phish",
+    "javascript:alert(document.cookie)",
+]
+
+
+@pytest.mark.parametrize("target", OFF_SITE_TARGETS)
+def test_add_item_refuses_an_off_site_return_url(env, target):
+    """`return_url` is a hidden form field, so every user of this endpoint can set it to
+    a host of their choosing — and the app then 302s a logged-in browser there, which is
+    how an open redirect launders a session into a phishing page.
+
+    The fallback is the diary page, so the redirect itself survives: the only thing an
+    attacker can no longer choose is the destination."""
+    response = _add_item(
+        env.client,
+        food_id=env.my_food,
+        food_type="my_food",
+        target="diary",
+        log_date=LOG_DATE_STR,
+        meal_name="Breakfast",
+        portion_id=env.my_food_portion,
+        return_url=target,
+    )
+    location = urlsplit(response.location)
+    # Either a bare path or an absolute URL on our own authority — never an authority at
+    # all that belongs to somebody else, and never a non-HTTP scheme.
+    assert location.netloc in ("", "localhost.localdomain:5000")
+    assert location.scheme in ("", "http", "https")
+    assert _path(response) == _url(env.app, "diary.diary", log_date_str=LOG_DATE_STR)
+
+
+def test_add_item_refuses_an_off_site_referrer(env):
+    """Same rule, other client-controlled source. This one matters most on the error
+    paths, where the referrer deliberately wins over the in-app fallback."""
+    response = _add_item(
+        env.client,
+        referer="https://evil.example/wherever",
+        food_id=424242,
+        food_type="my_meal",
+        target="diary",
+        log_date=LOG_DATE_STR,
+        meal_name="Lunch",
+    )
+    assert "My Meal not found." in _flashes(env.client)
+    # This branch's own fallback — bare `url_for(DIARY_ROUTE_NAME)`, no date. The point
+    # of the test is that the destination is ours rather than evil.example.
+    assert _path(response) == "/diary/"
 
 
 def test_add_diary_without_log_date_is_rejected(env):

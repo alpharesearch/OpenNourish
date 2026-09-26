@@ -3,7 +3,7 @@ from . import usda_admin_bp
 from models import db, UnifiedPortion, Food
 from flask_login import login_required
 from opennourish.decorators import key_user_required
-from opennourish.utils import prepare_undo_and_delete
+from opennourish.utils import prepare_undo_and_delete, same_host_referrer
 from constants import (
     MAIN_FOOD_DETAIL_ENDPOINT,
     PORTIONS_TABLE_ANCHOR,
@@ -64,7 +64,7 @@ def edit_usda_portion(portion_id):
     portion = db.session.get(UnifiedPortion, portion_id)
     if not portion or not portion.fdc_id:
         flash(USDA_PORTION_NOT_FOUND_MSG, "danger")
-        return redirect(request.referrer or url_for(DASHBOARD_INDEX_ROUTE))
+        return redirect(same_host_referrer() or url_for(DASHBOARD_INDEX_ROUTE))
 
     portion.amount = request.form.get("amount", type=float)
     portion.measure_unit_description = request.form.get("measure_unit_description")
@@ -93,7 +93,7 @@ def delete_usda_portion(portion_id):
     portion = db.session.get(UnifiedPortion, portion_id)
     if not portion or not portion.fdc_id:
         flash(USDA_PORTION_NOT_FOUND_MSG, "danger")
-        return redirect(request.referrer or url_for(DASHBOARD_INDEX_ROUTE))
+        return redirect(same_host_referrer() or url_for(DASHBOARD_INDEX_ROUTE))
 
     fdc_id = portion.fdc_id
     _mark_portions_as_modified(fdc_id)
@@ -118,7 +118,7 @@ def move_usda_portion_up(portion_id):
     portion_to_move = db.session.get(UnifiedPortion, portion_id)
     if not portion_to_move or not portion_to_move.fdc_id:
         flash(USDA_PORTION_NOT_FOUND_MSG, "danger")
-        return redirect(request.referrer or url_for(DASHBOARD_INDEX_ROUTE))
+        return redirect(same_host_referrer() or url_for(DASHBOARD_INDEX_ROUTE))
 
     if portion_to_move.seq_num is None:
         # Assign sequence numbers to all portions of this food if any are missing
@@ -169,7 +169,7 @@ def move_usda_portion_down(portion_id):
     portion_to_move = db.session.get(UnifiedPortion, portion_id)
     if not portion_to_move or not portion_to_move.fdc_id:
         flash(USDA_PORTION_NOT_FOUND_MSG, "danger")
-        return redirect(request.referrer or url_for(DASHBOARD_INDEX_ROUTE))
+        return redirect(same_host_referrer() or url_for(DASHBOARD_INDEX_ROUTE))
 
     # Find the portion with the next higher seq_num
     portion_to_swap_with = (

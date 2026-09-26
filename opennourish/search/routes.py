@@ -25,7 +25,12 @@ from models import (
 from flask_login import login_required, current_user
 from datetime import date
 from opennourish.time_utils import get_user_today
-from opennourish.utils import ensure_portion_sequence, update_recipe_nutrition
+from opennourish.utils import (
+    ensure_portion_sequence,
+    same_host_redirect_url,
+    same_host_referrer,
+    update_recipe_nutrition,
+)
 from sqlalchemy import or_, func, and_
 from sqlalchemy.orm import joinedload
 import math
@@ -604,7 +609,9 @@ def add_item():
     meal_name = request.form.get("meal_name")
     amount = float(request.form.get("amount", 1))
     portion_id_str = request.form.get("portion_id")
-    return_url = request.form.get("return_url")
+    # Client-supplied, like the referrer: validated once, here, so that every exit
+    # path below keeps its own fallback instead of having to remember to check.
+    return_url = same_host_redirect_url(request.form.get("return_url"))
     friend_username = request.form.get("friend_username")
 
     # Handle special cases first
@@ -612,7 +619,7 @@ def add_item():
         my_meal = db.session.get(MyMeal, food_id)
         if not my_meal:
             flash("My Meal not found.", "danger")
-            return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
+            return redirect(same_host_referrer() or url_for(DIARY_ROUTE_NAME))
 
         # Only the owner may expand a saved meal; a deleted owner's rows stay
         # unreachable because their friendships are gone with the account.
@@ -624,7 +631,7 @@ def add_item():
                 )
             else:
                 flash("You are not authorized to add this meal.", "danger")
-            return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
+            return redirect(same_host_referrer() or url_for(DIARY_ROUTE_NAME))
 
         if target == "diary":
             log_date = (
@@ -692,7 +699,7 @@ def add_item():
 
         else:
             flash(f"Cannot add a meal to the selected target: {target}.", "danger")
-            return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
+            return redirect(same_host_referrer() or url_for(DIARY_ROUTE_NAME))
 
     elif food_type == "diary_meal":
         source_log_date_str = request.form.get("source_log_date")
@@ -707,10 +714,10 @@ def add_item():
             friend_user = User.query.filter_by(username=friend_username).first()
             if not friend_user:
                 flash(f"Friend '{friend_username}' not found.", "danger")
-                return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
+                return redirect(same_host_referrer() or url_for(DIARY_ROUTE_NAME))
             if not _has_accepted_friendship(friend_user.id):
                 flash(f"You are not friends with {friend_username}.", "danger")
-                return redirect(request.referrer or url_for(DIARY_ROUTE_NAME))
+                return redirect(same_host_referrer() or url_for(DIARY_ROUTE_NAME))
             source_user_id = friend_user.id
 
         if (
@@ -772,7 +779,7 @@ def add_item():
                 portion = db.session.get(UnifiedPortion, portion_id_int)
         except (ValueError, TypeError):
             flash("Invalid portion ID.", "danger")
-            return redirect(request.referrer)
+            return redirect(same_host_referrer() or url_for(SEARCH_SEARCH_ROUTE))
 
     # Ensure a 1-gram portion exists for USDA foods when they are added.
     if food_type == "usda":
@@ -780,7 +787,7 @@ def add_item():
             food_id_int = int(food_id)
         except (ValueError, TypeError):
             flash("Invalid food ID.", "danger")
-            return redirect(request.referrer)
+            return redirect(same_host_referrer() or url_for(SEARCH_SEARCH_ROUTE))
         one_gram_portion = UnifiedPortion.query.filter_by(
             fdc_id=food_id_int, gram_weight=1.0
         ).first()
@@ -808,7 +815,7 @@ def add_item():
 
     if not portion:
         flash("A valid portion is required.", "danger")
-        return redirect(request.referrer or url_for("main.index"))
+        return redirect(same_host_referrer() or url_for("main.index"))
 
     portion = None
     if portion_id_str:
@@ -817,7 +824,7 @@ def add_item():
             portion = db.session.get(UnifiedPortion, portion_id_int)
         except (ValueError, TypeError):
             flash("Invalid portion ID.", "danger")
-            return redirect(request.referrer)
+            return redirect(same_host_referrer() or url_for(SEARCH_SEARCH_ROUTE))
 
     # If no portion was selected (portion_id_str is empty) and it's a USDA food,
     # default to the 1-gram portion that was just ensured to exist.
@@ -830,12 +837,12 @@ def add_item():
                 "Could not find or create a default 1-gram portion for USDA food.",
                 "danger",
             )
-            return redirect(request.referrer)
+            return redirect(same_host_referrer() or url_for(SEARCH_SEARCH_ROUTE))
     elif (
         not portion
     ):  # For non-USDA foods, or if a portion_id_str was provided but invalid
         flash("Invalid portion selected.", "danger")
-        return redirect(request.referrer)
+        return redirect(same_host_referrer() or url_for(SEARCH_SEARCH_ROUTE))
 
     # Self-nesting is rejected before the portion checks so that the message
     # stays the contract for the recipe-into-itself case (tests/test_recipes.py).
@@ -853,7 +860,7 @@ def add_item():
     # resolutions above produced it.
     if not _portion_matches_item(portion, food_type, food_id):
         flash("The selected portion does not belong to this item.", "danger")
-        return redirect(request.referrer or url_for("main.index"))
+        return redirect(same_host_referrer() or url_for("main.index"))
 
     amount_grams = amount * portion.gram_weight
     serving_type = portion.full_description_str
@@ -1147,7 +1154,9 @@ def add_item():
                     new_portion = db.session.get(UnifiedPortion, new_portion_id)
                 except (ValueError, TypeError):
                     flash("Invalid portion ID.", "danger")
-                    return redirect(request.referrer)
+                    return redirect(
+                        same_host_referrer() or url_for(SEARCH_SEARCH_ROUTE)
+                    )
 
             if not new_portion:
                 flash("A valid portion is required for rematching.", "danger")

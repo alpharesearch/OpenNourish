@@ -740,17 +740,102 @@ def test_update_entry_branches(auth_client):
     assert response.status_code == 302
     assert b"Invalid data submitted." in auth_client.get("/diary/").data
 
+    # A second portion belonging to the *same* food: this is the case that used to
+    # accept `other_portion_id`, which was the vulnerability rather than the contract.
+    with auth_client.application.app_context():
+        big_portion = UnifiedPortion(
+            my_food_id=food_id,
+            gram_weight=50.0,
+            amount=50.0,
+            measure_unit_description="50 g serving",
+            seq_num=2,
+        )
+        db.session.add(big_portion)
+        db.session.commit()
+        big_portion_id = big_portion.id
+
     # Valid update keeps amount/portion/serving_type in lockstep.
     response = auth_client.post(
         f"/diary/update_entry/{log_id}",
-        data={"amount": 3, "portion_id": other_portion_id},
+        data={"amount": 3, "portion_id": big_portion_id},
     )
     assert f"/diary/{iso_day()}#meal-dinner" in response.headers["Location"]
     with auth_client.application.app_context():
         entry = db.session.get(DailyLog, log_id)
-        assert entry.amount_grams == pytest.approx(3.0)
-        assert entry.portion_id_fk == other_portion_id
-        assert entry.serving_type.strip() == "g"
+        assert entry.amount_grams == pytest.approx(150.0)
+        assert entry.portion_id_fk == big_portion_id
+        # A portion built without `full_description_str` derives one from its amount and
+        # measure unit, so match the part this test authored rather than the whole string.
+        assert "50 g serving" in entry.serving_type
+
+
+def test_update_entry_rejects_a_portion_of_another_food(auth_client):
+    """`other_portion_id` is another of the *same user's* foods, which is the ordinary
+    accident; the security case is that nothing distinguished it from a portion of
+    another user's food. Either way the row would be re-weighted by a portion the user
+    never chose and would then display that portion's description as its serving."""
+    with auth_client.application.app_context():
+        user_id = user_id_of(auth_client, "testuser")
+        food_id, portion_id = make_my_food(user_id, "Chosen", 100.0)
+        _, other_portion_id = make_my_food(user_id, "Someone Else's", 100.0)
+        log = DailyLog(
+            user_id=user_id,
+            log_date=today(),
+            meal_name="Dinner",
+            my_food_id=food_id,
+            amount_grams=10,
+            portion_id_fk=portion_id,
+        )
+        db.session.add(log)
+        db.session.commit()
+        log_id = log.id
+
+    response = auth_client.post(
+        f"/diary/update_entry/{log_id}",
+        data={"amount": 2, "portion_id": other_portion_id},
+    )
+    assert response.status_code == 302
+    assert (
+        b"The selected portion does not belong to this item."
+        in auth_client.get("/diary/").data
+    )
+    with auth_client.application.app_context():
+        entry = db.session.get(DailyLog, log_id)
+        assert entry.amount_grams == pytest.approx(10.0)
+        assert entry.portion_id_fk == portion_id
+
+
+def test_update_entry_rejects_another_users_portion(auth_client_two_users):
+    client, user_one, user_two = auth_client_two_users
+
+    with client.application.app_context():
+        food_id, portion_id = make_my_food(user_one.id, "Mine", 100.0)
+        theirs_food_id, theirs_portion_id = make_my_food(user_two.id, "Theirs", 100.0)
+        log = DailyLog(
+            user_id=user_one.id,
+            log_date=today(),
+            meal_name="Dinner",
+            my_food_id=food_id,
+            amount_grams=10,
+            portion_id_fk=portion_id,
+        )
+        db.session.add(log)
+        db.session.commit()
+        log_id, theirs_food_id = log.id, theirs_food_id
+
+    client.post(
+        f"/diary/update_entry/{log_id}",
+        data={"amount": 2, "portion_id": theirs_portion_id},
+    )
+
+    with client.application.app_context():
+        entry = db.session.get(DailyLog, log_id)
+        assert entry.amount_grams == pytest.approx(10.0)
+        assert entry.portion_id_fk == portion_id
+        # The probe also must not have told the attacker anything about their own row.
+        assert db.session.get(UnifiedPortion, theirs_portion_id).my_food_id == (
+            theirs_food_id
+        )
 
 
 def test_move_and_copy_entry_reject_other_users_rows(auth_client_two_users):
@@ -1236,6 +1321,41 @@ def test_update_meal_item_branches(auth_client):
         entry = db.session.get(MyMealItem, item_id)
         assert entry.amount_grams == pytest.approx(4.0)
         assert entry.serving_type.strip() == "g"
+        assert entry.portion_id_fk == portion_id
+
+
+def test_update_meal_item_rejects_a_portion_of_another_food(auth_client):
+    """The saved-meal editor does the same portion math as the diary editor, so it gets
+    the same rule — a fix to one belongs in both."""
+    with auth_client.application.app_context():
+        user_id = user_id_of(auth_client, "testuser")
+        food_id, portion_id = make_my_food(user_id, "Meal Food", 200.0)
+        _, other_portion_id = make_my_food(user_id, "Not This One", 200.0)
+        meal = MyMeal(user_id=user_id, name="Items")
+        db.session.add(meal)
+        db.session.flush()
+        item = MyMealItem(
+            my_meal_id=meal.id,
+            my_food_id=food_id,
+            amount_grams=10,
+            portion_id_fk=portion_id,
+        )
+        db.session.add(item)
+        db.session.commit()
+        meal_id, item_id = meal.id, item.id
+
+    response = auth_client.post(
+        f"/my_meals/update_item/{item_id}",
+        data={"quantity": 2, "portion_id": other_portion_id},
+    )
+    assert f"/my_meals/edit/{meal_id}" in response.headers["Location"]
+    assert (
+        b"The selected portion does not belong to this item."
+        in auth_client.get("/my_meals").data
+    )
+    with auth_client.application.app_context():
+        entry = db.session.get(MyMealItem, item_id)
+        assert entry.amount_grams == pytest.approx(10.0)
         assert entry.portion_id_fk == portion_id
 
 

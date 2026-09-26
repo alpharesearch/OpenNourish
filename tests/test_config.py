@@ -168,3 +168,41 @@ def test_config_loads_successfully(tmp_path, monkeypatch):
         )
     except ValueError:
         pytest.fail("Config class raised ValueError unexpectedly.")
+
+
+# --- The real config module, not a generated stand-in (PLAN.md M6.6) ---
+#
+# `run_config_test` above executes a *copy* of the guard logic, so it cannot cover the
+# module-level raises in `config.py` (that is why the SECRET_KEY one carries
+# `# pragma: no cover`). Loading the real file under a throwaway module name does, and
+# `load_dotenv` does not override variables already in the environment, so monkeypatch
+# alone is enough to drive it.
+
+
+def _load_real_config():
+    import pathlib
+
+    real_config = pathlib.Path(__file__).resolve().parent.parent / "config.py"
+    spec = importlib.util.spec_from_file_location("config_under_test", real_config)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_real_config_defaults_to_one_trusted_proxy_hop(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "some_key")
+    monkeypatch.setenv("ENCRYPTION_KEY", "some_other_key")
+    monkeypatch.delenv("TRUSTED_PROXY_HOPS", raising=False)
+
+    assert _load_real_config().Config.TRUSTED_PROXY_HOPS == 1
+
+
+def test_real_config_refuses_a_negative_trusted_proxy_hop_at_import(monkeypatch):
+    """`entrypoint.sh` runs under `set -e`, so a mistyped value has to surface as a
+    refused boot rather than silently becoming "trust nobody" (or worse)."""
+    monkeypatch.setenv("SECRET_KEY", "some_key")
+    monkeypatch.setenv("ENCRYPTION_KEY", "some_other_key")
+    monkeypatch.setenv("TRUSTED_PROXY_HOPS", "-1")
+
+    with pytest.raises(ValueError, match="TRUSTED_PROXY_HOPS"):
+        _load_real_config()

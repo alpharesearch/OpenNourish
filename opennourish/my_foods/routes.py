@@ -23,6 +23,7 @@ from opennourish.my_foods.forms import MyFoodForm, PortionForm, CategoryForm
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 from opennourish.utils import (
+    same_host_referrer,
     ensure_portion_sequence,
     get_nutrients_for_display,
     convert_display_nutrients_to_100g,
@@ -647,7 +648,7 @@ def copy_usda_food():
     fdc_id = request.form.get("fdc_id")
     if not fdc_id:
         flash("No USDA Food ID provided for copying.", "danger")
-        return redirect(request.referrer or url_for(MY_FOODS_LIST_ROUTE))
+        return redirect(same_host_referrer() or url_for(MY_FOODS_LIST_ROUTE))
 
     usda_food = (
         Food.query.options(joinedload(Food.nutrients).joinedload(FoodNutrient.nutrient))
@@ -736,7 +737,7 @@ def copy_my_food(food_id):
         and original_food.user_id != current_user.id
     ):
         flash("You can only copy foods from your friends or your own foods.", "danger")
-        return redirect(request.referrer or url_for(MY_FOODS_LIST_ROUTE))
+        return redirect(same_host_referrer() or url_for(MY_FOODS_LIST_ROUTE))
 
     new_food = MyFood(
         user_id=current_user.id,

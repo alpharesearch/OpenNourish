@@ -8,12 +8,13 @@ milestone that consumes them lands, and are deleted once `requirements.txt` supe
 landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — Typst
 escaping (2026-09-23), the image diet (2026-09-24) and the `datetime.utcnow()` migration with a `DTZ003`
 gate (2026-09-25) are done; the rest of `DTZ`, the other ruff families, `pytest-flask`, the `@preview`
-vendoring and the 3.14 refresh are open. In M6, 6.3, 6.4 and 6.6 are closed, and 6.2's route
-conversions are closed; 6.1, 6.5 and the `ensure_portion_sequence` half of 6.2 are open.**
+vendoring and the 3.14 refresh are open. In M6 only 6.1 and the `ensure_portion_sequence` half of
+6.2 remain: 6.3, 6.4, 6.5 and 6.6 closed between 2026-09-24 and 2026-09-26, and 6.2's two mutating
+GETs became POSTs on 2026-09-26.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (54 packages, was 72), Flask-Mailing is at 3.0.0, `ruff.toml` pins its rule
 families, the image's `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and
-PR, and every gate is green — 993 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
+PR, and every gate is green — 1028 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
 advisory at 204 findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py`
 generates it from the installed wheels plus the vendored assets in `static/`, and `--check` fails if it
 drifts.
@@ -352,8 +353,8 @@ replaying the steps locally, which is what worked here.
 These hazards are recorded in `AGENTS.md` but owned by no milestone, so they were knowledge rather
 than work. The upgrade track is finished and the app is deployed, so each item below is independently
 shippable, ordered by exposure. The counts were re-measured on 2026-09-23, not carried over from the
-audit. 6.3, 6.4 and 6.6 landed (2026-09-24, 2026-09-26, 2026-09-24/26) along with 6.2's route
-conversions; what is left is 6.1, 6.5, and the `ensure_portion_sequence` half of 6.2.
+audit. 6.3, 6.4, 6.5 and 6.6 landed, along with 6.2's route conversions; what is left of M6 is 6.1
+and the `ensure_portion_sequence` half of 6.2.
 
 ### M6.1 — Close the CSRF gap
 
@@ -483,12 +484,46 @@ What shipped:
 Open in this item: the username and email are still hard-coded to the owner's, and
 `INITIAL_ADMIN_USERNAME` remains the only knob on who becomes the first admin.
 
-### M6.5 — Input-handling defects already recorded as inherited
+### M6.5 — Input-handling defects already recorded as inherited — LANDED (2026-09-26)
 
-The open redirect on `add_item`'s `return_url`/`request.referrer` (~9 exit points,
-`opennourish/search/routes.py`) and the unvalidated `portion_id` in the diary add/edit paths
-(`opennourish/diary/routes.py:411`, `:560`). The Typst markup injection that used to belong here landed
-in M5 on 2026-09-23, so this item is now only these two.
+The open redirect on `add_item`'s `return_url`/`request.referrer` and the unvalidated
+`portion_id` in the diary edit paths. The Typst markup injection that used to belong here landed in
+M5 on 2026-09-23, so this item was only these two.
+
+**Redirect targets.** Two helpers in `opennourish/utils.py`, applied at the read point rather than at
+each of the ~25 `redirect()` sites, so every call keeps its own `url_for(...)` fallback and the
+feature — scroll position, meal anchor — is untouched:
+
+- `same_host_redirect_url(target)` returns the target unchanged when it is a path (`/diary/X#lunch`,
+  query and fragment intact), or an absolute URL whose authority equals `request.host`; `None` for a
+  foreign authority, any scheme but http/https (so `javascript:` and `data:` die there), the
+  protocol-relative `//host`, and `/\host` — which starts with a slash, passes a naive path check, and
+  is normalised into an authority separator by every browser. Case-insensitive, because `Host:` is.
+- `same_host_referrer()` is the same rule for the header.
+- `return_url` is validated **once**, where `add_item` reads it, which is what makes the ~9 exit
+  points safe without rewriting each one. `search` was the open redirect; `diary`, `my_foods`,
+  `recipes`, `usda_admin` and `decorators.key_user_required` trusted `Referer` the same way and are
+  covered by the same pass.
+
+The test fixture was the interesting cost: `tests/test_search_coverage.py::_add_item` had been sending
+`Referer: http://localhost/search/` while `SERVER_NAME` is `localhost.localdomain:5000`, so every
+"the referrer wins" assertion had been passing against a *cross-host* referrer — the validator is what
+noticed. The helper now derives its referrer from `SERVER_NAME` and takes `referer=` for refusal
+tests.
+
+**Portion parentage.** `portion_matches_item(portion, item)` compares the portion's owning source
+column against the row's own — a `DailyLog`/`MyMealItem`/`RecipeIngredient` carries exactly one of
+`fdc_id`, `my_food_id`, `recipe_id`, and so does a `UnifiedPortion`, so the row's column *is* the
+whole test, and a portion that passes it cannot be another user's either. Now gates `update_entry`
+and `update_meal_item` (`search/add_item` and `recipes` already checked). Note that the `:560` this
+item pointed at was `edit_meal`'s **read** path, not a write: the real second write was
+`update_meal_item`, and the display lookup was left alone.
+
+Both helpers abstain rather than reject on an absent or unsaved portion, so the existing "A valid
+portion is required." contract still answers those cases and the rematch path's throwaway 1 g portion
+keeps working. `test_update_entry_branches` had been asserting that posting another food's portion
+*succeeded* — that was the vulnerability pinned as a contract, and it now posts a second portion of
+the same food, with the foreign portion covered by its own negative test on each editor.
 
 ### M6.6 — Network-facing defaults — LANDED (body cap 2026-09-24, trusted proxy 2026-09-26)
 

@@ -1,6 +1,8 @@
 from functools import wraps
-from flask import flash, redirect, url_for, request
+from flask import flash, redirect, url_for
 from flask_login import current_user
+
+from opennourish.utils import same_host_referrer
 
 
 def admin_required(f):
@@ -21,7 +23,7 @@ def key_user_required(f):
             current_user.is_admin or current_user.is_key_user
         ):
             flash("This action requires special privileges.", "danger")
-            return redirect(request.referrer or url_for("dashboard.index"))
+            return redirect(same_host_referrer() or url_for("dashboard.index"))
         return f(*args, **kwargs)
 
     return decorated_function

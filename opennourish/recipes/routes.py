@@ -29,6 +29,7 @@ from opennourish.my_foods.forms import PortionForm
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload, subqueryload
 from opennourish.utils import (
+    same_host_referrer,
     calculate_nutrition_for_items,
     calculate_recipe_nutrition_per_100g,
     ensure_portion_sequence,
@@ -1346,7 +1347,7 @@ def copy_recipe(recipe_id):
                 "You can only copy recipes from your friends or public recipes.",
                 "danger",
             )
-            return redirect(request.referrer or url_for(RECIPES_LIST_ROUTE))
+            return redirect(same_host_referrer() or url_for(RECIPES_LIST_ROUTE))
 
     # Create a new recipe for the current user
     new_recipe = Recipe(
