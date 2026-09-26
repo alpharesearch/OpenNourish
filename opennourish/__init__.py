@@ -666,7 +666,9 @@ def create_app(config_class=Config):
                 # CheckIn
                 num_check_ins = 52  # Approximately one year of weekly check-ins
                 for j in range(num_check_ins):
-                    checkin_date = date.today() - timedelta(weeks=j)
+                    # Server-local is right here: a CLI seeder backdating fake history is
+                    # the one place `opennourish/AGENTS.md` allows it. Same for the two below.
+                    checkin_date = date.today() - timedelta(weeks=j)  # noqa: DTZ011
                     check_in = CheckIn(
                         user_id=user.id,
                         checkin_date=checkin_date,
@@ -681,7 +683,7 @@ def create_app(config_class=Config):
                 num_exercise_logs = random.randint(30, 50)
                 all_activities = ExerciseActivity.query.all()
                 for j in range(num_exercise_logs):
-                    log_date = date.today() - timedelta(days=random.randint(0, 60))
+                    log_date = date.today() - timedelta(days=random.randint(0, 60))  # noqa: DTZ011
                     duration = random.randint(15, 90)  # minutes
 
                     if (
@@ -937,7 +939,7 @@ def create_app(config_class=Config):
                 # DailyLog
                 num_daily_logs = random.randint(100, 150)
                 for j in range(num_daily_logs):
-                    log_date = date.today() - timedelta(
+                    log_date = date.today() - timedelta(  # noqa: DTZ011
                         days=random.randint(0, 60)
                     )  # Last 2 months
                     meal_name = random.choice(

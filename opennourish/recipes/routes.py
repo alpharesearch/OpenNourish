@@ -10,6 +10,7 @@ from flask import (
     abort,
 )
 from datetime import datetime, timezone
+from opennourish.time_utils import utcnow_naive
 import yaml
 from flask_login import login_required, current_user
 from models import (
@@ -548,7 +549,7 @@ def export_recipes():
     yaml_content = yaml.dump(
         export_payload, default_flow_style=False, sort_keys=False, indent=2
     )
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = utcnow_naive().strftime("%Y%m%d_%H%M%S")
     filename = f"recipes_export_{timestamp}.yaml"
 
     return Response(

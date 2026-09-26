@@ -2,7 +2,8 @@ from flask import render_template, request, flash, redirect, url_for, current_ap
 from flask_login import current_user, login_required
 from models import db, User, Friendship, DailyLog, ExerciseLog
 from . import friends_bp
-from datetime import datetime, timedelta
+from datetime import timedelta
+from opennourish.time_utils import get_start_of_week, get_user_today
 from opennourish.utils import prepare_undo_and_delete
 
 FRIENDS_PAGE_ROUTE = "friends.friends_page"
@@ -11,9 +12,11 @@ FRIENDS_PAGE_ROUTE = "friends.friends_page"
 @friends_bp.route("/", methods=["GET"])
 @login_required
 def friends_page():
-    today = datetime.now().date()
-    # Calculate the start of the current week (Monday)
-    start_of_week = today - timedelta(days=today.weekday())
+    # The user's own day and the user's own week: `datetime.now().date()` cut the scoreboard
+    # at the server's midnight and always started the week on Monday, while `dashboard` and
+    # `exercise` honour `week_start_day`.
+    today = get_user_today(current_user.timezone)
+    start_of_week = get_start_of_week(today, current_user.week_start_day)
     end_of_week = start_of_week + timedelta(days=6)
 
     # Get all accepted friends, including the current user for the scoreboard

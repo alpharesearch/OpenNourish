@@ -9,6 +9,7 @@ from flask import (
     Response,
 )
 from datetime import datetime, timezone
+from opennourish.time_utils import utcnow_naive
 from flask_login import login_required, current_user
 import yaml
 from models import (
@@ -1110,7 +1111,7 @@ def _export_my_foods_to_yaml():
     )
 
     # Create response with proper headers for download
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = utcnow_naive().strftime("%Y%m%d_%H%M%S")
     filename = f"my_foods_export_{timestamp}.yaml"
 
     return Response(

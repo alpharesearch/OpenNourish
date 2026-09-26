@@ -1,6 +1,8 @@
 """Tests for the advanced analytics features."""
 
 from datetime import date, timedelta
+
+from opennourish.time_utils import get_user_today
 from models import (
     db,
     User,
@@ -235,7 +237,12 @@ def test_get_exercise_vs_diet_balance(app_with_db):
 
 
 def test_get_nutrient_intake_vs_goals(app_with_db):
-    """Test intake vs goals comparison."""
+    """Test intake vs goals comparison.
+
+    The fixture dates its log with `get_user_today`, not `date.today()`: the function scores
+    the logs of *the user's* day, and on a UTC-4 box the two dates are different for hours at a
+    time, which would land the fixture's log on a day the function never looks at.
+    """
     with app_with_db.app_context():
         user = User(username="testuser_goals", email="testgoals@example.com")
         db.session.add(user)
@@ -255,7 +262,7 @@ def test_get_nutrient_intake_vs_goals(app_with_db):
         db.session.add(my_food)
         db.session.commit()  # Commit to get ID
 
-        today = date.today()
+        today = get_user_today(user.timezone)
         db.session.add(
             DailyLog(
                 user_id=user.id, log_date=today, my_food_id=my_food.id, amount_grams=500
@@ -268,6 +275,67 @@ def test_get_nutrient_intake_vs_goals(app_with_db):
         assert data["calories"]["intake"] == 500.0
         assert data["calories"]["goal"] == 2000
         assert "deviation" in data["calories"]
+
+
+def test_the_day_window_follows_the_user_and_not_the_server(app_with_db):
+    """Which clock decides "today" when they disagree.
+
+    `get_nutrient_intake_vs_goals` scores the logs dated today, and until 2026-09-26 that was
+    the *server's* today — so a user a day ahead of the box was scored against yesterday, and
+    on this checkout (UTC-4) the two dates differ for hours at a stretch. The fixture picks a
+    zone whose date provably disagrees with the box right now, so the assertion cannot pass by
+    coincidence: UTC+14 disagrees whenever UTC is 10:00 or later, UTC-11 whenever it is before
+    11:00, and those two ranges cover every hour.
+    """
+    with app_with_db.app_context():
+        zone = "Pacific/Kiritimati"
+        if get_user_today(zone) == date.today():
+            zone = "Pacific/Pago_Pago"
+        their_today = get_user_today(zone)
+        assert their_today != date.today(), (
+            "the two clocks must disagree for this to bite"
+        )
+
+        user = User(username="far_away", email="far@example.com", timezone=zone)
+        db.session.add(user)
+        db.session.commit()
+        db.session.add(
+            UserGoal(user_id=user.id, calories=2000, protein=100, carbs=200, fat=60)
+        )
+        food = MyFood(
+            user_id=user.id,
+            description="Food",
+            calories_per_100g=100,
+            protein_per_100g=10,
+            carbs_per_100g=10,
+            fat_per_100g=2,
+        )
+        db.session.add(food)
+        db.session.commit()
+
+        # 500 g on the user's own day, 100 g on the server's. Scoring the server's day would
+        # answer 100.0; scoring both would answer 600.0.
+        db.session.add_all(
+            [
+                DailyLog(
+                    user_id=user.id,
+                    log_date=their_today,
+                    my_food_id=food.id,
+                    amount_grams=500,
+                ),
+                DailyLog(
+                    user_id=user.id,
+                    log_date=date.today(),
+                    my_food_id=food.id,
+                    amount_grams=100,
+                ),
+            ]
+        )
+        db.session.commit()
+
+        data = get_nutrient_intake_vs_goals(user.id)
+
+        assert data["calories"]["intake"] == 500.0
 
 
 def test_get_body_composition_trends(app_with_db):

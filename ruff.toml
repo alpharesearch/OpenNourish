@@ -10,14 +10,24 @@ exclude = ["*.md"]
 # further rule families deliberately, one at a time, rather than inheriting a new default on a
 # version bump. See upgrade-research/PLAN.md M5 for the adoption order.
 #
-# DTZ003 is one rule, not the DTZ family, and is pinned deliberately: `datetime.utcnow()` is
-# deprecated on 3.12 and returns a naive datetime under a name that claims otherwise. The rest
-# of DTZ is still open (0.16.8 counts: DTZ011 `date.today()` 108, DTZ001 10, DTZ005 8,
-# DTZ007 2) — those are semantics decisions about user-local days, not a mechanical pass, and
-# enabling them here would fail the gate. Naive UTC is the app's storage currency: use
-# `opennourish.time_utils.utcnow_naive()`, see `opennourish/AGENTS.md`.
-select = ["E4", "E7", "E9", "F", "DTZ003"]
+# The whole DTZ family has been pinned since 2026-09-26 (upgrade-research/PLAN.md M5). The
+# contract it enforces: a *stored* instant is naive UTC and comes from
+# `opennourish.time_utils.utcnow_naive()`; "today" on a request path is the **user's** day
+# (`time_utils.get_user_today(user.timezone)`), never `date.today()`. Server-local "today" is
+# correct in exactly two places — CLI seeders (three `# noqa: DTZ011` in `opennourish/__init__.py`)
+# and tests — and `dt.fromisoformat(s)` beats `datetime.strptime(s, "%Y-%m-%d").date()` for a
+# calendar date that was never an instant. DTZ003, the first rule pinned here (2026-09-25), is
+# included: `datetime.utcnow()` is deprecated on 3.12 and returns a naive value under a name
+# that claims otherwise.
+select = ["E4", "E7", "E9", "F", "DTZ"]
 
 # Ignore E402 (module level import not at top of file) in __init__.py files
 [lint.per-file-ignores]
 "__init__.py" = ["E402", "F401"]
+# Tests build naive fixture dates (DTZ001) and use `date.today()` as their "now" (DTZ011); the
+# naive-UTC contract they exist to protect would be *broken* by satisfying the rule. One caveat
+# travels with this exemption and does not need a config entry: a test whose subject is a day
+# window must build its fixture on the same clock the code uses — `get_user_today(user.timezone)`
+# — or it drifts a day behind production after the server's midnight. See
+# `tests/test_analytics.py::test_get_nutrient_intake_vs_goals`.
+"tests/**" = ["DTZ001", "DTZ011"]

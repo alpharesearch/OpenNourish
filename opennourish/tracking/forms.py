@@ -1,13 +1,13 @@
 from flask_wtf import FlaskForm
 from wtforms import DateField, FloatField, SubmitField
 from wtforms.validators import DataRequired, Optional
-from datetime import date
 from flask_login import current_user
+from opennourish.time_utils import user_today_default
 
 
 class CheckInForm(FlaskForm):
     checkin_date = DateField(
-        "Check-in Date", default=date.today, validators=[DataRequired()]
+        "Check-in Date", default=user_today_default, validators=[DataRequired()]
     )
 
     # Metric fields

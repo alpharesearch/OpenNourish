@@ -1,11 +1,14 @@
 from models import (
     db,
+    User,
     Recipe,
     MyFood,
     MyMeal,
     DailyLog,
 )
-from datetime import date
+from datetime import date, timedelta
+
+from opennourish.time_utils import get_user_today
 
 
 def setup_friend_data(friend_user):
@@ -30,6 +33,35 @@ def setup_friend_data(friend_user):
     db.session.commit()
 
     return friend_recipe, friend_food, friend_meal
+
+
+def test_the_scoreboard_week_is_the_users_own(app_with_db, auth_client):
+    """`dashboard` and `exercise` both honour `User.week_start_day`; the friends scoreboard used
+    to compute `datetime.now().date()` and a hardcoded Monday. A Sunday-start user's Sunday
+    belongs to the *previous* Monday-start week, so one log on their own Sunday reads
+    `Diary Logs: 1` only if the route uses their week — no dependence on the current date.
+    """
+    with app_with_db.app_context():
+        user = User.query.filter_by(username="testuser").one()
+        user.week_start_day = "Sunday"
+        db.session.commit()
+
+        today = get_user_today(user.timezone)
+        their_sunday = today - timedelta(days=(today.weekday() + 1) % 7)
+        db.session.add(
+            DailyLog(
+                user_id=user.id,
+                log_date=their_sunday,
+                meal_name="Breakfast",
+                amount_grams=100,
+            )
+        )
+        db.session.commit()
+
+    response = auth_client.get("/friends/", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert "Diary Logs: 1" in response.data.decode()
 
 
 def test_view_friends_recipes(auth_client_with_friendship):

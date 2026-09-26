@@ -25,7 +25,7 @@ from models import (
     Friendship,
     FastingSession,
 )
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from opennourish.time_utils import get_user_today
 from opennourish.utils import (
     same_host_referrer,
@@ -454,7 +454,7 @@ def move_entry():
         return redirect(same_host_referrer() or url_for(DIARY_ROUTE))
 
     try:
-        target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
+        target_date = date.fromisoformat(target_date_str)
         log_entry.log_date = target_date
         log_entry.meal_name = target_meal_name
         db.session.commit()
@@ -488,7 +488,7 @@ def copy_entry():
         return redirect(same_host_referrer() or url_for(DIARY_ROUTE))
 
     try:
-        target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
+        target_date = date.fromisoformat(target_date_str)
 
         new_log_entry = DailyLog(
             user_id=current_user.id,

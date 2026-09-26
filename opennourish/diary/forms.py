@@ -8,7 +8,7 @@ from wtforms import (
     SelectField,
 )
 from wtforms.validators import DataRequired, Length, NumberRange
-from datetime import date
+from opennourish.time_utils import user_today_default
 
 
 class MealForm(FlaskForm):
@@ -45,6 +45,9 @@ class AddToLogForm(FlaskForm):
         validators=[DataRequired()],
     )
     log_date = DateField(
-        "Date", default=date.today, format="%Y-%m-%d", validators=[DataRequired()]
+        "Date",
+        default=user_today_default,
+        format="%Y-%m-%d",
+        validators=[DataRequired()],
     )
     submit = SubmitField("Add")

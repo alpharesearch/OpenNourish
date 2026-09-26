@@ -6,7 +6,6 @@ from flask import (
     send_file,
     current_app,
 )
-from datetime import datetime
 from models import (
     db,
     Food,
@@ -14,6 +13,7 @@ from models import (
     Recipe,
     UnifiedPortion,
 )
+from opennourish.time_utils import utcnow_naive
 from opennourish.utils import (
     get_available_portions,
 )
@@ -350,7 +350,7 @@ def generate_nutrition_label_pdf(fdc_id):
                 cwd=tmpdir,
             )
 
-            timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
+            timestamp = utcnow_naive().strftime(TIMESTAMP_FORMAT)
             response = send_file(
                 pdf_file_path,
                 as_attachment=False,
@@ -673,7 +673,7 @@ def generate_myfood_label_pdf(my_food_id, label_only=False):
                 cwd=tmpdir,
             )
 
-            timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
+            timestamp = utcnow_naive().strftime(TIMESTAMP_FORMAT)
             safe_description = (
                 re.sub(r"[^\w\s-]", "", my_food.description).strip().replace(" ", "_")
             )
@@ -1038,7 +1038,7 @@ def generate_recipe_label_pdf(recipe_id, label_only=False):
                 cwd=tmpdir,
             )
 
-            timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
+            timestamp = utcnow_naive().strftime(TIMESTAMP_FORMAT)
             safe_recipe_name = (
                 re.sub(r"[^\w\s-]", "", recipe.name).strip().replace(" ", "_")
             )

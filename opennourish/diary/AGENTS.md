@@ -17,7 +17,7 @@ The diary page for any date, per-meal entry editing (update, move, copy, delete)
 
 ## Local Contracts
 
-- Dates are user-local. Parse the `log_date_str` path segment defensively and compare against `time_utils.get_user_today(current_user.timezone)`; never against `date.today()`.
+- Dates are user-local. Parse the `log_date_str` path segment defensively and compare against `time_utils.get_user_today(current_user.timezone)`; never against `date.today()`. A submitted calendar date is parsed with `date.fromisoformat` — it was never an instant, so do not route it through `strptime`. `AddToLogForm.log_date` pre-fills with `time_utils.user_today_default()`, not `default=date.today`, which used to offer the modal yesterday to a user east of the server.
 - Meals come from `MEAL_CONFIG[User.meals_per_day]`. The page anchors each meal block as `meal-<meal-name-slug>`; mutations redirect with `_anchor` so the user lands back on the meal they edited. Preserve the slug formula.
 - Every mutation checks ownership with the standard idiom (`diary/routes.py:353-355` is the canonical shape). Saved meals may legitimately have a NULL `user_id` (orphaned by account deletion) — those must render read-only and must never be editable by any user.
 - `copy_meal_from_friend` L869 verifies an accepted `Friendship` in both directions **before** querying the friend's `DailyLog` rows, and rejects non-friends. Reuse that block wherever another user is addressed by username. `search/routes.py` `add_item`'s diary-meal copy branch now mirrors this (the old unguarded counter-example is fixed and locked by a friendship matrix in `tests/test_search_coverage.py`).

@@ -7,7 +7,7 @@ The pytest suite is the broadest of this repository's four gates and the only on
 ## Ownership
 
 - `conftest.py` — the single app-factory fixture and the login helpers every test reuses.
-- 75 test files, 1049 non-integration tests + 1 integration test (1050 collected). 16 of them are the `test_*_coverage.py` files raised for the 99% TOTAL pass; each mirrors a feature module and is named for it.
+- 75 test files, 1052 non-integration tests + 1 integration test (1053 collected). 16 of them are the `test_*_coverage.py` files raised for the 99% TOTAL pass; each mirrors a feature module and is named for it.
 - `pytest.ini` (repo root) — declares the `integration` marker only; no `addopts`, no `testpaths`.
 - `.coveragerc` (repo root) — `exclude_also` patterns only.
 - Not owned here: what each feature must do (feature AGENTS.md files), and the workflow file itself (`.github/workflows/ci.yml`, root-owned — it runs the commands below on every push and PR).
@@ -28,6 +28,7 @@ The pytest suite is the broadest of this repository's four gates and the only on
 - The `integration` marker gates exactly one test, `test_database_import.py:40`, which shells out to bare `python import_usda_data.py` and needs `persistent/usda_data/*.csv`. It does not skip when the CSVs are absent, so always run `-m "not integration"` as the default command.
 - Coverage runs line coverage only (`.coveragerc` has no `[run]` section, so no `source`, no `branch`, no `omit`). `test_config.py` imports generated temp modules, so `"/tmp/*"` must be in the omit list or TOTAL is polluted.
 - An assertion on `status_code == 200` with `follow_redirects=True` also passes when `@onboarding_required` bounces the request. Assert on rendered content, not just the status.
+- **A fixture's "today" must come from the user's clock, not the box's.** `ruff.toml` exempts `tests/**` from `DTZ001`/`DTZ011` — tests *exist* to build naive fixture dates — and that exemption hides a real trap: this checkout runs UTC-4 while every conftest user has the default `UTC` timezone, so `date.today()` and `get_user_today(user.timezone)` are **different dates for hours at a time**. Anything the code keys on the user's day (analytics windows, `log_date == today` comparisons, a `DateField` default) silently drifts a day behind if the fixture uses `date.today()`. Use `get_user_today("UTC")` — see `TODAY` in `tests/test_analytics.py` and `tests/test_main_tracking_coverage.py`; `date.today()` is fine only inside `test_the_day_window_follows_the_user_and_not_the_server`, whose whole point is the divergence.
 - Do not add English month or weekday names to HTML assertions unless the format string itself is the contract (current exception: `test_dashboard.py:199`).
 - Patch session/`db` methods on the **class**, not the instance: `monkeypatch.setattr(db.session, "commit", …)` restores on undo by writing the old bound method back as an **instance** attribute, which then permanently shadows any later `scoped_session.commit` (class-level) patch in a test that shares the app. Use `monkeypatch.setattr("sqlalchemy.orm.scoping.scoped_session.commit", …)` (see `test_search.py::test_add_item_exception`).
 - `app_with_db` yields **inside** an `app_context`, so Flask-Login's cached `g._login_user` survives across requests within one test; switching identity via `session_transaction()` alone silently keeps the first user. Pop `g._login_user` (or use a fresh client) to truly switch mid-test.
@@ -51,7 +52,7 @@ $P -m coverage run -m pytest -m "not integration" && \
   $P -m coverage report --skip-covered --omit="test*","/tmp/*"   # TOTAL is 99%
 ```
 
-Coverage TOTAL is **99%** (6174 statements, 47 misses); 53 modules are at 100%. The only files with any misses are: `exercise/routes.py` 85%, `goals/routes.py` 98%, `my_foods/routes.py` 99%, `recipes/routes.py` 99%, `search/routes.py` 97%, `utils.py` 99%. The `search`/`my_foods`/`recipes`/`utils` remainders are documented as dead or unreachable (duplicate-int guards, an unreachable `continue`, `PortionForm`-prevented validators, identity-map branches); `exercise` is the only lane where new tests would still move TOTAL.
+Coverage TOTAL is **99%** (6185 statements, 44 misses); 53 modules are at 100%. The only files with any misses are: `exercise/routes.py` 85%, `goals/routes.py` 98%, `my_foods/routes.py` 99%, `recipes/routes.py` 99%, `search/routes.py` 97%, `utils.py` 99%. The `search`/`my_foods`/`recipes`/`utils` remainders are documented as dead or unreachable (duplicate-int guards, an unreachable `continue`, `PortionForm`-prevented validators, identity-map branches); `exercise` is the only lane where new tests would still move TOTAL.
 
 ## Child DOX Index
 

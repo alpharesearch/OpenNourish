@@ -6,7 +6,7 @@ branch of the delete route, the analytics page with and without data, and the
 index redirects of the main blueprint.
 """
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from flask import url_for
@@ -34,7 +34,10 @@ from opennourish.tracking.analytics import (
     get_weekly_trends,
 )
 
-TODAY = date.today()
+# Every user here has the default timezone, and the analytics builders cut their window on
+# the user's day, so the fixture's "today" is UTC's. `date.today()` would be the box's —
+# on this checkout UTC-4, a different date for hours at a time.
+TODAY = get_user_today("UTC")
 
 
 @pytest.fixture

@@ -94,7 +94,7 @@ def test_edit_start_time_requires_active_fast(auth_client):
 
 def test_edit_start_time_rejects_future_and_invalid(auth_client, app_with_db):
     fast_id = _active_fast(app_with_db, "testuser")
-    future = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
+    future = (utcnow_naive() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
     auth_client.post("/fasting/edit_start_time", data={"start_time": future})
     with app_with_db.app_context():
         fast = db.session.get(FastingSession, fast_id)
@@ -111,7 +111,7 @@ def test_edit_start_time_survives_garbage_timezone(auth_client, app_with_db):
     """A corrupted stored timezone must not crash the timezone conversion."""
     fast_id = _active_fast(app_with_db, "testuser")
     _set_timezone(app_with_db, "testuser", "Not/AZone")
-    past = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M")
+    past = (utcnow_naive() - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M")
     response = auth_client.post(
         "/fasting/edit_start_time",
         data={"start_time": past},

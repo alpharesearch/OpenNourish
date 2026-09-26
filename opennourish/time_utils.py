@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask_login import current_user
-from flask import current_app
+from flask import current_app, has_request_context
 
 # --- Pure, Testable Functions ---
 
@@ -60,6 +60,22 @@ def resolve_timezone(user_timezone_str="UTC"):
 def get_user_today(user_timezone_str="UTC"):
     """Returns the current date for a given timezone string."""
     return datetime.now(resolve_timezone(user_timezone_str)).date()
+
+
+def user_today_default():
+    """A `DateField(default=...)` that answers the viewer's date, not the server's.
+
+    `CheckInForm.checkin_date` (the progress page) and `AddToLogForm.log_date` (the add-to-diary
+    modal) pre-filled themselves with
+    `default=date.today`, which is the box's calendar: a user a day ahead of the server got a form
+    offering yesterday and recorded the entry against the wrong date, with nothing to notice.
+    WTForms calls a callable default whenever it renders an unbound form, so this is per request.
+    The fallback is for the case with no viewer — a form built in a script or a test — where there
+    is no timezone to honour.
+    """
+    if has_request_context() and current_user.is_authenticated:
+        return get_user_today(current_user.timezone)
+    return get_user_today("UTC")
 
 
 def to_user_timezone(utc_dt, user_timezone_str="UTC"):

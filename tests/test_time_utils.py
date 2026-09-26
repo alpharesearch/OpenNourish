@@ -4,6 +4,7 @@ from flask_login import login_user
 
 from opennourish.time_utils import (
     get_user_today,
+    user_today_default,
     to_user_timezone,
     to_utc,
     get_start_of_week,
@@ -14,6 +15,40 @@ from models import User, db, FastingSession
 # ---
 # Tests for Pure Functions
 # ---
+
+
+def test_user_today_default_answers_the_viewer_and_not_the_server(app_with_db):
+    """What `CheckInForm.checkin_date` and `AddToLogForm.log_date` pre-fill.
+
+    Both used `default=date.today` — the box's calendar, which is a different date for a user a
+    day ahead of it, so their form offered yesterday and their entry landed on it silently. A
+    UTC+14 user is a day ahead of a UTC box for part of every day; asserting against
+    `get_user_today` of that zone pins the behaviour without depending on what time it is now.
+    """
+    with app_with_db.app_context():
+        user = User(
+            username="far_ahead",
+            email="far-ahead@example.com",
+            timezone="Pacific/Kiritimati",
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        with app_with_db.test_request_context("/"):
+            login_user(user)
+            assert user_today_default() == get_user_today("Pacific/Kiritimati")
+            # The wiring, not just the helper: an unbound form applies its default.
+            from opennourish.diary.forms import AddToLogForm
+
+            # The wiring, not just the helper: an unbound form applies its default.
+            assert AddToLogForm().log_date.data == get_user_today("Pacific/Kiritimati")
+
+        # An authenticated-less request has no viewer to honour: UTC, not a crash.
+        with app_with_db.test_request_context("/"):
+            assert user_today_default() == get_user_today("UTC")
+
+    # And outside any request at all — a script or a seeder building a form.
+    assert user_today_default() == get_user_today("UTC")
 
 
 def test_utcnow_naive_is_naive_on_the_utc_clock():

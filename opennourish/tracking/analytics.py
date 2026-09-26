@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from collections import defaultdict
 from models import (
     db,
+    User,
     DailyLog,
     ExerciseLog,
     CheckIn,
@@ -19,6 +20,19 @@ from opennourish.utils import (
     calculate_intake_vs_goal_deviation,
     calculate_weekly_nutrition_summary,
 )
+from opennourish.time_utils import get_user_today
+
+
+def _user_today(user_id):
+    """The day the user's analytics are cut on — theirs, not the server's.
+
+    Every window below ends at "today", and `DailyLog.log_date` is a plain date the user chose
+    from their own calendar, so a server-local `date.today()` silently drops a UTC+13 user's
+    whole current day off the end of each window and scores their intake against yesterday's
+    logs. Server-local "today" is only ever right in a CLI seeder — see `opennourish/AGENTS.md`.
+    """
+    user = db.session.get(User, user_id)
+    return get_user_today(user.timezone if user else "UTC")
 
 
 def get_daily_nutrition_data(user_id, days=30):
@@ -26,7 +40,7 @@ def get_daily_nutrition_data(user_id, days=30):
     Get daily nutrition data for the specified number of days.
     Returns a list of dictionaries with date and nutrition values.
     """
-    end_date = date.today()
+    end_date = _user_today(user_id)
     start_date = end_date - timedelta(days=days - 1)
 
     logs = (
@@ -77,7 +91,7 @@ def get_macro_distribution_by_meal(user_id, days=7):
     Get macro distribution data grouped by meal type.
     Returns data for pie charts showing macro composition per meal.
     """
-    end_date = date.today()
+    end_date = _user_today(user_id)
     start_date = end_date - timedelta(days=days - 1)
 
     logs = DailyLog.query.filter(
@@ -112,7 +126,7 @@ def get_weekly_trends(user_id):
     Get weekly trends for macros and calories.
     Returns data suitable for line charts showing progress over weeks.
     """
-    today = date.today()
+    today = _user_today(user_id)
     one_year_ago = today - timedelta(days=365)
 
     logs = (
@@ -176,7 +190,7 @@ def get_food_category_breakdown(user_id, days=30):
     Analyze food consumption by category.
     Returns data showing what percentage of calories come from each food category.
     """
-    end_date = date.today()
+    end_date = _user_today(user_id)
     start_date = end_date - timedelta(days=days - 1)
 
     logs = DailyLog.query.filter(
@@ -238,7 +252,7 @@ def get_exercise_vs_diet_balance(user_id, days=30):
     Calculate balance between calories consumed and calories burned.
     Returns data for visualization showing net calorie balance.
     """
-    end_date = date.today()
+    end_date = _user_today(user_id)
     start_date = end_date - timedelta(days=days - 1)
 
     diet_logs = DailyLog.query.filter(
@@ -294,7 +308,7 @@ def get_nutrient_intake_vs_goals(user_id):
     Calculate how user's intake compares to their goals for each macro.
     Returns data showing progress toward daily targets.
     """
-    today = date.today()
+    today = _user_today(user_id)
     logs = DailyLog.query.filter(
         DailyLog.user_id == user_id, DailyLog.log_date == today
     ).all()

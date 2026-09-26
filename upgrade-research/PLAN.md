@@ -8,13 +8,14 @@ milestone that consumes them lands, and are deleted once `requirements.txt` supe
 landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — Typst
 escaping (2026-09-23), the image diet (2026-09-24) and the `datetime.utcnow()` migration with a `DTZ003`
 gate (2026-09-25) are done; the rest of `DTZ`, the other ruff families, `pytest-flask`, the `@preview`
-vendoring and the 3.14 refresh are open. **M6 is closed**: 6.1 (global CSRF enforcement), 6.3, 6.4, 6.5 and 6.6 all landed between
+vendoring and the 3.14 refresh are open, and M5's `DTZ` work landed the same day with it: the whole
+DTZ family is a gate, and four request-path "today is the server's day" bugs went with it. **M6 is closed**: 6.1 (global CSRF enforcement), 6.3, 6.4, 6.5 and 6.6 all landed between
 2026-09-24 and 2026-09-26, and both halves of 6.2 landed on 2026-09-26 — the two mutating GETs became
 POSTs, and the portion-sequence backfill left the request path entirely.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (54 packages, was 72), Flask-Mailing is at 3.0.0, `ruff.toml` pins its rule
 families, the image's `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and
-PR, and every gate is green — 1049 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
+PR, and every gate is green — 1052 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
 advisory at 204 findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py`
 generates it from the installed wheels plus the vendored assets in `static/`, and `--check` fails if it
 drifts.
@@ -272,7 +273,7 @@ at `40a3940`, all nine steps success in 4m51s: lock install, `pip check`, typst 
 lint, formatting, licence inventory. Job logs need repo admin rights, so failures are diagnosed by
 replaying the steps locally, which is what worked here.
 
-## M5 — Follow-up cleanup (tracked, not blocking) — Typst escaping (2026-09-23), the image diet (2026-09-24) and `datetime.utcnow()` (2026-09-25) LANDED, the rest open
+## M5 — Follow-up cleanup (tracked, not blocking) — Typst escaping (2026-09-23), the image diet (2026-09-24), `datetime.utcnow()` (2026-09-25) and the whole `DTZ` family (2026-09-26) LANDED, the rest open
 
 - **`datetime.utcnow()` — DONE (2026-09-25).** 12 call sites (4 production: `fasting/routes.py` ×3,
   `dashboard/routes.py` ×1; 8 in `test_fasting_coverage.py`) plus the bare `default=datetime.utcnow` on
@@ -292,13 +293,40 @@ replaying the steps locally, which is what worked here.
   * `models.py` cannot import the canonical helper: `opennourish/__init__.py:4` imports `models` at module
     level, so the import dies with `cannot import name 'db' from 'models'` (measured). Hence a documented
     private twin in `models.py`, with tests pinning both bodies return naive UTC.
-- **Adopt ruff rules family by family** (`I001` 124, then `RUF059` 65, `BLE001` 13) instead of a 372-finding
-  big bang. `DTZ003` landed as a *single rule* on 2026-09-25 — the only DTZ rule this tree is clean under.
-  What is left of DTZ is semantics, not mechanics: `DTZ011` (`date.today()`) 108, `DTZ001` 10, `DTZ005` 8,
-  `DTZ007` 2. Most `DTZ011` findings sit in tests and CLI seeders where the app's rule allows it, but
-  `tracking/analytics.py` has 6 on request paths and `friends/routes.py:14` computes "today" as
-  `datetime.now().date()` (server-local) — both are real bugs per `opennourish/AGENTS.md`, and they belong
-  with this family, not with the utcnow work.
+- **The whole `DTZ` family is pinned — LANDED (2026-09-26).** `ruff.toml` selects `DTZ` now, not the single
+  `DTZ003` rule that landed on 2026-09-25, and the pass that made that possible found four bugs rather than
+  a lint cleanup. Production had 16 findings; the split turned out to be the interesting part:
+
+  * **`tracking/analytics.py` — 6 × `date.today()` on request paths (the real bug).** Every chart window
+    ended at the *server's* day while `DailyLog.log_date` is a date the user chose from their own
+    calendar, so a user east of the box lost their current day from every window, and
+    `get_nutrient_intake_vs_goals` compared their goals against yesterday. All six now end at
+    `_user_today(user_id)`, which reads the owner's timezone (a primary-key read; the identity map makes
+    six calls on one page cost one query).
+  * **`friends/routes.py` — the scoreboard week.** It computed `datetime.now().date()` and then a
+    hardcoded Monday, while `dashboard` and `exercise` honour `User.week_start_day`. Both halves were
+    wrong: one log on a Sunday-start user's Sunday read `Diary Logs: 0`.
+  * **Two pre-filled `DateField`s, which ruff cannot see.** `CheckInForm.checkin_date` and
+    `AddToLogForm.log_date` used `default=date.today` — a *reference*, so `DTZ011` (which matches calls)
+    never flagged them, and they offered yesterday to a user east of the server. Both use the new
+    `time_utils.user_today_default()` (UTC when there is no request, so a script can still build a form).
+    Found by accident: the DTZ pass made one tracking test fail, and the test was right.
+  * **`diary` move/copy parsed a calendar date with `strptime`** (`DTZ007` ×2) — a date that was never an
+    instant, so both now use `date.fromisoformat`, which is already what the other three date parses in
+    that file do. One behaviour difference, checked: `strptime("%Y-%m-%d")` accepted `2026-1-5` and
+    `fromisoformat` does not, but the only producer of that string is `<input type="date">`, which always
+    zero-pads, and both sites sit in a `try/except Exception` that flashes and rolls back. The five export/label filename stamps became
+    `utcnow_naive()`: they are uniqueness stamps, not clocks, and the alternative (the viewer's
+    timezone) needs a request context that three label tests do not have.
+  * The three `date.today()` calls in the demo-data seeder are correct and carry `# noqa: DTZ011`.
+
+  Tests are exempt from `DTZ001`/`DTZ011` and that is the only exemption, because naive fixture dates are
+  the contract those tests exist to protect. What the exemption does hide is spelled out in
+  `tests/AGENTS.md`: on this UTC-4 checkout `date.today()` and a UTC user's today are different dates for
+  hours at a time, so two test files moved their `TODAY` onto the user's clock and one test in
+  `tests/test_analytics.py` exists to keep that divergence visible.
+- **Adopt the remaining ruff families one at a time** (`I001` 124, then `RUF059` 65, `BLE001` 13) instead of
+  a 372-finding big bang — the DTZ pass is the template: fix the semantics, then pin the rule.
 - **`pytest-flask`** works on pytest 9 but has been unmaintained since 2023-10 (classifiers stop at
   3.9). Replace with plain fixtures when convenient.
 - **Next interpreter refresh: 3.14** (security to 2030-10-31). `djlint 1.46.2`, `pytest 9.1.1`,
