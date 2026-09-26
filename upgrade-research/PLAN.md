@@ -6,17 +6,18 @@ milestone that consumes them lands, and are deleted once `requirements.txt` supe
 
 **Status as of 2026-09-26: M0, M1, M2, M2b, M3 and M4's CI step have landed, and deployment provenance
 landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — Typst
-escaping (2026-09-23), the image diet (2026-09-24) and the `datetime.utcnow()` migration with a `DTZ003`
-gate (2026-09-25) are done; the rest of `DTZ`, the other ruff families, `pytest-flask`, the `@preview`
-vendoring and the 3.14 refresh are open; M5's `DTZ` work landed the same day with it (the whole
-DTZ family is a gate, and four request-path "today is the server's day" bugs went with it), as did `I001`
-(import sorting, 122 blocks, mechanical). **M6 is closed**: 6.1 (global CSRF enforcement), 6.3, 6.4, 6.5 and 6.6 all landed between
+escaping (2026-09-23), the image diet (2026-09-24), the `datetime.utcnow()` migration with a `DTZ003`
+gate (2026-09-25), the whole `DTZ` family as a gate (2026-09-26, which took four request-path "today is
+the server's day" bugs with it), `I001` import sorting (2026-09-26, 122 blocks, mechanical) and the
+`@preview` vendoring (2026-09-26, so labels render with no egress at all) are done. What is left of M5 is
+`RUF059`, `BLE001`, `pytest-flask` and the 3.14 refresh. **M6 is closed**: 6.1 (global CSRF enforcement), 6.3, 6.4, 6.5 and 6.6 all landed between
 2026-09-24 and 2026-09-26, and both halves of 6.2 landed on 2026-09-26 — the two mutating GETs became
 POSTs, and the portion-sequence backfill left the request path entirely.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (54 packages, was 72), Flask-Mailing is at 3.0.0, `ruff.toml` pins its rule
-families, the image's `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and
-PR, and every gate is green — 1052 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
+families, the image's `typst` is 0.15.1 and carries its two `@preview` packages, `.github/workflows/ci.yml`
+runs the four gates on every push and
+PR, and every gate is green — 1053 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
 advisory at 204 findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py`
 generates it from the installed wheels plus the vendored assets in `static/`, and `--check` fails if it
 drifts.
@@ -274,7 +275,7 @@ at `40a3940`, all nine steps success in 4m51s: lock install, `pip check`, typst 
 lint, formatting, licence inventory. Job logs need repo admin rights, so failures are diagnosed by
 replaying the steps locally, which is what worked here.
 
-## M5 — Follow-up cleanup (tracked, not blocking) — Typst escaping (2026-09-23), the image diet (2026-09-24), `datetime.utcnow()` (2026-09-25) and the whole `DTZ` family (2026-09-26) LANDED, the rest open
+## M5 — Follow-up cleanup (tracked, not blocking) — Typst escaping (2026-09-23), the image diet (2026-09-24), `datetime.utcnow()` (2026-09-25), the whole `DTZ` family (2026-09-26), `I001` (2026-09-26) and the `@preview` vendoring (2026-09-26) LANDED, the rest open
 
 - **`datetime.utcnow()` — DONE (2026-09-25).** 12 call sites (4 production: `fasting/routes.py` ×3,
   `dashboard/routes.py` ×1; 8 in `test_fasting_coverage.py`) plus the bare `default=datetime.utcnow` on
@@ -365,10 +366,27 @@ replaying the steps locally, which is what worked here.
   is cosmetic, and escaping line starts would strip the bullets from hand-written lists. Locked by
   `MARKUP_HAZARDS` in `tests/test_typst_coverage.py`: one real render per builder plus source-level
   assertions for both contexts.
-- **Labels need outbound internet at render time.** The image caches no `@preview` packages and the
-  `subprocess.run` calls pass no `--root`, so the first label render inside a container downloads
-  `nutrition-label-nam:0.2.0` and `codetastic:0.2.2` from typst.app; with no egress every label route
-  500s. Fetching both during the build into `TYPST_PACKAGE_CACHE_PATH` removes the dependency.
+- **Labels needed outbound internet at render time — DONE (2026-09-26).** The image cached no `@preview`
+  packages and the `subprocess.run` calls pass no `--root`, so the first label render inside a container
+  downloaded `nutrition-label-nam:0.2.0` and `codetastic:0.2.2` (measured host: `packages.typst.org`, not
+  typst.app); with no egress typst exited non-zero, which `typst_utils.py` turns into
+  `f"Error generating PDF: {e.stderr}", 500` — every label route, not just the first. The `Dockerfile` now
+  sets `TYPST_PACKAGE_CACHE_PATH=/opt/typst/packages` and compiles a generated probe that imports every
+  `@preview/<name>:<version>` greppable out of `opennourish/typst_utils.py`: 16 files, 164 KB, both MIT
+  (`nutrition-label-nam` is this project's own registry template). Deriving the list keeps the pins in the
+  template file and keeps the layer from churning with application edits. Three guards make it
+  self-checking rather than hopeful: the spec list must be non-empty (move the templates out of
+  `typst_utils.py` and the build breaks instead of silently vendoring nothing), every spec must appear in
+  typst's own `--deps` output (the cache really served what was listed), and the probe recompiles with
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` pointed at a closed port — typst 0.15.1 has **no** `--network`
+  flag, so its reqwest proxy handling is the only in-band offline proof available, and the negative
+  control confirms it bites (`failed to download package
+  (https://packages.typst.org/preview/nutrition-label-nam-0.2.0.tar.gz: Connection refused)` on an empty
+  cache, success on a full one). Verified in the shipped image rather than in a build log:
+  `/app/BUILD_INFO` — which gained a `typst_packages=` line for exactly this question — prints
+  `typst_packages=@preview/codetastic:0.2.2 @preview/nutrition-label-nam:0.2.0`, and
+  `docker run --rm --network none … -m pytest -m "not integration" -q` inside that image reports
+  **1053 passed, 1 deselected**. Image size is unchanged at 347 MB.
   Checked on the way: typst's default root confines `#read` to the temp directory, so injected markup
   cannot read the filesystem — `#read("/etc/hostname")` fails on 0.13.1 and 0.15.1 alike.
 - **`.dockerignore` was leaking most of the image — DONE (2026-09-24).** `.kilocode/` (49 MB here, 58 MB

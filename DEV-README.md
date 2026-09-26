@@ -145,7 +145,7 @@ This section outlines how to use Docker for local development. The setup uses vo
     cp .env.example .env
     ```
     
-3.  **Typst Binary:** Ensure the `typst/` directory (containing the `typst` executable, a typesetting system used for generating PDF reports) is present in the project root. This directory is copied into the Docker image during the build process.
+3.  **Typst:** nothing to prepare for the image. The `Dockerfile` downloads the pinned `typst` build (v0.15.1) itself and, in the same stage, vendors the two `@preview` packages the nutrition-label templates import into `/opt/typst/packages`, so the container renders labels with no outbound internet at all (`cat /app/BUILD_INFO` prints the vendored specs). A `typst/` directory in the project root is not read by anything and is `.dockerignore`d. To run the label tests on your own machine you need `typst` on `PATH` (`typst --version`); the first render downloads the packages into your user cache.
 
 ### Building and Running the Container
 

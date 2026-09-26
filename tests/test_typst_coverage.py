@@ -11,6 +11,8 @@ generated artefacts are verified by their magic bytes. Failure paths fake
 ``subprocess.run`` so no compiler is involved.
 """
 
+import pathlib
+import re
 import subprocess
 
 import pytest
@@ -1093,3 +1095,55 @@ def test_generate_recipe_label_svg_missing_binary(ctx, label_user, monkeypatch):
     message, status = typst_utils.generate_recipe_label_svg(recipe.id)
     assert status == 500
     assert message == typst_utils.TYPST_NOT_FOUND_ERROR
+
+
+# ---------------------------------------------------------------------------
+# The image's vendored @preview package list is derived from this source file.
+# ---------------------------------------------------------------------------
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+LOOSE_PACKAGE_REF = re.compile(r"@preview/[^\s\"']+")
+
+
+def test_the_image_vendors_every_package_this_file_imports():
+    """`Dockerfile` greps this file to decide what to pre-download, so drift is silent.
+
+    The vendored cache is what lets a container render a label with no egress (PLAN.md M5). Two
+    mistakes would shrink that cache without failing anything at build time, and both are pinned
+    here rather than in the Dockerfile's own guards:
+
+    * a version shape the Dockerfile's regex cannot match — `0.2`, or a `v` prefix — simply is not
+      vendored, and the container then needs internet for that one package again;
+    * an import that lands anywhere else under `opennourish/` is outside the grep's one-file scope.
+
+    The pattern is read out of the Dockerfile rather than repeated, so this test cannot drift from
+    the thing it is checking.
+    """
+    dockerfile = (REPO_ROOT / "Dockerfile").read_text()
+    derived = re.search(r"grep -hoE '([^']+)'", dockerfile)
+    assert derived, (
+        "the Dockerfile no longer derives its typst package list by grepping this file"
+    )
+    vendored = re.compile(derived.group(1))
+
+    source = (REPO_ROOT / "opennourish" / "typst_utils.py").read_text()
+    referenced = set(LOOSE_PACKAGE_REF.findall(source))
+    assert referenced, (
+        "opennourish/typst_utils.py no longer imports an @preview package"
+    )
+
+    # Matched in full, not merely partially: `@preview/x:0.2.0-rc1` matching as `0.2.0` would
+    # vendor a different package and still leave this render needing the network.
+    for ref in referenced:
+        assert vendored.findall(ref) == [ref], (
+            f"{ref} is not fully matched by the Dockerfile's {vendored.pattern}"
+        )
+
+    strays = [
+        str(path.relative_to(REPO_ROOT))
+        for path in (REPO_ROOT / "opennourish").rglob("*.py")
+        if path.name != "typst_utils.py" and LOOSE_PACKAGE_REF.search(path.read_text())
+    ]
+    assert strays == [], (
+        f"@preview imports outside typst_utils.py are never vendored: {strays}"
+    )
