@@ -10,6 +10,11 @@ exclude = ["*.md"]
 # further rule families deliberately, one at a time, rather than inheriting a new default on a
 # version bump. See upgrade-research/PLAN.md M5 for the adoption order.
 #
+# `I` (isort) joined on 2026-09-26: 122 blocks were unsorted, all of it mechanical, and the
+# result is that each file now says what it depends on in one readable stack — standard library,
+# third party, then this repo's `constants` / `models`. Nothing moved across a non-import
+# statement, so `tests/conftest.py`'s post-`sys.path.insert` block stays below the path hack.
+
 # The whole DTZ family has been pinned since 2026-09-26 (upgrade-research/PLAN.md M5). The
 # contract it enforces: a *stored* instant is naive UTC and comes from
 # `opennourish.time_utils.utcnow_naive()`; "today" on a request path is the **user's** day
@@ -19,7 +24,7 @@ exclude = ["*.md"]
 # calendar date that was never an instant. DTZ003, the first rule pinned here (2026-09-25), is
 # included: `datetime.utcnow()` is deprecated on 3.12 and returns a naive value under a name
 # that claims otherwise.
-select = ["E4", "E7", "E9", "F", "DTZ"]
+select = ["E4", "E7", "E9", "F", "I", "DTZ"]
 
 # Ignore E402 (module level import not at top of file) in __init__.py files
 [lint.per-file-ignores]
@@ -31,3 +36,9 @@ select = ["E4", "E7", "E9", "F", "DTZ"]
 # — or it drifts a day behind production after the server's midnight. See
 # `tests/test_analytics.py::test_get_nutrient_intake_vs_goals`.
 "tests/**" = ["DTZ001", "DTZ011"]
+
+[lint.isort]
+# `models.py` and `constants.py` are importable top-level modules because they sit at the repo
+# root. Name them: left to the source-layout heuristics, a ruff upgrade that changes those rules
+# would reclassify them as third-party and reshuffle every import block in the tree.
+known-first-party = ["constants", "import_usda_data", "models"]

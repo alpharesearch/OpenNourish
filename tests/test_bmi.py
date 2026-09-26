@@ -1,7 +1,9 @@
-import pytest
 from datetime import date
+
+import pytest
+
+from models import CheckIn, User, UserGoal, db
 from opennourish.utils import calculate_bmi
-from models import db, User, CheckIn, UserGoal
 
 
 def test_calculate_bmi_valid():

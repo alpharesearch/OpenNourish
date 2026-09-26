@@ -11,8 +11,8 @@ import io
 import pytest
 import yaml
 from flask import g, url_for
+
 from models import (
-    db,
     Food,
     FoodCategory,
     MyFood,
@@ -21,6 +21,7 @@ from models import (
     RecipeIngredient,
     UnifiedPortion,
     User,
+    db,
 )
 
 SERVER_PREFIX = "http://localhost.localdomain:5000"

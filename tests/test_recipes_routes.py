@@ -1,5 +1,6 @@
 import pytest
-from models import db, Recipe, RecipeIngredient, User, MyFood, UnifiedPortion
+
+from models import MyFood, Recipe, RecipeIngredient, UnifiedPortion, User, db
 
 
 @pytest.fixture

@@ -1,10 +1,11 @@
 import pytest
+
 from models import (
-    db,
+    MyFood,
     Recipe,
     RecipeIngredient,
-    MyFood,
     User,
+    db,
 )
 
 

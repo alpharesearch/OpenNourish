@@ -1,6 +1,8 @@
-from models import db, User, UserGoal, DailyLog, MyFood
 from datetime import date
+
 from flask import url_for
+
+from models import DailyLog, MyFood, User, UserGoal, db
 
 
 def test_get_remaining_calories(auth_client):

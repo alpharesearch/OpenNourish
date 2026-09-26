@@ -1,17 +1,19 @@
+import os
+from datetime import datetime, timezone
+
 from flask import (
     Blueprint,
-    render_template,
-    request,
-    redirect,
-    url_for,
-    send_from_directory,
     current_app,
     jsonify,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
 )
-from datetime import datetime, timezone
 from flask_login import current_user
-from models import db, Food
-import os
+
+from models import Food, db
 from opennourish.typst_utils import (
     generate_nutrition_label_pdf,
     generate_nutrition_label_svg,

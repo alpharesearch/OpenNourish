@@ -1,15 +1,17 @@
-from flask import request, flash, redirect, url_for
-from . import usda_admin_bp
-from models import db, UnifiedPortion, Food
+from flask import flash, redirect, request, url_for
 from flask_login import login_required
-from opennourish.decorators import key_user_required
-from opennourish.utils import prepare_undo_and_delete, same_host_referrer
+
 from constants import (
+    DASHBOARD_INDEX_ROUTE,
     MAIN_FOOD_DETAIL_ENDPOINT,
     PORTIONS_TABLE_ANCHOR,
     USDA_PORTION_NOT_FOUND_MSG,
-    DASHBOARD_INDEX_ROUTE,
 )
+from models import Food, UnifiedPortion, db
+from opennourish.decorators import key_user_required
+from opennourish.utils import prepare_undo_and_delete, same_host_referrer
+
+from . import usda_admin_bp
 
 
 def _mark_portions_as_modified(fdc_id):

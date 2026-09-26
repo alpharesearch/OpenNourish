@@ -1,9 +1,11 @@
 import os
 import secrets
+
 from dotenv import load_dotenv
 from sqlalchemy import inspect
-from models import db, SystemSetting
-from constants import DIET_PRESETS, CORE_NUTRIENT_IDS
+
+from constants import CORE_NUTRIENT_IDS, DIET_PRESETS
+from models import SystemSetting, db
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 # Define the path for data that needs to persist across container restarts

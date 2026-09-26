@@ -7,9 +7,8 @@ store arbitrary strings); they fall back to UTC via resolve_timezone.
 
 from datetime import datetime, timedelta
 
+from models import FastingSession, User, db
 from opennourish.time_utils import utcnow_naive
-
-from models import db, FastingSession, User
 
 
 def _set_timezone(app, username, value):

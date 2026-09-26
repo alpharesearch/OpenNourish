@@ -1,45 +1,47 @@
+from datetime import datetime, timezone
+
+import yaml
 from flask import (
     Blueprint,
-    render_template,
-    request,
-    redirect,
-    url_for,
-    flash,
-    current_app,
     Response,
     abort,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
 )
-from datetime import datetime, timezone
-from opennourish.time_utils import utcnow_naive
-import yaml
-from flask_login import login_required, current_user
-from models import (
-    db,
-    Recipe,
-    RecipeIngredient,
-    Food,
-    MyFood,
-    MyMeal,
-    UnifiedPortion,
-    FoodCategory,
-    User,
-)
-from opennourish.recipes.forms import RecipeForm
-from opennourish.diary.forms import AddToLogForm
-from opennourish.my_foods.forms import PortionForm
+from flask_login import current_user, login_required
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload, subqueryload
-from opennourish.utils import (
-    same_host_referrer,
-    calculate_nutrition_for_items,
-    calculate_recipe_nutrition_per_100g,
-    get_available_portions,
-    update_recipe_nutrition,
-    prepare_undo_and_delete,
+
+from models import (
+    Food,
+    FoodCategory,
+    MyFood,
+    MyMeal,
+    Recipe,
+    RecipeIngredient,
+    UnifiedPortion,
+    User,
+    db,
 )
+from opennourish.diary.forms import AddToLogForm
+from opennourish.my_foods.forms import PortionForm
+from opennourish.recipes.forms import RecipeForm
+from opennourish.time_utils import utcnow_naive
 from opennourish.typst_utils import (
     generate_recipe_label_pdf,
     generate_recipe_label_svg,
+)
+from opennourish.utils import (
+    calculate_nutrition_for_items,
+    calculate_recipe_nutrition_per_100g,
+    get_available_portions,
+    prepare_undo_and_delete,
+    same_host_referrer,
+    update_recipe_nutrition,
 )
 
 recipes_bp = Blueprint("recipes", __name__, template_folder="templates")

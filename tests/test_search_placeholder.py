@@ -1,4 +1,4 @@
-from models import db, MyFood, User
+from models import MyFood, User, db
 
 
 def test_placeholder_my_food_not_in_search_results(client, auth_client):

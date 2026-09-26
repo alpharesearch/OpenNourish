@@ -1,7 +1,9 @@
 import io
+
 import pytest
 from flask import url_for
-from models import db, MyFood, FoodCategory, UnifiedPortion
+
+from models import FoodCategory, MyFood, UnifiedPortion, db
 
 
 def test_import_my_foods_get_unauthenticated(client):

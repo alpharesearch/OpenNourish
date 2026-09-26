@@ -1,13 +1,13 @@
-from models import (
-    db,
-    User,
-    Recipe,
-    MyFood,
-    MyMeal,
-    DailyLog,
-)
 from datetime import date, timedelta
 
+from models import (
+    DailyLog,
+    MyFood,
+    MyMeal,
+    Recipe,
+    User,
+    db,
+)
 from opennourish.time_utils import get_user_today
 
 

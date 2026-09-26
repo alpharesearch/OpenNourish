@@ -1,7 +1,9 @@
-import pytest
-from models import db, FoodCategory, MyFood
-from flask import url_for
 import re
+
+import pytest
+from flask import url_for
+
+from models import FoodCategory, MyFood, db
 
 
 @pytest.fixture

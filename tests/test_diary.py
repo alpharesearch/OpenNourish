@@ -1,15 +1,17 @@
+from datetime import date, timedelta
+
+import pytest
+
 from models import (
-    db,
-    User,
+    DailyLog,
     Food,
     FoodNutrient,
-    Nutrient,
     MyFood,
-    DailyLog,
+    Nutrient,
     UnifiedPortion,
+    User,
+    db,
 )
-from datetime import date, timedelta
-import pytest
 
 
 def test_add_usda_food_to_diary(auth_client):

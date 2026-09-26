@@ -1,6 +1,7 @@
-from models import db, User, FastingSession, UserGoal
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+
+from models import FastingSession, User, UserGoal, db
 
 
 def test_fasting_index_no_active_fast(auth_client):

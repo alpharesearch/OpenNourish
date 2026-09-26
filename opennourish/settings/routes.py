@@ -1,29 +1,31 @@
 from flask import (
-    render_template,
-    flash,
-    redirect,
-    url_for,
-    request,
     current_app,
+    flash,
     jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
 )
 from flask_login import current_user, login_required, logout_user
+
 from models import (
-    User,
-    db,
-    MyFood,
-    Recipe,
-    UserGoal,
     CheckIn,
     DailyLog,
     ExerciseLog,
     Friendship,
+    MyFood,
     MyMeal,
+    Recipe,
+    User,
+    UserGoal,
+    db,
 )
-from .forms import SettingsForm, ChangePasswordForm, DeleteAccountConfirmForm
-from opennourish.utils import ft_in_to_cm, cm_to_ft_in
 from opennourish.time_utils import is_valid_timezone
+from opennourish.utils import cm_to_ft_in, ft_in_to_cm
+
 from . import settings_bp
+from .forms import ChangePasswordForm, DeleteAccountConfirmForm, SettingsForm
 
 
 @settings_bp.route("/set-timezone", methods=["POST"])

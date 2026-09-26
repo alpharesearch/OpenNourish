@@ -1,7 +1,8 @@
+from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import DateField, FloatField, SubmitField
 from wtforms.validators import DataRequired, Optional
-from flask_login import current_user
+
 from opennourish.time_utils import user_today_default
 
 

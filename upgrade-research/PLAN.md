@@ -8,8 +8,9 @@ milestone that consumes them lands, and are deleted once `requirements.txt` supe
 landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — Typst
 escaping (2026-09-23), the image diet (2026-09-24) and the `datetime.utcnow()` migration with a `DTZ003`
 gate (2026-09-25) are done; the rest of `DTZ`, the other ruff families, `pytest-flask`, the `@preview`
-vendoring and the 3.14 refresh are open, and M5's `DTZ` work landed the same day with it: the whole
-DTZ family is a gate, and four request-path "today is the server's day" bugs went with it. **M6 is closed**: 6.1 (global CSRF enforcement), 6.3, 6.4, 6.5 and 6.6 all landed between
+vendoring and the 3.14 refresh are open; M5's `DTZ` work landed the same day with it (the whole
+DTZ family is a gate, and four request-path "today is the server's day" bugs went with it), as did `I001`
+(import sorting, 122 blocks, mechanical). **M6 is closed**: 6.1 (global CSRF enforcement), 6.3, 6.4, 6.5 and 6.6 all landed between
 2026-09-24 and 2026-09-26, and both halves of 6.2 landed on 2026-09-26 — the two mutating GETs became
 POSTs, and the portion-sequence backfill left the request path entirely.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
@@ -325,8 +326,16 @@ replaying the steps locally, which is what worked here.
   `tests/AGENTS.md`: on this UTC-4 checkout `date.today()` and a UTC user's today are different dates for
   hours at a time, so two test files moved their `TODAY` onto the user's clock and one test in
   `tests/test_analytics.py` exists to keep that divergence visible.
-- **Adopt the remaining ruff families one at a time** (`I001` 124, then `RUF059` 65, `BLE001` 13) instead of
-  a 372-finding big bang — the DTZ pass is the template: fix the semantics, then pin the rule.
+- **`I001` is pinned — LANDED (2026-09-26).** 122 unsorted import blocks, fixed with `ruff check --select I
+  --fix` and no hand edits, in 118 files including the historical `migrations/versions/*.py` (the diff there
+  reorders `import sqlalchemy as sa` against `from alembic import op`; `upgrade()`/`downgrade()` bodies are
+  untouched). Two things earned a config entry rather than trust: `[lint.isort] known-first-party` names
+  `constants`, `models` and `import_usda_data`, because they are top-level only by sitting at the repo root and
+  a ruff upgrade that changes source-layout heuristics would otherwise reclassify them and reshuffle the whole
+  tree; and the sort is block-local by design, so `tests/conftest.py`'s `from models import ...` stays **below**
+  its `sys.path.insert`, which is the one place in this repo where import order is load-bearing.
+- **Adopt the remaining ruff families one at a time** (`RUF059` 65, then `BLE001` 13) instead of a 372-finding
+  big bang — DTZ and I001 are the template: fix the semantics, then pin the rule.
 - **`pytest-flask`** works on pytest 9 but has been unmaintained since 2023-10 (classifiers stop at
   3.9). Replace with plain fixtures when convenient.
 - **Next interpreter refresh: 3.14** (security to 2030-10-31). `djlint 1.46.2`, `pytest 9.1.1`,

@@ -1,7 +1,8 @@
 import pytest
 from flask import url_for
 from flask_login import current_user
-from models import db, User, SystemSetting
+
+from models import SystemSetting, User, db
 from opennourish.utils import mail, send_password_reset_email
 
 

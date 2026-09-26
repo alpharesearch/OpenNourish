@@ -1,18 +1,20 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
-from . import bp
-from .forms import GoalForm
-from models import db, UserGoal, CheckIn
+
+from config import Config
+from models import CheckIn, UserGoal, db
+from opennourish.decorators import onboarding_required
 from opennourish.utils import (
-    calculate_bmr,
     calculate_bmi,
-    lbs_to_kg,
-    kg_to_lbs,
+    calculate_bmr,
     cm_to_in,
     in_to_cm,
+    kg_to_lbs,
+    lbs_to_kg,
 )
-from config import Config
-from opennourish.decorators import onboarding_required
+
+from . import bp
+from .forms import GoalForm
 
 
 @bp.route("/", methods=["GET", "POST"])

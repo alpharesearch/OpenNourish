@@ -1,5 +1,6 @@
 import pytest
-from models import UserGoal, User, db
+
+from models import User, UserGoal, db
 
 
 def test_set_goals_for_new_user(auth_client):

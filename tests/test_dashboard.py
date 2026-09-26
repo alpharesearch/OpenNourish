@@ -1,17 +1,19 @@
+from datetime import datetime, timedelta, timezone
+
 import pytest
+
 from models import (
-    db,
-    User,
-    UserGoal,
-    ExerciseLog,
-    ExerciseActivity,
     CheckIn,
     DailyLog,
+    ExerciseActivity,
+    ExerciseLog,
+    FastingSession,
     Food,
     MyFood,
-    FastingSession,
+    User,
+    UserGoal,
+    db,
 )
-from datetime import timedelta, datetime, timezone
 from opennourish.time_utils import get_user_today
 
 

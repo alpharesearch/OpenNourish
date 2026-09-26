@@ -1,4 +1,4 @@
-from models import db, User
+from models import User, db
 
 
 def test_user_model(client):

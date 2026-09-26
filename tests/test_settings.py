@@ -1,18 +1,20 @@
+from datetime import date
+
+import pytest
 from flask import url_for
+
 from models import (
-    db,
-    User,
-    MyFood,
-    Recipe,
-    UserGoal,
     CheckIn,
     DailyLog,
     ExerciseLog,
-    MyMeal,
     Friendship,
+    MyFood,
+    MyMeal,
+    Recipe,
+    User,
+    UserGoal,
+    db,
 )
-from datetime import date
-import pytest
 
 
 def test_update_meals_per_day(client, auth_client):

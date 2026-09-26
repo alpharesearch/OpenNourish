@@ -11,7 +11,7 @@ back in front of the wizard.
 
 import re
 
-from models import db, CheckIn, User, UserGoal
+from models import CheckIn, User, UserGoal, db
 from opennourish.time_utils import get_user_today
 from opennourish.utils import cm_to_ft_in, cm_to_in, kg_to_lbs
 

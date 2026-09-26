@@ -1,11 +1,11 @@
 # import_usda_data.py (Final Version - Aligned with the Full Schema)
 
-import sqlite3
 import csv
 import os
+import re
+import sqlite3
 import sys
 import time
-import re
 
 
 def intelligent_capwords(s):

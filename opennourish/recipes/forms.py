@@ -1,13 +1,13 @@
 from flask_wtf import FlaskForm
 from wtforms import (
-    StringField,
+    BooleanField,
     FloatField,
+    SelectField,
+    StringField,
     SubmitField,
     TextAreaField,
-    BooleanField,
-    SelectField,
 )
-from wtforms.validators import DataRequired, Optional, NumberRange
+from wtforms.validators import DataRequired, NumberRange, Optional
 
 
 class RecipeForm(FlaskForm):

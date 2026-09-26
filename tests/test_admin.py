@@ -1,6 +1,7 @@
 import pytest
-from models import db, User, SystemSetting
 from flask import url_for
+
+from models import SystemSetting, User, db
 
 
 # Helper function to create users

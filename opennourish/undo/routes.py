@@ -1,26 +1,29 @@
-from flask import session, flash, redirect, url_for
-from flask_login import login_required, current_user
+from datetime import date, datetime
+
+from flask import flash, redirect, session, url_for
+from flask_login import current_user, login_required
 from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.types import Date, DateTime
 from werkzeug.routing import BuildError
-from datetime import date, datetime
-from . import undo_bp
+
 from models import (
-    db,
+    CheckIn,
     DailyLog,
-    RecipeIngredient,
+    ExerciseLog,
+    FastingSession,
+    FoodCategory,
+    Friendship,
     MyFood,
     MyMeal,
     MyMealItem,
     Recipe,
-    ExerciseLog,
-    CheckIn,
-    FastingSession,
-    Friendship,
+    RecipeIngredient,
     UnifiedPortion,
-    FoodCategory,
+    db,
 )
+
+from . import undo_bp
 
 # Map item type strings to their corresponding model classes
 MODEL_MAP = {

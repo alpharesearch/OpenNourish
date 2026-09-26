@@ -1,5 +1,6 @@
 from flask import url_for
-from models import db, Food
+
+from models import Food, db
 
 
 def test_index_redirects_authenticated(auth_client_onboarded):

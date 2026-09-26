@@ -3,24 +3,25 @@ Advanced analytics module for OpenNourish.
 Provides functions to calculate and format data for various analytics visualizations.
 """
 
-from datetime import date, timedelta
 from collections import defaultdict
+from datetime import date, timedelta
+
 from models import (
-    db,
-    User,
+    CheckIn,
     DailyLog,
     ExerciseLog,
-    CheckIn,
-    UserGoal,
     MyFood,
-)
-from opennourish.utils import (
-    calculate_nutrition_for_items,
-    get_meal_based_nutrition,
-    calculate_intake_vs_goal_deviation,
-    calculate_weekly_nutrition_summary,
+    User,
+    UserGoal,
+    db,
 )
 from opennourish.time_utils import get_user_today
+from opennourish.utils import (
+    calculate_intake_vs_goal_deviation,
+    calculate_nutrition_for_items,
+    calculate_weekly_nutrition_summary,
+    get_meal_based_nutrition,
+)
 
 
 def _user_today(user_id):

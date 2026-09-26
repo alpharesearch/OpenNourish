@@ -1,9 +1,11 @@
-import pytest
 import importlib.util
-from config import get_or_create_secret_key, get_setting_from_db
-from models import db, SystemSetting
-from opennourish.utils import encrypt_value
+
+import pytest
 from cryptography.fernet import Fernet
+
+from config import get_or_create_secret_key, get_setting_from_db
+from models import SystemSetting, db
+from opennourish.utils import encrypt_value
 
 # --- Tests for get_or_create_secret_key ---
 

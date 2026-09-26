@@ -12,12 +12,12 @@ import pytest
 from cryptography.fernet import Fernet
 
 from models import (
-    db,
     ExerciseActivity,
     FoodCategory,
     SystemSetting,
     UnifiedPortion,
     User,
+    db,
 )
 from opennourish import DEFAULT_MAIL_FROM, NO_MAIL_CREDENTIAL, create_app
 

@@ -15,7 +15,6 @@ from unittest.mock import patch
 import pytest
 
 from models import (
-    db,
     Food,
     FoodCategory,
     FoodNutrient,
@@ -23,6 +22,7 @@ from models import (
     Nutrient,
     UnifiedPortion,
     User,
+    db,
 )
 
 

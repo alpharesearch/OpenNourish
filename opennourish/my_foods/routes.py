@@ -1,37 +1,39 @@
+from datetime import datetime, timezone
+
+import yaml
 from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    flash,
+    redirect,
     render_template,
     request,
-    redirect,
     url_for,
-    flash,
-    Blueprint,
-    current_app,
-    Response,
 )
-from datetime import datetime, timezone
-from opennourish.time_utils import utcnow_naive
-from flask_login import login_required, current_user
-import yaml
-from models import (
-    db,
-    MyFood,
-    Food,
-    FoodNutrient,
-    UnifiedPortion,
-    FoodCategory,
-)
-from opennourish.my_foods.forms import MyFoodForm, PortionForm, CategoryForm
+from flask_login import current_user, login_required
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
-from opennourish.utils import (
-    ensure_portion_sequence,
-    same_host_referrer,
-    get_nutrients_for_display,
-    convert_display_nutrients_to_100g,
-    prepare_undo_and_delete,
+
+from models import (
+    Food,
+    FoodCategory,
+    FoodNutrient,
+    MyFood,
+    UnifiedPortion,
+    db,
 )
+from opennourish.my_foods.forms import CategoryForm, MyFoodForm, PortionForm
+from opennourish.time_utils import utcnow_naive
 from opennourish.typst_utils import (
     generate_myfood_label_pdf,
+)
+from opennourish.utils import (
+    convert_display_nutrients_to_100g,
+    ensure_portion_sequence,
+    get_nutrients_for_display,
+    prepare_undo_and_delete,
+    same_host_referrer,
 )
 
 my_foods_bp = Blueprint("my_foods", __name__)

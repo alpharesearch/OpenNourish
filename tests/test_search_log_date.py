@@ -1,8 +1,10 @@
+import re
+from datetime import date, timedelta
+
 import pytest
 from flask import url_for
-from models import db, User, MyFood
-from datetime import date, timedelta
-import re
+
+from models import MyFood, User, db
 
 
 @pytest.fixture

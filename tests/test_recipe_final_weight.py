@@ -1,7 +1,8 @@
 from datetime import date
 
 import pytest
-from models import db, Recipe, RecipeIngredient, MyFood, DailyLog, UnifiedPortion
+
+from models import DailyLog, MyFood, Recipe, RecipeIngredient, UnifiedPortion, db
 from opennourish.utils import calculate_nutrition_for_items
 
 

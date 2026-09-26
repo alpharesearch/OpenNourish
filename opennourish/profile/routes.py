@@ -1,29 +1,32 @@
-from flask import render_template, request, flash, redirect, url_for
-from flask_login import login_required, current_user
-from . import profile_bp
+from datetime import date, timedelta
+
+from flask import flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+
+from constants import ALL_MEAL_TYPES, FRIENDS_PAGE_ENDPOINT
 from models import (
-    db,
-    User,
-    Friendship,
-    DailyLog,
-    Food,
-    MyFood,
-    UserGoal,
     CheckIn,
+    DailyLog,
     ExerciseLog,
+    Food,
+    Friendship,
+    MyFood,
     Recipe,
     UnifiedPortion,
+    User,
+    UserGoal,
+    db,
 )
-from datetime import date, timedelta
 from opennourish.time_utils import get_user_today
 from opennourish.utils import (
-    calculate_nutrition_for_items,
-    get_standard_meal_names_for_user,
-    calculate_nutrient_density,
-    get_meal_based_nutrition,
     calculate_intake_vs_goal_deviation,
+    calculate_nutrient_density,
+    calculate_nutrition_for_items,
+    get_meal_based_nutrition,
+    get_standard_meal_names_for_user,
 )
-from constants import ALL_MEAL_TYPES, FRIENDS_PAGE_ENDPOINT
+
+from . import profile_bp
 
 
 def _get_friend_user_or_404(username):

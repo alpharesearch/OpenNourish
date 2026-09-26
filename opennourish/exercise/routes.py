@@ -1,14 +1,16 @@
-from flask import render_template, redirect, url_for, flash, request, abort
-from flask_login import login_required, current_user
-from . import exercise_bp
-from .forms import ExerciseLogForm
-from .utils import get_user_weight_kg, calculate_calories_burned
-from models import db, ExerciseLog, UserGoal, ExerciseActivity
 from datetime import timedelta
-from opennourish.time_utils import get_user_today, get_start_of_week
-from opennourish.utils import prepare_undo_and_delete
+
+from flask import abort, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 
 from constants import TRACKING_PROGRESS_ENDPOINT
+from models import ExerciseActivity, ExerciseLog, UserGoal, db
+from opennourish.time_utils import get_start_of_week, get_user_today
+from opennourish.utils import prepare_undo_and_delete
+
+from . import exercise_bp
+from .forms import ExerciseLogForm
+from .utils import calculate_calories_burned, get_user_weight_kg
 
 LOG_EXERCISE_ROUTE = "exercise.log_exercise"
 

@@ -21,7 +21,6 @@ from flask import url_for
 from sqlalchemy import text
 
 from models import (
-    db,
     DailyLog,
     Food,
     FoodCategory,
@@ -35,6 +34,7 @@ from models import (
     RecipeIngredient,
     UnifiedPortion,
     User,
+    db,
 )
 from opennourish.search.routes import (
     ManualPagination,

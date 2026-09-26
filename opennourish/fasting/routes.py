@@ -1,12 +1,15 @@
-from flask import render_template, redirect, url_for, flash, request
-from flask_login import current_user, login_required
-from models import db, FastingSession
-from . import fasting_bp
-from .forms import EditFastForm
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
-from opennourish.utils import prepare_undo_and_delete
+
+from flask import flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+
+from models import FastingSession, db
 from opennourish.time_utils import resolve_timezone, utcnow_naive
+from opennourish.utils import prepare_undo_and_delete
+
+from . import fasting_bp
+from .forms import EditFastForm
 
 FASTING_INDEX_ROUTE = "fasting.index"
 

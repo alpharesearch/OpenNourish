@@ -5,12 +5,12 @@ round-trip, the environment-reload branch, validation errors, the
 user-toggle not-found branches, and the cleanup in-use/safe split.
 """
 
-from datetime import date
 import re
+from datetime import date
 
 from cryptography.fernet import Fernet
 
-from models import db, DailyLog, MyFood, MyMeal, Recipe, SystemSetting
+from models import DailyLog, MyFood, MyMeal, Recipe, SystemSetting, db
 from opennourish.utils import decrypt_value, encrypt_value
 
 TOGGLE_ACTIONS = [

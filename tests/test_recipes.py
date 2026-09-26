@@ -1,19 +1,20 @@
 import pytest
+from flask import url_for
+
 from models import (
-    db,
-    User,
-    Recipe,
-    RecipeIngredient,
     Food,
     FoodNutrient,
-    Nutrient,
     MyFood,
     MyMeal,
     MyMealItem,
-    UnifiedPortion,
+    Nutrient,
+    Recipe,
+    RecipeIngredient,
     SystemSetting,
+    UnifiedPortion,
+    User,
+    db,
 )
-from flask import url_for
 
 
 @pytest.fixture

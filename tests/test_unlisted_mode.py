@@ -1,6 +1,7 @@
 import pytest
 from flask import url_for
-from models import db, User, Friendship
+
+from models import Friendship, User, db
 
 
 # Helper function to create users

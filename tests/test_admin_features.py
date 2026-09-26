@@ -1,5 +1,6 @@
-from models import db, User
 import os
+
+from models import User, db
 
 
 def test_first_registered_user_is_admin(client, monkeypatch):

@@ -1,6 +1,8 @@
-import pytest
-from models import db, User, ExerciseLog, ExerciseActivity, UserGoal, CheckIn
 from datetime import date, timedelta
+
+import pytest
+
+from models import CheckIn, ExerciseActivity, ExerciseLog, User, UserGoal, db
 from opennourish.time_utils import get_user_today
 
 

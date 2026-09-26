@@ -1,4 +1,4 @@
-from models import db, User, MyFood, Food, Recipe, UnifiedPortion, Friendship
+from models import Food, Friendship, MyFood, Recipe, UnifiedPortion, User, db
 
 
 def setup_friendship(app, user1, user2):

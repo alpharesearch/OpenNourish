@@ -6,7 +6,7 @@ import pytest
 
 import config as config_module
 from config import Config, get_setting_from_db
-from models import db, SystemSetting
+from models import SystemSetting, db
 
 
 def test_get_setting_from_db_plain_value_and_default(app_with_db):

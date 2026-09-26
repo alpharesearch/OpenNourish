@@ -1,5 +1,6 @@
 import pytest
-from models import db, User
+
+from models import User, db
 
 
 @pytest.fixture

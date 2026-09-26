@@ -1,6 +1,7 @@
 from flask_login import current_user
-from opennourish.time_utils import get_user_today
+
 from constants import ALL_MEAL_TYPES
+from opennourish.time_utils import get_user_today
 
 
 def inject_global_vars():

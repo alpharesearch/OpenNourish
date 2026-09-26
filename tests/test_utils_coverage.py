@@ -8,20 +8,20 @@ at the projection stop conditions that no page currently reaches.
 from datetime import date, timedelta
 from decimal import Decimal
 
+import pytest
 from cryptography.fernet import Fernet, InvalidToken
 from flask import session
 from sqlalchemy import Column, Date, Integer, Numeric
 from sqlalchemy.orm import declarative_base
 
-import pytest
 from constants import DEFAULT_MEAL_NAMES
 from models import (
-    db,
     CheckIn,
     DailyLog,
     MyFood,
     User,
     UserGoal,
+    db,
 )
 from opennourish import mail
 from opennourish.utils import (
@@ -29,20 +29,20 @@ from opennourish.utils import (
     calculate_bmr,
     calculate_intake_vs_goal_deviation,
     calculate_nutrient_density,
+    calculate_nutrition_for_items,
+    calculate_recipe_nutrition_per_100g,
     calculate_weight_projection,
     convert_display_nutrients_to_100g,
     decrypt_value,
     encrypt_value,
     get_available_portions,
-    calculate_nutrition_for_items,
-    calculate_recipe_nutrition_per_100g,
     get_meal_based_nutrition,
     get_nutrients_for_display,
     get_standard_meal_names_for_user,
-    update_recipe_nutrition,
     prepare_undo_and_delete,
     send_password_reset_email,
     send_verification_email,
+    update_recipe_nutrition,
 )
 
 TODAY = date(2024, 6, 15)

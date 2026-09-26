@@ -1,41 +1,43 @@
-from flask import Flask, current_app
-from sqlalchemy import text
+import csv
 import os
-from models import (
-    db,
-    User,
-    UserGoal,
-    MyFood,
-    CheckIn,
-    Recipe,
-    DailyLog,
-    Food,
-    Nutrient,
-    FoodNutrient,
-    UnifiedPortion,
-    RecipeIngredient,
-    MyMeal,
-    MyMealItem,
-    ExerciseActivity,
-    ExerciseLog,
-    Friendship,
-    FoodCategory,
-)
-from sqlalchemy.orm import joinedload
-from flask_login import LoginManager
-from flask_migrate import Migrate
-from flask_mailing import Mail
-from flask_wtf.csrf import CSRFProtect
-from config import Config
-import click
-from faker import Faker
 import random
 import secrets
 from datetime import date, timedelta
-import csv
+
+import click
+from faker import Faker
+from flask import Flask, current_app
+from flask_login import LoginManager
+from flask_mailing import Mail
+from flask_migrate import Migrate
+from flask_wtf.csrf import CSRFProtect
+from sqlalchemy import text
+from sqlalchemy.orm import joinedload
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+from config import Config
+from constants import DEFAULT_MEAL_NAMES, MEAL_CONFIG
+from models import (
+    CheckIn,
+    DailyLog,
+    ExerciseActivity,
+    ExerciseLog,
+    Food,
+    FoodCategory,
+    FoodNutrient,
+    Friendship,
+    MyFood,
+    MyMeal,
+    MyMealItem,
+    Nutrient,
+    Recipe,
+    RecipeIngredient,
+    UnifiedPortion,
+    User,
+    UserGoal,
+    db,
+)
 from opennourish.time_utils import register_template_filters
-from constants import MEAL_CONFIG, DEFAULT_MEAL_NAMES
 
 DEFAULT_MAIL_FROM = "no-reply@example.com"
 

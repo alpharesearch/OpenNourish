@@ -18,7 +18,6 @@ import pytest
 from flask import url_for
 
 from models import (
-    db,
     DailyLog,
     ExerciseLog,
     FastingSession,
@@ -33,6 +32,7 @@ from models import (
     UnifiedPortion,
     User,
     UserGoal,
+    db,
 )
 from opennourish.time_utils import get_user_today
 

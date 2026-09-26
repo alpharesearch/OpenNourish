@@ -1,9 +1,10 @@
 # tests/test_database_import.py
 
-import pytest
-import subprocess
 import os
 import sqlite3
+import subprocess
+
+import pytest
 
 IMPORT_SCRIPT_PATH = os.path.join(
     os.path.dirname(__file__), "..", "import_usda_data.py"

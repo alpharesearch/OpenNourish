@@ -1,14 +1,16 @@
 from datetime import date
+
 import pytest
+
 from models import (
-    db,
     DailyLog,
-    MyMeal,
-    MyMealItem,
     Food,
     MyFood,
-    UnifiedPortion,
+    MyMeal,
+    MyMealItem,
     Recipe,
+    UnifiedPortion,
+    db,
 )
 
 

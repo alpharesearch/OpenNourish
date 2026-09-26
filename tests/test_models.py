@@ -1,7 +1,8 @@
-import pytest
 from datetime import datetime, timedelta, timezone
 
-from models import db, Food, Nutrient, FoodNutrient, FastingSession
+import pytest
+
+from models import FastingSession, Food, FoodNutrient, Nutrient, db
 
 
 def test_food_creation(client):

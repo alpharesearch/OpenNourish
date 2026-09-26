@@ -1,26 +1,28 @@
 from flask import (
-    render_template,
-    redirect,
-    url_for,
-    flash,
     current_app,
+    flash,
+    redirect,
+    render_template,
+    url_for,
 )
-from flask_login import login_required, current_user
-from models import db, UserGoal, CheckIn  # Import CheckIn model
-from .forms import MeasurementSystemForm, PersonalInfoForm, InitialGoalsForm
+from flask_login import current_user, login_required
+
+from config import Config  # Import Config
+from models import CheckIn, UserGoal, db  # Import CheckIn model
+from opennourish.time_utils import get_user_today
 from opennourish.utils import (
-    ft_in_to_cm,
-    lbs_to_kg,
-    kg_to_lbs,
-    cm_to_ft_in,
     calculate_bmr,
     calculate_goals_from_preset,
-    in_to_cm,
+    cm_to_ft_in,
     cm_to_in,
+    ft_in_to_cm,
+    in_to_cm,
+    kg_to_lbs,
+    lbs_to_kg,
 )
-from opennourish.time_utils import get_user_today
+
 from . import onboarding_bp  # Import the blueprint from __init__.py
-from config import Config  # Import Config
+from .forms import InitialGoalsForm, MeasurementSystemForm, PersonalInfoForm
 
 DASHBOARD_INDEX_ROUTE = "dashboard.index"
 

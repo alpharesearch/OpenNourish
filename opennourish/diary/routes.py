@@ -1,50 +1,51 @@
+from datetime import date, timedelta
+from types import SimpleNamespace
+
 from flask import (
+    current_app,
+    flash,
+    jsonify,
+    redirect,
     render_template,
     request,
-    redirect,
     url_for,
-    flash,
-    current_app,
-    jsonify,
 )
 from flask_login import current_user, login_required
-from . import diary_bp
+from sqlalchemy import func
+from sqlalchemy.orm import joinedload, selectinload
+
+from constants import ALL_MEAL_TYPES, DASHBOARD_INDEX_ROUTE
 from models import (
-    db,
     DailyLog,
+    ExerciseLog,
+    FastingSession,
     Food,
+    Friendship,
     MyFood,
     MyMeal,
     MyMealItem,
     Recipe,
     RecipeIngredient,
-    UserGoal,
-    ExerciseLog,
     UnifiedPortion,
     User,
-    Friendship,
-    FastingSession,
+    UserGoal,
+    db,
 )
-from datetime import date, timedelta
+
+# Import the update_recipe_nutrition function from recipes module
+from opennourish.recipes.routes import update_recipe_nutrition
 from opennourish.time_utils import get_user_today
 from opennourish.utils import (
-    same_host_referrer,
     calculate_nutrition_for_items,
     get_available_portions,
     get_standard_meal_names_for_user,
     portion_matches_item,
     prepare_undo_and_delete,
+    same_host_referrer,
 )
+
+from . import diary_bp
 from .forms import MealForm
-from sqlalchemy.orm import joinedload, selectinload
-from constants import ALL_MEAL_TYPES, DASHBOARD_INDEX_ROUTE
-from sqlalchemy import func
-
-# Import the update_recipe_nutrition function from recipes module
-from opennourish.recipes.routes import update_recipe_nutrition
-
-from types import SimpleNamespace
-
 
 DIARY_ROUTE = "diary.diary"
 EDIT_MEAL_ROUTE = "diary.edit_meal"

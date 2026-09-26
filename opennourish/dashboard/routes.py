@@ -1,35 +1,38 @@
+from datetime import date, timedelta
+
 from flask import render_template, request
-from flask_login import login_required, current_user
-from . import dashboard_bp
+from flask_login import current_user, login_required
+
 from models import (
-    db,
+    CheckIn,
     DailyLog,
+    ExerciseLog,
+    FastingSession,
     Food,
     MyFood,
     UserGoal,
-    CheckIn,
-    ExerciseLog,
-    FastingSession,
+    db,
 )
-from datetime import date, timedelta
+from opennourish.decorators import onboarding_required
+from opennourish.time_utils import get_start_of_week, get_user_today, utcnow_naive
+from opennourish.tracking.analytics import (
+    get_body_composition_trends,
+    get_daily_nutrition_data,
+    get_exercise_vs_diet_balance,
+    get_food_category_breakdown,
+    get_macro_distribution_by_meal,
+    get_nutrient_intake_vs_goals,
+    get_weekly_trends,
+)
 from opennourish.utils import (
+    calculate_intake_vs_goal_deviation,
+    calculate_nutrient_density,
     calculate_nutrition_for_items,
     calculate_weight_projection,
-    calculate_nutrient_density,
     get_meal_based_nutrition,
-    calculate_intake_vs_goal_deviation,
 )
-from opennourish.tracking.analytics import (
-    get_daily_nutrition_data,
-    get_macro_distribution_by_meal,
-    get_weekly_trends,
-    get_food_category_breakdown,
-    get_exercise_vs_diet_balance,
-    get_nutrient_intake_vs_goals,
-    get_body_composition_trends,
-)
-from opennourish.time_utils import get_user_today, get_start_of_week, utcnow_naive
-from opennourish.decorators import onboarding_required
+
+from . import dashboard_bp
 
 
 @dashboard_bp.route("/")

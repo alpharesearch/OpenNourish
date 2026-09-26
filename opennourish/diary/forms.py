@@ -1,13 +1,14 @@
 from flask_wtf import FlaskForm
 from wtforms import (
-    StringField,
-    SubmitField,
+    DateField,
     FloatField,
     HiddenField,
-    DateField,
     SelectField,
+    StringField,
+    SubmitField,
 )
 from wtforms.validators import DataRequired, Length, NumberRange
+
 from opennourish.time_utils import user_today_default
 
 

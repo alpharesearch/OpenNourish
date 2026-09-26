@@ -1,6 +1,7 @@
-from flask import url_for
-from models import db, Recipe, MyFood, RecipeIngredient, User, UnifiedPortion
 import pytest
+from flask import url_for
+
+from models import MyFood, Recipe, RecipeIngredient, UnifiedPortion, User, db
 
 
 @pytest.fixture

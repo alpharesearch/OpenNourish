@@ -1,7 +1,9 @@
-import pytest
 import re
-from models import db, User, Food, UnifiedPortion
+
+import pytest
 from flask import url_for
+
+from models import Food, UnifiedPortion, User, db
 
 
 @pytest.fixture(scope="function")

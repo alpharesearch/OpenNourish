@@ -1,4 +1,4 @@
-from models import db, User, Friendship
+from models import Friendship, User, db
 
 
 # Helper function to create users
@@ -110,6 +110,7 @@ def test_copy_log_from_friend(auth_client_with_user):
     Tests copying a diary entry from a friend's diary.
     """
     from datetime import date, timedelta
+
     from models import DailyLog
 
     test_client, test_user = auth_client_with_user
@@ -170,6 +171,7 @@ def test_copy_log_from_non_friend(auth_client_with_user):
     Tests that a user cannot copy a diary entry from someone they are not friends with.
     """
     from datetime import date
+
     from models import DailyLog
 
     test_client, test_user = auth_client_with_user

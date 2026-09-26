@@ -1,14 +1,15 @@
+import pytest
+
 from models import (
-    db,
-    FoodCategory,
-    UnifiedPortion,
     ExerciseActivity,
     Food,
+    FoodCategory,
     MyFood,
     Recipe,
+    UnifiedPortion,
     User,
+    db,
 )
-import pytest
 
 
 def test_seed_exercise_activities_command(app_with_db):

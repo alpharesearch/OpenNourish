@@ -7,7 +7,7 @@ later fed to ZoneInfo (fasting routes, time filters).
 
 import pytest
 
-from models import db, User
+from models import User, db
 
 
 def post_timezone(client, value):

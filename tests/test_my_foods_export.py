@@ -1,6 +1,7 @@
 import yaml
 from flask import url_for
-from models import db, MyFood, FoodCategory, UnifiedPortion
+
+from models import FoodCategory, MyFood, UnifiedPortion, db
 
 
 def test_export_my_foods_get_unauthenticated(client):

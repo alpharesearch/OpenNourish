@@ -1,14 +1,15 @@
-import pytest
 import os
+import shutil
 import sys
 import tempfile
-import shutil
+
+import pytest
 
 # Add project root to path to allow importing 'app'
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from models import Food, User, UserGoal, db
 from opennourish import create_app
-from models import db, User, UserGoal, Food
 
 
 @pytest.fixture(scope="function")

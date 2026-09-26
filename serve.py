@@ -1,4 +1,5 @@
 from waitress import serve
+
 from opennourish import create_app
 
 app = create_app()

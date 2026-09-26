@@ -1,16 +1,17 @@
+from datetime import date, datetime, timedelta, timezone
+
 import pytest
-from datetime import datetime, date, timedelta, timezone
 from flask_login import login_user
 
+from models import FastingSession, User, db
 from opennourish.time_utils import (
+    get_start_of_week,
     get_user_today,
-    user_today_default,
     to_user_timezone,
     to_utc,
-    get_start_of_week,
+    user_today_default,
     utcnow_naive,
 )
-from models import User, db, FastingSession
 
 # ---
 # Tests for Pure Functions
@@ -255,7 +256,7 @@ def test_is_valid_timezone_rejects_non_string_and_empty():
 
 
 def test_to_user_timezone_and_to_utc_none_guards():
-    from opennourish.time_utils import to_utc, to_user_timezone
+    from opennourish.time_utils import to_user_timezone, to_utc
 
     assert to_user_timezone(None) is None
     assert to_utc(None) is None

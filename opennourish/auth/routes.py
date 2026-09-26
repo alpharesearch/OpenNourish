@@ -1,20 +1,23 @@
-from flask import render_template, redirect, url_for, flash, request, current_app
-from flask_login import login_user, logout_user, current_user
+import os
 from urllib.parse import urlsplit
-from . import auth_bp
-from .forms import (
-    LoginForm,
-    RegistrationForm,
-    ResetPasswordRequestForm,
-    ResetPasswordForm,
-)
-from models import db, User, UserGoal
+
+from flask import current_app, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_user, logout_user
+
+from models import User, UserGoal, db
 from opennourish.utils import (
     get_allow_registration_status,
     send_password_reset_email,
     send_verification_email,
 )
-import os
+
+from . import auth_bp
+from .forms import (
+    LoginForm,
+    RegistrationForm,
+    ResetPasswordForm,
+    ResetPasswordRequestForm,
+)
 
 DASHBOARD_INDEX_ROUTE = "dashboard.index"
 AUTH_LOGIN_ROUTE = "auth.login"

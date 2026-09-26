@@ -1,19 +1,21 @@
-import pytest
 from datetime import date
+
+import pytest
 from flask import url_for
+
 from models import (
-    db,
-    User,
-    UserGoal,
     CheckIn,
     DailyLog,
     ExerciseLog,
-    MyFood,
-    Recipe,
     Friendship,
-    RecipeIngredient,
-    MyMealItem,
+    MyFood,
     MyMeal,
+    MyMealItem,
+    Recipe,
+    RecipeIngredient,
+    User,
+    UserGoal,
+    db,
 )
 
 

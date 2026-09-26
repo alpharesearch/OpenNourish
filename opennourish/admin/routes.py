@@ -1,23 +1,25 @@
-from flask import render_template, redirect, url_for, flash, current_app, request
-from flask_login import login_required, current_user
-from opennourish.decorators import admin_required
-from . import admin_bp
-from .forms import AdminSettingsForm, EmailSettingsForm
 import os
+
+from flask import current_app, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+
 from models import (
-    db,
-    User,
-    Recipe,
-    MyFood,
-    MyMeal,
     DailyLog,
     ExerciseLog,
-    SystemSetting,
-    RecipeIngredient,
+    MyFood,
+    MyMeal,
     MyMealItem,
+    Recipe,
+    RecipeIngredient,
+    SystemSetting,
+    User,
+    db,
 )
+from opennourish.decorators import admin_required
 from opennourish.utils import encrypt_value
 
+from . import admin_bp
+from .forms import AdminSettingsForm, EmailSettingsForm
 
 USER_NOT_FOUND_MSG = "User not found."
 ADMIN_USERS_ROUTE = "admin.users"

@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Optional, NumberRange
+from wtforms import FloatField, StringField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired, NumberRange, Optional
 
 
 class MyFoodForm(FlaskForm):

@@ -1,17 +1,19 @@
+from zoneinfo import available_timezones
+
+from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import (
-    StringField,
-    PasswordField,
-    SubmitField,
     BooleanField,
-    SelectField,
     FloatField,
+    PasswordField,
     RadioField,
+    SelectField,
+    StringField,
+    SubmitField,
 )
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional
+from wtforms.validators import DataRequired, Email, EqualTo, Optional, ValidationError
+
 from models import User
-from flask_login import current_user
-from zoneinfo import available_timezones
 
 
 class SettingsForm(FlaskForm):

@@ -10,7 +10,7 @@ import jwt
 import pytest
 from flask import url_for
 
-from models import db, User
+from models import User, db
 
 
 def _make_user(app, username, **kwargs):

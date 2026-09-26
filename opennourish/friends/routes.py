@@ -1,10 +1,13 @@
-from flask import render_template, request, flash, redirect, url_for, current_app
-from flask_login import current_user, login_required
-from models import db, User, Friendship, DailyLog, ExerciseLog
-from . import friends_bp
 from datetime import timedelta
+
+from flask import current_app, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+
+from models import DailyLog, ExerciseLog, Friendship, User, db
 from opennourish.time_utils import get_start_of_week, get_user_today
 from opennourish.utils import prepare_undo_and_delete
+
+from . import friends_bp
 
 FRIENDS_PAGE_ROUTE = "friends.friends_page"
 

@@ -1,21 +1,22 @@
-import pytest
-from models import (
-    db,
-    Food,
-    Nutrient,
-    FoodNutrient,
-    User,
-    SystemSetting,
-    MyFood,
-    Recipe,
-    RecipeIngredient,
-    DailyLog,
-    UserGoal,
-)
+from datetime import date
 from types import SimpleNamespace
 
+import pytest
+
+from models import (
+    DailyLog,
+    Food,
+    FoodNutrient,
+    MyFood,
+    Nutrient,
+    Recipe,
+    RecipeIngredient,
+    SystemSetting,
+    User,
+    UserGoal,
+    db,
+)
 from opennourish import utils
-from datetime import date
 
 # --- Unit Conversion Tests ---
 

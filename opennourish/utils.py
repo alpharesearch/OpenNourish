@@ -1,34 +1,35 @@
 import asyncio
-from constants import DIET_PRESETS, CORE_NUTRIENT_IDS, MEAL_CONFIG, DEFAULT_MEAL_NAMES
+from datetime import date, datetime, timedelta
+from decimal import Decimal
+from types import SimpleNamespace
+from urllib.parse import urlsplit
+
+from cryptography.fernet import Fernet
 from flask import (
     current_app,
+    flash,
     render_template,
     request,
     session,
-    flash,
     url_for,
 )
-from urllib.parse import urlsplit
-from markupsafe import Markup
-from flask_wtf.csrf import generate_csrf
-from types import SimpleNamespace
-from cryptography.fernet import Fernet
 from flask_mailing import Message
-from opennourish import mail
-from datetime import datetime, timedelta
-from opennourish.time_utils import get_user_today
+from flask_wtf.csrf import generate_csrf
+from markupsafe import Markup
+from sqlalchemy.inspection import inspect
+
+from constants import CORE_NUTRIENT_IDS, DEFAULT_MEAL_NAMES, DIET_PRESETS, MEAL_CONFIG
 from models import (
-    db,
-    UserGoal,
     CheckIn,
     DailyLog,
     ExerciseLog,
-    MyFood,
     FoodNutrient,
+    MyFood,
+    UserGoal,
+    db,
 )
-from sqlalchemy.inspection import inspect
-from datetime import date
-from decimal import Decimal
+from opennourish import mail
+from opennourish.time_utils import get_user_today
 
 
 def _serialize_model_for_session(model_instance):

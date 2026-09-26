@@ -1,7 +1,9 @@
+from datetime import date
+
 import pytest
 from flask import url_for
-from models import db, User, MyFood, Recipe, UnifiedPortion, DailyLog
-from datetime import date
+
+from models import DailyLog, MyFood, Recipe, UnifiedPortion, User, db
 
 
 @pytest.fixture

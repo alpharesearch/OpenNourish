@@ -1,6 +1,7 @@
-from flask import Blueprint, current_app
 import click
-from models import db, ExerciseActivity
+from flask import Blueprint, current_app
+
+from models import ExerciseActivity, db
 
 exercise_bp = Blueprint("exercise", __name__)
 

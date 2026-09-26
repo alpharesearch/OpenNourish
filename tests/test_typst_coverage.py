@@ -16,7 +16,6 @@ import subprocess
 import pytest
 
 from models import (
-    db,
     Food,
     FoodNutrient,
     MyFood,
@@ -25,6 +24,7 @@ from models import (
     RecipeIngredient,
     UnifiedPortion,
     User,
+    db,
 )
 from opennourish import typst_utils
 

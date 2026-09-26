@@ -1,8 +1,9 @@
-from flask_wtf import FlaskForm
-from wtforms import FloatField, SelectField, IntegerField, SubmitField
-from wtforms.validators import Optional, NumberRange
-from config import Config
 from flask_login import current_user
+from flask_wtf import FlaskForm
+from wtforms import FloatField, IntegerField, SelectField, SubmitField
+from wtforms.validators import NumberRange, Optional
+
+from config import Config
 
 
 class GoalForm(FlaskForm):

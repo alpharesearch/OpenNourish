@@ -1,7 +1,9 @@
-import pytest
 from datetime import date, timedelta
-from models import db, User, UserGoal, CheckIn, DailyLog, ExerciseLog
-from opennourish.utils import calculate_weight_projection, calculate_bmr
+
+import pytest
+
+from models import CheckIn, DailyLog, ExerciseLog, User, UserGoal, db
+from opennourish.utils import calculate_bmr, calculate_weight_projection
 
 
 @pytest.fixture

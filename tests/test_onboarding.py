@@ -1,5 +1,6 @@
-from models import db, User, UserGoal, CheckIn
 from datetime import date
+
+from models import CheckIn, User, UserGoal, db
 
 
 # Helper function to register and log in a new user

@@ -1,6 +1,8 @@
-import pytest
-from models import db, CheckIn, User
 from datetime import date
+
+import pytest
+
+from models import CheckIn, User, db
 
 
 def test_check_in_crud_lifecycle(auth_client):

@@ -1,5 +1,6 @@
-from models import db, DailyLog, User, MyFood, CheckIn
 from datetime import date
+
+from models import CheckIn, DailyLog, MyFood, User, db
 
 
 def test_hard_delete_and_reinsert(client, auth_client):

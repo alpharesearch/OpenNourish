@@ -1,14 +1,15 @@
 import pytest
+
 from opennourish.utils import (
     cm_to_ft_in,
+    cm_to_in,
     ft_in_to_cm,
+    get_display_height,
+    get_display_waist,
+    get_display_weight,
+    in_to_cm,
     kg_to_lbs,
     lbs_to_kg,
-    cm_to_in,
-    in_to_cm,
-    get_display_weight,
-    get_display_waist,
-    get_display_height,
 )
 
 

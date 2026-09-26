@@ -1,26 +1,28 @@
-from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_required, current_user
-from . import tracking_bp
-from .forms import CheckInForm
-from .analytics import (
-    get_daily_nutrition_data,
-    get_macro_distribution_by_meal,
-    get_weekly_trends,
-    get_food_category_breakdown,
-    get_exercise_vs_diet_balance,
-    get_nutrient_intake_vs_goals,
-    get_body_composition_trends,
-)
-from models import db, CheckIn, UserGoal
+from flask import flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+
+from constants import TRACKING_PROGRESS_ENDPOINT
+from models import CheckIn, UserGoal, db
+from opennourish.time_utils import get_user_today
 from opennourish.utils import (
-    lbs_to_kg,
+    cm_to_in,
     in_to_cm,
     kg_to_lbs,
-    cm_to_in,
+    lbs_to_kg,
     prepare_undo_and_delete,
 )
-from opennourish.time_utils import get_user_today
-from constants import TRACKING_PROGRESS_ENDPOINT
+
+from . import tracking_bp
+from .analytics import (
+    get_body_composition_trends,
+    get_daily_nutrition_data,
+    get_exercise_vs_diet_balance,
+    get_food_category_breakdown,
+    get_macro_distribution_by_meal,
+    get_nutrient_intake_vs_goals,
+    get_weekly_trends,
+)
+from .forms import CheckInForm
 
 
 @tracking_bp.route("/progress", methods=["GET", "POST"])

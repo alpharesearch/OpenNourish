@@ -2,25 +2,25 @@
 
 from datetime import date, timedelta
 
-from opennourish.time_utils import get_user_today
 from models import (
-    db,
-    User,
-    UserGoal,
+    CheckIn,
     DailyLog,
     ExerciseLog,
-    CheckIn,
-    MyFood,
     FoodCategory,
+    MyFood,
+    User,
+    UserGoal,
+    db,
 )
+from opennourish.time_utils import get_user_today
 from opennourish.tracking.analytics import (
-    get_daily_nutrition_data,
-    get_macro_distribution_by_meal,
-    get_weekly_trends,
-    get_food_category_breakdown,
-    get_exercise_vs_diet_balance,
-    get_nutrient_intake_vs_goals,
     get_body_composition_trends,
+    get_daily_nutrition_data,
+    get_exercise_vs_diet_balance,
+    get_food_category_breakdown,
+    get_macro_distribution_by_meal,
+    get_nutrient_intake_vs_goals,
+    get_weekly_trends,
 )
 
 

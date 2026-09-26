@@ -1,39 +1,41 @@
+import math
+from datetime import date
+
 from flask import (
+    current_app,
+    flash,
+    jsonify,
+    redirect,
     render_template,
     request,
-    flash,
-    redirect,
     url_for,
-    current_app,
-    jsonify,
 )
-from . import search_bp
+from flask_login import current_user, login_required
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import joinedload
+
 from models import (
-    db,
-    Food,
-    MyFood,
-    Recipe,
-    MyMeal,
     DailyLog,
-    RecipeIngredient,
-    MyMealItem,
-    UnifiedPortion,
-    FoodNutrient,
+    Food,
     FoodCategory,
+    FoodNutrient,
+    MyFood,
+    MyMeal,
+    MyMealItem,
+    Recipe,
+    RecipeIngredient,
+    UnifiedPortion,
     User,
+    db,
 )
-from flask_login import login_required, current_user
-from datetime import date
 from opennourish.time_utils import get_user_today
 from opennourish.utils import (
     same_host_redirect_url,
     same_host_referrer,
     update_recipe_nutrition,
 )
-from sqlalchemy import or_, func, and_
-from sqlalchemy.orm import joinedload
-import math
 
+from . import search_bp
 
 # Define constants for repeated literals
 DIARY_ROUTE_NAME = "diary.diary"

@@ -1,6 +1,8 @@
-import pytest
-from models import db, User, MyFood, MyMeal, Recipe, DailyLog
 from datetime import date
+
+import pytest
+
+from models import DailyLog, MyFood, MyMeal, Recipe, User, db
 
 
 @pytest.fixture

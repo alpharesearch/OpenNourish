@@ -1,8 +1,8 @@
 from flask_wtf import FlaskForm
 from wtforms import (
-    RadioField,
-    IntegerField,
     FloatField,
+    IntegerField,
+    RadioField,
     SelectField,
     SubmitField,
 )

@@ -1,5 +1,6 @@
 import pytest
-from models import db, Recipe, RecipeIngredient, MyFood, User
+
+from models import MyFood, Recipe, RecipeIngredient, User, db
 from opennourish.utils import update_recipe_nutrition
 
 

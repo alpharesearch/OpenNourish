@@ -6,7 +6,7 @@ from datetime import date
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from models import db, DailyLog, MyFood, User
+from models import DailyLog, MyFood, User, db
 
 
 def _payload(client):

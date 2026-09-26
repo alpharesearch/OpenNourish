@@ -1,5 +1,5 @@
-from opennourish.utils import get_standard_meal_names_for_user
 from models import User
+from opennourish.utils import get_standard_meal_names_for_user
 
 
 def test_get_standard_meal_names_for_user():
