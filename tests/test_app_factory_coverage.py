@@ -6,6 +6,7 @@ registered template filter, and every Flask CLI command nested in the factory.
 """
 
 import os
+import re
 
 import pytest
 from cryptography.fernet import Fernet
@@ -515,3 +516,34 @@ def test_negative_trusted_hops_fails_at_boot_rather_than_defaulting():
     waitress and ProxyFix into contradictory modes."""
     with pytest.raises(ValueError, match="TRUSTED_PROXY_HOPS"):
         _forwarded_probe_app(-1)
+
+
+# --------------------------------------------------------- seeded credentials (M6.4)
+
+
+def test_seed_dev_data_generates_and_prints_the_administrator_password(
+    app_with_db, monkeypatch
+):
+    """``markus`` used to get the password ``1``, and this repository documents that
+    default publicly. The seeder now generates one and shows it once — which is only
+    recoverable if the print and the stored hash are pinned together.
+
+    ``count`` is 0 and there are no ``FoodCategory`` rows, so the run stops right after
+    the accounts exist: this pins the credential path, not the fake-data path.
+    """
+    monkeypatch.setenv("SEED_DEV_DATA", "true")
+
+    result = app_with_db.test_cli_runner().invoke(args=["seed-dev-data", "0"])
+
+    assert "Administrator password for 'markus', shown once:" in result.output
+    printed = re.search(
+        r"Administrator password for 'markus', shown once: (\S+)", result.output
+    ).group(1)
+    assert len(printed) >= 12
+
+    with app_with_db.app_context():
+        admin = User.query.filter_by(username="markus").one()
+        assert admin.is_admin is True
+        assert admin.check_password(printed)
+        # The whole point: the old published default must not still work.
+        assert not admin.check_password("1")

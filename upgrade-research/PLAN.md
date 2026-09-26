@@ -4,17 +4,16 @@ Target interpreter: **Python 3.12** (security-supported to 2028-10-31).
 Evidence behind the numbers: [`README.md`](README.md). Candidate locks live in this folder until the
 milestone that consumes them lands, and are deleted once `requirements.txt` supersedes them.
 
-**Status as of 2026-09-25: M0, M1, M2, M2b, M3 and M4's CI step have landed, and deployment provenance
+**Status as of 2026-09-26: M0, M1, M2, M2b, M3 and M4's CI step have landed, and deployment provenance
 landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — Typst
 escaping (2026-09-23), the image diet (2026-09-24) and the `datetime.utcnow()` migration with a `DTZ003`
 gate (2026-09-25) are done; the rest of `DTZ`, the other ruff families, `pytest-flask`, the `@preview`
-vendoring and the 3.14 refresh are open. In M6, 6.3 and
-the nginx body cap of 6.6 landed on 2026-09-24; 6.1, 6.2, 6.4, 6.5 and the trusted-proxy setting are
-open.**
+vendoring and the 3.14 refresh are open. In M6, 6.3, 6.4 and 6.6 are closed, and 6.2's route
+conversions are closed; 6.1, 6.5 and the `ensure_portion_sequence` half of 6.2 are open.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (54 packages, was 72), Flask-Mailing is at 3.0.0, `ruff.toml` pins its rule
 families, the image's `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and
-PR, and every gate is green — 983 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
+PR, and every gate is green — 993 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
 advisory at 204 findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py`
 generates it from the installed wheels plus the vendored assets in `static/`, and `--check` fails if it
 drifts.
@@ -353,8 +352,8 @@ replaying the steps locally, which is what worked here.
 These hazards are recorded in `AGENTS.md` but owned by no milestone, so they were knowledge rather
 than work. The upgrade track is finished and the app is deployed, so each item below is independently
 shippable, ordered by exposure. The counts were re-measured on 2026-09-23, not carried over from the
-audit. 6.3 and 6.6 landed on 2026-09-24 and 2026-09-26 and 6.2's route conversions landed with them;
-what is left is 6.1, 6.4, 6.5, and the `ensure_portion_sequence` half of 6.2.
+audit. 6.3, 6.4 and 6.6 landed (2026-09-24, 2026-09-26, 2026-09-24/26) along with 6.2's route
+conversions; what is left is 6.1, 6.5, and the `ensure_portion_sequence` half of 6.2.
 
 ### M6.1 — Close the CSRF gap
 
@@ -456,13 +455,33 @@ settings in the UI. Check which mode a deployment is in with
   block is the deploy interface, and redacting its secrets breaks the install it exists to produce. Do not
   re-open it. The three items above landed without touching that output.
 
-### M6.4 — Seed-admin default
+### M6.4 — Seed-admin default — LANDED (2026-09-26)
 
-`.env.example` ships `SEED_DEV_DATA=true` and `opennourish/__init__.py:298-301` creates administrator
+`.env.example` shipped `SEED_DEV_DATA=true` and `opennourish/__init__.py` created administrator
 `markus` with password `1`; registration is open and the first registrant becomes admin when
-`INITIAL_ADMIN_USERNAME` is unset. Flip the example default to `false`, and have the seeder generate a
-random password printed once instead of `1`. This combination is already described in a public repo,
-so treat it as publicly known configuration.
+`INITIAL_ADMIN_USERNAME` is unset. This combination is already described in a public repo, so treat
+it as publicly known configuration.
+
+What shipped:
+
+- `.env.example` now says `false`. `deploy_truenas.sh:66` had **already** defaulted the generated
+  TrueNAS YAML to `false` (`SEED_DEV_DATA_VAR=${SEED_DEV_DATA:-false}`), so the shipped example was
+  the only thing advertising the development default — the deployment was never the exposed side.
+- The seeder generates `admin_password` and `demo_password` with `secrets.token_urlsafe(12)` and
+  prints each once. `secrets`, not the `random` already imported two lines up for the fake data —
+  these are credentials. Nothing keeps a copy, so the one-time print (container log pane, or the
+  CLI's stdout) is the only recovery path.
+- Pinned by `test_seed_dev_data_generates_and_prints_the_administrator_password`, which reads the
+  password back out of the CLI output, asserts it authenticates, and asserts `check_password("1")`
+  is now false. Run with `count=0` on a category-less database, so it stops after the accounts
+  exist and never enters the fake-data path — that whole command is inside `# no cover` and this is
+  the first test that executes any of it.
+- Two doc lies went with it: `DEV-README.md` claimed the seeder "clears old data" (it refuses to run
+  on a non-empty `User` table and deletes nothing) and advertised username `test` / password
+  `password`, neither of which has ever been true.
+
+Open in this item: the username and email are still hard-coded to the owner's, and
+`INITIAL_ADMIN_USERNAME` remains the only knob on who becomes the first admin.
 
 ### M6.5 — Input-handling defects already recorded as inherited
 

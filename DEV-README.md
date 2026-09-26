@@ -95,8 +95,8 @@ Replace `<number_of_users>` with the desired count (e.g., `flask seed-dev-data -
 
 **What this command does:**
 
-*   **Clears Old Data:** Deletes all existing records from user-related tables (`DailyLog`, `MyFood`, `Recipe`, `UserGoal`, `CheckIn`, `User`, etc.) to ensure a clean slate.
-*   **Creates a Main Test User:** Adds a predictable user for easy login (username: `test`, password: `password`).
+*   **Refuses to Touch a Populated Database:** It runs only when `SEED_DEV_DATA=true` *and* `User` is empty — otherwise it prints a one-line skip and deletes nothing. It is not a reset command, and `seed_db.sh` / `seed_usda.sh` are (§ 3.1 and the root `AGENTS.md`).
+*   **Creates a Main Test User:** an administrator named `markus`, plus `count` demo accounts. Every password is generated with `secrets` and **printed once** to the command's output — nothing stores or repeats them, so read them off that run (in a container, the log pane). They used to all be `1`, which is public knowledge about this repo's defaults.
 *   **Generates Bulk Data:** For each specified user count, it generates:
     *   A new fake `User`.
     *   A `UserGoal` with randomized values.

@@ -30,6 +30,7 @@ from config import Config
 import click
 from faker import Faker
 import random
+import secrets
 from datetime import date, timedelta
 import csv
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -353,15 +354,32 @@ def create_app(config_class=Config):
 
             print("Starting to seed development data...")
 
+            # The seeded accounts used to all share the password "1", and the combination of
+            # that seeder with open registration is documented in a public repository, so it
+            # has to be treated as known. `secrets` and not `random`: these are credentials,
+            # and `random` is already imported here for the fake data and would be the obvious
+            # mistake to reach for. Printed once, into the container log, which is the one
+            # place a fresh TrueNAS volume surfaces anything.
+            admin_password = secrets.token_urlsafe(12)
+            demo_password = secrets.token_urlsafe(12)
+
             print("Creating main test user...")
             test_user = User(username="markus", email="schulz@alpharesearch.de")
-            test_user.set_password("1")
+            test_user.set_password(admin_password)
             test_user.is_admin = True
             test_user.is_verified = True
             test_user.has_completed_onboarding = True
             db.session.add(test_user)
             db.session.commit()  # Commit here to get test_user.id
             print(f"Created main test user: {test_user.username}")
+            print(
+                f"    Administrator password for {test_user.username!r}, shown once: "
+                f"{admin_password}"
+            )
+            print(
+                f"    Shared password for the seeded demo accounts, shown once: "
+                f"{demo_password}"
+            )
 
             fake = Faker()
 
@@ -397,7 +415,7 @@ def create_app(config_class=Config):
                 )
                 user.is_verified = True
                 user.has_completed_onboarding = True
-                user.set_password("1")
+                user.set_password(demo_password)
                 db.session.add(user)
                 db.session.flush()  # To get user.id
                 print(f"Created test user{i}: {user.username}")

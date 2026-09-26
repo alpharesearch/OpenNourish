@@ -43,7 +43,7 @@ OpenNourish is a free and open source food tracker.
       ```bash
       python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
       ```
-    - The `SEED_DEV_DATA` variable in `.env` controls whether development data is seeded on the first run. Set it to `true` for development or `false` for a clean production setup.
+    - The `SEED_DEV_DATA` variable in `.env` controls whether development data is seeded on the first run. Leave it `false` (the shipped default) unless this is a throwaway instance: with `true` and an empty database the seeder creates an administrator plus demo accounts, and prints their generated passwords **once** to the container log — nothing stores them, so read them there. `true` on a host other people can reach is not a configuration you want.
 
 5. **Install Typst:**
    - Typst is an external dependency required for generating nutrition labels. For non-Docker installations, you need to ensure the `typst` executable is available in your system's PATH (e.g., by placing it in `/usr/local/bin`).
