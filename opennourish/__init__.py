@@ -1299,6 +1299,49 @@ def create_app(config_class=Config):
 
             print(f"Removed {deleted_duplicates_count} duplicate portions.")
 
+    @app.cli.command("repair-portion-sequence")
+    def repair_portion_sequence_command():
+        """Assign seq_num to portions that never got one.
+
+        Optional: every listing of portions already orders by
+        `seq_num NULLS LAST, gram_weight ASC`, which is the order this writes, so an
+        unsequenced portion already displays where running this would put it. It is here
+        because `seq_num` is also what the USDA move routes edit, so materialising the
+        numbers is occasionally what an operator wants.
+
+        This used to run lazily from five GET handlers, which renumbered an item's whole
+        portion list the moment any one portion was NULL — overwriting a key user's curated
+        order and committing it from a read. It is an operator command again, and only that
+        (`tests/test_portion_sequence.py`). See upgrade-research/PLAN.md M6.2.
+        """
+        from opennourish.utils import ensure_portion_sequence
+
+        with app.app_context():
+            parents = (
+                ("MyFood", MyFood, UnifiedPortion.my_food_id, MyFood.id),
+                ("Recipe", Recipe, UnifiedPortion.recipe_id, Recipe.id),
+                ("Food", Food, UnifiedPortion.fdc_id, Food.fdc_id),
+            )
+            for label, model, parent_column, id_column in parents:
+                ids = [
+                    row[0]
+                    for row in db.session.query(parent_column)
+                    .filter(
+                        parent_column.is_not(None),
+                        UnifiedPortion.seq_num.is_(None),
+                    )
+                    .distinct()
+                ]
+                if not ids:
+                    print(f"{label}: no unsequenced portions.")
+                    continue
+                # Chunked: `item.portions` is one query per item, and `Food` reaches
+                # across binds to do it.
+                for start in range(0, len(ids), 100):
+                    items = model.query.filter(id_column.in_(ids[start : start + 100]))
+                    ensure_portion_sequence(items.all())
+                print(f"{label}: sequenced the portions of {len(ids)} item(s).")
+
     @app.cli.command("seed-usda-categories")
     def seed_usda_categories_command():
         """Seeds the database with USDA food categories."""

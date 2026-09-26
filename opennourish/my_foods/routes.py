@@ -23,8 +23,8 @@ from opennourish.my_foods.forms import MyFoodForm, PortionForm, CategoryForm
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 from opennourish.utils import (
-    same_host_referrer,
     ensure_portion_sequence,
+    same_host_referrer,
     get_nutrients_for_display,
     convert_display_nutrients_to_100g,
     prepare_undo_and_delete,
@@ -448,11 +448,10 @@ def edit_my_food(food_id):
         flash("You are not authorized to edit this food.", "danger")
         return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
-    ensure_portion_sequence([my_food])
-    portions = sorted(
-        my_food.portions,
-        key=lambda p: p.seq_num if p.seq_num is not None else float("inf"),
-    )
+    # `MyFood.portions` already arrives ordered `seq_num NULLS LAST, gram_weight ASC`, so
+    # the old re-sort here — and the backfill call that used to precede it — only had to be
+    # dropped, not replaced.
+    portions = my_food.portions
 
     form = MyFoodForm(obj=my_food)
     portion_form = PortionForm()
@@ -805,6 +804,18 @@ def move_my_food_portion_up(portion_id):
         flash("Portion not found or unauthorized.", "danger")
         return redirect(url_for(MY_FOODS_LIST_ROUTE))
 
+    if portion_to_move.seq_num is None:
+        # `NULL < NULL` matches nothing, so the swap below would answer "already at the
+        # top" for a portion that simply has no number — and since 2026-09-26 nothing
+        # backfills those numbers on page load. Number this food's portions here, in the
+        # POST that was asked to reorder them, the way `recipes` and `usda_admin` do.
+        ensure_portion_sequence([portion_to_move.my_food])
+        flash("Assigned sequence numbers to all portions. Please try again.", "info")
+        return redirect(
+            url_for(MY_FOODS_EDIT_ROUTE, food_id=portion_to_move.my_food_id)
+            + PORTIONS_TABLE_FRAGMENT
+        )
+
     # Find the portion with the next lower seq_num
     portion_to_swap_with = (
         UnifiedPortion.query.filter(
@@ -839,6 +850,18 @@ def move_my_food_portion_down(portion_id):
     if not portion_to_move:
         flash("Portion not found or unauthorized.", "danger")
         return redirect(url_for(MY_FOODS_LIST_ROUTE))
+
+    if portion_to_move.seq_num is None:
+        # `NULL < NULL` matches nothing, so the swap below would answer "already at the
+        # bottom" for a portion that simply has no number — and since 2026-09-26 nothing
+        # backfills those numbers on page load. Number this food's portions here, in the
+        # POST that was asked to reorder them, the way `recipes` and `usda_admin` do.
+        ensure_portion_sequence([portion_to_move.my_food])
+        flash("Assigned sequence numbers to all portions. Please try again.", "info")
+        return redirect(
+            url_for(MY_FOODS_EDIT_ROUTE, food_id=portion_to_move.my_food_id)
+            + PORTIONS_TABLE_FRAGMENT
+        )
 
     # Find the portion with the next higher seq_num
     portion_to_swap_with = (

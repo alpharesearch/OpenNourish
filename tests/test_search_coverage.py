@@ -2287,7 +2287,10 @@ def test_get_portions_usda_with_portions(env):
 
     response = env.client.get(f"/search/api/get-portions/usda/{env.apple}")
     payload = response.get_json()["portions"]
-    assert [p["gram_weight"] for p in payload] == [240.0, 5.0]
+    # Unsequenced portions fall back to `gram_weight` ascending. The bare
+    # `.order_by(seq_num)` this replaces sorted NULLs *first* under SQLite, which made the
+    # whole list depend on insertion order.
+    assert [p["gram_weight"] for p in payload] == [5.0, 240.0]
     # No "serving" description, so the first portion becomes the default.
     assert payload[0]["is_default"] is True
     assert "is_default" not in payload[1]

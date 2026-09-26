@@ -901,25 +901,36 @@ def calculate_weight_projection(user):
 
 
 def ensure_portion_sequence(items):
+    """Assign `seq_num` to the portions of `items` that have none, and return how many.
+
+    Only unsequenced portions are touched, numbered after the highest number the item
+    already has and ordered by `gram_weight`. Renumbering an item's whole list because one
+    portion was NULL — which is what this did until 2026-09-26 — silently overwrote the
+    order a key user had built with the USDA move routes.
+
+    **Operator-run only** (`flask repair-portion-sequence`). It commits, so it must not be
+    called from a request handler, and display order does not need it: every listing of
+    `portions` orders by `seq_num NULLS LAST, gram_weight ASC`, which is the order this
+    writes, so an unsequenced portion already displays where this would put it.
     """
-    Iterates through a list of items (MyFood, Recipe, Food) and ensures
-    all their portions have a sequence number.
-    """
-    needs_commit = False
+    numbered = 0
     for item in items:
-        if hasattr(item, "portions") and item.portions:
-            # Check if any portion is missing a seq_num
-            if any(p.seq_num is None for p in item.portions):
-                # Sort portions by gram_weight to create a stable order
-                # Handle potential None in gram_weight just in case
-                portions_to_update = sorted(
-                    item.portions, key=lambda p: p.gram_weight or 0
-                )
-                for i, p in enumerate(portions_to_update):
-                    p.seq_num = i + 1
-                needs_commit = True
-    if needs_commit:
+        portions = getattr(item, "portions", None)
+        if not portions:
+            continue
+        unsequenced = [p for p in portions if p.seq_num is None]
+        if not unsequenced:
+            continue
+        next_num = max(
+            (p.seq_num for p in portions if p.seq_num is not None), default=0
+        )
+        for portion in sorted(unsequenced, key=lambda p: p.gram_weight or 0):
+            next_num += 1
+            portion.seq_num = next_num
+            numbered += 1
+    if numbered:
         db.session.commit()
+    return numbered
 
 
 def get_nutrients_for_display(my_food, portion):

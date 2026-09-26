@@ -299,7 +299,10 @@ class MyFood(db.Model):
         foreign_keys=[UnifiedPortion.my_food_id],
         backref="my_food",
         cascade=CASCADE_ALL_DELETE_ORPHAN,
-        order_by="UnifiedPortion.seq_num.asc().nulls_last()",
+        # `gram_weight` is the tie-break for the NULL group, and it is the same rule
+        # `ensure_portion_sequence` writes, so an unsequenced portion displays where the
+        # repair command would put it — which is why no read has to repair anything.
+        order_by="UnifiedPortion.seq_num.asc().nulls_last(), UnifiedPortion.gram_weight.asc()",
     )
     user = db.relationship("User")
     food_category = db.relationship("FoodCategory", backref="my_foods")
@@ -343,6 +346,7 @@ class Recipe(db.Model):
         foreign_keys=[UnifiedPortion.recipe_id],
         backref="recipe",
         cascade=CASCADE_ALL_DELETE_ORPHAN,
+        order_by="UnifiedPortion.seq_num.asc().nulls_last(), UnifiedPortion.gram_weight.asc()",
     )
     user = db.relationship("User")
     food_category = db.relationship("FoodCategory", backref="recipes")

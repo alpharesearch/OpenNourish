@@ -32,7 +32,6 @@ from opennourish.utils import (
     same_host_referrer,
     calculate_nutrition_for_items,
     calculate_recipe_nutrition_per_100g,
-    ensure_portion_sequence,
     get_available_portions,
     update_recipe_nutrition,
     prepare_undo_and_delete,
@@ -740,7 +739,6 @@ def edit_recipe(recipe_id):
             selected_portion = db.session.get(UnifiedPortion, ing.portion_id_fk)
 
         if food_object:
-            ensure_portion_sequence([food_object])
             available_portions = get_available_portions(food_object)
 
         if selected_portion and selected_portion.gram_weight > 0:
@@ -1106,9 +1104,6 @@ def view_recipe(recipe_id):
     if not recipe.is_public and recipe.user_id != user.id and not is_friend:
         flash("You are not authorized to view this recipe.", "danger")
         return redirect(url_for(RECIPES_LIST_ROUTE))
-
-    # Ensure portions have sequence numbers before passing to the template
-    ensure_portion_sequence([recipe])
 
     usda_food_ids = {ing.fdc_id for ing in recipe.ingredients if ing.fdc_id}
     usda_foods_map = {}

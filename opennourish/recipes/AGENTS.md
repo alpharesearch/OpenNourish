@@ -15,7 +15,7 @@ User recipes: nested ingredients (foods, other recipes, meals), per-recipe nutri
 
 - A recipe's own nutrient columns are derived, never hand-entered: they are recomputed from ingredients by `update_recipe_nutrition` after any ingredient change. Any new mutation path must call it or the recipe page disagrees with the diary.
 - Final weight wins over summed ingredients when computing per-100g values; that precedence is intentional and covered by `tests/test_recipe_final_weight.py`.
-- Ingredients are ordered by `RecipeIngredient` order plus each portion's `seq_num`; `move_up` / `move_down` swap and renumber. Reordering must keep both sequences consistent (`ensure_portion_sequence` at L731, L1088).
+- Ingredients order by `RecipeIngredient.seq_num NULLS LAST` and `Recipe.portions` by `seq_num NULLS LAST, gram_weight ASC`; `move_up` / `move_down` (`routes.py:1391`, `:1443`) swap and renumber, and both number an unsequenced portion inside the POST first. Reordering must keep both sequences consistent.
 - Import has two formats: the "simple" YAML format (structured `name`, `quantity`, `unit`, `notes`) which creates placeholder `MyFood` + `UnifiedPortion` rows with `is_placeholder=True`, and the complex format which expects matched foods. Rematch (`search` `target=rematch_ingredient`) replaces placeholders and must preserve original quantity while recalculating `amount_grams`.
 - `is_placeholder` survives export → re-import; do not drop it from the export payload.
 - Recipes inherit visibility from their owner: unverified or private accounts expose nothing to friends, and deleted accounts leave orphaned rows the cleanup page handles.
@@ -24,7 +24,7 @@ User recipes: nested ingredients (foods, other recipes, meals), per-recipe nutri
 ## Work Guidance
 
 - **`copy_recipe` (L1327) preserves the source row's `portion_id_fk`, `my_food_id`, and `recipe_id_link`** on the copied ingredients while copying portions fresh, so a copied recipe can point at another user's rows. Re-point them at the copies (or at the copies' new portion ids).
-- The two historical authorisation defects are **fixed and test-locked**: `nutrition_label_svg` now mirrors the sibling guard (`is_public or owner`, 403 otherwise) and `edit_recipe` runs the ownership check **before** the `seq_num` backfills/`ensure_portion_sequence` that commit. Keep the check first; the ingredient-display path already guards `portion_id_fk` before `db.session.get`.
+- The two historical authorisation defects are **fixed and test-locked**: `nutrition_label_svg` now mirrors the sibling guard (`is_public or owner`, 403 otherwise) and `edit_recipe` runs its ownership check before anything else in the handler. Keep the check first; the ingredient-display path already guards `portion_id_fk` before `db.session.get`.
 - Keep `_get_or_create_food_category` behaviour identical to the `my_foods` copy, or extract one shared helper in `utils.py` — the two copies must not diverge silently.
 - Import/export changes must be validated by a round-trip test (export then import then compare), not by unit-testing one direction.
 

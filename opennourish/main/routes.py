@@ -12,9 +12,6 @@ from datetime import datetime, timezone
 from flask_login import current_user
 from models import db, Food
 import os
-from opennourish.utils import (
-    ensure_portion_sequence,
-)
 from opennourish.typst_utils import (
     generate_nutrition_label_pdf,
     generate_nutrition_label_svg,
@@ -46,10 +43,8 @@ def food_detail(fdc_id):
     if not food:
         return "Food not found", 404
 
-    # Ensure portions have sequence numbers before passing to the template
-    ensure_portion_sequence([food])
-
-    # The template will handle sorting by seq_num
+    # `Food.portions` is ordered `seq_num NULLS LAST, gram_weight ASC`, which is the order
+    # the old lazy backfill used to write — so nothing has to be repaired to render this.
     portions = food.portions
 
     return render_template(

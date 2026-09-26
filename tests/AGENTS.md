@@ -7,7 +7,7 @@ The pytest suite is the broadest of this repository's four gates and the only on
 ## Ownership
 
 - `conftest.py` — the single app-factory fixture and the login helpers every test reuses.
-- 74 test files, 1037 non-integration tests + 1 integration test (1038 collected). 16 of them are the `test_*_coverage.py` files raised for the 99% TOTAL pass; each mirrors a feature module and is named for it.
+- 75 test files, 1049 non-integration tests + 1 integration test (1050 collected). 16 of them are the `test_*_coverage.py` files raised for the 99% TOTAL pass; each mirrors a feature module and is named for it.
 - `pytest.ini` (repo root) — declares the `integration` marker only; no `addopts`, no `testpaths`.
 - `.coveragerc` (repo root) — `exclude_also` patterns only.
 - Not owned here: what each feature must do (feature AGENTS.md files), and the workflow file itself (`.github/workflows/ci.yml`, root-owned — it runs the commands below on every push and PR).
@@ -34,7 +34,7 @@ The pytest suite is the broadest of this repository's four gates and the only on
 
 ## Work Guidance
 
-- New route → new or extended test file named after the feature area; keep the existing grouping (search, recipes, my_foods, diary, meals, goals, tracking/analytics, exercise, fasting, friends, profile, admin, usda_admin, undo, settings, auth, cli, config, models, utils, time_utils).
+- New route → new or extended test file named after the feature area; keep the existing grouping (search, recipes, my_foods, diary, meals, goals, tracking/analytics, exercise, fasting, friends, profile, admin, usda_admin, undo, settings, auth, cli, config, models, utils, time_utils, csrf, portion sequence).
 - Reuse the `conftest.py` fixtures. Hand-rolled `session_transaction` `_user_id` login is duplicated in 25 files and `POST /auth/login` in 11 (a few of those — `test_auth*.py` — are testing the login route itself and stay); when touching one of the others, move it onto a fixture instead of adding a copy.
 - Cross-user authorisation must be tested both ways (owner succeeds, non-owner is rejected) using `auth_client_two_users` or `auth_client_with_friendship`.
 - Format with `python -m ruff format .` and lint with `python -m ruff check .`; both are gates, so CI enforces them on the pushed commit even though nothing runs locally at commit time.
@@ -51,7 +51,7 @@ $P -m coverage run -m pytest -m "not integration" && \
   $P -m coverage report --skip-covered --omit="test*","/tmp/*"   # TOTAL is 99%
 ```
 
-Coverage TOTAL is **99%** (6157 statements, 43 misses); 53 modules are at 100%. The only files with any misses are: `exercise/routes.py` 85%, `goals/routes.py` 98%, `my_foods/routes.py` 99%, `recipes/routes.py` 99%, `search/routes.py` 97%, `utils.py` 99%. The `search`/`my_foods`/`recipes`/`utils` remainders are documented as dead or unreachable (duplicate-int guards, an unreachable `continue`, `PortionForm`-prevented validators, identity-map branches); `exercise` is the only lane where new tests would still move TOTAL.
+Coverage TOTAL is **99%** (6174 statements, 47 misses); 53 modules are at 100%. The only files with any misses are: `exercise/routes.py` 85%, `goals/routes.py` 98%, `my_foods/routes.py` 99%, `recipes/routes.py` 99%, `search/routes.py` 97%, `utils.py` 99%. The `search`/`my_foods`/`recipes`/`utils` remainders are documented as dead or unreachable (duplicate-int guards, an unreachable `continue`, `PortionForm`-prevented validators, identity-map branches); `exercise` is the only lane where new tests would still move TOTAL.
 
 ## Child DOX Index
 

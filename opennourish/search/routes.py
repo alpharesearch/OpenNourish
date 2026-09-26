@@ -26,7 +26,6 @@ from flask_login import login_required, current_user
 from datetime import date
 from opennourish.time_utils import get_user_today
 from opennourish.utils import (
-    ensure_portion_sequence,
     same_host_redirect_url,
     same_host_referrer,
     update_recipe_nutrition,
@@ -559,14 +558,6 @@ def search():
                 .order_by(MyMeal.usage_count.desc())
                 .paginate(page=my_meals_page, per_page=per_page, error_out=False)
             )
-
-    # Ensure all loaded portions have sequence numbers before rendering
-    if usda_foods_pagination:
-        ensure_portion_sequence(usda_foods_pagination.items)
-    if my_foods_pagination:
-        ensure_portion_sequence(my_foods_pagination.items)
-    if recipes_pagination:
-        ensure_portion_sequence(recipes_pagination.items)
 
     return render_template(
         "search/search.html",
@@ -1467,7 +1458,10 @@ def get_portions(food_type, food_id):
             return jsonify({"error": NOT_FOUND_OR_UNAUTHORIZED_ERROR}), 404
         portions = (
             UnifiedPortion.query.filter_by(my_food_id=food_id)
-            .order_by(UnifiedPortion.seq_num)
+            .order_by(
+                UnifiedPortion.seq_num.asc().nulls_last(),
+                UnifiedPortion.gram_weight.asc(),
+            )
             .all()
         )
         calories_per_100g = my_food.calories_per_100g
@@ -1482,7 +1476,10 @@ def get_portions(food_type, food_id):
             return jsonify({"error": NOT_FOUND_OR_UNAUTHORIZED_ERROR}), 404
         portions = (
             UnifiedPortion.query.filter_by(recipe_id=food_id)
-            .order_by(UnifiedPortion.seq_num)
+            .order_by(
+                UnifiedPortion.seq_num.asc().nulls_last(),
+                UnifiedPortion.gram_weight.asc(),
+            )
             .all()
         )
         calories_per_100g = recipe.calories_per_100g
@@ -1492,7 +1489,10 @@ def get_portions(food_type, food_id):
             return jsonify({"error": "Not Found"}), 404
         portions = (
             UnifiedPortion.query.filter_by(fdc_id=food_id)
-            .order_by(UnifiedPortion.seq_num)
+            .order_by(
+                UnifiedPortion.seq_num.asc().nulls_last(),
+                UnifiedPortion.gram_weight.asc(),
+            )
             .all()
         )
         # Get calories for USDA food

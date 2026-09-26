@@ -86,7 +86,13 @@ def test_index_redirects_logged_in_user_to_dashboard(auth_client):
 
 
 def test_food_detail_renders_portions(client, sample_usda_food, app_with_db):
-    """The food detail page backfills portion sequence numbers and renders."""
+    """The food detail page renders portions without repairing anything.
+
+    This test used to assert that the GET had written `seq_num == 1`: a read handler
+    committing a data fix was the contract, and it is the bug. The ordering the backfill
+    used to materialise is now applied at read time (`Food.portions` orders
+    `seq_num NULLS LAST, gram_weight ASC`), so the row stays untouched.
+    """
     from models import UnifiedPortion
 
     with app_with_db.app_context():
@@ -105,7 +111,7 @@ def test_food_detail_renders_portions(client, sample_usda_food, app_with_db):
     assert b"handful" in response.data
     with app_with_db.app_context():
         portion = UnifiedPortion.query.filter_by(fdc_id=sample_usda_food.fdc_id).one()
-        assert portion.seq_num == 1
+        assert portion.seq_num is None
 
 
 # --- tracking: progress page ---

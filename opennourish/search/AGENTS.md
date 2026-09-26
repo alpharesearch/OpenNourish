@@ -7,9 +7,9 @@ Search across all four food sources (USDA, user foods, recipes, saved meals) inc
 ## Ownership
 
 - `routes.py` (1588 lines) holds exactly three routes:
-  - `search()` L125 — `GET|POST /search/`: query parsing, per-source result assembly, UPC matching, pagination, frequent items.
-  - `add_item()` L601 — `POST /search/add_item`, ~845 lines: every write path.
-  - `get_portions()` L1455 — `GET /search/api/get-portions/<food_type>/<int:food_id>`, JSON for the portion picker.
+  - `search()` L126 — `GET|POST /search/`: query parsing, per-source result assembly, UPC matching, pagination, frequent items.
+  - `add_item()` L592 — `POST /search/add_item`, ~850 lines: every write path.
+  - `get_portions()` L1448 — `GET /search/api/get-portions/<food_type>/<int:food_id>`, JSON for the portion picker.
 - Not owned here: portion storage rules (root `models.py` contract), nutrition math (`opennourish/utils.py`), the modal markup (`templates/base.html` `addItemModal`).
 
 ## Local Contracts
@@ -25,7 +25,7 @@ Search across all four food sources (USDA, user foods, recipes, saved meals) inc
 - Authorization on the write paths uses the plain ownership check plus the friendship rule — the two historical defects here are **closed and test-locked**: the copy-meal (`diary_meal`) branch verifies an accepted `Friendship` via `_has_accepted_friendship()` before reading the friend's `DailyLog` rows, and the `obj.user_id != current_user.id and not obj.user` predicate that only rejected deleted owners was replaced with real ownership checks (`_portion_matches_item`, parent checks). `test_search_coverage.py` exercises each rejection both ways. Keep the idiom from `opennourish/AGENTS.md`; do not reintroduce the deleted-owner predicate.
 - **Redirect targets are validated against `request.host` before `redirect()`.** `return_url` is read once at the top of `add_item` through `utils.same_host_redirect_url()`, and every referrer goes through `utils.same_host_referrer()` — so the ~9 `if return_url:` exits keep their own fallbacks and an off-site value simply falls through to them. Keep that shape: the redirect is the feature (scroll position, meal anchor), the destination is not the client's to choose. Fragments and queries pass through untouched, which `test_add_item_keeps_the_return_url_fragment_and_query` pins. `tests/test_search_coverage.py::_add_item` therefore sends a referrer on the app's own authority; pass `referer=` to test a refusal.
 - The GET search view writes: it creates and commits a 1 g USDA portion per result row (`was_imported=True`, L317 and L536). Do not add further writes to it.
-- `ensure_portion_sequence` (utils L830) backfills missing `seq_num` by sorting on `gram_weight`; it is called on search result pages (L560-564) and may write. Preserve those calls when changing result assembly.
+- `/search/api/get-portions/` orders its three branches `seq_num ASC NULLS LAST, gram_weight ASC`, the same rule the `portions` relationships use — a bare `.order_by(seq_num)` sorted NULLs *first* under SQLite, which made the dropdown order depend on insertion. Result assembly no longer calls `ensure_portion_sequence` (removed 2026-09-26, PLAN.md M6.2); it still commits a generated 1 g portion per USDA food, which is the separate open GET-write defect.
 - The Add buttons in templates carry `data-log-date`; `tests/test_search_log_date.py` asserts it by regex on rendered HTML, so keep the attribute when editing the buttons.
 
 ## Work Guidance

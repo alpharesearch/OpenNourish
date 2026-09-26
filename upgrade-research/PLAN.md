@@ -8,13 +8,13 @@ milestone that consumes them lands, and are deleted once `requirements.txt` supe
 landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — Typst
 escaping (2026-09-23), the image diet (2026-09-24) and the `datetime.utcnow()` migration with a `DTZ003`
 gate (2026-09-25) are done; the rest of `DTZ`, the other ruff families, `pytest-flask`, the `@preview`
-vendoring and the 3.14 refresh are open. In M6 only the `ensure_portion_sequence` half of 6.2 is left: 6.1 (global
-CSRF enforcement), 6.3, 6.4, 6.5 and 6.6 all closed between 2026-09-24 and 2026-09-26, and 6.2's two
-mutating GETs became POSTs on 2026-09-26.**
+vendoring and the 3.14 refresh are open. **M6 is closed**: 6.1 (global CSRF enforcement), 6.3, 6.4, 6.5 and 6.6 all landed between
+2026-09-24 and 2026-09-26, and both halves of 6.2 landed on 2026-09-26 — the two mutating GETs became
+POSTs, and the portion-sequence backfill left the request path entirely.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (54 packages, was 72), Flask-Mailing is at 3.0.0, `ruff.toml` pins its rule
 families, the image's `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and
-PR, and every gate is green — 1037 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
+PR, and every gate is green — 1049 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
 advisory at 204 findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py`
 generates it from the installed wheels plus the vendored assets in `static/`, and `--check` fails if it
 drifts.
@@ -353,8 +353,8 @@ replaying the steps locally, which is what worked here.
 These hazards are recorded in `AGENTS.md` but owned by no milestone, so they were knowledge rather
 than work. The upgrade track is finished and the app is deployed, so each item below is independently
 shippable, ordered by exposure. The counts were re-measured on 2026-09-23, not carried over from the
-audit. 6.1, 6.3, 6.4, 6.5 and 6.6 landed, along with 6.2's route conversions; what is left of M6 is
-the `ensure_portion_sequence` half of 6.2.
+audit, now complete: 6.1, 6.3, 6.4, 6.5 and 6.6 landed, and both halves of 6.2 landed on
+2026-09-26.
 
 ### M6.1 — Close the CSRF gap — LANDED (2026-09-26)
 
@@ -399,7 +399,7 @@ Not taken from step 1: fixing djlint's 6 structural H025 findings "while in ther
 tokens touched 20 of the same files, but reformatting them is a separate change with its own review
 surface, and `--reformat` rewrites 42 of 43 files tree-wide.
 
-### M6.2 — Mutating GETs, which no CSRF token can cover — LANDED 2026-09-26
+### M6.2 — Mutating GETs, which no CSRF token can cover — LANDED (2026-09-26, both halves)
 
 `/undo` was `methods=["GET"]` (`opennourish/undo/routes.py:254`), `onboarding.finish_onboarding`
 committed, and `ensure_portion_sequence` writes from GET handlers in `main`, `search`, `recipes` and
@@ -425,25 +425,50 @@ Convert to POST, then M6.1 covers them.
   M6.1 then deleted that hand-binding: `CSRFProtect.init_app` binds the identical callable itself,
   and one binding is the correct end state.
 
-**Open — the `ensure_portion_sequence` backfill, which is not a "convert to POST" case.** It is lazy
-data repair running incidentally during reads (`main/routes.py:52`, `search/routes.py:560-564`,
-`recipes/routes.py:742` and `:1110`, `my_foods/routes.py:450`); no user action initiates it, so
-there is no POST to convert it to. The fix `opennourish/AGENTS.md` already names is to assign
-`seq_num` at creation and stop relying on the backfill — which also retires the separate
-"destroys curated order" defect, since the backfill renumbers *all* of an item's portions by
-`gram_weight` the moment any one of them is NULL. Two facts make that tractable rather than
-invasive: the `portions` relationships already order `seq_num ASC NULLS LAST`
-(`models.py:302`, `:462`), so a NULL never scrambles an item that also has numbered portions; and
-`gram_weight` ascending is the same order the backfill would have written, so making the read-side
-tie-break `seq_num NULLS LAST, gram_weight ASC` reproduces the current display without any write.
-What remains is to pick where creation-time numbering lives (26 `UnifiedPortion(...)` sites, so a
-central `before_insert` is the plausible place), keep a CLI one-shot for legacy NULL rows, and give
-`/search/api/get-portions/` the same ordering (it is the one reader using a bare
-`.order_by(UnifiedPortion.seq_num)`, which sorts NULLs *first* under SQLite).
+**The `ensure_portion_sequence` backfill — landed 2026-09-26.** This was never a "convert to POST"
+case: lazy data repair running incidentally during reads (`main/routes.py:52`,
+`search/routes.py:560-564`, `recipes/routes.py:742` and `:1110`, `my_foods/routes.py:450`), with no
+user action that could have initiated it. What it now is: the ordering moved to the read side, the
+five calls are gone, and the repair is `flask repair-portion-sequence`.
+
+Two measurements decided the shape, and both contradict what this section proposed:
+
+- **A central `before_insert` cannot work here.** Of the 33 `UnifiedPortion(...)` sites, the ones
+  that matter most go through `db.session.bulk_save_objects` — `flask seed-usda-portions` builds its
+  whole list that way — and measured on SQLAlchemy 2.0.54, `bulk_save_objects` does **not** emit
+  `before_insert` (0 events for two objects, versus 1 for a plain `session.add`). A hook would have
+  numbered interactive portions and silently skipped the largest writer, which is worse than either
+  alternative. It would also have needed a `MAX(seq_num)` per insert, and `portions` is indexed only
+  on `fdc_id` — adding the missing indexes is a schema change, which this plan forbids.
+- **The read side was already almost total.** `Food.portions` ordered `seq_num NULLS LAST,
+  gram_weight ASC`; `MyFood.portions` had the NULLS LAST without the weight tie-break;
+  `Recipe.portions` had **no `order_by` at all**; and `/search/api/get-portions/` used a bare
+  `.order_by(seq_num)`, which sorts NULLs *first* under SQLite. Completing the rule everywhere
+  reproduces exactly what the backfill used to write, so the display does not change — and
+  `my_foods/routes.py`'s redundant Python re-sort went with it.
+
+Two consequences were found by following this through, both now test-locked:
+
+- **`ensure_portion_sequence` no longer renumbers an item wholesale.** The old version sorted *all*
+  of an item's portions by weight the moment one was NULL, which is how it destroyed the order a key
+  user built with the USDA move routes. It now numbers only the unsequenced ones, after the highest
+  number in use, and returns the count. That retires the separate "destroys curated order" defect in
+  the same change.
+- **`my_foods`' portion move routes would have silently broken.** Their swap predicate is
+  `seq_num < portion_to_move.seq_num`, and `NULL < NULL` matches nothing, so the old backfill was
+  what made those buttons work — the route would have answered "already at the top" for any newly
+  created portion. Both POSTs now number the food's portions first, the way `recipes` and
+  `usda_admin` already did. (`recipes/AGENTS.md` had recorded the asymmetry; it is closed.)
+
+`tests/test_portion_sequence.py` locks the whole shape: the ordering is total without a write, a
+curated number keeps its place, the repair touches only NULLs, four named GET handlers commit
+nothing at all (`scoped_session.commit` patched to raise), and a source-level allow-list says which
+two files may reference the helper at all — the CLI and those POST routes.
 
 `diary.routes` inserting the Water food during rendering and `search.search` committing per generated
-portion are the other two GET writers; `auth.verify_email` commits on GET legitimately, because a
-mail client cannot POST.
+portion are the two GET writers **still open** — neither is a CSRF exposure (they create rows nobody
+addresses by id), and `auth.verify_email` commits on GET legitimately, because a mail client cannot
+POST. They stay recorded in `opennourish/AGENTS.md`.
 
 ### M6.3 — Deployment secrets, keeping the copy-paste deploy working — LANDED (2026-09-24)
 
