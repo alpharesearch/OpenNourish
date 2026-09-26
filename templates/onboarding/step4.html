@@ -33,8 +33,11 @@
                     <p>We recommend exploring the application to familiarize yourself with all its capabilities.</p>
 
                     <div class="d-grid mt-4">
-                        <a href="{{ url_for('onboarding.finish_onboarding') }}" class="btn btn-outline-success">Start
-                            Using OpenNourish</a>
+                        <form action="{{ url_for('onboarding.finish_onboarding') }}" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-success">Start
+                                Using OpenNourish</button>
+                        </form>
                     </div>
                 </div>
             </div>

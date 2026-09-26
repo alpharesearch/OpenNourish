@@ -251,7 +251,7 @@ def _restore_by_reassigning_owner(item_type, item_data):
     return True
 
 
-@undo_bp.route("/undo", methods=["GET"])
+@undo_bp.route("/undo", methods=["POST"])
 @login_required
 def undo_last_action():
     last_deleted = session.pop("last_deleted", None)

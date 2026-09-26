@@ -357,7 +357,7 @@ def test_delete_recipe_anonymizes_then_undo_restores_owner(auth_client_with_user
     with client.application.app_context():
         assert db.session.get(Recipe, recipe_id).user_id is None
 
-    undo_response = client.get(url_for("undo.undo_last_action"))
+    undo_response = client.post(url_for("undo.undo_last_action"))
     assert undo_response.status_code == 302
     with client.application.app_context():
         assert db.session.get(Recipe, recipe_id).user_id == user.id
@@ -387,7 +387,7 @@ def test_delete_ingredient_recalculates_and_undo_reinserts(auth_client_with_user
         assert db.session.get(RecipeIngredient, ingredient_id) is None
         assert db.session.get(Recipe, recipe_id).calories_per_100g == pytest.approx(0)
 
-    undo_response = client.get(url_for("undo.undo_last_action"))
+    undo_response = client.post(url_for("undo.undo_last_action"))
     assert undo_response.status_code == 302
     with client.application.app_context():
         restored = db.session.get(RecipeIngredient, ingredient_id)

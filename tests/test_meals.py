@@ -281,7 +281,7 @@ def test_undo_anonymize_my_meal(auth_client_with_user):
         assert anonymized_meal.user_id is None
 
         # Now, call the undo endpoint
-        undo_response = client.get("/undo", follow_redirects=True)
+        undo_response = client.post("/undo", follow_redirects=True)
         assert undo_response.status_code == 200
         assert b"Item restored." in undo_response.data
 

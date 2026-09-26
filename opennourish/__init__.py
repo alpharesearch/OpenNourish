@@ -25,6 +25,7 @@ from sqlalchemy.orm import joinedload
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_mailing import Mail
+from flask_wtf.csrf import generate_csrf
 from config import Config
 import click
 from faker import Faker
@@ -191,6 +192,15 @@ def create_app(config_class=Config):
 
     # Enable the Jinja2 'do' extension
     app.jinja_env.add_extension("jinja2.ext.do")
+
+    # Raw (non-FlaskForm) POST forms need to emit a token field, and Flask-WTF ships the
+    # generator behind the ``csrf_token()`` template global. ``CSRFProtect.init_app`` assigns
+    # this very function to that global, but only when it is registered — and it must not be
+    # registered before the tokens exist, or every POST 400s. Registering the generator here
+    # too lets a POST form carry its token from the day it is written: the token is real but
+    # unchecked until M6.1 registers ``CSRFProtect``, which re-binds the identical callable.
+    # Nothing in this repo generates or verifies a token of its own — see `templates/AGENTS.md`.
+    app.jinja_env.globals["csrf_token"] = generate_csrf
 
     from opennourish.context_processors import inject_global_vars
 

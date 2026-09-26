@@ -95,12 +95,15 @@ def test_delete_category_with_undo(category_fixture):
         flashes = session.get("_flashes", [])
         assert len(flashes) > 0
         flash_message = flashes[0][1]
-        undo_url_match = re.search(r"href='([^']+)'", flash_message)
+        # The Undo affordance is a POST form, not a link — see PLAN.md M6.2.
+        undo_url_match = re.search(
+            r'<form action="([^"]+)" method="post"', flash_message
+        )
         assert undo_url_match is not None
         undo_url = undo_url_match.group(1)
 
-    # Follow the undo link
-    response = client.get(undo_url, follow_redirects=True)
+    # Submit the undo form
+    response = client.post(undo_url, follow_redirects=True)
     assert response.status_code == 200
     assert b"Item restored." in response.data
 

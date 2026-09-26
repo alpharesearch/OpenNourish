@@ -30,7 +30,7 @@ def test_hard_delete_and_reinsert(client, auth_client):
         assert session["last_deleted"]["data"]["id"] == log_id
 
     # 4. Call the undo route
-    auth_client.get("/undo")
+    auth_client.post("/undo")
 
     # 5. Verify the DailyLog has been re-created
     with auth_client.application.app_context():
@@ -66,7 +66,7 @@ def test_anonymize_and_reassign(client, auth_client):
         assert session["last_deleted"]["data"]["original_user_id"] == original_user_id
 
     # 5. Call the undo route
-    auth_client.get("/undo")
+    auth_client.post("/undo")
 
     # 6. Verify the user_id has been restored
     with auth_client.application.app_context():
@@ -99,7 +99,7 @@ def test_undo_overwrite(client, auth_client):
         assert session["last_deleted"]["data"]["id"] == check_in_id
 
     # 4. Call undo
-    auth_client.get("/undo")
+    auth_client.post("/undo")
 
     # 5. Verify CheckIn is restored and DailyLog is not
     with auth_client.application.app_context():
@@ -111,6 +111,57 @@ def test_undo_overwrite(client, auth_client):
 
 def test_invalid_undo(client, auth_client):
     # 1. Call the undo route with an empty session
-    response = auth_client.get("/undo", follow_redirects=True)
+    response = auth_client.post("/undo", follow_redirects=True)
     assert response.status_code == 200
     assert b"No action to undo." in response.data
+
+
+def test_undo_rejects_get(client, auth_client):
+    """Undo restores rows, so a GET must not be able to trigger it.
+
+    CSRF protection guards non-GET methods only, which is why this route had to stop
+    being a GET before ``CSRFProtect`` could cover it (``upgrade-research/PLAN.md`` M6.2).
+    """
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        log = DailyLog(
+            user_id=user.id,
+            log_date=date.today(),
+            meal_name="Breakfast",
+            amount_grams=100,
+        )
+        db.session.add(log)
+        db.session.commit()
+        log_id = log.id
+
+    auth_client.post(f"/diary/log/{log_id}/delete")
+    with auth_client.application.app_context():
+        assert db.session.get(DailyLog, log_id) is None
+
+    # A cross-site <img src="/undo"> lands here, and 405 means the row stays deleted.
+    assert auth_client.get("/undo").status_code == 405
+
+    with auth_client.application.app_context():
+        assert db.session.get(DailyLog, log_id) is None
+
+
+def test_delete_flash_offers_a_post_form(client, auth_client):
+    """The Undo affordance is a tokenised POST form, not a bare link."""
+    with auth_client.application.app_context():
+        user = User.query.filter_by(username="testuser").first()
+        log = DailyLog(
+            user_id=user.id,
+            log_date=date.today(),
+            meal_name="Breakfast",
+            amount_grams=100,
+        )
+        db.session.add(log)
+        db.session.commit()
+        log_id = log.id
+
+    page = auth_client.post(f"/diary/log/{log_id}/delete", follow_redirects=True)
+    html = page.data.decode("utf-8")
+
+    assert '<form action="/undo" method="post"' in html
+    assert 'name="csrf_token"' in html
+    assert 'href="/undo"' not in html

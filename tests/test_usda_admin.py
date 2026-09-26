@@ -245,13 +245,16 @@ def test_delete_usda_portion_key_user(key_user_client):
         assert len(flashes) > 0
         assert flashes[0][0] == "success"
         assert "Portion deleted." in flashes[0][1]
-        # Extract undo URL from the flash message's Markup
-        undo_url_match = re.search(r"href='([^']+)'", flashes[0][1])
+        # Extract the undo form's target from the flash message's Markup. It is a POST
+        # form rather than a link, so a cross-site request cannot trigger a restore.
+        undo_url_match = re.search(
+            r'<form action="([^"]+)" method="post"', flashes[0][1]
+        )
         assert undo_url_match is not None
         undo_url = undo_url_match.group(1)
 
-    # Follow the undo link
-    response = key_user_client.get(undo_url, follow_redirects=True)
+    # Submit the undo form
+    response = key_user_client.post(undo_url, follow_redirects=True)
     assert response.status_code == 200
     assert b"Item restored." in response.data
 

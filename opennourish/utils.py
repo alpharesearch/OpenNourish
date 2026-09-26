@@ -8,6 +8,7 @@ from flask import (
     url_for,
 )
 from markupsafe import Markup
+from flask_wtf.csrf import generate_csrf
 from types import SimpleNamespace
 from cryptography.fernet import Fernet
 from flask_mailing import Message
@@ -952,9 +953,20 @@ def prepare_undo_and_delete(
     session["last_deleted"] = session_data
     db.session.commit()
 
+    # The Undo affordance lives inside a flash message, so it has to be self-contained
+    # markup. Restoring a row is a write, so it is a POST and not a link: a plain
+    # `<a href="/undo">` was fetchable by anything that could make the browser load a URL,
+    # and no CSRF token can cover a GET (upgrade-research/PLAN.md M6.2). The token field is
+    # emitted here so the form is already correct when M6.1 registers CSRFProtect to check it.
     undo_url = url_for("undo.undo_last_action")
+    undo_form = Markup(
+        '<form action="{url}" method="post" class="d-inline">'
+        '<input type="hidden" name="csrf_token" value="{token}">'
+        '<button type="submit" class="btn btn-link alert-link p-0">Undo</button>'
+        "</form>"
+    ).format(url=undo_url, token=generate_csrf())
     flash(
-        Markup(f"{success_message} <a href='{undo_url}' class='alert-link'>Undo</a>"),
+        Markup("{message} {undo}").format(message=success_message, undo=undo_form),
         "success",
     )
 

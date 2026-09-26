@@ -242,7 +242,7 @@ def step4():
     return render_template("onboarding/step4.html")
 
 
-@onboarding_bp.route("/finish_onboarding")
+@onboarding_bp.route("/finish_onboarding", methods=["POST"])
 @login_required
 def finish_onboarding():
     """

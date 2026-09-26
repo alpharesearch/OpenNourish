@@ -149,7 +149,7 @@ def test_us_wizard_conversions_and_finish_onboarding(auth_client):
     assert round(goal.weight_goal_kg) == 79  # 175 lb
     assert round(goal.waist_cm_goal) == 81  # 32 in
 
-    finish = auth_client.get("/onboarding/finish_onboarding", follow_redirects=False)
+    finish = auth_client.post("/onboarding/finish_onboarding", follow_redirects=False)
     assert finish.status_code == 302
     assert finish.headers["Location"].endswith("/dashboard/")
 
@@ -161,7 +161,7 @@ def test_finish_onboarding_is_idempotent(auth_client):
     """The first call completes and flashes; the second changes nothing."""
     user = User.query.filter_by(username="testuser").first()
 
-    first = auth_client.get("/onboarding/finish_onboarding", follow_redirects=False)
+    first = auth_client.post("/onboarding/finish_onboarding", follow_redirects=False)
     assert first.status_code == 302
     assert first.headers["Location"].endswith("/dashboard/")
     db.session.refresh(user)
@@ -170,12 +170,27 @@ def test_finish_onboarding_is_idempotent(auth_client):
         "Onboarding complete! Welcome to OpenNourish."
     ]
 
-    second = auth_client.get("/onboarding/finish_onboarding", follow_redirects=False)
+    second = auth_client.post("/onboarding/finish_onboarding", follow_redirects=False)
     assert second.status_code == 302
     # No second "complete" flash on the already-completed branch.
     assert flash_messages(auth_client) == [
         "Onboarding complete! Welcome to OpenNourish."
     ]
+
+
+def test_finish_onboarding_rejects_get(auth_client):
+    """It commits, so it is POST-only — a ``<img src>`` must not be able to finish it.
+
+    CSRF protection guards non-GET methods only, so the method restriction is what
+    makes ``M6.1``'s token cover this route at all. See ``upgrade-research/PLAN.md`` M6.2.
+    """
+    user = User.query.filter_by(username="testuser").first()
+
+    assert auth_client.get("/onboarding/finish_onboarding").status_code == 405
+
+    db.session.refresh(user)
+    assert user.has_completed_onboarding is False
+    assert flash_messages(auth_client) == []
 
 
 # ------------------------------------------------------------ pre-population

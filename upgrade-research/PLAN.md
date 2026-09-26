@@ -372,12 +372,51 @@ before and after** — a green run proves nothing here.
    test the gate stays blind forever.
 4. Never hand-roll tokens, and do not exempt routes to make step 3 pass quietly (`AGENTS.md` rule).
 
-### M6.2 — Mutating GETs, which no CSRF token can cover
+### M6.2 — Mutating GETs, which no CSRF token can cover — LANDED 2026-09-26
 
-`/undo` is `methods=["GET"]` (`opennourish/undo/routes.py:254`), `onboarding.finish_onboarding`
-commits, and `ensure_portion_sequence` writes from GET handlers in `main`, `search`, `recipes` and
+`/undo` was `methods=["GET"]` (`opennourish/undo/routes.py:254`), `onboarding.finish_onboarding`
+committed, and `ensure_portion_sequence` writes from GET handlers in `main`, `search`, `recipes` and
 `my_foods`. These stay exploitable after M6.1, because CSRF protection guards non-GET methods only.
 Convert to POST, then M6.1 covers them.
+
+**Route conversions: done 2026-09-26.**
+
+- `/undo` is `methods=["POST"]`. Its only entry point was the `Undo` link inside the delete flash
+  (`utils.py:prepare_undo_and_delete`), so that markup is now a `<form method="post">` with a token
+  field and a `.btn-link.alert-link` submit button — same appearance, and nothing but a real form
+  submission can restore a row any more.
+- `/onboarding/finish_onboarding` is `methods=["POST"]`, and `templates/onboarding/step4.html` posts
+  to it instead of linking.
+- Both are locked by a 405 test that also asserts the row is unchanged
+  (`test_undo.py::test_undo_rejects_get`, `test_onboarding_coverage.py::test_finish_onboarding_rejects_get`),
+  plus `test_undo.py::test_delete_flash_offers_a_post_form`, which pins the markup shape. An AST sweep
+  of every `@route` found no other GET-reachable commit besides the ones below, and every `…/delete`
+  route in the app was already `methods=["POST"]`.
+- This commit also bound `flask_wtf.csrf.generate_csrf` as the `csrf_token` Jinja global in
+  `create_app`. It is the identical callable `CSRFProtect.init_app` binds, so M6.1's step 3 changes
+  nothing about it; binding it early is what lets a POST form carry its token the day it is written,
+  which keeps the invariant "no POST form is missing its token" true at every commit instead of
+  leaving debt for step 1.
+
+**Open — the `ensure_portion_sequence` backfill, which is not a "convert to POST" case.** It is lazy
+data repair running incidentally during reads (`main/routes.py:52`, `search/routes.py:560-564`,
+`recipes/routes.py:742` and `:1110`, `my_foods/routes.py:450`); no user action initiates it, so
+there is no POST to convert it to. The fix `opennourish/AGENTS.md` already names is to assign
+`seq_num` at creation and stop relying on the backfill — which also retires the separate
+"destroys curated order" defect, since the backfill renumbers *all* of an item's portions by
+`gram_weight` the moment any one of them is NULL. Two facts make that tractable rather than
+invasive: the `portions` relationships already order `seq_num ASC NULLS LAST`
+(`models.py:302`, `:462`), so a NULL never scrambles an item that also has numbered portions; and
+`gram_weight` ascending is the same order the backfill would have written, so making the read-side
+tie-break `seq_num NULLS LAST, gram_weight ASC` reproduces the current display without any write.
+What remains is to pick where creation-time numbering lives (26 `UnifiedPortion(...)` sites, so a
+central `before_insert` is the plausible place), keep a CLI one-shot for legacy NULL rows, and give
+`/search/api/get-portions/` the same ordering (it is the one reader using a bare
+`.order_by(UnifiedPortion.seq_num)`, which sorts NULLs *first* under SQLite).
+
+`diary.routes` inserting the Water food during rendering and `search.search` committing per generated
+portion are the other two GET writers; `auth.verify_email` commits on GET legitimately, because a
+mail client cannot POST.
 
 ### M6.3 — Deployment secrets, keeping the copy-paste deploy working — LANDED (2026-09-24)
 
