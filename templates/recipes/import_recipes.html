@@ -22,6 +22,7 @@
             </p>
             <hr>
             <form method="POST" action="{{ url_for('recipes.import_recipes') }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <label for="file" class="form-label">YAML File</label>
                     <input class="form-control" type="file" id="file" name="file" accept=".yaml,.yml">
@@ -37,6 +38,7 @@
         </div>
         <div class="card-body">
             <form method="POST" action="{{ url_for('recipes.import_recipes') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <label for="yaml_text" class="form-label">YAML Content</label>
                     <textarea class="form-control" id="yaml_text" name="yaml_text" rows="15"></textarea>

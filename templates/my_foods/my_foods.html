@@ -82,10 +82,12 @@
                         {% if food.user_id == current_user.id %}
                             <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i> Edit</a>
                             <form action="{{ url_for('my_foods.delete_my_food', food_id=food.id) }}" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i></button>
                             </form>
                         {% else %}
                             <form action="{{ url_for('my_foods.copy_my_food', food_id=food.id) }}" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-clipboard"></i> Copy</button>
                             </form>
                         {% endif %}

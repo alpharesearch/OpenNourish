@@ -27,6 +27,7 @@
         </div>
         <div class="card-body">
             <form action="{{ url_for('friends.add_friend') }}" method="POST" class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-start gap-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="text" class="form-control flex-grow-1" name="username" placeholder="Enter username" required>
                 <button type="submit" class="btn btn-outline-primary">Send Request</button>
             </form>
@@ -73,6 +74,7 @@
                                     <a href="{{ url_for('profile.dashboard', username=friend.username) }}" class="btn btn-outline-info btn-sm">View Dashboard</a>
                                     <a href="{{ url_for('profile.diary', username=friend.username) }}" class="btn btn-outline-info btn-sm">View Diary</a>
                                     <form action="{{ url_for('friends.remove_friend', friend_id=friend.id) }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
                                     </form>
                                 </div>
@@ -99,9 +101,11 @@
                                 <span class="mb-2 mb-md-0">From: <strong>{{ req.requester.username }}</strong></span>
                                 <div class="d-flex flex-wrap gap-2">
                                     <form action="{{ url_for('friends.accept_request', request_id=req.id) }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-check-circle"></i> Accept</button>
                                     </form>
                                     <form action="{{ url_for('friends.decline_request', request_id=req.id) }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-circle"></i> Decline</button>
                                     </form>
                                 </div>

@@ -16,6 +16,7 @@
                 <i class="bi bi-plus-circle"></i> Add
             </button>
             <form action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline-success"><i class="bi bi-clipboard"></i> Clone</button>
             </form>
             <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-info">View
@@ -150,11 +151,13 @@
                             <div class="d-flex flex-column me-2">
                                 <form action="{{ url_for('recipes.move_recipe_portion_up', portion_id=portion.id) }}"
                                     method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first
                                         %}disabled{% endif %}>▲</button>
                                 </form>
                                 <form action="{{ url_for('recipes.move_recipe_portion_down', portion_id=portion.id) }}"
                                     method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last
                                         %}disabled{% endif %}>▼</button>
                                 </form>
@@ -200,7 +203,8 @@
                             </form>
                             <form id="delete-portion-{{ portion.id }}"
                                 action="{{ url_for('recipes.delete_recipe_portion', portion_id=portion.id) }}"
-                                method="POST" class="d-none"></form>
+                                method="POST" class="d-none">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
                         </li>
                         {% else %}
                         <li class="list-group-item p-1"><small>No custom portions defined.</small></li>
@@ -227,11 +231,13 @@
                     <div class="d-flex flex-column me-2">
                         <form action="{{ url_for('recipes.move_recipe_ingredient_up', ingredient_id=ingredient.id) }}"
                             method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first
                                 %}disabled{% endif %}>▲</button>
                         </form>
                         <form action="{{ url_for('recipes.move_recipe_ingredient_down', ingredient_id=ingredient.id) }}"
                             method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last
                                 %}disabled{% endif %}>▼</button>
                         </form>
@@ -275,6 +281,7 @@
                                 {% endif %}
                                 <form id="update-ingredient-form-{{ ingredient.id }}" action="{{ url_for('recipes.update_ingredient', ingredient_id=ingredient.id) }}"
                                     method="POST" class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 mb-2 mb-sm-0">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="number" step="any" name="amount" class="form-control form-control-sm mb-2 mb-sm-0"
                                         value="{{ '%.2f'|format(ingredient.quantity) }}">
                                     <select name="portion_id" class="form-select form-select-sm">
@@ -292,6 +299,7 @@
                                     <button type="submit" form="update-ingredient-form-{{ ingredient.id }}" class="btn btn-sm btn-outline-success"><i class="bi bi-check2-circle"></i></button>
                                     <form action="{{ url_for('recipes.delete_ingredient', ingredient_id=ingredient.id) }}"
                                         method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i></button>
                                     </form>
                                 </div>

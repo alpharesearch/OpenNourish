@@ -25,7 +25,7 @@ from sqlalchemy.orm import joinedload
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_mailing import Mail
-from flask_wtf.csrf import generate_csrf
+from flask_wtf.csrf import CSRFProtect
 from config import Config
 import click
 from faker import Faker
@@ -208,14 +208,17 @@ def create_app(config_class=Config):
     # Enable the Jinja2 'do' extension
     app.jinja_env.add_extension("jinja2.ext.do")
 
-    # Raw (non-FlaskForm) POST forms need to emit a token field, and Flask-WTF ships the
-    # generator behind the ``csrf_token()`` template global. ``CSRFProtect.init_app`` assigns
-    # this very function to that global, but only when it is registered — and it must not be
-    # registered before the tokens exist, or every POST 400s. Registering the generator here
-    # too lets a POST form carry its token from the day it is written: the token is real but
-    # unchecked until M6.1 registers ``CSRFProtect``, which re-binds the identical callable.
-    # Nothing in this repo generates or verifies a token of its own — see `templates/AGENTS.md`.
-    app.jinja_env.globals["csrf_token"] = generate_csrf
+    # Every mutating request is now checked. `CSRFProtect.init_app` binds `csrf_token` and
+    # `csrf_meta_tag` as Jinja globals itself, which is what the ~100 POST forms in
+    # templates/ emit their hidden field from — the hand-binding of `generate_csrf` that used
+    # to sit here existed only because registration had to wait until those fields existed.
+    # It does not any more: every raw POST form carries a token, and the only non-form POST
+    # (the timezone probe in `base.html`) sends the `X-CSRFToken` header.
+    #
+    # `tests/conftest.py` keeps `WTF_CSRF_ENABLED = False`, which switches this hook off while
+    # leaving the global bound, so the suite's greenness says nothing about enforcement —
+    # `tests/test_csrf.py` builds its own app with it on. Do not "helpfully" disable it there.
+    CSRFProtect(app)
 
     from opennourish.context_processors import inject_global_vars
 

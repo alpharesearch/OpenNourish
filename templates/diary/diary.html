@@ -138,6 +138,7 @@
                         <i class="bi bi-clipboard"></i> Advanced Copy
                     </button>
                     <form action="{{ url_for('diary.copy_meal_from_friend') }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="friend_username" value="{{ username }}">
                         <input type="hidden" name="log_date" value="{{ date.isoformat() }}">
                         <input type="hidden" name="meal_name" value="{{ meal_name }}">
@@ -156,6 +157,7 @@
                             {% if current_user.measurement_system == 'metric' and ml_portion %}
                             {% for amount in [100, 250, 500, 750] %}
                             <form action="{{ url_for('search.add_item') }}" method="post" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="food_id" value="{{ water_food.id }}">
                                 <input type="hidden" name="food_type" value="my_food">
                                 <input type="hidden" name="target" value="diary">
@@ -169,6 +171,7 @@
                             {% elif current_user.measurement_system == 'us' and floz_portion %}
                             {% for amount in [4, 8, 16, 24] %}
                             <form action="{{ url_for('search.add_item') }}" method="post" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="food_id" value="{{ water_food.id }}">
                                 <input type="hidden" name="food_type" value="my_food">
                                 <input type="hidden" name="target" value="diary">
@@ -253,6 +256,7 @@
                                     {% endif %}
                                     <form method="POST" action="{{ url_for('diary.update_entry', log_id=item.log_id) }}"
                                         class="d-flex align-items-right flex-sm-row">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="number" name="amount" value="{{ item.amount|round(2) }}"
                                             class="form-control form-control-sm" step="any" required>
                                         <select name="portion_id" class="form-select form-select-sm  mt-sm-0 ">
@@ -276,6 +280,7 @@
                                         data-log-date="{{ date.isoformat() }}"><i class="bi bi-arrows-move"></i></button>
                                     <form method="POST" action="{{ url_for('diary.delete_log', log_id=item.log_id) }}"
                                         class="  mt-sm-0">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i></button>
                                     </form>
                                 </div>
@@ -324,6 +329,7 @@
                     <p>Would you like to save this meal as:</p>
                     <div class="d-grid gap-2">
                         <form id="saveMealAsMealForm" method="POST" action="{{ url_for('diary.save_meal_and_edit') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="log_date" id="save-meal-log-date" value="">
                             <input type="hidden" name="meal_name" id="save-meal-meal-name" value="">
                             <button type="submit" class="btn btn-outline-success btn-lg w-100">
@@ -331,6 +337,7 @@
                             </button>
                         </form>
                         <form id="saveMealAsRecipeForm" method="POST" action="{{ url_for('diary.save_meal_as_recipe') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="log_date" id="save-recipe-log-date" value="">
                             <input type="hidden" name="meal_name" id="save-recipe-meal-name" value="">
                             <button type="submit" class="btn btn-outline-primary btn-lg w-100">
@@ -355,6 +362,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="moveEntryForm" method="POST" action="{{ url_for('diary.move_entry') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="modal-body">
                         <input type="hidden" name="log_id" id="move-modalLogId">
                         <div class="mb-3">
@@ -390,6 +398,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="copyEntryForm" method="POST" action="{{ url_for('diary.copy_entry') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="modal-body">
                         <input type="hidden" name="log_id" id="copy-modalLogId">
                         <div class="mb-3">

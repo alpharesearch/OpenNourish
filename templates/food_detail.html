@@ -18,6 +18,7 @@
             </button>
             {% if current_user.is_authenticated %}
             <form method="post" action="{{ url_for('my_foods.copy_usda_food') }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
                 <button type="submit" class="btn btn-outline-primary btn-sm">Create Copy</button>
             </form>
@@ -51,6 +52,7 @@
             {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_key_user) %}
             <h6 class="mt-2">Add New Portion</h6>
             <form action="{{ url_for('usda_admin.add_usda_portion') }}" method="POST" class="mb-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="fdc_id" value="{{ food.fdc_id }}">
                 <div class="row g-2">
                     <div class="col-auto">
@@ -85,17 +87,20 @@
                 <div class="d-flex flex-column me-2">
                     <form action="{{ url_for('usda_admin.move_usda_portion_up', portion_id=portion.id) }}"
                         method="POST" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.first
                             %}disabled{% endif %}>▲</button>
                     </form>
                     <form action="{{ url_for('usda_admin.move_usda_portion_down', portion_id=portion.id) }}"
                         method="POST" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-outline-secondary" {% if loop.last
                             %}disabled{% endif %}>▼</button>
                     </form>
                 </div>
                 <form action="{{ url_for('usda_admin.edit_usda_portion', portion_id=portion.id) }}"
                     method="POST" class="flex-grow-1">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row g-2">
                         <div class="col-auto">
                             <input type="number" step="any" name="amount" class="form-control form-control-sm"
@@ -128,7 +133,8 @@
                 </form>
                 <form id="delete-form-{{ portion.id }}"
                     action="{{ url_for('usda_admin.delete_usda_portion', portion_id=portion.id) }}"
-                    method="POST" class="d-none"></form>
+                    method="POST" class="d-none">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
             </div>
             {% endfor %}
             {% else %}

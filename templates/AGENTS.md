@@ -6,7 +6,7 @@ Server-rendered Jinja markup for all 18 blueprints: one layout, 38 pages, 4 part
 
 ## Ownership
 
-- `base.html` (379 lines) — the only layout: head assets, flash area, navbar include, global `addItemModal`, timezone auto-detect, `_date_picker_modal.html` include.
+- `base.html` (385 lines) — the only layout: head assets including the `csrf-token` meta tag, flash area, navbar include, global `addItemModal`, timezone auto-detect, `_date_picker_modal.html` include.
 - `_navbar.html`, `_date_picker_modal.html` — partials (leading `_`, no `extends`).
 - `_analytics_cards.html`, `_analytics_scripts.html` — the analytics chart cards and their Chart.js init, included by both `tracking/analytics.html` and `dashboard.html` (cards guarded by `is_read_only` there). Edit here once, never re-fork per page.
 - `email/` — standalone fragments rendered by `opennourish/utils.py`; they use `_external=True` links and must stay self-contained HTML (no `extends`).
@@ -15,7 +15,7 @@ Server-rendered Jinja markup for all 18 blueprints: one layout, 38 pages, 4 part
 
 ## Local Contracts
 
-- `base.html` exposes exactly three blocks: `title` (:6), `content` (:26), `scripts` (:99). The house style is to declare `{% block scripts %}` inside `{% block content %}` and call `{{ super() }}` — Jinja tolerates it, but every block must be closed exactly once and each name may be declared only once per template.
+- `base.html` exposes exactly three blocks: `title` (:7), `content` (:27), `scripts` (:101). The house style is to declare `{% block scripts %}` inside `{% block content %}` and call `{{ super() }}` — Jinja tolerates it, but every block must be closed exactly once and each name may be declared only once per template.
 - Template syntax is not compiled at import time, so an unbalanced tag is a 500 at request time and a red dashboard test. After any structural edit, verify compilation:
 
   ```bash
@@ -26,7 +26,7 @@ Server-rendered Jinja markup for all 18 blueprints: one layout, 38 pages, 4 part
 - A bare `Environment` cannot compile the whole tree: `fasting/fasting.html` fails it with `No filter named 'user_time'`, because `user_time` and `nl2br` are registered by the app factory. To compile every template, go through the app env (`app.jinja_env.get_template(name)` over `templates/**/*.html`, e.g. from the `app_with_db` fixture).
 - Every `<div>` opened inside `{% block content %}` must also close inside it. `base.html:15` opens and closes its own `container-md` wrapper, so a page-level container left open swallows the modal markup `base.html` renders after the content block. djlint reports this as H025.
 - Chart data crosses from Flask to JS only as inline `<script>` with `|tojson`. Chart.js v4.5.0 is already loaded globally by `base.html:11`; do not re-`<script src>` it.
-- CSRF: `CSRFProtect` is still **not** registered (`PLAN.md` M6.1), so nothing checks a token yet. Two token shapes are in use and both are Flask-WTF's own — `{{ form.hidden_tag() }}` where a `FlaskForm` is in context, and `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">` on a raw `<form>` (`csrf_token()` is `flask_wtf.csrf.generate_csrf`, which `create_app` binds as a Jinja global precisely so a token can be emitted before `CSRFProtect` exists to check it; registering `CSRFProtect` re-binds the identical callable). Keep new POST forms carrying one of the two from the day they are written, so the tokens are already in the markup when the gate lands. What stays banned is a token this repo generates or verifies itself.
+- **Every POST form carries a CSRF token, because `CSRFProtect` is registered and a form without one 400s for every user.** Two shapes, both Flask-WTF's own: `{{ form.hidden_tag() }}` where a `FlaskForm` is in context (29 of them) and `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">` on a raw `<form>` (68), which is what `csrf_token()` — bound by `CSRFProtect.init_app` — is for. `tests/test_csrf.py` walks every `<form method=post>` under `templates/` and fails on one that carries neither, so the invariant is enforced rather than remembered. `base.html` also publishes `<meta name="csrf-token">` for scripts; the only POST outside a form is the timezone probe, which sends it as `X-CSRFToken` because Flask-WTF never reads a JSON body. What stays banned is a token this repo generates or verifies itself.
 - Any form emitted from Python rather than a template (the Undo form in `opennourish/utils.py:prepare_undo_and_delete`) uses `Markup(...).format()`, never an f-string, so the URL and token are escaped by markupsafe instead of interpolated raw.
 - URLs: `url_for` in markup; the only hardcoded paths are the two `fetch()` targets in `base.html` (`/api/get-remaining-calories/…`, `/search/api/get-portions/…`).
 - Flash messages render only in `base.html:16-25`; categories are Bootstrap alert names (`success`, `danger`, `info`, `warning`).

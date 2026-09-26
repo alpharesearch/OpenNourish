@@ -163,7 +163,8 @@
                         </div>
                     </div>
                 </form>
-                <form id="delete-form-{{ item.id }}" action="{{ url_for('tracking.delete_check_in', check_in_id=item.id) }}" method="POST" class="d-none"></form>
+                <form id="delete-form-{{ item.id }}" action="{{ url_for('tracking.delete_check_in', check_in_id=item.id) }}" method="POST" class="d-none">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
                 {% endfor %}
             </div>
 

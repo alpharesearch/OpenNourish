@@ -94,6 +94,16 @@ class Config:
     if TRUSTED_PROXY_HOPS < 0:
         raise ValueError("TRUSTED_PROXY_HOPS must be 0 or a positive hop count.")
 
+    # Flask-WTF's token limit is measured from when the page that rendered the form was
+    # served, and the default is one hour. This app's longest-lived forms are the recipe and
+    # food editors, which are exactly the ones somebody opens, walks away from, and submits
+    # the next morning — and the failure is a bare 400 with no way back but a reload and
+    # re-typing what they wrote. A token that lives as long as the session is still bound to
+    # that session and still unreadable from another origin, which is the property the check
+    # actually relies on. `WTF_CSRF_SSL_STRICT` is left at its default True: `nginx.conf`
+    # sends no `Referrer-Policy`, so same-origin POSTs always carry a usable referrer.
+    WTF_CSRF_TIME_LIMIT = None
+
     @property
     def ALLOW_REGISTRATION(self):
         from opennourish.utils import get_allow_registration_status

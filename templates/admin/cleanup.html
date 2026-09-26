@@ -33,6 +33,7 @@
             <h2 class="h5 mb-0">Orphaned Items (Safe to Delete)</h2>
             {% if safe_to_delete_orphans %}
             <form action="{{ url_for('admin.run_cleanup') }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-light">Run Cleanup Now</button>
             </form>
             {% endif %}

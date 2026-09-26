@@ -224,6 +224,7 @@
                                     <a href="{{ url_for('my_foods.edit_my_food', food_id=food.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-pencil-square"></i> Edit</a>
                                 {% else %}
                                     <form method="post" action="{{ url_for('my_foods.copy_my_food', food_id=food.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-clipboard"></i> Copy</button>
                                     </form>
                                 {% endif %}
@@ -317,6 +318,7 @@
                                 <a href="{{ url_for('recipes.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-info-circle"></i> View</a>
                                 {% if recipe.user_id != current_user.id %}
                                     <form method="post" action="{{ url_for('recipes.copy_recipe', recipe_id=recipe.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-clipboard"></i> Copy</button>
                                     </form>
                                 {% endif %}

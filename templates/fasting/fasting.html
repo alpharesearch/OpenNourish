@@ -15,6 +15,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h2 class="h5 mb-0">Active Fast</h2>
             <form action="{{ url_for('fasting.end_fast') }}" method="post" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger">End Fast Now</button>
             </form>
         </div>
@@ -58,6 +59,7 @@
         </div>
         {% else %}
         <form action="{{ url_for('fasting.start_fast') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2 class="h5 mb-0">Start a New Fast</h2>
                 <button type="submit" class="btn btn-sm btn-outline-primary">Start Fast Now</button>
@@ -124,6 +126,7 @@
                             form="update-form-{{ fast.id }}"><i class="bi bi-check2-circle"></i></button>
                         <form action="{{ url_for('fasting.delete_fast', fast_id=fast.id) }}" method="POST"
                             class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i></button>
                         </form>
                     </div>

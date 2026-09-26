@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}OpenNourish{% endblock %}</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
@@ -36,6 +37,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <form id="addItemForm" action="{{ url_for('search.add_item') }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="modal-body">
               <p>Adding: <strong id="modalFoodName"></strong></p>
               <div id="rematch-info" class="alert alert-info" style="display: none;"></div>
@@ -357,6 +359,10 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        // CSRFProtect reads a token from a form field or one of these two
+                        // headers, never from a JSON body, so a JSON POST has to carry it
+                        // here or the request comes back 400.
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                     },
                     body: JSON.stringify({ timezone: userTimezone }),
                 })

@@ -8,13 +8,13 @@ milestone that consumes them lands, and are deleted once `requirements.txt` supe
 landed with them. The runtime/dev split (M4's second half) is dropped. M5 is partly landed — Typst
 escaping (2026-09-23), the image diet (2026-09-24) and the `datetime.utcnow()` migration with a `DTZ003`
 gate (2026-09-25) are done; the rest of `DTZ`, the other ruff families, `pytest-flask`, the `@preview`
-vendoring and the 3.14 refresh are open. In M6 only 6.1 and the `ensure_portion_sequence` half of
-6.2 remain: 6.3, 6.4, 6.5 and 6.6 closed between 2026-09-24 and 2026-09-26, and 6.2's two mutating
-GETs became POSTs on 2026-09-26.**
+vendoring and the 3.14 refresh are open. In M6 only the `ensure_portion_sequence` half of 6.2 is left: 6.1 (global
+CSRF enforcement), 6.3, 6.4, 6.5 and 6.6 all closed between 2026-09-24 and 2026-09-26, and 6.2's two
+mutating GETs became POSTs on 2026-09-26.**
 Landed state: conda env `opennourish` and both Docker stages are on 3.12, `requirements.in` drives a
 generated `requirements.txt` (54 packages, was 72), Flask-Mailing is at 3.0.0, `ruff.toml` pins its rule
 families, the image's `typst` is 0.15.1, `.github/workflows/ci.yml` runs the four gates on every push and
-PR, and every gate is green — 1028 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
+PR, and every gate is green — 1037 tests passed, `ruff check` clean, `ruff format --check` clean, djlint
 advisory at 204 findings. `THIRD-PARTY-LICENSES.md` is no longer hand-maintained: `gen_licenses.py`
 generates it from the installed wheels plus the vendored assets in `static/`, and `--check` fails if it
 drifts.
@@ -353,24 +353,51 @@ replaying the steps locally, which is what worked here.
 These hazards are recorded in `AGENTS.md` but owned by no milestone, so they were knowledge rather
 than work. The upgrade track is finished and the app is deployed, so each item below is independently
 shippable, ordered by exposure. The counts were re-measured on 2026-09-23, not carried over from the
-audit. 6.3, 6.4, 6.5 and 6.6 landed, along with 6.2's route conversions; what is left of M6 is 6.1
-and the `ensure_portion_sequence` half of 6.2.
+audit. 6.1, 6.3, 6.4, 6.5 and 6.6 landed, along with 6.2's route conversions; what is left of M6 is
+the `ensure_portion_sequence` half of 6.2.
 
-### M6.1 — Close the CSRF gap
+### M6.1 — Close the CSRF gap — LANDED (2026-09-26)
 
-Measured: **98 `<form>` tags, 29 `hidden_tag()` calls, 20 of 32 form-bearing templates**; `CSRFProtect`
-is registered nowhere in app code. The trap is that `tests/conftest.py:26` and
-`test_app_factory_coverage.py:28` both set `WTF_CSRF_ENABLED = False`, so **the suite is blind to this
-before and after** — a green run proves nothing here.
+Measured before: **98 `<form>` tags, 29 `hidden_tag()` calls, `CSRFProtect` registered nowhere.**
+Measured after: **99 forms, 29 `hidden_tag()`, 68 raw `csrf_token` inputs, 0 unguarded** —
+`tests/test_csrf.py` walks the tree and fails on any `<form method=post>` carrying neither, so the
+number cannot rot. djlint stayed at its 204-finding baseline throughout.
 
-1. Add `hidden_tag()` to every POST form. Mechanical, and the 6 structural H025 findings djlint
-   reports live in the same files — fix them while in there.
-2. Audit JS-initiated posts (portions API, Chart.js refresh, html5-qrcode upload, anything using
-   `fetch`/XHR). Those need an `X-CSRFToken` header or step 3 breaks them silently in production.
-3. Register `CSRFProtect(app)` in `create_app`, **and** add a test that builds the app with CSRF
-   *enabled* and asserts an untokenised POST is rejected while a tokenised one is not. Without that
-   test the gate stays blind forever.
-4. Never hand-roll tokens, and do not exempt routes to make step 3 pass quietly (`AGENTS.md` rule).
+Step 1 was "add `hidden_tag()` to every POST form", which turned out to be the wrong shape for
+almost all of them: `hidden_tag()` needs a `FlaskForm` in context, and these are hand-written forms
+posting plain field names. What they needed was the other Flask-WTF shape,
+`<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">` — which `create_app` had
+already made possible by binding `generate_csrf` as a Jinja global precisely so tokens could exist
+before the gate did. Registration then *replaces* that hand-binding, because
+`CSRFProtect.init_app` binds the same callable (plus `csrf_meta_tag`) itself.
+
+Step 2, the JS audit, found **one** non-form POST: the timezone probe in `base.html`. The other two
+`fetch()` calls are GETs, html5-qrcode decodes in the browser and submits the search form, and every
+`.submit()` in the templates submits a real form, which now carries the token. The probe sends the
+token as `X-CSRFToken` from `<meta name="csrf-token">`, which is not a style choice: Flask-WTF 1.3's
+`_get_csrf_token` reads form fields and then `WTF_CSRF_HEADERS`, and **never looks in a JSON body** —
+so a JSON POST without the header is a 400, and nothing in the suite could have noticed (the one
+setting that made this deployment's `WTF_CSRF_SSL_STRICT=True` safe was checked too: `nginx.conf`
+sends no `Referrer-Policy`, so same-origin POSTs always do carry a referrer an operator can strip).
+
+Step 3 is `CSRFProtect(app)` in `create_app` plus `tests/test_csrf.py`, which builds its own app —
+the shared fixture disables the hook, and `test_app_factory_coverage.py` does too, so on those a
+rejection never happens. Step 4 held: no exemptions, no hand-rolled tokens.
+
+Two findings worth keeping:
+
+- **`config.py` now sets `WTF_CSRF_TIME_LIMIT = None`.** Flask-WTF mints the token when the page is
+  rendered and the default limit is one hour, so the default turns "left the recipe editor open
+  overnight" into a bare 400 with no way back but re-typing the form. A session-lived token is still
+  session-bound and still unreadable cross-origin, which is the property the check relies on.
+- **A 404 bypasses the check**, because `CSRFProtect` returns as soon as it sees no endpoint matched.
+  That is correct behaviour but a test trap: the hyphenated `/settings/set-timezone` is not the
+  function name `set_timezone`, and a hand-typed path in a CSRF test would "pass" by never being
+  checked. `tests/test_csrf.py` therefore resolves every URL through `url_for`.
+
+Not taken from step 1: fixing djlint's 6 structural H025 findings "while in there". Inserting the
+tokens touched 20 of the same files, but reformatting them is a separate change with its own review
+surface, and `--reformat` rewrites 42 of 43 files tree-wide.
 
 ### M6.2 — Mutating GETs, which no CSRF token can cover — LANDED 2026-09-26
 
@@ -393,10 +420,10 @@ Convert to POST, then M6.1 covers them.
   of every `@route` found no other GET-reachable commit besides the ones below, and every `…/delete`
   route in the app was already `methods=["POST"]`.
 - This commit also bound `flask_wtf.csrf.generate_csrf` as the `csrf_token` Jinja global in
-  `create_app`. It is the identical callable `CSRFProtect.init_app` binds, so M6.1's step 3 changes
-  nothing about it; binding it early is what lets a POST form carry its token the day it is written,
-  which keeps the invariant "no POST form is missing its token" true at every commit instead of
-  leaving debt for step 1.
+  `create_app`, precisely so a POST form could carry its token the day it was written — which kept
+  "no POST form is missing its token" true at every commit instead of leaving debt for M6.1 step 1.
+  M6.1 then deleted that hand-binding: `CSRFProtect.init_app` binds the identical callable itself,
+  and one binding is the correct end state.
 
 **Open — the `ensure_portion_sequence` backfill, which is not a "convert to POST" case.** It is lazy
 data repair running incidentally during reads (`main/routes.py:52`, `search/routes.py:560-564`,
