@@ -353,8 +353,8 @@ replaying the steps locally, which is what worked here.
 These hazards are recorded in `AGENTS.md` but owned by no milestone, so they were knowledge rather
 than work. The upgrade track is finished and the app is deployed, so each item below is independently
 shippable, ordered by exposure. The counts were re-measured on 2026-09-23, not carried over from the
-audit. 6.3 and the nginx body cap of 6.6 have since landed (2026-09-24); what is left is 6.1, 6.2,
-6.4, 6.5 and the trusted-proxy setting.
+audit. 6.3 and 6.6 landed on 2026-09-24 and 2026-09-26 and 6.2's route conversions landed with them;
+what is left is 6.1, 6.4, 6.5, and the `ensure_portion_sequence` half of 6.2.
 
 ### M6.1 — Close the CSRF gap
 
@@ -471,7 +471,7 @@ The open redirect on `add_item`'s `return_url`/`request.referrer` (~9 exit point
 (`opennourish/diary/routes.py:411`, `:560`). The Typst markup injection that used to belong here landed
 in M5 on 2026-09-23, so this item is now only these two.
 
-### M6.6 — Network-facing defaults — body cap LANDED (2026-09-24), trusted proxy open
+### M6.6 — Network-facing defaults — LANDED (body cap 2026-09-24, trusted proxy 2026-09-26)
 
 - **`client_max_body_size` — landed 2026-09-24.** `nginx/nginx.conf` set nothing, so nginx's 1 MiB
   default answered the YAML food and recipe importers with 413 before the request reached Flask — the
@@ -480,9 +480,22 @@ in M5 on 2026-09-23, so this item is now only these two.
   read off the docs: a 2 MiB body → 413 under the default and → 502 (body accepted, upstream refused
   as the probe intends) under `10m`, and a 20 MiB body → 413 under `10m` — the boundary moved exactly
   where the directive says. `nginx -t` passes on the real file.
-- **Still open:** `serve.py` trusts `X-Forwarded-*` from any peer that reaches :8081 (latent, because
-  compose publishes no app port today) — replace unconditional trust with an explicit trusted-proxy
-  setting.
+- **`TRUSTED_PROXY_HOPS` — landed 2026-09-26.** The trust is now a setting that decides both halves
+  of the path: `create_app` registers `ProxyFix` with that many hops, and `serve.py` passes
+  `clear_untrusted_proxy_headers=not hops`, so waitress and ProxyFix can never contradict each other.
+  At `0` nothing is registered and waitress clears `X-Forwarded-*` / `Forwarded` itself, so a peer
+  that reaches :8081 directly cannot pick the host or scheme the app writes into a reset link. The
+  default is **1**, not 0, deliberately: waitress clears those headers unless told otherwise, which
+  is why `clear_untrusted_proxy_headers=False` was there at all, and nginx's HTTPS block sends
+  `X-Forwarded-Proto $scheme` — dropping to 0 without a redeploy would quietly turn every
+  password-reset link into `http://` against the compose-internal name. One hop is the honest
+  description of what this deployment actually trusts, and it is now something an operator can
+  switch off instead of a constant baked into the factory. Measured through the test client rather
+  than asserted from the source: with the default the probe reports the forwarded host and scheme,
+  with `0` it reports the socket's own host over `http`, and `-1` raises at boot instead of silently
+  defaulting either way.
+- `.env.example` now documents `TRUSTED_PROXY_HOPS`, `DATABASE_URL`, `USDA_DATABASE_URL` and
+  `FLASK_APP`. The last three were read by `config.py`/the CLI and had never been written down.
 
 **Ordering:** nothing upstream of M6 is outstanding — M3 landed and M4's split is dropped, which removes
 the earlier constraint against meeting M4's file churn. The one live conflict is internal: M6.1 rewrites

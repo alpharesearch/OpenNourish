@@ -7,6 +7,7 @@ registered template filter, and every Flask CLI command nested in the factory.
 
 import os
 
+import pytest
 from cryptography.fernet import Fernet
 
 from models import (
@@ -458,3 +459,59 @@ def test_seed_dev_data_skips_a_non_empty_database(app_with_db, monkeypatch):
     with app_with_db.app_context():
         assert User.query.count() == 1
         assert User.query.filter_by(username="markus").first() is None
+
+
+# ---------------------------------------------------- trusted-proxy boundary (M6.6)
+
+
+def _forwarded_probe_app(hops):
+    """Build an app whose only visible behaviour is echoing the host and scheme it
+    believes it has, so the effect of a forwarded header is directly assertable."""
+    from flask import request
+
+    config = dict(TEST_APP_CONFIG)
+    config.pop("SERVER_NAME")
+    if hops is not None:
+        config["TRUSTED_PROXY_HOPS"] = hops
+    app = create_app(config)
+    app.add_url_rule(
+        "/__probe",
+        endpoint="__probe",
+        view_func=lambda: f"{request.host}|{request.scheme}",
+    )
+    return app
+
+
+def _probe(app, **headers):
+    response = app.test_client().get("/__probe", headers=headers)
+    assert response.status_code == 200
+    return response.data.decode("utf-8")
+
+
+FORWARDED = {
+    "Host": "opennourish-app:8081",
+    "X-Forwarded-Host": "tracker.example",
+    "X-Forwarded-Proto": "https",
+}
+
+
+def test_one_trusted_hop_is_the_default_and_lets_the_proxy_rewrite_host_and_scheme():
+    """One hop is what the shipped nginx needs to get ``https`` and the public host
+    into an external URL — without it a password-reset link points at the
+    compose-internal name over http."""
+    assert _probe(_forwarded_probe_app(None), **FORWARDED) == "tracker.example|https"
+
+
+def test_zero_trusted_hops_makes_forwarded_headers_inert():
+    """``TRUSTED_PROXY_HOPS=0`` must not just trust fewer hops — the headers have to
+    be inert, or a peer that walks up to :8081 still chooses the host the app writes
+    into a reset link. See ``upgrade-research/PLAN.md`` M6.6."""
+    assert _probe(_forwarded_probe_app(0), **FORWARDED) == "opennourish-app:8081|http"
+
+
+def test_negative_trusted_hops_fails_at_boot_rather_than_defaulting():
+    """A typo here must not silently widen or silently disable trust. `serve.py`'s
+    half of the setting is derived from the same number, so a bad value would put
+    waitress and ProxyFix into contradictory modes."""
+    with pytest.raises(ValueError, match="TRUSTED_PROXY_HOPS"):
+        _forwarded_probe_app(-1)

@@ -68,9 +68,23 @@ def create_app(config_class=Config):
     if app.testing:
         app.config["MAIL_SUPPRESS_SEND"] = True
 
-    # Apply ProxyFix middleware to handle headers from the reverse proxy
-    # This is crucial for generating correct external URLs (e.g., in emails)
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    # Trust X-Forwarded-* only as far as the operator says a reverse proxy actually sits. The
+    # hop count comes from TRUSTED_PROXY_HOPS (1 by default, which is what `docker-compose.yml`
+    # plus its nginx needs). At 0 no ProxyFix is registered at all, and serve.py lets waitress
+    # clear the headers, so a peer that walks up to :8081 directly cannot dictate the Host or
+    # scheme the app then writes into a password-reset link. ProxyFix counts hops rather than
+    # source addresses, which is exactly why this has to be a setting and not a constant.
+    trusted_proxy_hops = int(app.config.get("TRUSTED_PROXY_HOPS", 1))
+    if trusted_proxy_hops < 0:
+        raise ValueError("TRUSTED_PROXY_HOPS must be 0 or a positive hop count.")
+    if trusted_proxy_hops:
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app,
+            x_for=trusted_proxy_hops,
+            x_proto=trusted_proxy_hops,
+            x_host=trusted_proxy_hops,
+            x_prefix=trusted_proxy_hops,
+        )
 
     db.init_app(app)
     Migrate(app, db)

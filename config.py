@@ -82,6 +82,18 @@ class Config:
             "No ENCRYPTION_KEY set for Flask application. Please set it in your .env file or environment variables."
         )
 
+    # How many reverse-proxy hops may rewrite X-Forwarded-* / Forwarded. ProxyFix counts hops,
+    # not source addresses, so every value above 0 means "the N peers that can reach this
+    # socket are proxies I trust": with `docker-compose.yml` publishing no app port the only
+    # reachable peer is the shipped nginx, but anything that ever binds :8081 publicly has to
+    # run with 0 or it will believe a client-supplied Host and scheme — which is how a
+    # password-reset link can be made to point at somebody else's host. 0 registers no ProxyFix
+    # at all and lets waitress strip the headers instead. See AGENTS.md > Security and
+    # upgrade-research/PLAN.md M6.6.
+    TRUSTED_PROXY_HOPS = int(os.environ.get("TRUSTED_PROXY_HOPS", "1"))
+    if TRUSTED_PROXY_HOPS < 0:
+        raise ValueError("TRUSTED_PROXY_HOPS must be 0 or a positive hop count.")
+
     @property
     def ALLOW_REGISTRATION(self):
         from opennourish.utils import get_allow_registration_status
