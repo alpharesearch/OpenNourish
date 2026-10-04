@@ -34,6 +34,7 @@ test.pdf
 project_snapshot.txt
 .vscode/
 .kilocode/
+.kilo/
 typst/
 .dev_data_seeded
 certs/

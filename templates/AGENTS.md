@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Server-rendered Jinja markup for all 18 blueprints: one layout, 38 pages, 4 partials, 2 standalone email fragments. No build step; assets are vendored in `static/`.
+Server-rendered Jinja markup for all 18 blueprints: one layout, 36 page templates, 4 partials, 2 standalone email fragments. No build step; assets are vendored in `static/`.
 
 ## Ownership
 
@@ -10,12 +10,12 @@ Server-rendered Jinja markup for all 18 blueprints: one layout, 38 pages, 4 part
 - `_navbar.html`, `_date_picker_modal.html` — partials (leading `_`, no `extends`).
 - `_analytics_cards.html`, `_analytics_scripts.html` — the analytics chart cards and their Chart.js init, included by both `tracking/analytics.html` and `dashboard.html` (cards guarded by `is_read_only` there). Edit here once, never re-fork per page.
 - `email/` — standalone fragments rendered by `opennourish/utils.py`; they use `_external=True` links and must stay self-contained HTML (no `extends`).
-- Page templates in root and 13 blueprint subdirectories, all `{% extends "base.html" %}`.
+- Page templates in the root of `templates/` and in 12 blueprint subdirectories, all `{% extends "base.html" %}`. Only `email/` is not a blueprint directory.
 - Not owned here: what the routes compute (`/opennourish/AGENTS.md`), the vendored asset files themselves (`static/`, root-owned).
 
 ## Local Contracts
 
-- `base.html` exposes exactly three blocks: `title` (:7), `content` (:27), `scripts` (:101). The house style is to declare `{% block scripts %}` inside `{% block content %}` and call `{{ super() }}` — Jinja tolerates it, but every block must be closed exactly once and each name may be declared only once per template.
+- `base.html` exposes exactly three blocks: `title`, `content`, `scripts`. The house style is to declare `{% block scripts %}` inside `{% block content %}` and call `{{ super() }}` — Jinja tolerates it, but every block must be closed exactly once and each name may be declared only once per template.
 - Template syntax is not compiled at import time, so an unbalanced tag is a 500 at request time and a red dashboard test. After any structural edit, verify compilation:
 
   ```bash
@@ -24,22 +24,22 @@ Server-rendered Jinja markup for all 18 blueprints: one layout, 38 pages, 4 part
   ```
 
 - A bare `Environment` cannot compile the whole tree: `fasting/fasting.html` fails it with `No filter named 'user_time'`, because `user_time` and `nl2br` are registered by the app factory. To compile every template, go through the app env (`app.jinja_env.get_template(name)` over `templates/**/*.html`, e.g. from the `app_with_db` fixture).
-- Every `<div>` opened inside `{% block content %}` must also close inside it. `base.html:15` opens and closes its own `container-md` wrapper, so a page-level container left open swallows the modal markup `base.html` renders after the content block. djlint reports this as H025.
-- Chart data crosses from Flask to JS only as inline `<script>` with `|tojson`. Chart.js v4.5.0 is already loaded globally by `base.html:11`; do not re-`<script src>` it.
-- **Every POST form carries a CSRF token, because `CSRFProtect` is registered and a form without one 400s for every user.** Two shapes, both Flask-WTF's own: `{{ form.hidden_tag() }}` where a `FlaskForm` is in context (29 of them) and `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">` on a raw `<form>` (68), which is what `csrf_token()` — bound by `CSRFProtect.init_app` — is for. `tests/test_csrf.py` walks every `<form method=post>` under `templates/` and fails on one that carries neither, so the invariant is enforced rather than remembered. `base.html` also publishes `<meta name="csrf-token">` for scripts; the only POST outside a form is the timezone probe, which sends it as `X-CSRFToken` because Flask-WTF never reads a JSON body. What stays banned is a token this repo generates or verifies itself.
+- Every `<div>` opened inside `{% block content %}` must also close inside it. `base.html` opens and closes its own `container-md` wrapper around the content block, so a page-level container left open swallows the modal markup rendered after it. djlint reports this as H025.
+- Chart data crosses from Flask to JS only as inline `<script>` with `|tojson`. Chart.js 4.5.0 is loaded globally by `base.html`; do not re-`<script src>` it.
+- **Every POST form carries a CSRF token, because `CSRFProtect` is registered and a form without one 400s for every user.** Two shapes, both Flask-WTF's own: `{{ form.hidden_tag() }}` where a `FlaskForm` is in context, and `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">` on a raw `<form>` — which is what `csrf_token()`, bound by `CSRFProtect.init_app`, is for. `tests/test_csrf.py` walks every `<form method=post>` under `templates/` and fails on one that carries neither, so the invariant is enforced rather than counted. `base.html` also publishes `<meta name="csrf-token">` for scripts; the only POST outside a form is the timezone probe, which sends it as `X-CSRFToken` because Flask-WTF never reads a JSON body. What stays banned is a token this repo generates or verifies itself.
 - Any form emitted from Python rather than a template (the Undo form in `opennourish/utils.py:prepare_undo_and_delete`) uses `Markup(...).format()`, never an f-string, so the URL and token are escaped by markupsafe instead of interpolated raw.
 - URLs: `url_for` in markup; the only hardcoded paths are the two `fetch()` targets in `base.html` (`/api/get-remaining-calories/…`, `/search/api/get-portions/…`).
-- Flash messages render only in `base.html:16-25`; categories are Bootstrap alert names (`success`, `danger`, `info`, `warning`).
+- Flash messages render only in `base.html`; categories are Bootstrap alert names (`success`, `danger`, `info`, `warning`).
 - Read-only mode: `dashboard.html` and `diary/diary.html` are also rendered by the profile blueprint with `is_read_only=True`. Every edit affordance in those two files must stay guarded by it.
 - Units: branch on `current_user.measurement_system` (`metric` / `us`) and use the conversion helpers from `opennourish/utils.py` in Python rather than duplicating factors like `2.20462` in inline JS.
-- Timestamps: use the `user_time` filter (user-timezone aware). `user_date` exists but is unused; raw `date.strftime(...)` is acceptable only for plain dates.
-- Theme: `data-bs-theme` comes from `current_user.theme_preference`; `navbar_preference` is injected as raw CSS classes into `_navbar.html:1` — keep it a class list, never markup.
+- Timestamps: use the `user_time` filter (user-timezone aware). `user_date` exists but is unused by any template; raw `date.strftime(...)` is acceptable only for plain dates.
+- Theme: `data-bs-theme` comes from `current_user.theme_preference`; `navbar_preference` is injected as raw CSS classes into the `<nav>` class attribute of `_navbar.html` — keep it a class list, never markup.
 - Reuse is thin by design: the four `_*.html` partials and one macro (`render_pagination`, defined inside `search/search.html`). Promote a macro to its own file only when a second template needs it.
 
 ## Work Guidance
 
-- Analytics charts have one canonical owner: `templates/_analytics_cards.html` + `templates/_analytics_scripts.html` (markup/init) plus `opennourish/tracking/analytics.py` (data). Both `tracking/analytics.html` and `dashboard.html` include them; `dashboard.html` (817 lines) passes the analytics vars from `opennourish/dashboard/routes.py`. Never re-paste chart markup into a page.
-- Keep inline `<script>` in templates only for chart init bound to page data (the current pattern); anything reusable belongs in `static/`. `static/style.css` is 155 lines and holds the few shared overrides, including dark-theme rules.
+- Analytics charts have one canonical owner: `templates/_analytics_cards.html` + `templates/_analytics_scripts.html` (markup/init) plus `opennourish/tracking/analytics.py` (data). Both `tracking/analytics.html` and `dashboard.html` (817 lines) include them; the analytics vars come from `opennourish/dashboard/routes.py`. Never re-paste chart markup into a page.
+- Keep inline `<script>` in templates only for chart init bound to page data (the current pattern); anything reusable belongs in `static/`. `static/style.css` (155 lines) holds the few shared overrides, including dark-theme rules.
 
 ## Verification
 

@@ -46,9 +46,9 @@ jobs:
         run: |
           echo "ENCRYPTION_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" >> "$GITHUB_ENV"
 
-      # 17 label tests shell out to the typst binary, and opennourish/typst_utils.py pins
-      # "Liberation Sans"; without them the suite fails 500 == 200 on every label route. The URL is
-      # read out of the Dockerfile so CI and the shipped image cannot drift to different builds.
+      # 20 label tests shell out to the typst binary, and opennourish/typst_utils.py pins
+      # "Liberation Sans"; without the binary the suite fails 500 == 200 on every label route. The URL
+      # is read out of the Dockerfile so CI and the shipped image cannot drift to different builds.
       - name: Install typst and its font
         run: |
           set -euo pipefail

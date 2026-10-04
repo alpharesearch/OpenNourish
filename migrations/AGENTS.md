@@ -8,7 +8,7 @@ Versioned schema evolution for the default-bind SQLite database, applied through
 
 - `versions/` — 6 revisions, strictly linear, head `4ff671f5bcdc`:
   `cb243cbec50e` (initial: full default-bind schema, incl. the unified `portions` table) → `3978a31de65b` (`seq_num` on recipe ingredients) → `b2a84814143e` (`final_weight_grams` on recipes) → `9dc6a1eef6f6` (nullable `user_id` on `my_meals`) → `8f01092d5559` (`user_id` on `food_category`) → `4ff671f5bcdc` (`is_placeholder` on `my_foods`).
-- `env.py` — overrides `sqlalchemy.url` from the live Flask engine at :38, so the URLs in `/alembic.ini` (:87-88, root-relative `sqlite:///user_data.db`) are dead and misleading. Do not trust or "fix" them into active use.
+- `env.py` — overrides `sqlalchemy.url` from the live Flask engine, so the URLs in `/alembic.ini` (root-relative `sqlite:///user_data.db`) are dead and misleading. Do not trust or "fix" them into active use.
 - `script.py.mako`, `alembic.ini` template-side config.
 - Not owned here: the model definitions (`/models.py`, root-owned), `import_usda_data.py` + `/schema_usda.sql`, which create the whole `usda` bind outside Alembic.
 
@@ -18,7 +18,7 @@ Versioned schema evolution for the default-bind SQLite database, applied through
 - `env.py` does not set `render_as_batch`. SQLite cannot `ALTER COLUMN`, so any column type/nullability change must be hand-edited into `op.batch_alter_table(...)` — otherwise the migration fails at apply time, not at generate time.
 - Autogenerate is not trustworthy for data: review every generated revision, and add explicit `op.execute`/`op.bulk_insert` backfills where a new non-null column needs values. The initial revision was hand-adjusted after generation and is the model to follow.
 - Never hand-edit or renumber an already-shared revision; add a new one. History must stay single-headed — two files claiming the same `down_revision` break `flask db upgrade`.
-- `flask db migrate` writes into this tracked directory. Never run it from an ops script: `seed_usda.sh:30` does exactly that and pollutes git history with an environment-specific revision.
+- `flask db migrate` writes into this tracked directory. Never run it from an ops script: `seed_usda.sh` does exactly that and pollutes git history with an environment-specific revision.
 - Tests use `db.create_all()` and never touch Alembic, so the suite cannot validate a migration. Apply every new revision against a copy of a real `persistent/user_data.db`.
 
 ## Work Guidance

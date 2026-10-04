@@ -6,8 +6,8 @@ Account lifecycle: register, login, logout, e-mail verification, and password re
 
 ## Ownership
 
-- `routes.py` (212 lines, 7 routes): `login` L25, `logout` L63, `register` L69, `reset_password_request` L123, `reset_password/<token>` L146, `send-verification-email` L163, `verify-email/<token>` L186.
-- `forms.py` (44 lines).
+- `routes.py` (~215 lines, 7 routes): `login`, `logout`, `register`, `reset_password_request`, `reset_password/<token>`, `send-verification-email`, `verify-email/<token>`. Refer to them by name, never by line number.
+- `forms.py` — the login, register, and reset forms.
 - Not owned here: token minting/verification lives on the model (`User.get_token` / `User.verify_token`, root `models.py`), mail sending in `opennourish/utils.py`, the `onboarding_required` gate in `opennourish/decorators.py` (its flow is owned by `opennourish/onboarding/`).
 
 ## Local Contracts
@@ -16,8 +16,9 @@ Account lifecycle: register, login, logout, e-mail verification, and password re
 - Registration is gated by the `SystemSetting` row read through `utils.get_allow_registration_status()` (default: allow), not by an environment variable.
 - Admin bootstrap has two paths and both must stay deliberate:
   - `INITIAL_ADMIN_USERNAME` grants admin to that username on login/registration.
-  - With it unset, the **first registrant becomes admin** (`auth/routes.py:88-91`). On a fresh public deployment that is whoever signs up first. Keep the intended admin claim step documented before any public deploy.
-- `ENABLE_PASSWORD_RESET` and `ENABLE_EMAIL_VERIFICATION` must be checked before sending mail and before honouring a verification-only action; both default to off, and `MAIL_SUPPRESS_SEND` defaults to `True`, so no mail leaves the process unless explicitly enabled.
+  - With it unset, `register` makes the **first registrant admin**. On a fresh public deployment that is whoever signs up first. Keep the intended admin claim step documented before any public deploy.
+- `ENABLE_PASSWORD_RESET` and `ENABLE_EMAIL_VERIFICATION` must be checked before sending mail and before honouring a verification-only action; both default to off, so no route here sends unless an administrator turned the feature on.
+- **Suppression is not safe by default in a deployment.** `create_app` resolves it case-insensitively from whichever source is active — `os.getenv("MAIL_SUPPRESS_SEND", "True").lower() == "true"` in environment mode, `get_setting_from_db(app, "MAIL_SUPPRESS_SEND", default="True").lower() == "true"` in database mode — so the `True` default applies only when the key is **absent**: the empty value that `.env.example` and the generated TrueNAS YAML write when the field is left blank evaluates to `False`, and mail then really leaves the container. `MAIL_SUPPRESS_SEND=true` is what keeps it in-process. The admin form stores `str(bool)`, so `"True"` / `"False"` round-trip only because the comparison lower-cases — keep it case-insensitive. `create_app`'s `if app.testing` force does **not** protect a test run: that key is overwritten by the resolution block afterwards, so a testing app inherits the environment (`opennourish/AGENTS.md` owns the fix). Never assume a fresh host is silent — check the variable.
 - Verification state is a privilege input, not a cosmetic flag: unverified users cannot send friend requests and their content is not exposed to friends. Do not grant a shortcut that sets `is_verified` from a user-facing form.
 - Login must respect `User.is_active` (disabled accounts cannot authenticate) and must not reveal whether the account or the password was wrong.
 - Password hashing is `werkzeug.security` (`generate_password_hash` / `check_password_hash`); do not compare hashes directly.

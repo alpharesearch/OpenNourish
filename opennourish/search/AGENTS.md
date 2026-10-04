@@ -6,10 +6,10 @@ Search across all four food sources (USDA, user foods, recipes, saved meals) inc
 
 ## Ownership
 
-- `routes.py` (1588 lines) holds exactly three routes:
-  - `search()` L126 — `GET|POST /search/`: query parsing, per-source result assembly, UPC matching, pagination, frequent items.
-  - `add_item()` L592 — `POST /search/add_item`, ~850 lines: every write path.
-  - `get_portions()` L1448 — `GET /search/api/get-portions/<food_type>/<int:food_id>`, JSON for the portion picker.
+- `routes.py` (~1,590 lines) holds exactly three routes — refer to them by name, never by line number:
+  - `search()` — `GET|POST /search/`: query parsing, per-source result assembly, UPC matching, pagination, frequent items.
+  - `add_item()` — `POST /search/add_item`, ~850 lines: every write path.
+  - `get_portions()` — `GET /search/api/get-portions/<food_type>/<int:food_id>`, JSON for the portion picker.
 - Not owned here: portion storage rules (root `models.py` contract), nutrition math (`opennourish/utils.py`), the modal markup (`templates/base.html` `addItemModal`).
 
 ## Local Contracts
@@ -17,15 +17,15 @@ Search across all four food sources (USDA, user foods, recipes, saved meals) inc
 - Two orthogonal form fields drive `add_item`:
   - `food_type` ∈ `usda`, `my_food`, `recipe`, `my_meal`, `diary_meal`.
   - `target` ∈ `diary`, `recipe`, `meal`, `rematch_ingredient`.
-  Adding a sixth `food_type` or fifth `target` means auditing every branch of `add_item`; the pairs are dispatched by nested `if/elif` chains inside `add_item` (L601-1450).
+  Adding a sixth `food_type` or fifth `target` means auditing every branch of `add_item`; the pairs are dispatched by nested `if/elif` chains through the middle of the function.
 - `return_url` is honoured on every exit path; keep it, or callers lose their scroll position and their meal anchor.
-- Every USDA food logged must have a 1 g portion. `add_item` creates one on the fly with `was_imported=True` and falls back to it as the default portion (a non-numeric `food_id` on the USDA path is now rejected with "Invalid food ID." rather than 500-ing). Recipes and user foods get their 1 g portion from their own create path.
+- Every USDA food logged must have a 1 g portion. `add_item` creates one on the fly with `was_imported=True` and falls back to it as the default portion (a non-numeric `food_id` on the USDA path is rejected with "Invalid food ID." rather than 500-ing). Recipes and user foods get their 1 g portion from their own create path.
 - `portion_id == -1` is a sentinel meaning "virtual 1 g portion for rematch", but it resolves to `None` on the diary/recipe/meal paths (the sentinel object is discarded and the id is re-resolved against the table) → "A valid portion is required." The rematch branch re-resolves its own portion later, which is why rematch still works. Locked by `test_add_item_virtual_portion_sentinel_is_not_resolved`. Do not add behaviour that depends on `-1` working outside rematch.
 - Friend visibility: search results and the portions API filter to `current_user.friends` and exclude the searcher's own content and deleted accounts.
 - Authorization on the write paths uses the plain ownership check plus the friendship rule — the two historical defects here are **closed and test-locked**: the copy-meal (`diary_meal`) branch verifies an accepted `Friendship` via `_has_accepted_friendship()` before reading the friend's `DailyLog` rows, and the `obj.user_id != current_user.id and not obj.user` predicate that only rejected deleted owners was replaced with real ownership checks (`_portion_matches_item`, parent checks). `test_search_coverage.py` exercises each rejection both ways. Keep the idiom from `opennourish/AGENTS.md`; do not reintroduce the deleted-owner predicate.
 - **Redirect targets are validated against `request.host` before `redirect()`.** `return_url` is read once at the top of `add_item` through `utils.same_host_redirect_url()`, and every referrer goes through `utils.same_host_referrer()` — so the ~9 `if return_url:` exits keep their own fallbacks and an off-site value simply falls through to them. Keep that shape: the redirect is the feature (scroll position, meal anchor), the destination is not the client's to choose. Fragments and queries pass through untouched, which `test_add_item_keeps_the_return_url_fragment_and_query` pins. `tests/test_search_coverage.py::_add_item` therefore sends a referrer on the app's own authority; pass `referer=` to test a refusal.
-- The GET search view writes: it creates and commits a 1 g USDA portion per result row (`was_imported=True`, L317 and L536). Do not add further writes to it.
-- `/search/api/get-portions/` orders its three branches `seq_num ASC NULLS LAST, gram_weight ASC`, the same rule the `portions` relationships use — a bare `.order_by(seq_num)` sorted NULLs *first* under SQLite, which made the dropdown order depend on insertion. Result assembly no longer calls `ensure_portion_sequence` (removed 2026-09-26, PLAN.md M6.2); it still commits a generated 1 g portion per USDA food, which is the separate open GET-write defect.
+- The GET search view writes: both result-assembly branches create and commit a 1 g USDA portion per row (`was_imported=True`). Do not add further writes to it.
+- `/search/api/get-portions/` orders its three branches `seq_num ASC NULLS LAST, gram_weight ASC`, the same rule the `portions` relationships use — a bare `.order_by(seq_num)` sorts NULLs *first* under SQLite, which made the dropdown order depend on insertion. Result assembly does not call `ensure_portion_sequence`; it still commits a generated 1 g portion per USDA food, which is the separate open GET-write defect.
 - The Add buttons in templates carry `data-log-date`; `tests/test_search_log_date.py` asserts it by regex on rendered HTML, so keep the attribute when editing the buttons.
 
 ## Work Guidance

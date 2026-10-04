@@ -55,10 +55,12 @@ build/
 *.log
 **/*.log
 
-# Ignore project-specific files not needed at runtime
+# Ignore project-specific files not needed at runtime. Names must match real files: a pattern for a
+# path that does not exist is a silent no-op, and this list shipped `seed_usda.py` — no such file —
+# while the destructive `seed_usda.sh` rode along into /app.
 GEMINI.md
 QWEN.md
 proj_snap.sh
 seed_db.sh
-seed_usda.py
+seed_usda.sh
 project_snapshot.txt
